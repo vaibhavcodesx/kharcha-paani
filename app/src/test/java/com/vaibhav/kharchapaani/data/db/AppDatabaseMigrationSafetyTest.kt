@@ -31,7 +31,7 @@ class AppDatabaseMigrationSafetyTest {
     }
 
     @Test
-    fun `existing rows survive reopening the current schema version`() {
+    fun `existing v2 rows survive opening with the current app version`() {
         helper.createDatabase(dbName, 2).use { db ->
             db.execSQL("INSERT INTO people (id, name, avatarColor, createdAt) VALUES (7, 'Existing friend', '#FFFFFF', 0)")
         }

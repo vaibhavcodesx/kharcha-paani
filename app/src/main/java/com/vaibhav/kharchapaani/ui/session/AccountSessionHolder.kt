@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewModelScope
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.LedgerDatabases
+import com.vaibhav.kharchapaani.data.sync.SyncScheduler
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -46,6 +47,8 @@ class AccountSessionHolder(application: Application) : AndroidViewModel(applicat
     /** [userId] is the signed-in account, or null once signed out. */
     fun onAccountChanged(userId: String?) {
         if (userId == activeUserId) return
+        // Stop the previous account's background sync; its queued rows stay on disk for next time.
+        activeUserId?.let { SyncScheduler.cancelFor(getApplication(), it) }
         activeUserId = userId
         openJob?.cancel()
         endSession()
@@ -57,7 +60,9 @@ class AccountSessionHolder(application: Application) : AndroidViewModel(applicat
             } else {
                 _state.value = AccountSessionState.Opening
                 _state.value = try {
-                    AccountSessionState.Ready(AccountSession(userId, LedgerDatabases.open(getApplication(), userId)))
+                    val database = LedgerDatabases.open(getApplication(), userId)
+                    SyncScheduler.schedulePeriodicSync(getApplication(), userId)
+                    AccountSessionState.Ready(AccountSession(userId, database))
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {

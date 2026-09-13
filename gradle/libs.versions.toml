@@ -48,6 +48,7 @@ googleid = "1.2.0"
 supabase = "3.6.0"
 ktor = "3.4.3"
 multiplatformSettings = "1.3.0"
+work = "2.11.2"
 
 
 [libraries]
@@ -110,6 +111,8 @@ supabase-auth = { group = "io.github.jan-tennert.supabase", name = "auth-kt" }
 supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgrest-kt" }
 ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.ref = "ktor" }
 multiplatform-settings = { group = "com.russhwolf", name = "multiplatform-settings", version.ref = "multiplatformSettings" }
+androidx-work-runtime = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
+androidx-work-testing = { group = "androidx.work", name = "work-testing", version.ref = "work" }
 
 
 [plugins]

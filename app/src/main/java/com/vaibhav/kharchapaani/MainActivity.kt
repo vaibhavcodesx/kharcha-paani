@@ -51,6 +51,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.key
@@ -174,8 +175,13 @@ class MainActivity : ComponentActivity() {
         key(session.userId) {
             CompositionLocalProvider(LocalViewModelStoreOwner provides session) {
                 val viewModel: MainViewModel = viewModel(
-                    factory = MainViewModel.factory(application, session.database),
+                    factory = MainViewModel.factory(application, session.database, session.userId),
                 )
+                // App start and every return to the foreground: push anything queued, pull the rest.
+                LifecycleStartEffect(viewModel) {
+                    viewModel.requestSync()
+                    onStopOrDispose { }
+                }
                 LaunchedEffect(viewModel, queuedIntent) {
                     if (queuedIntent != null) {
                         routeIntent(queuedIntent, viewModel)
@@ -489,8 +495,11 @@ fun SplitFlowApp(
     }
 
     if (isAccountSheetOpen) {
+        val syncStatus by viewModel.syncStatus.collectAsStateWithLifecycle()
         AccountSheet(
             state = authUiState,
+            syncStatus = syncStatus,
+            onRetryFailedSync = viewModel::retryFailedSync,
             onRetryProfile = onRetryProfile,
             onSignOut = {
                 isAccountSheetOpen = false

@@ -2,13 +2,16 @@ package com.vaibhav.kharchapaani.data.repository
 
 import android.content.Context
 import androidx.core.content.FileProvider
+import androidx.room.withTransaction
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.GroupMemberEntity
+import com.vaibhav.kharchapaani.data.db.entity.PendingRemoteDeleteEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
+import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.data.model.CategorySummary
 import com.vaibhav.kharchapaani.data.model.FullTransaction
@@ -29,7 +32,14 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 
-class LedgerRepository(private val db: AppDatabase) {
+/**
+ * @param onLocalTransactionChange called after a transaction write commits, so the account's sync
+ * can be scheduled. Runs after the Room transaction, never inside it.
+ */
+class LedgerRepository(
+    private val db: AppDatabase,
+    private val onLocalTransactionChange: () -> Unit = {},
+) {
 
     val allPeople: Flow<List<PersonEntity>> = db.personDao().getAllPeople()
     val allTransactions: Flow<List<TransactionEntity>> = db.transactionDao().getAllTransactions()
@@ -371,18 +381,19 @@ class LedgerRepository(private val db: AppDatabase) {
         shares: List<SplitShareEntity> = emptyList(),
         splitType: String = "equal"
     ): Long = withContext(Dispatchers.IO) {
-        val txId = db.transactionDao().insertTransaction(tx.copy(isSplit = shares.isNotEmpty()))
-        if (shares.isNotEmpty()) {
-            val split = SplitEntity(
-                transactionId = txId,
-                totalAmount = tx.amount,
-                paidByPersonId = paidByPersonId,
-                splitType = splitType
+        val isSplit = shares.isNotEmpty()
+        val txId = db.withTransaction {
+            val txId = db.transactionDao().insertTransaction(
+                tx.copy(
+                    isSplit = isSplit,
+                    updatedAt = System.currentTimeMillis(),
+                    syncState = syncStateFor(groupId = tx.groupId, isSplit = isSplit),
+                )
             )
-            val splitId = db.splitDao().insertSplit(split)
-            val mappedShares = shares.map { it.copy(splitId = splitId) }
-            db.splitDao().insertSplitShares(mappedShares)
+            if (isSplit) insertSplit(txId, tx.amount, paidByPersonId, splitType, shares)
+            txId
         }
+        onLocalTransactionChange()
         txId
     }
 
@@ -390,7 +401,12 @@ class LedgerRepository(private val db: AppDatabase) {
         transactions: List<TransactionEntity>
     ): List<Long> = withContext(Dispatchers.IO) {
         if (transactions.isEmpty()) return@withContext emptyList()
-        db.transactionDao().insertTransactions(transactions)
+        val now = System.currentTimeMillis()
+        val ids = db.transactionDao().insertTransactions(
+            transactions.map { it.copy(updatedAt = now, syncState = syncStateFor(it.groupId, it.isSplit)) }
+        )
+        onLocalTransactionChange()
+        ids
     }
 
     suspend fun updateTransactionWithSplits(
@@ -399,23 +415,60 @@ class LedgerRepository(private val db: AppDatabase) {
         shares: List<SplitShareEntity> = emptyList(),
         splitType: String = "equal"
     ) = withContext(Dispatchers.IO) {
-        db.transactionDao().updateTransaction(tx.copy(isSplit = shares.isNotEmpty()))
-        db.splitDao().deleteSplitByTransactionId(tx.id)
-        if (shares.isNotEmpty()) {
-            val split = SplitEntity(
-                transactionId = tx.id,
-                totalAmount = tx.amount,
-                paidByPersonId = paidByPersonId,
-                splitType = splitType
+        val isSplit = shares.isNotEmpty()
+        db.withTransaction {
+            val existing = db.transactionDao().getTransactionByIdDirect(tx.id) ?: return@withTransaction
+            val syncState = syncStateFor(groupId = tx.groupId, isSplit = isSplit)
+            when {
+                // A re-queued upload must not be undone by an older queued delete of the same row.
+                syncState == SyncState.PENDING -> db.syncDao().clearPendingDeletes(listOf(existing.remoteId))
+                // Became a split/group expense (not synced until step 4): take the cloud copy down.
+                existing.syncState != SyncState.LOCAL_ONLY ->
+                    db.syncDao().insertPendingDelete(PendingRemoteDeleteEntity(existing.remoteId))
+            }
+            db.transactionDao().updateTransaction(
+                // The edit sheet builds a fresh entity; identity and creation time come from the stored row.
+                tx.copy(
+                    isSplit = isSplit,
+                    remoteId = existing.remoteId,
+                    createdAt = existing.createdAt,
+                    updatedAt = System.currentTimeMillis(),
+                    syncState = syncState,
+                )
             )
-            val splitId = db.splitDao().insertSplit(split)
-            val mappedShares = shares.map { it.copy(splitId = splitId) }
-            db.splitDao().insertSplitShares(mappedShares)
+            db.splitDao().deleteSplitByTransactionId(tx.id)
+            if (isSplit) insertSplit(tx.id, tx.amount, paidByPersonId, splitType, shares)
         }
+        onLocalTransactionChange()
     }
 
     suspend fun deleteTransaction(txId: Long) = withContext(Dispatchers.IO) {
-        db.transactionDao().deleteTransactionById(txId)
+        db.withTransaction {
+            val existing = db.transactionDao().getTransactionByIdDirect(txId) ?: return@withTransaction
+            if (existing.syncState != SyncState.LOCAL_ONLY) {
+                db.syncDao().insertPendingDelete(PendingRemoteDeleteEntity(existing.remoteId))
+            }
+            db.transactionDao().deleteTransactionById(txId)
+        }
+        onLocalTransactionChange()
+    }
+
+    private suspend fun insertSplit(
+        txId: Long,
+        totalAmount: Double,
+        paidByPersonId: Long,
+        splitType: String,
+        shares: List<SplitShareEntity>,
+    ) {
+        val splitId = db.splitDao().insertSplit(
+            SplitEntity(
+                transactionId = txId,
+                totalAmount = totalAmount,
+                paidByPersonId = paidByPersonId,
+                splitType = splitType
+            )
+        )
+        db.splitDao().insertSplitShares(shares.map { it.copy(splitId = splitId) })
     }
 
     suspend fun recordSettlement(
@@ -495,6 +548,11 @@ class LedgerRepository(private val db: AppDatabase) {
         db.groupDao().deleteMembersForGroup(groupId)
         db.groupDao().deleteGroupById(groupId)
     }
+
+
+    /** Step 3 syncs personal transactions only; split and group expenses wait for step 4. */
+    private fun syncStateFor(groupId: Long?, isSplit: Boolean): SyncState =
+        if (groupId == null && !isSplit) SyncState.PENDING else SyncState.LOCAL_ONLY
 
     /**
      * Professional, statement-like CSV generation for analysis, spreadsheets, and taxation.

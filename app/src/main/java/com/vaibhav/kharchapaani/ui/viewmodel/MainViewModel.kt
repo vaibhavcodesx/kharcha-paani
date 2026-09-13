@@ -31,7 +31,10 @@ import com.vaibhav.kharchapaani.data.model.StatementParseResult
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
 import com.vaibhav.kharchapaani.data.repository.GeminiRepository
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
+import com.vaibhav.kharchapaani.data.sync.SyncScheduler
+import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
 import com.vaibhav.kharchapaani.domain.DebtSimplifier
+import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.domain.LocalStatementParser
 import com.vaibhav.kharchapaani.util.NotificationHelper
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
@@ -49,9 +52,33 @@ import kotlin.math.roundToInt
  * Scoped to one signed-in account: [db] is that account's ledger file. A different account gets a
  * new instance (see AccountSessionHolder), so no state or Flow from one account outlives a switch.
  */
-class MainViewModel(application: Application, db: AppDatabase) : AndroidViewModel(application) {
+class MainViewModel(
+    application: Application,
+    private val db: AppDatabase,
+    private val userId: String,
+) : AndroidViewModel(application) {
 
-    private val ledgerRepo = LedgerRepository(db)
+    private val ledgerRepo = LedgerRepository(db, onLocalTransactionChange = ::requestSync)
+
+    val syncStatus: StateFlow<SyncStatus> = combine(
+        db.syncDao().observeUnsyncedChangeCount(),
+        db.syncDao().observeFailedCount(),
+        db.syncDao().observeMeta(TransactionSyncEngine.LAST_SYNCED_AT),
+        SyncScheduler.observeIsSyncing(application, userId),
+    ) { unsynced, failed, lastSyncedAt, isSyncing ->
+        SyncStatus(unsynced, failed, lastSyncedAt?.toLongOrNull(), isSyncing)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SyncStatus())
+
+    fun requestSync() {
+        SyncScheduler.requestSync(getApplication(), userId)
+    }
+
+    fun retryFailedSync() {
+        viewModelScope.launch {
+            db.syncDao().requeueFailed()
+            requestSync()
+        }
+    }
     private val geminiRepo = GeminiRepository()
 
     // Navigation Tab (0: Home/Activity, 1: Splits & Groups, 2: Analytics)
@@ -862,7 +889,7 @@ class MainViewModel(application: Application, db: AppDatabase) : AndroidViewMode
     }
 
     companion object {
-        fun factory(application: Application, db: AppDatabase): ViewModelProvider.Factory =
-            viewModelFactory { initializer { MainViewModel(application, db) } }
+        fun factory(application: Application, db: AppDatabase, userId: String): ViewModelProvider.Factory =
+            viewModelFactory { initializer { MainViewModel(application, db, userId) } }
     }
 }
