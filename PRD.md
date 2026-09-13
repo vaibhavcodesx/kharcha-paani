@@ -63,6 +63,19 @@ an AI-generated MVP — since this may end up in a portfolio.
    polish pass so the app doesn't read as "AI-generated," even though the
    underlying color/type choices are already good on paper.
 
+## Prerequisite: Fix the Placeholder Package Name Before Anything Else
+
+The project's actual `applicationId`/package is currently `com.example`
+(visible throughout the real source: `MainActivity.kt`,
+`AppDatabase.kt`, etc. all live under `com.example.*`). This is a
+scaffolding placeholder, not something to ship or put in a portfolio, and
+it needs to change **before** Google Sign-In is wired into the app code
+— an Android-native OAuth client (mentioned in Part A) is registered
+against the package name plus a signing fingerprint, so fixing this after
+that registration means redoing it. Rename to something real (e.g.
+`com.vaibhav.kharchapaani`) as the very first task of the actual build
+session, before extending `supabase-kt` sign-in code.
+
 ---
 
 ## PART A — Cloud Migration & Multi-User Sharing
@@ -139,14 +152,43 @@ since RLS needs an identity to know what someone's allowed to see.
 - `transactions` — id, owner_id (profile id), type (expense/income),
   amount, category, merchant, payment_method, date, note, group_id
   (nullable), receipt_storage_path (nullable), created_at.
-- `splits` — id, transaction_id, total_amount, paid_by (profile id).
-- `split_shares` — id, split_id, profile_id, share_amount.
-- `settlements` — id, from_profile_id, to_profile_id, amount, date, note.
+- `splits` — id, transaction_id, total_amount, paid_by (profile id),
+  **split_type (equal/exact/percentage)** — carried over from the
+  existing Room `SplitEntity`; the first Postgres migration dropped this,
+  which would have been a real feature regression (exact/percentage
+  splits already work today and shouldn't be lost in the cloud version).
+- `split_shares` — id, split_id, profile_id, share_amount,
+  **percentage (nullable)** — same reasoning, matches the existing
+  `SplitShareEntity`.
+- `settlements` — id, from_profile_id, to_profile_id, amount, date, note,
+  **is_iou (boolean)**, **group_id (nullable)** — both exist in the
+  current Room `SettlementEntity` and should carry over: `is_iou`
+  distinguishes an informal IOU from an actual settlement payment (a
+  named feature in this PRD's own user stories), and `group_id` lets a
+  settlement be scoped to "everything from the Goa trip" rather than
+  always being a flat two-person balance.
 - **RLS policies, in plain terms**: a user can always read/write their
   own `transactions`; a user can read someone else's `transaction` only
   if it has a `group_id` they're a member of via `group_members`;
-  `split_shares` and `settlements` are readable by either party
-  referenced in the row.
+  `split_shares` are readable by either party referenced in the row.
+  **`settlements` read access, decided here** (flagged by Claude Code as
+  a real design question during implementation, not something to guess
+  at): if a settlement has a `group_id` set, any member of that group can
+  read it — group expense apps are more useful when settling-up activity
+  is visible to the group ("Rohan settled with Priya" showing in shared
+  history), so this is intentional transparency, not a leak. A settlement
+  with no `group_id` (an informal 1:1 IOU) stays private to just the two
+  parties involved. Both parties can always write/update their own
+  settlement regardless of group visibility.
+- **Schema changes should be tracked as versioned migration files in
+  git** (a `supabase/migrations/` folder, one SQL file per change), not
+  just applied live against the project with no local record. The
+  MCP-driven approach is fine for authoring and testing a migration
+  quickly, but the resulting SQL should be saved into the repo afterward
+  — this is what makes the schema reproducible, reviewable in a PR, and
+  rollback-able, and it's also a good portfolio signal (a visible
+  migration history is a concrete sign of process, not just a working
+  app).
 
 **Note on the "must be registered" decision**: earlier drafts (and most
 competitor apps) allow adding a friend as just a name, no account
@@ -189,6 +231,49 @@ split with.
   architecting deeply around.
 - **Stays purely local, never synced**: the streak counter, notification
   scheduling, UI preferences — per-device by nature.
+
+### Status Log (living record — update as work progresses)
+
+- ✅ Supabase project created (`kharcha-paani`, `ap-northeast-1`,
+  Postgres 17).
+- ✅ Google Sign-In provider enabled on Supabase, Web OAuth Client ID
+  configured in Google Cloud Console.
+- ✅ Initial schema migration applied via the Supabase MCP connection:
+  all 7 tables created, RLS enabled on every one, `SECURITY DEFINER`
+  helper functions used to avoid self-referencing RLS recursion on
+  `groups`/`group_members`, `auth.uid()` wrapped per Postgres
+  performance best practice, and a real security-advisor finding fixed
+  (the `profiles`-creation trigger function was callable directly via
+  REST RPC — access revoked).
+- ⏳ **Not yet done**: adding back `split_type`, `percentage`, `is_iou`,
+  `group_id` per the correction above (follow-up migration needed before
+  building the sync layer against this schema), saving the applied SQL
+  as a versioned file under `supabase/migrations/`, and the package
+  rename above.
+- ⏳ **Not yet started**: `supabase-kt` integration, Google Sign-In in
+  the actual app code, the sync loop, groups/invites UI.
+
+### Web-Verified Notes (re-checked against current Supabase/Google docs)
+
+- **The `SECURITY DEFINER` + wrapped-`auth.uid()` pattern used in the
+  migration is current, correct Supabase practice** — confirmed against
+  Supabase's own RLS performance documentation, unchanged in substance.
+- **One specific, easy-to-miss gap worth explicitly checking**: Supabase's
+  own linter that flags unwrapped `auth.uid()` calls
+  (`auth_rls_initplan`) only inspects the RLS policy expression itself —
+  it does **not** look inside the body of any `SECURITY DEFINER` helper
+  function the policy calls. That means if `private.is_group_member()`,
+  `can_access_transaction()`, or `owns_transaction()` internally use a
+  bare `auth.uid()` rather than `(select auth.uid())` inside their own
+  function bodies, the security advisor would report "clean" while the
+  per-row performance cost still exists silently. Worth explicitly
+  asking Claude Code to check the *bodies* of these three functions
+  specifically, not just re-run the advisor and trust a clean result.
+- **The native Android Google Sign-In approach discussed (Credential
+  Manager → ID token → `supabase.auth.signInWithIdToken()`) is confirmed
+  as Supabase's own current, officially documented path** — `supabase-kt`
+  has a dedicated "Kotlin (Android)" version of this exact flow, not a
+  workaround. No changes needed to the plan.
 
 ### Migration Plan
 
@@ -286,7 +371,11 @@ just confirm the theme file looks correct.
 ## PART C — Testing & Quality
 
 - **Unit tests for `DebtSimplifier.kt`** — verify convergence to zero
-  balances, minimized transfer count for known multi-person cases, and
+  balances, verify the transfer count never exceeds n−1 for n people
+  (correction from an earlier draft of this PRD: the greedy algorithm
+  guarantees this bound, it does **not** guarantee the true minimum
+  number of transfers — finding the actual minimum is NP-hard in the
+  general case, so tests should assert the bound, not "minimized"), and
   the zero-debt / single-debtor-single-creditor edge cases.
 - **Unit tests for ledger balance calculation** in the repository layer —
   the split/settlement netting math is exactly the kind of logic that
@@ -342,22 +431,50 @@ just confirm the theme file looks correct.
 5. **Documentation** (Part D) — last, once there's something finished to
    screenshot and explain.
 
-## Skills to Use With Claude Code for This Pass
+## Skills Installed (current, verified via `/plugin list --enabled`)
 
-- **`chrisbanes/skills`** (Chris Banes, Android engineer at Google) —
-  `compose-state-and-effects`, `compose-animations`, `compose-performance`.
-  The strongest available signal for correct Compose state/recomposition
-  patterns, which matters since Claude Code is editing existing Compose
-  code, not generating from a blank slate.
-- **`hamen/material-3-skill`** — keeps the UI/UX pass (Part B) consistent
-  with Material 3 conventions rather than drifting into inconsistent
-  custom styling.
-- **`google-gemini-api`** (from `secondsky/claude-skills`) — current
-  Gemini SDK/API patterns for the existing AI ingestion pipeline.
-- **The official Supabase plugin** (`supabase@claude-plugins-official`,
-  from Anthropic's own marketplace) — bundles an MCP server letting
-  Claude Code directly inspect and run migrations against the real
-  Supabase project, rather than writing SQL blind.
+- **`material-3`** (`hamen/material-3-skill`) — Material 3 reference for
+  Part B's UI polish work; has a built-in `/material-3 audit [path]`
+  command, useful directly during that phase.
+- **`supabase`** (`supabase@claude-plugins-official`) — the official MCP
+  plugin; already proven useful, having driven the actual schema
+  creation in Part A's status log above.
+- **`chrisbanes-skills`** (`chrisbanes/skills`) — a bundle covering
+  Compose state/effects, animations, performance, component design,
+  focus navigation, UI testing patterns, and Kotlin
+  concurrency/Flow/control-flow/API-design.
+- **`android-skills`** (`rcosteira79/android-skills`) — a second bundle
+  (21 skills) with real overlap against `chrisbanes-skills` on Compose,
+  coroutines/Flow, and Material 3/UX. **Project convention, decided
+  here**: where both could apply, `chrisbanes-skills` wins for Compose
+  and Kotlin specifically (it's the more narrowly-focused, higher-
+  credibility source for that). `android-skills` is used for what it
+  uniquely covers: `android-testing` (Part C), `android-gradle-logic` and
+  `gradle-build-performance` (build setup, relevant now while adding
+  `supabase-kt`), `android-data-layer` (the sync layer's repository
+  work), and `kmp-ktor` (supabase-kt runs on Ktor under the hood).
+- **`mobile-offline-support`**, **`design-review`**, **`mobile-first-design`**
+  (`secondsky/claude-skills`) — sync/offline patterns and Part B's UI
+  audit workstream respectively.
+- **`oauth-implementation`**, **`session-management`**,
+  **`api-authentication`** (same marketplace) — for the sign-in/session
+  code in Migration Plan step 2.
+- **`test-quality-analysis`** (same marketplace) — for Part C.
 
-(Exact install commands and connection steps for all of these are in the
-companion setup guide.)
+## Skills to Add Before Starting the Sign-In/Sync Code
+
+- **`oauth-implementation`**, **`session-management`**, and
+  **`api-authentication`** (all from the already-added
+  `secondsky/claude-skills` marketplace — no new marketplace needed,
+  just `/plugin install <name>@claude-skills`). Genuinely the right time
+  for these now, specifically: you're about to write the actual Google
+  Sign-In + Supabase session code, which is exactly what these cover.
+- **`test-quality-analysis`** (same marketplace) — for Part C's testing
+  work (`DebtSimplifier`, ledger math, sync tests) once that phase
+  starts; not urgent this session, but worth adding before Part C
+  begins.
+- **Not worth chasing**: a Gemini-API-specific skill was searched for
+  earlier and doesn't exist as a named plugin in the installed
+  marketplaces. Not a blocker — the Gemini integration already works
+  (built in AI Studio), and Claude Code doesn't need a special skill to
+  read and extend code that's already there.
