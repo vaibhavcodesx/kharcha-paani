@@ -38,7 +38,7 @@ class AuthRepository(
 
     /** [activityContext] must be an Activity: Credential Manager anchors its account picker to it. */
     suspend fun signInWithGoogle(activityContext: Context): GoogleSignInResult {
-        if (googleWebClientId.isBlank()) {
+        if (!isUsableWebClientId(googleWebClientId)) {
             return GoogleSignInResult.Failure(GoogleSignInFailure.NotConfigured)
         }
         val nonce = GoogleNonce.generate()
@@ -164,7 +164,13 @@ class AuthRepository(
         data class Done(val result: GoogleSignInResult) : GoogleTokenResult
     }
 
-    private companion object {
-        const val TAG = "AuthRepository"
+    companion object {
+        private const val TAG = "AuthRepository"
+        private const val PLACEHOLDER_PREFIX = "YOUR_"
+        private const val GOOGLE_CLIENT_ID_SUFFIX = ".apps.googleusercontent.com"
+
+        /** Rejects the .env.example placeholder, which the Secrets plugin falls back to. */
+        internal fun isUsableWebClientId(clientId: String): Boolean =
+            clientId.endsWith(GOOGLE_CLIENT_ID_SUFFIX) && !clientId.startsWith(PLACEHOLDER_PREFIX)
     }
 }
