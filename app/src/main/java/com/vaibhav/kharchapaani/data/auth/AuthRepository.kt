@@ -1,0 +1,170 @@
+package com.vaibhav.kharchapaani.data.auth
+
+import android.content.Context
+import android.util.Log
+import androidx.credentials.ClearCredentialStateRequest
+import androidx.credentials.Credential
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.ClearCredentialException
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.Google
+import io.github.jan.supabase.auth.providers.builtin.IDToken
+import io.github.jan.supabase.exceptions.RestException
+import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import java.io.IOException
+
+class AuthRepository(
+    private val supabase: SupabaseClient,
+    private val googleWebClientId: String,
+) {
+    private val auth get() = supabase.auth
+
+    val authState: Flow<AuthState> = auth.sessionStatus
+        .map { it.toAuthState(auth.currentUserOrNull()) }
+        .distinctUntilChanged()
+
+    /** [activityContext] must be an Activity: Credential Manager anchors its account picker to it. */
+    suspend fun signInWithGoogle(activityContext: Context): GoogleSignInResult {
+        if (googleWebClientId.isBlank()) {
+            return GoogleSignInResult.Failure(GoogleSignInFailure.NotConfigured)
+        }
+        val nonce = GoogleNonce.generate()
+
+        val idToken = when (val token = requestGoogleIdToken(activityContext, nonce)) {
+            is GoogleTokenResult.Token -> token.idToken
+            is GoogleTokenResult.Done -> return token.result
+        }
+
+        return try {
+            auth.signInWith(IDToken) {
+                this.idToken = idToken
+                provider = Google
+                this.nonce = nonce.raw
+            }
+            GoogleSignInResult.Success
+        } catch (e: RestException) {
+            Log.w(TAG, "Supabase rejected the Google ID token: ${e.error}")
+            GoogleSignInResult.Failure(GoogleSignInFailure.Rejected)
+        } catch (e: IOException) {
+            GoogleSignInResult.Failure(GoogleSignInFailure.Network)
+        }
+    }
+
+    private suspend fun requestGoogleIdToken(
+        activityContext: Context,
+        nonce: GoogleNonce,
+    ): GoogleTokenResult {
+        val credentialManager = CredentialManager.create(activityContext)
+        val credential = try {
+            credentialManager.getCredential(activityContext, accountPickerRequest(nonce)).credential
+        } catch (e: NoCredentialException) {
+            // No Google account on the device yet. The Sign in with Google flow can add one,
+            // which the account picker above can't.
+            try {
+                credentialManager.getCredential(activityContext, addAccountRequest(nonce)).credential
+            } catch (e: GetCredentialException) {
+                return GoogleTokenResult.Done(mapCredentialFailure(e, hadNoAccount = true))
+            }
+        } catch (e: GetCredentialException) {
+            return GoogleTokenResult.Done(mapCredentialFailure(e, hadNoAccount = false))
+        }
+
+        return extractIdToken(credential)
+            ?.let { GoogleTokenResult.Token(it) }
+            ?: GoogleTokenResult.Done(GoogleSignInResult.Failure(GoogleSignInFailure.GoogleUnavailable))
+    }
+
+    private fun accountPickerRequest(nonce: GoogleNonce) = GetCredentialRequest.Builder()
+        .addCredentialOption(
+            GetGoogleIdOption.Builder()
+                .setServerClientId(googleWebClientId)
+                .setFilterByAuthorizedAccounts(false)
+                .setNonce(nonce.hashed)
+                .build()
+        )
+        .build()
+
+    private fun addAccountRequest(nonce: GoogleNonce) = GetCredentialRequest.Builder()
+        .addCredentialOption(
+            GetSignInWithGoogleOption.Builder(serverClientId = googleWebClientId)
+                .setNonce(nonce.hashed)
+                .build()
+        )
+        .build()
+
+    private fun extractIdToken(credential: Credential): String? {
+        if (credential !is CustomCredential ||
+            credential.type != GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+        ) {
+            Log.w(TAG, "Unexpected credential type: ${credential.type}")
+            return null
+        }
+        return try {
+            GoogleIdTokenCredential.createFrom(credential.data).idToken
+        } catch (e: GoogleIdTokenParsingException) {
+            Log.w(TAG, "Couldn't parse Google ID token credential", e)
+            null
+        }
+    }
+
+    private fun mapCredentialFailure(e: GetCredentialException, hadNoAccount: Boolean): GoogleSignInResult {
+        if (e is GetCredentialCancellationException) return GoogleSignInResult.Cancelled
+        // Logged because a misregistered Android OAuth client surfaces only as a generic
+        // GetCredentialException, and the type/message is the one clue to what's wrong.
+        Log.w(TAG, "Credential Manager failed (${e.type}): ${e.message}")
+        val reason = if (hadNoAccount || e is NoCredentialException) {
+            GoogleSignInFailure.NoGoogleAccount
+        } else {
+            GoogleSignInFailure.GoogleUnavailable
+        }
+        return GoogleSignInResult.Failure(reason)
+    }
+
+    /**
+     * Always ends signed out locally. If the server can't be reached, the refresh token stays
+     * valid server-side until it expires; that's accepted so sign-out works offline.
+     */
+    suspend fun signOut(context: Context) {
+        try {
+            auth.signOut()
+        } catch (e: IOException) {
+            auth.clearSession()
+        } catch (e: RestException) {
+            auth.clearSession()
+        }
+        try {
+            // Without this, Credential Manager may silently reuse the previous Google account.
+            CredentialManager.create(context).clearCredentialState(ClearCredentialStateRequest())
+        } catch (e: ClearCredentialException) {
+            Log.w(TAG, "Couldn't clear Credential Manager state", e)
+        }
+    }
+
+    /** Returns null when the row doesn't exist, which means the profile trigger didn't run. */
+    suspend fun fetchProfile(userId: String): Profile? =
+        supabase.from("profiles")
+            .select { filter { eq("id", userId) } }
+            .decodeSingleOrNull<Profile>()
+
+    private sealed interface GoogleTokenResult {
+        data class Token(val idToken: String) : GoogleTokenResult
+        data class Done(val result: GoogleSignInResult) : GoogleTokenResult
+    }
+
+    private companion object {
+        const val TAG = "AuthRepository"
+    }
+}
