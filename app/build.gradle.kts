@@ -10,11 +10,11 @@ plugins {
 }
 
 android {
-  namespace = "com.example"
+  namespace = "com.vaibhav.kharchapaani"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "com.aistudio.splitflow.wzvq"
+    applicationId = "com.vaibhav.kharchapaani"
     minSdk = 24
     targetSdk = 36
     versionCode = 1
