@@ -295,12 +295,83 @@ split with.
       non-members.
     - There is no policy that lets a member leave a group.
   - *Tooling*: the repo has no `gradlew`/wrapper JAR (needed for CI in
-    Part C). `debug.keystore` is gitignored and absent, and the Android
-    OAuth client needs its SHA-1.
+    Part C). ~~`debug.keystore` is gitignored and absent~~ generated
+    locally in step 2 (still gitignored; see below).
   - *UI (Part B)*: the widget still reads "⚡ SplitFlow", and classes and
-    resources keep the `SplitFlow*` name.
-- ⏳ **Not yet started**: `supabase-kt` integration, Google Sign-In in
-  the actual app code, the sync loop, groups/invites UI.
+    resources keep the `SplitFlow*` name. The real palette is
+    `CharcoalBg #0E0D0C` and chartreuse `#C6F24C`, not the `#121214` /
+    `#CCFF00` this PRD lists.
+
+#### Migration Plan step 2: supabase-kt + Google Sign-In (branch `feature/supabase-google-sign-in`)
+
+- ✅ **Dependencies**: `supabase-kt` 3.6.0 (auth + postgrest), Ktor
+  OkHttp engine, `androidx.credentials` 1.6.0, `googleid` 1.2.0.
+  - 3.6.0 is the newest supabase-kt this project's Kotlin 2.2.10 can
+    use; 3.7.0+ is built with Kotlin 2.4. Moving to it means bumping
+    Kotlin first, as its own change (Room/Moshi KSP need re-checking).
+  - OkHttp and logging-interceptor moved 4.10 → 5.3.2, because the
+    Ktor engine requires OkHttp 5. Gemini's Retrofit client now runs on
+    OkHttp 5 too; it compiles, but hasn't been exercised at runtime yet.
+- ✅ **Auth flow**: Credential Manager → Google ID token with a
+  SHA-256-hashed nonce → `supabase.auth.signInWith(IDToken)` with the raw
+  nonce. If the device has no Google account, it falls back to
+  `GetSignInWithGoogleOption`. Every failure maps to a specific message;
+  a dismissed picker shows nothing.
+- ✅ **Offline-first session handling**: supabase-kt reports
+  `RefreshFailure` when a token expires with no network, and it's mapped
+  to *still signed in*. Being offline never locks the user out. Sign-out
+  clears the local session even when the logout call can't reach the
+  server.
+- ✅ **Session storage**: a dedicated `supabase_auth` SharedPreferences
+  file, excluded from Auto Backup and from Android 12+ cloud backup and
+  device transfer.
+- ✅ **UI**:
+  - Sign-in gate in `MainActivity`: blank frame while the stored session
+    loads, then `SignInScreen` or the app.
+  - Account button in the Home header, opening an account sheet. The
+    sheet shows whether the `profiles` row loaded, says the ledger is
+    still local-only, and offers sign-out.
+  - Material 3 audit run on all three surfaces. Contrast was measured
+    for every pairing and one real failure fixed (sign-out outline 1.28:1
+    → 3.17:1), plus a double-clickable account button, a tablet max
+    width, and heading semantics.
+- ✅ **Tests**: 19 new unit tests (nonce, `SessionStatus` → `AuthState`
+  mapping, client-ID validation, UI state, `SignInScreen` via
+  Robolectric). All 24 pass and `assembleDebug` passes. The offline
+  mapping test was mutation-checked: breaking the mapping makes it fail.
+- ✅ **Config**:
+  - `.env.example` documents `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`
+    and `GOOGLE_WEB_CLIENT_ID`.
+  - Found: an **empty** value in `.env` breaks `BuildConfig.java`
+    generation. Documented, and the placeholder ID is rejected at
+    runtime.
+  - The local `.env` `SUPABASE_URL` had a stray `/rest/v1/` suffix, now
+    fixed.
+  - A local `debug.keystore` was generated. SHA-1
+    `1C:B2:42:8A:71:4F:9A:F7:6A:24:9D:32:37:D3:6C:EB:C0:14:28:1B` is
+    verified on the built APK.
+- ✅ **Verified end-to-end on a real phone (2026-09-13)**:
+  - Setup: Android OAuth client registered (package + SHA-1 above), and
+    the Web client ID placed in `.env`.
+  - Google sign-in succeeded, and the account sheet showed "Cloud
+    profile ready".
+  - A Gemini expense entry also worked, so the OkHttp 4 → 5 bump holds
+    at runtime.
+  - Checked via the Supabase MCP connection: exactly one `auth.users`
+    row (provider `google`, one `google` identity) and a matching
+    `profiles` row with `display_name` and `avatar_url` populated. The
+    row was created by `on_auth_user_created` in the same transaction.
+- 🔎 **Carried forward**:
+  - *Before step 3*: replace `fallbackToDestructiveMigration()` with
+    real Room migrations.
+  - *Step 3*: the local Room ledger isn't tied to an account yet.
+    Signing out and back in as someone else shows the same local data,
+    so the sync layer must scope or clear it per user.
+  - *Step 5*: exclude the seeded Rahul/Priya/Arjun rows from the upload.
+  - *Part B*: the existing Home IOU button has the same
+    IconButton + `bounceClick` double-clickable issue fixed on the new
+    account button.
+- ⏳ **Not yet started**: the sync loop, groups/invites UI.
 
 ### Web-Verified Notes (re-checked against current Supabase/Google docs)
 
