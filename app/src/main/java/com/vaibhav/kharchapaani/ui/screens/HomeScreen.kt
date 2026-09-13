@@ -50,6 +50,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -73,6 +77,7 @@ import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import com.vaibhav.kharchapaani.ui.theme.displayFontFamily
+import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.numericFontFamily
 import kotlin.math.abs
 
@@ -94,6 +99,8 @@ fun HomeScreen(
     onDeleteTransaction: (Long) -> Unit,
     onOpenIouDialog: () -> Unit,
     onOpenSimplifyDebts: () -> Unit,
+    accountInitial: String,
+    onOpenAccount: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -201,6 +208,27 @@ fun HomeScreen(
                             contentDescription = "Log IOU",
                             tint = WarmAmberPrimary,
                             modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onOpenAccount,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(WarmAmberPrimary.copy(alpha = 0.2f))
+                            .bounceClick(onClick = onOpenAccount)
+                            .semantics { contentDescription = "Account" }
+                            .testTag("home_account_button")
+                    ) {
+                        Text(
+                            text = accountInitial,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                color = WarmAmberLight,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = displayFontFamily
+                            ),
+                            modifier = Modifier.clearAndSetSemantics {}
                         )
                     }
                 }

@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -41,12 +42,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.vaibhav.kharchapaani.data.auth.AuthState
+import com.vaibhav.kharchapaani.ui.auth.AccountSheet
+import com.vaibhav.kharchapaani.ui.auth.AuthUiState
+import com.vaibhav.kharchapaani.ui.auth.AuthViewModel
+import com.vaibhav.kharchapaani.ui.auth.SignInScreen
 import com.vaibhav.kharchapaani.ui.components.AddFriendDialog
 import com.vaibhav.kharchapaani.ui.components.ConfirmBottomSheet
 import com.vaibhav.kharchapaani.ui.components.CreateGroupDialog
@@ -72,6 +82,7 @@ import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
+    private val authViewModel: AuthViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,7 +92,31 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             SplitFlowTheme {
-                SplitFlowApp(viewModel = viewModel)
+                val authUiState by authViewModel.uiState.collectAsStateWithLifecycle()
+                val gate = when (authUiState.authState) {
+                    AuthState.Initializing -> AuthGate.Loading
+                    AuthState.SignedOut -> AuthGate.SignIn
+                    is AuthState.SignedIn -> AuthGate.App
+                }
+                Crossfade(targetState = gate, label = "AuthGate") { target ->
+                    when (target) {
+                        // Stored sessions load in milliseconds; a blank frame avoids flashing
+                        // the sign-in screen at someone who is already signed in.
+                        AuthGate.Loading -> Box(Modifier.fillMaxSize().background(CharcoalBg))
+                        AuthGate.SignIn -> SignInScreen(
+                            isSigningIn = authUiState.isSigningIn,
+                            failure = authUiState.signInFailure,
+                            onSignInWithGoogle = { authViewModel.signInWithGoogle(this@MainActivity) },
+                            onDismissFailure = authViewModel::dismissSignInFailure,
+                        )
+                        AuthGate.App -> SplitFlowApp(
+                            viewModel = viewModel,
+                            authUiState = authUiState,
+                            onRetryProfile = authViewModel::retryProfileLoad,
+                            onSignOut = { authViewModel.signOut(this@MainActivity) },
+                        )
+                    }
+                }
             }
         }
     }
@@ -137,8 +172,16 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+private enum class AuthGate { Loading, SignIn, App }
+
 @Composable
-fun SplitFlowApp(viewModel: MainViewModel) {
+fun SplitFlowApp(
+    viewModel: MainViewModel,
+    authUiState: AuthUiState,
+    onRetryProfile: () -> Unit,
+    onSignOut: () -> Unit,
+) {
+    var isAccountSheetOpen by rememberSaveable { mutableStateOf(false) }
     val currentTab by viewModel.currentTab.collectAsState()
     val rawTransactions by viewModel.rawTransactions.collectAsState()
     val filteredTransactions by viewModel.filteredTransactions.collectAsState()
@@ -347,7 +390,9 @@ fun SplitFlowApp(viewModel: MainViewModel) {
                         onEditTransaction = { viewModel.openEditTransaction(it) },
                         onDeleteTransaction = { viewModel.deleteTransaction(it) },
                         onOpenIouDialog = { viewModel.openIouDialog() },
-                        onOpenSimplifyDebts = { viewModel.openSimplifyDebts() }
+                        onOpenSimplifyDebts = { viewModel.openSimplifyDebts() },
+                        accountInitial = authUiState.accountInitial,
+                        onOpenAccount = { isAccountSheetOpen = true }
                     )
 
                     1 -> SplitsScreen(
@@ -377,6 +422,18 @@ fun SplitFlowApp(viewModel: MainViewModel) {
                 }
             }
         }
+    }
+
+    if (isAccountSheetOpen) {
+        AccountSheet(
+            state = authUiState,
+            onRetryProfile = onRetryProfile,
+            onSignOut = {
+                isAccountSheetOpen = false
+                onSignOut()
+            },
+            onDismiss = { isAccountSheetOpen = false }
+        )
     }
 
     // Confirm & Edit Bottom Sheet
