@@ -18,10 +18,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
@@ -31,17 +33,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -75,20 +78,25 @@ fun SignInScreen(
         modifier = modifier
             .fillMaxSize()
             .background(CharcoalBg)
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(WarmAmberPrimary.copy(alpha = 0.16f), Color.Transparent),
-                    center = Offset(x = 0f, y = 0f),
-                    radius = 1400f,
+            .drawBehind {
+                // Radius scales with the window so the glow reads the same on any density/size.
+                drawRect(
+                    Brush.radialGradient(
+                        colors = listOf(WarmAmberPrimary.copy(alpha = 0.16f), Color.Transparent),
+                        center = Offset.Zero,
+                        radius = size.maxDimension,
+                    )
                 )
-            )
+            }
             .statusBarsPadding()
             .navigationBarsPadding(),
+        contentAlignment = Alignment.TopCenter,
     ) {
         // Pins the intro to the top and the CTA to the bottom (thumb reach), but scrolls instead
         // of overlapping when a short screen or large font scale can't fit both.
         Column(
             modifier = Modifier
+                .widthIn(max = 480.dp)
                 .verticalScroll(rememberScrollState())
                 .heightIn(min = maxHeight)
                 .padding(horizontal = 24.dp),
@@ -127,6 +135,7 @@ private fun SignInIntro(modifier: Modifier = Modifier) {
         Text(
             text = "Kharcha Paani",
             style = MaterialTheme.typography.displayLarge,
+            modifier = Modifier.semantics { heading() },
         )
         Spacer(Modifier.height(12.dp))
         Text(

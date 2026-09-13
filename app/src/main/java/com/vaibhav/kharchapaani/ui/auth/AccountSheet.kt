@@ -41,13 +41,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.auth.AuthState
 import com.vaibhav.kharchapaani.data.auth.Profile
-import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalSurface
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
+import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberContainer
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
@@ -141,7 +141,8 @@ private fun AccountSheetContent(
         OutlinedButton(
             onClick = onSignOut,
             shape = RoundedCornerShape(14.dp),
-            border = BorderStroke(1.dp, CharcoalBorder),
+            // SubMutedWarmGray, not CharcoalBorder: the boundary needs 3:1 against the sheet (3.17 vs 1.28).
+            border = BorderStroke(1.dp, SubMutedWarmGray),
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 52.dp)

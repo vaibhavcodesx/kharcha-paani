@@ -52,7 +52,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.testTag
@@ -211,14 +213,19 @@ fun HomeScreen(
                         )
                     }
 
-                    IconButton(
-                        onClick = onOpenAccount,
+                    // One clickable (bounceClick) rather than IconButton + bounceClick, so TalkBack
+                    // sees a single "Account" button. Compose expands the touch target to 48dp.
+                    Box(
+                        contentAlignment = Alignment.Center,
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
                             .background(WarmAmberPrimary.copy(alpha = 0.2f))
                             .bounceClick(onClick = onOpenAccount)
-                            .semantics { contentDescription = "Account" }
+                            .semantics {
+                                contentDescription = "Account"
+                                role = Role.Button
+                            }
                             .testTag("home_account_button")
                     ) {
                         Text(
