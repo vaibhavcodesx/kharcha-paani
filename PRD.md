@@ -524,8 +524,56 @@ Design approved on 2026-09-14:
   `remoteId`. Sync writes keep the explicit "find by remoteId, then
   conditional update" pattern.
 
-- ⏳ **Not yet started**: groups, invites and multi-user splits (step 4:
-  RLS changes need review), and Realtime.
+#### Migration Plan step 4: groups, invites, multi-user splits
+
+Design approved on 2026-09-14:
+1. Sharing happens only inside groups; a 1:1 split means a two-person
+   group.
+2. Only the person who added a group expense can edit or delete it.
+3. Either party can record a settlement.
+4. Groups are archived rather than deleted; members can leave.
+5. Invites are 8-character codes that expire after 7 days, shared as
+   `kharchapaani://join/CODE`.
+6. Equal splits round to 2 decimals, with the leftover paisa going to the
+   payer.
+7. Existing local groups and friends stay local-only.
+
+A fourth RLS gap turned up while re-reading the live policies:
+transactions could be attached to any group.
+
+- 🛑 **PR 1: RLS policies and database functions**
+  (`supabase/migrations/20260914100000_groups_invites_rls.sql`,
+  provisional version). **Written and tested locally; NOT applied to the
+  live project**, waiting on the user's review (hard stop: it replaces
+  RLS policies).
+  - Fixes all four gaps: joining only via invite code, profiles visible
+    only to groupmates, shares visible to group members, group writes
+    require membership.
+  - Also: members can leave, groups are archived instead of deleted,
+    settlements are group-scoped, and splits, shares and settlements may
+    only reference members.
+  - New `group_invites` table, plus `create_group`, `create_group_invite`,
+    `revoke_group_invite`, `preview_invite`, `join_group` and the atomic
+    `save_group_expense` (runs as the caller, so RLS still applies).
+  - **`supabase/tests/rls_groups_test.sql`**: 77 checks with alice, bob,
+    carol and mallory. It runs as a single transaction that ends in
+    `ROLLBACK`.
+    - Run locally on PGlite (PostgreSQL 18.3; live is 17.6), with a
+      Supabase-style bootstrap that mirrors the live roles, `auth.uid()`
+      and default privileges: **77/77 pass**, and it rolled back
+      cleanly.
+    - Every expected refusal was checked to fail for the intended reason.
+    - Mutation-checked: restoring each old vulnerable policy makes that
+      gap's checks fail (gap 1: 15, gap 2: 3, gap 3: 1, gap 4: 2). A
+      re-granted anon EXECUTE is caught by a direct privilege check.
+    - Includes the exact writes step 3's personal sync sends (upsert,
+      soft delete, pull), so the 3 live personal transactions keep syncing.
+  - After approval: apply, rename the file to the assigned version, run the
+    same script on the live project (rolled back), and check the security
+    advisors.
+- ⏳ **Then (fast-track)**: PR 2 additive sync columns and the Realtime
+  publication, PR 3 Room v4 and the group sync engine, PR 4 group, invite
+  and join UI, PR 5 the Realtime doorbell.
 
 ### Web-Verified Notes (re-checked against current Supabase/Google docs)
 
