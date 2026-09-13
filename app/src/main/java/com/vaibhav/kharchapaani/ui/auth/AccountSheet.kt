@@ -1,5 +1,6 @@
 package com.vaibhav.kharchapaani.ui.auth
 
+import android.text.format.DateUtils
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +18,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.CloudDone
 import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.material.icons.outlined.CloudQueue
+import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,12 +39,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.auth.AuthState
 import com.vaibhav.kharchapaani.data.auth.Profile
+import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalSurface
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
@@ -57,6 +63,8 @@ import com.vaibhav.kharchapaani.ui.theme.displayFontFamily
 @Composable
 fun AccountSheet(
     state: AuthUiState,
+    syncStatus: SyncStatus,
+    onRetryFailedSync: () -> Unit,
     onRetryProfile: () -> Unit,
     onSignOut: () -> Unit,
     onDismiss: () -> Unit,
@@ -68,6 +76,8 @@ fun AccountSheet(
     ) {
         AccountSheetContent(
             state = state,
+            syncStatus = syncStatus,
+            onRetryFailedSync = onRetryFailedSync,
             onRetryProfile = onRetryProfile,
             onSignOut = onSignOut,
         )
@@ -77,6 +87,8 @@ fun AccountSheet(
 @Composable
 private fun AccountSheetContent(
     state: AuthUiState,
+    syncStatus: SyncStatus,
+    onRetryFailedSync: () -> Unit,
     onRetryProfile: () -> Unit,
     onSignOut: () -> Unit,
 ) {
@@ -128,11 +140,15 @@ private fun AccountSheetContent(
             onRetry = onRetryProfile,
         )
 
+        Spacer(Modifier.height(8.dp))
+
+        SyncStatusRow(status = syncStatus, onRetryFailed = onRetryFailedSync)
+
         Spacer(Modifier.height(12.dp))
 
         Text(
-            text = "Your ledger still lives on this phone for now. Syncing it to your account is next. " +
-                "Signing out keeps everything already here.",
+            text = "Personal expenses sync to your account. Splits and group expenses stay on this phone " +
+                "until shared groups arrive. Signing out keeps everything already here.",
             style = MaterialTheme.typography.bodyMedium,
         )
 
@@ -212,6 +228,72 @@ private fun CloudStatusRow(
 }
 
 @Composable
+private fun SyncStatusRow(
+    status: SyncStatus,
+    onRetryFailed: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(CharcoalCard)
+            .padding(start = 14.dp, end = 4.dp)
+            .heightIn(min = 52.dp)
+            .semantics(mergeDescendants = true) {}
+            .testTag("account_sync_status"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        when {
+            status.failedChanges > 0 -> StatusIcon(Icons.Outlined.ErrorOutline, WarmAmberLight)
+            status.isSyncing -> CircularProgressIndicator(
+                color = WarmAmberPrimary,
+                strokeWidth = 2.dp,
+                modifier = Modifier.size(18.dp),
+            )
+            status.unsyncedChanges > 0 -> StatusIcon(Icons.Outlined.CloudUpload, MutedWarmGray)
+            status.lastSyncedAt != null -> StatusIcon(Icons.Outlined.CloudDone, ChartreuseSecondary)
+            else -> StatusIcon(Icons.Outlined.CloudQueue, MutedWarmGray)
+        }
+        Text(
+            text = syncStatusText(status, now = System.currentTimeMillis()) { lastSyncedAt ->
+                DateUtils.getRelativeTimeSpanString(
+                    lastSyncedAt, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS,
+                ).toString()
+            },
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier
+                .weight(1f)
+                .padding(vertical = 12.dp),
+        )
+        if (status.failedChanges > 0) {
+            TextButton(onClick = onRetryFailed) {
+                Text(
+                    text = "Retry",
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        color = WarmAmberPrimary,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                )
+            }
+        }
+    }
+}
+
+internal fun syncStatusText(status: SyncStatus, now: Long, relativeTime: (Long) -> String): String = when {
+    status.failedChanges == 1 -> "1 change couldn't sync"
+    status.failedChanges > 1 -> "${status.failedChanges} changes couldn't sync"
+    status.isSyncing -> "Syncing…"
+    status.unsyncedChanges == 1 -> "1 change waiting to sync"
+    status.unsyncedChanges > 1 -> "${status.unsyncedChanges} changes waiting to sync"
+    status.lastSyncedAt != null && now - status.lastSyncedAt < JUST_NOW_MILLIS -> "All changes synced"
+    status.lastSyncedAt != null -> "All changes synced · ${relativeTime(status.lastSyncedAt)}"
+    else -> "Not synced yet"
+}
+
+private const val JUST_NOW_MILLIS = 60_000L
+
+@Composable
 private fun StatusIcon(imageVector: ImageVector, tint: Color) {
     Icon(
         imageVector = imageVector,
@@ -227,6 +309,8 @@ private fun AccountSheetContentPreview() {
     SplitFlowTheme {
         Box(Modifier.background(CharcoalSurface)) {
             AccountSheetContent(
+                syncStatus = SyncStatus(lastSyncedAt = System.currentTimeMillis()),
+                onRetryFailedSync = {},
                 state = AuthUiState(
                     authState = AuthState.SignedIn(userId = "u1", email = "vaibhav@example.com", isRefreshPending = false),
                     profile = ProfileState.Loaded(Profile(id = "u1", displayName = "Vaibhav")),

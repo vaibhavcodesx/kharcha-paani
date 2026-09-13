@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ApplicationProvider
+import androidx.work.testing.WorkManagerTestInitHelper
 import com.vaibhav.kharchapaani.data.db.LedgerDatabases
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -43,6 +44,8 @@ class AccountSessionHolderTest {
 
     @Before
     fun setUp() {
+        // Starting a session schedules periodic sync.
+        WorkManagerTestInitHelper.initializeTestWorkManager(application)
         Dispatchers.setMain(main)
         holder = AccountSessionHolder(application)
     }
