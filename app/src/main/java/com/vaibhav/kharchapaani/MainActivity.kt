@@ -52,6 +52,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.key
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.vaibhav.kharchapaani.ui.session.AccountSession
+import com.vaibhav.kharchapaani.ui.session.AccountSessionHolder
+import com.vaibhav.kharchapaani.ui.session.AccountSessionState
+import com.vaibhav.kharchapaani.ui.session.LedgerOpenFailedScreen
 import com.vaibhav.kharchapaani.data.auth.AuthState
 import com.vaibhav.kharchapaani.ui.auth.AccountSheet
 import com.vaibhav.kharchapaani.ui.auth.AuthUiState
@@ -81,27 +89,47 @@ import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 
 class MainActivity : ComponentActivity() {
 
-    private val viewModel: MainViewModel by viewModels()
     private val authViewModel: AuthViewModel by viewModels()
+    private val sessionHolder: AccountSessionHolder by viewModels()
+
+    // Share/widget intents wait here until the signed-in account's ledger is open.
+    private var queuedIntent by mutableStateOf<Intent?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        handleIntent(intent)
+        // On recreation (e.g. rotation) the launch intent was already handled; re-handling it
+        // would parse the same shared screenshot twice.
+        if (savedInstanceState == null) queuedIntent = intent
 
         setContent {
             SplitFlowTheme {
                 val authUiState by authViewModel.uiState.collectAsStateWithLifecycle()
-                val gate = when (authUiState.authState) {
+                val sessionState by sessionHolder.state.collectAsStateWithLifecycle()
+
+                val authState = authUiState.authState
+                LaunchedEffect(authState) {
+                    when (authState) {
+                        AuthState.SignedOut -> sessionHolder.onAccountChanged(null)
+                        is AuthState.SignedIn -> authState.userId?.let(sessionHolder::onAccountChanged)
+                        AuthState.Initializing -> Unit
+                    }
+                }
+
+                val gate = when (authState) {
                     AuthState.Initializing -> AuthGate.Loading
                     AuthState.SignedOut -> AuthGate.SignIn
-                    is AuthState.SignedIn -> AuthGate.App
+                    is AuthState.SignedIn -> when (sessionState) {
+                        is AccountSessionState.Ready -> AuthGate.App
+                        is AccountSessionState.Failed -> AuthGate.LedgerFailed
+                        AccountSessionState.None, AccountSessionState.Opening -> AuthGate.Loading
+                    }
                 }
                 Crossfade(targetState = gate, label = "AuthGate") { target ->
                     when (target) {
-                        // Stored sessions load in milliseconds; a blank frame avoids flashing
-                        // the sign-in screen at someone who is already signed in.
+                        // Stored sessions and ledger files open in milliseconds; a blank frame
+                        // avoids flashing the sign-in screen at someone already signed in.
                         AuthGate.Loading -> Box(Modifier.fillMaxSize().background(CharcoalBg))
                         AuthGate.SignIn -> SignInScreen(
                             isSigningIn = authUiState.isSigningIn,
@@ -109,12 +137,21 @@ class MainActivity : ComponentActivity() {
                             onSignInWithGoogle = { authViewModel.signInWithGoogle(this@MainActivity) },
                             onDismissFailure = authViewModel::dismissSignInFailure,
                         )
-                        AuthGate.App -> SplitFlowApp(
-                            viewModel = viewModel,
-                            authUiState = authUiState,
-                            onRetryProfile = authViewModel::retryProfileLoad,
+                        AuthGate.LedgerFailed -> LedgerOpenFailedScreen(
+                            onRetry = sessionHolder::retryOpening,
                             onSignOut = { authViewModel.signOut(this@MainActivity) },
                         )
+                        AuthGate.App -> {
+                            val session = (sessionState as? AccountSessionState.Ready)?.session
+                            if (session != null) {
+                                AccountScopedApp(
+                                    session = session,
+                                    authUiState = authUiState,
+                                    queuedIntent = queuedIntent,
+                                    onIntentHandled = { queuedIntent = null },
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -123,12 +160,39 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        handleIntent(intent)
+        queuedIntent = intent
     }
 
-    private fun handleIntent(intent: Intent?) {
-        if (intent == null) return
+    @Composable
+    private fun AccountScopedApp(
+        session: AccountSession,
+        authUiState: AuthUiState,
+        queuedIntent: Intent?,
+        onIntentHandled: () -> Unit,
+    ) {
+        // key(): saveable UI state (open sheets, tabs) must not carry over to another account.
+        key(session.userId) {
+            CompositionLocalProvider(LocalViewModelStoreOwner provides session) {
+                val viewModel: MainViewModel = viewModel(
+                    factory = MainViewModel.factory(application, session.database),
+                )
+                LaunchedEffect(viewModel, queuedIntent) {
+                    if (queuedIntent != null) {
+                        routeIntent(queuedIntent, viewModel)
+                        onIntentHandled()
+                    }
+                }
+                SplitFlowApp(
+                    viewModel = viewModel,
+                    authUiState = authUiState,
+                    onRetryProfile = authViewModel::retryProfileLoad,
+                    onSignOut = { authViewModel.signOut(this@MainActivity) },
+                )
+            }
+        }
+    }
 
+    private fun routeIntent(intent: Intent, viewModel: MainViewModel) {
         // 1. Shared Image (e.g. screenshot shared from GPay, Paytm, Gallery)
         if (Intent.ACTION_SEND == intent.action && intent.type?.startsWith("image/") == true) {
             val imageUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -172,7 +236,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class AuthGate { Loading, SignIn, App }
+private enum class AuthGate { Loading, SignIn, LedgerFailed, App }
 
 @Composable
 fun SplitFlowApp(

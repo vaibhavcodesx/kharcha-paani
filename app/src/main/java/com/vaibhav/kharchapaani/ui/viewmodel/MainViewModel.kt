@@ -9,7 +9,10 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
@@ -42,9 +45,12 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.roundToInt
 
-class MainViewModel(application: Application) : AndroidViewModel(application) {
+/**
+ * Scoped to one signed-in account: [db] is that account's ledger file. A different account gets a
+ * new instance (see AccountSessionHolder), so no state or Flow from one account outlives a switch.
+ */
+class MainViewModel(application: Application, db: AppDatabase) : AndroidViewModel(application) {
 
-    private val db = AppDatabase.getInstance(application)
     private val ledgerRepo = LedgerRepository(db)
     private val geminiRepo = GeminiRepository()
 
@@ -853,5 +859,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun getPersonLedgerFlow(personId: Long): kotlinx.coroutines.flow.Flow<List<PersonLedgerItem>> {
         return ledgerRepo.getLedgerForPerson(personId)
+    }
+
+    companion object {
+        fun factory(application: Application, db: AppDatabase): ViewModelProvider.Factory =
+            viewModelFactory { initializer { MainViewModel(application, db) } }
     }
 }

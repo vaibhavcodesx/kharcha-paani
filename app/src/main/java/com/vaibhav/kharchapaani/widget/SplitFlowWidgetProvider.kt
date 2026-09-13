@@ -9,7 +9,9 @@ import android.content.Intent
 import android.widget.RemoteViews
 import com.vaibhav.kharchapaani.MainActivity
 import com.vaibhav.kharchapaani.R
-import com.vaibhav.kharchapaani.data.db.AppDatabase
+import com.vaibhav.kharchapaani.data.db.LedgerDatabases
+import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
+import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -39,7 +41,21 @@ class SplitFlowWidgetProvider : AppWidgetProvider() {
     ) {
         scope.launch {
             try {
-                val db = AppDatabase.getInstance(context)
+                val auth = SupabaseClientProvider.get(context).auth
+                auth.awaitInitialization()
+                val userId = auth.currentUserOrNull()?.id
+                if (userId == null) {
+                    // Signed out: never show a previous account's numbers on the home screen.
+                    val views = RemoteViews(context.packageName, R.layout.widget_splitflow).apply {
+                        setTextViewText(R.id.widget_month_spent, "—")
+                        setTextViewText(R.id.widget_month_income, "—")
+                        setTextViewText(R.id.widget_net_owed_badge, "Sign in")
+                        bindClickIntents(context)
+                    }
+                    appWidgetManager.updateAppWidget(appWidgetId, views)
+                    return@launch
+                }
+                val db = LedgerDatabases.open(context, userId)
                 val cal = Calendar.getInstance().apply {
                     set(Calendar.DAY_OF_MONTH, 1)
                     set(Calendar.HOUR_OF_DAY, 0)
@@ -140,48 +156,7 @@ class SplitFlowWidgetProvider : AppWidgetProvider() {
                     setTextViewText(R.id.widget_month_income, incomeStr)
                     setTextViewText(R.id.widget_net_owed_badge, netBadgeStr)
 
-                    // PendingIntent: Main Root Click
-                    val rootIntent = Intent(context, MainActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    }
-                    val rootPendingIntent = PendingIntent.getActivity(
-                        context, 0, rootIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                    setOnClickPendingIntent(R.id.widget_root, rootPendingIntent)
-
-                    // PendingIntent: Quick Add
-                    val addIntent = Intent(context, MainActivity::class.java).apply {
-                        action = ACTION_QUICK_ADD
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    }
-                    val addPendingIntent = PendingIntent.getActivity(
-                        context, 1, addIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                    setOnClickPendingIntent(R.id.widget_btn_add, addPendingIntent)
-
-                    // PendingIntent: Voice Log
-                    val voiceIntent = Intent(context, MainActivity::class.java).apply {
-                        action = ACTION_VOICE_LOG
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    }
-                    val voicePendingIntent = PendingIntent.getActivity(
-                        context, 2, voiceIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                    setOnClickPendingIntent(R.id.widget_btn_voice, voicePendingIntent)
-
-                    // PendingIntent: Splits Tab
-                    val splitsIntent = Intent(context, MainActivity::class.java).apply {
-                        action = ACTION_VIEW_SPLITS
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    }
-                    val splitsPendingIntent = PendingIntent.getActivity(
-                        context, 3, splitsIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                    setOnClickPendingIntent(R.id.widget_btn_splits, splitsPendingIntent)
+                    bindClickIntents(context)
                 }
 
                 appWidgetManager.updateAppWidget(appWidgetId, views)
@@ -189,6 +164,52 @@ class SplitFlowWidgetProvider : AppWidgetProvider() {
                 e.printStackTrace()
             }
         }
+    }
+
+    private fun RemoteViews.bindClickIntents(context: Context) {
+        // PendingIntent: Main Root Click
+        val rootIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val rootPendingIntent = PendingIntent.getActivity(
+            context, 0, rootIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        setOnClickPendingIntent(R.id.widget_root, rootPendingIntent)
+
+        // PendingIntent: Quick Add
+        val addIntent = Intent(context, MainActivity::class.java).apply {
+            action = ACTION_QUICK_ADD
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val addPendingIntent = PendingIntent.getActivity(
+            context, 1, addIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        setOnClickPendingIntent(R.id.widget_btn_add, addPendingIntent)
+
+        // PendingIntent: Voice Log
+        val voiceIntent = Intent(context, MainActivity::class.java).apply {
+            action = ACTION_VOICE_LOG
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val voicePendingIntent = PendingIntent.getActivity(
+            context, 2, voiceIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        setOnClickPendingIntent(R.id.widget_btn_voice, voicePendingIntent)
+
+        // PendingIntent: Splits Tab
+        val splitsIntent = Intent(context, MainActivity::class.java).apply {
+            action = ACTION_VIEW_SPLITS
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val splitsPendingIntent = PendingIntent.getActivity(
+            context, 3, splitsIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        setOnClickPendingIntent(R.id.widget_btn_splits, splitsPendingIntent)
+    
     }
 
     companion object {
