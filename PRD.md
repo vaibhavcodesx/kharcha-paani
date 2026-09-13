@@ -267,15 +267,23 @@ split with.
   `can_access_transaction`, and `owns_transaction`. All three already use
   `(select auth.uid())`, and all have `search_path = ''`. EXECUTE is granted
   to `authenticated` only. No change needed.
-- ⚠️ **Build not yet verified after the rename**: drive C: (Gradle cache
-  and temp) is at 0 GB free, and the pre-rename baseline build failed with
-  "not enough space on the disk". A compile and unit-test run is still owed
-  before this branch's PR.
+- ✅ **Build verified after the rename**: `:app:compileDebugKotlin` and
+  `:app:testDebugUnitTest` pass (5 tests, 0 failures, 0 skipped, all under
+  `com.vaibhav.kharchapaani`). The only compiler warnings are pre-existing
+  deprecations: `Icons.Filled.*` → `AutoMirrored` variants, and
+  `fallbackToDestructiveMigration()`. The first attempt had failed only
+  because drive C: was full.
 - 🔎 **Found while doing the above; not fixed, belongs to later steps**:
   - *Step 3 (sync)*: no table has `updated_at` or a soft-delete column,
     so last-write-wins and delete propagation have nothing to compare
     against. Room stores money as `Double`, while Postgres uses
     `numeric(12,2)`, so shares like 100/3 will round on every round-trip.
+    `AppDatabase` uses `fallbackToDestructiveMigration()` with
+    `exportSchema = false`, so the first Room schema change for sync
+    (e.g. adding `pending_sync`) **wipes all local data** unless real Room
+    migrations replace it. Its `onCreate` callback also seeds sample
+    people (Rahul/Priya/Arjun), which step 5's upload must not push to the
+    cloud as real data.
   - *Step 4 (groups/RLS)*:
     - `group_members_insert_self` lets any signed-in user join any group
       whose UUID they know. There is no invite-code check yet.
