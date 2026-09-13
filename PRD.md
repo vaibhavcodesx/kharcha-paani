@@ -350,15 +350,17 @@ split with.
   - A local `debug.keystore` was generated. SHA-1
     `1C:B2:42:8A:71:4F:9A:F7:6A:24:9D:32:37:D3:6C:EB:C0:14:28:1B` is
     verified on the built APK.
-- ⏳ **Blocked on manual setup, then on-device verification** (no
-  emulator or device is available to Claude Code):
-  1. Register an Android OAuth client in Google Cloud Console (package
-     `com.vaibhav.kharchapaani`, the SHA-1 above).
-  2. Put the Web client ID in `.env` as `GOOGLE_WEB_CLIENT_ID`, and
-     confirm it's listed under the Supabase Google provider's Client IDs.
-  3. Sign in on a phone and confirm the account sheet shows "Cloud
-     profile ready". Claude then verifies the `auth.users` and `profiles`
-     rows via the Supabase MCP connection before opening the PR.
+- ✅ **Verified end-to-end on a real phone (2026-09-13)**:
+  - Setup: Android OAuth client registered (package + SHA-1 above), and
+    the Web client ID placed in `.env`.
+  - Google sign-in succeeded, and the account sheet showed "Cloud
+    profile ready".
+  - A Gemini expense entry also worked, so the OkHttp 4 → 5 bump holds
+    at runtime.
+  - Checked via the Supabase MCP connection: exactly one `auth.users`
+    row (provider `google`, one `google` identity) and a matching
+    `profiles` row with `display_name` and `avatar_url` populated. The
+    row was created by `on_auth_user_created` in the same transaction.
 - 🔎 **Carried forward**:
   - *Before step 3*: replace `fallbackToDestructiveMigration()` with
     real Room migrations.
