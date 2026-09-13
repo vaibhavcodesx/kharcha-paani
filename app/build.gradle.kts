@@ -5,6 +5,7 @@ plugins {
   alias(libs.plugins.kotlin.compose)
   alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.google.devtools.ksp)
+  alias(libs.plugins.androidx.room)
   alias(libs.plugins.roborazzi)
   alias(libs.plugins.secrets)
   alias(libs.plugins.google.services)
@@ -58,11 +59,19 @@ android {
     buildConfig = true
   }
   testOptions { unitTests { isIncludeAndroidResources = true } }
+  // MigrationTestHelper builds old schema versions from these JSON files. Robolectric only sees
+  // the app's merged debug assets (not the test source set's), so they go in debug; release
+  // APKs don't carry them.
+  sourceSets { getByName("debug") { assets.directories.add("$projectDir/schemas") } }
   dependenciesInfo {
     includeInApk = false
     includeInBundle = true
   }
 }
+
+// Committed JSON snapshot per Room version: the reference every migration is written and tested
+// against. A version bump without a matching snapshot and Migration is a review red flag.
+room { schemaDirectory("$projectDir/schemas") }
 
 // Configure the Secrets Gradle Plugin to use .env and .env.example files
 // to match the convention used in Web projects.
@@ -128,6 +137,7 @@ dependencies {
   testImplementation(libs.androidx.junit)
   testImplementation(libs.junit)
   testImplementation(libs.kotlinx.coroutines.test)
+  testImplementation(libs.androidx.room.testing)
   testImplementation(libs.robolectric)
   testImplementation(libs.roborazzi)
   testImplementation(libs.roborazzi.compose)

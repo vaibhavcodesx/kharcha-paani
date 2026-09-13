@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.vaibhav.kharchapaani.data.db.dao.GroupDao
 import com.vaibhav.kharchapaani.data.db.dao.PersonDao
@@ -32,7 +33,7 @@ import kotlinx.coroutines.launch
         GroupMemberEntity::class
     ],
     version = 2,
-    exportSchema = false
+    exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun personDao(): PersonDao
@@ -42,17 +43,25 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun groupDao(): GroupDao
 
     companion object {
+        const val DATABASE_NAME = "splitflow.db"
+
+        /**
+         * Every schema change adds its [Migration] here, with a snapshot in
+         * app/schemas and a MigrationTestHelper test. There is deliberately no destructive
+         * fallback: a missing migration crashes on open instead of silently wiping the ledger.
+         */
+        internal val ALL_MIGRATIONS = emptyArray<Migration>()
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        internal fun builder(context: Context, name: String): Builder<AppDatabase> =
+            Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, name)
+                .addMigrations(*ALL_MIGRATIONS)
+
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    "splitflow.db"
-                )
-                .fallbackToDestructiveMigration()
+                val instance = builder(context, DATABASE_NAME)
                 .addCallback(object : Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
