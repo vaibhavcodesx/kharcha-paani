@@ -245,11 +245,52 @@ split with.
   performance best practice, and a real security-advisor finding fixed
   (the `profiles`-creation trigger function was callable directly via
   REST RPC — access revoked).
-- ⏳ **Not yet done**: adding back `split_type`, `percentage`, `is_iou`,
-  `group_id` per the correction above (follow-up migration needed before
-  building the sync layer against this schema), saving the applied SQL
-  as a versioned file under `supabase/migrations/`, and the package
-  rename above.
+- ✅ **Package rename** (branch `foundation/finish-schema-and-package`):
+  `namespace` `com.example` → `com.vaibhav.kharchapaani`. The
+  `applicationId` was actually the AI Studio-generated
+  `com.aistudio.splitflow.wzvq`, not `com.example`; it is now
+  `com.vaibhav.kharchapaani` too. This installs as a **separate app** from
+  any existing AI Studio build on a phone, so that build's local Room data
+  is not visible to the renamed app. Keep the old install (or a CSV export)
+  until Migration Plan step 5.
+- ✅ **Migrations versioned in git**: both already-applied migrations are
+  saved under `supabase/migrations/`, byte-verified against
+  `supabase_migrations.schema_migrations` by md5.
+- ✅ **Follow-up migration applied** (`20260913154813`):
+  `splits.split_type` (text, `equal`/`exact`/`percentage`, default
+  `equal`), `split_shares.percentage` (nullable unscaled numeric, 0–100),
+  `settlements.is_iou` (boolean, default false), and `settlements.group_id`
+  (nullable FK → `groups`, `on delete set null`, indexed). Settlements RLS
+  is intentionally unchanged. Security advisor: clean.
+- ✅ **`SECURITY DEFINER` helper bodies checked**: read the live
+  `pg_get_functiondef` output for `private.is_group_member`,
+  `can_access_transaction`, and `owns_transaction`. All three already use
+  `(select auth.uid())`, and all have `search_path = ''`. EXECUTE is granted
+  to `authenticated` only. No change needed.
+- ⚠️ **Build not yet verified after the rename**: drive C: (Gradle cache
+  and temp) is at 0 GB free, and the pre-rename baseline build failed with
+  "not enough space on the disk". A compile and unit-test run is still owed
+  before this branch's PR.
+- 🔎 **Found while doing the above; not fixed, belongs to later steps**:
+  - *Step 3 (sync)*: no table has `updated_at` or a soft-delete column,
+    so last-write-wins and delete propagation have nothing to compare
+    against. Room stores money as `Double`, while Postgres uses
+    `numeric(12,2)`, so shares like 100/3 will round on every round-trip.
+  - *Step 4 (groups/RLS)*:
+    - `group_members_insert_self` lets any signed-in user join any group
+      whose UUID they know. There is no invite-code check yet.
+    - `profiles` is readable by every signed-in user.
+    - `split_shares` is readable only by the share-holder and the payer.
+      Other members of a 3+ person group can't see all shares, so debt
+      simplification across the group can't run for them.
+    - Split and settlement rows can reference any profile, including
+      non-members.
+    - There is no policy that lets a member leave a group.
+  - *Tooling*: the repo has no `gradlew`/wrapper JAR (needed for CI in
+    Part C). `debug.keystore` is gitignored and absent, and the Android
+    OAuth client needs its SHA-1.
+  - *UI (Part B)*: the widget still reads "⚡ SplitFlow", and classes and
+    resources keep the `SplitFlow*` name.
 - ⏳ **Not yet started**: `supabase-kt` integration, Google Sign-In in
   the actual app code, the sync loop, groups/invites UI.
 
