@@ -1,9 +1,11 @@
 package com.vaibhav.kharchapaani.data.db.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import java.util.UUID
 
 @Entity(tableName = "people")
 data class PersonEntity(
@@ -46,7 +48,12 @@ data class GroupMemberEntity(
 
 @Entity(
     tableName = "transactions",
-    indices = [Index(value = ["date"]), Index(value = ["groupId"])]
+    indices = [
+        Index(value = ["date"]),
+        Index(value = ["groupId"]),
+        Index(value = ["remoteId"], unique = true),
+        Index(value = ["syncState"]),
+    ]
 )
 data class TransactionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -59,7 +66,39 @@ data class TransactionEntity(
     val note: String = "",
     val isSplit: Boolean = false,
     val groupId: Long? = null, // Optional link to GroupEntity
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    /** Generated on-device; doubles as the Supabase row id, so retried pushes are idempotent. */
+    @ColumnInfo(defaultValue = "") val remoteId: String = UUID.randomUUID().toString(),
+    /** Local write time. Pushes only mark a row synced if this hasn't changed since it was read. */
+    @ColumnInfo(defaultValue = "0") val updatedAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(defaultValue = "LOCAL_ONLY") val syncState: SyncState = SyncState.LOCAL_ONLY,
+)
+
+enum class SyncState {
+    /** Matches the server copy as of the last push or pull. */
+    SYNCED,
+
+    /** Changed locally; the next push uploads it. */
+    PENDING,
+
+    /** Never uploaded: pre-sync history (handled by step 5) or split/group rows (step 4). */
+    LOCAL_ONLY,
+
+    /** The server rejected this row; it stays local and retries after the next edit. */
+    FAILED,
+}
+
+/** A delete the server hasn't heard about yet. The local row is already gone. */
+@Entity(tableName = "pending_remote_deletes")
+data class PendingRemoteDeleteEntity(
+    @PrimaryKey val remoteId: String,
+    val deletedAt: Long = System.currentTimeMillis(),
+)
+
+@Entity(tableName = "sync_meta")
+data class SyncMetaEntity(
+    @PrimaryKey val key: String,
+    val value: String,
 )
 
 @Entity(

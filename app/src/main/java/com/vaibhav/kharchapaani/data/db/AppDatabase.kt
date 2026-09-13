@@ -9,13 +9,16 @@ import com.vaibhav.kharchapaani.data.db.dao.GroupDao
 import com.vaibhav.kharchapaani.data.db.dao.PersonDao
 import com.vaibhav.kharchapaani.data.db.dao.SettlementDao
 import com.vaibhav.kharchapaani.data.db.dao.SplitDao
+import com.vaibhav.kharchapaani.data.db.dao.SyncDao
 import com.vaibhav.kharchapaani.data.db.dao.TransactionDao
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.GroupMemberEntity
+import com.vaibhav.kharchapaani.data.db.entity.PendingRemoteDeleteEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
+import com.vaibhav.kharchapaani.data.db.entity.SyncMetaEntity
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 
 @Database(
@@ -26,9 +29,11 @@ import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
         SplitShareEntity::class,
         SettlementEntity::class,
         GroupEntity::class,
-        GroupMemberEntity::class
+        GroupMemberEntity::class,
+        PendingRemoteDeleteEntity::class,
+        SyncMetaEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -37,6 +42,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun splitDao(): SplitDao
     abstract fun settlementDao(): SettlementDao
     abstract fun groupDao(): GroupDao
+    abstract fun syncDao(): SyncDao
 
     companion object {
         /**
@@ -44,7 +50,7 @@ abstract class AppDatabase : RoomDatabase() {
          * app/schemas and a MigrationTestHelper test. There is deliberately no destructive
          * fallback: a missing migration crashes on open instead of silently wiping the ledger.
          */
-        internal val ALL_MIGRATIONS = emptyArray<Migration>()
+        internal val ALL_MIGRATIONS = arrayOf<Migration>(MIGRATION_2_3)
 
         /** Open databases through [LedgerDatabases], which scopes the file to the signed-in account. */
         internal fun builder(context: Context, name: String): Builder<AppDatabase> =
