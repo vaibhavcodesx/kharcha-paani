@@ -402,11 +402,74 @@ split with.
 - ✅ **Verified on CI (Linux)**: 36 tests, 0 failures, 0 skipped,
   including all 8 `LedgerDatabasesTest` and both
   `AccountSessionHolderTest` cases.
-- **Process change (2026-09-13)**: PRs that don't touch RLS, auth, or
-  security config merge once CI is green and the results have been
-  checked. RLS/auth PRs and design discussions still wait for review.
-- ⏳ **Not yet started**: the sync loop itself (design discussion first),
-  groups/invites UI.
+- **Process change (2026-09-13, refined 2026-09-14)**: PRs merge once CI
+  is green and the results have been checked. Still reviewed first:
+  anything touching RLS or auth/security config, and **any database
+  migration that isn't purely additive** (drops, type changes, or
+  changes to existing data). Requested design discussions also still
+  happen first.
+
+#### Migration Plan step 3: sync loop for personal transactions (PR #5, branch `feature/sync-loop-personal-transactions`)
+
+Design approved on 2026-09-14:
+- **Conflicts:** last write to reach the server wins, and a still-queued
+  local change beats a pulled one.
+- **Pre-sync history** isn't uploaded; step 5 decides. In practice
+  there's no legacy data to migrate: the old install's data is gone and a
+  CSV backup exists.
+- **Realtime** is deferred to step 4. Pulls only for now.
+
+- ✅ **Supabase migration `20260913184544`** (purely additive, 0 rows,
+  applied under the fast-track rule):
+  - `transactions.updated_at` (server-owned via a
+    `BEFORE INSERT OR UPDATE` trigger) and `deleted_at` for soft deletes.
+  - An index on `(owner_id, updated_at)`.
+  - Checked under RLS as an authenticated user in a rolled-back
+    transaction: the trigger overrides a client-sent `updated_at`, and
+    the soft delete works. RLS is unchanged.
+- ✅ **Room v3** with a real `MIGRATION_2_3`:
+  - `remoteId` (a device-generated UUID that is also the server id),
+    `updatedAt` and `syncState`.
+  - New `pending_remote_deletes` and `sync_meta` tables.
+  - Existing rows get unique v4 UUIDs and stay `LOCAL_ONLY`.
+- ✅ **Repository writes queue sync atomically**:
+  - Personal expenses become `PENDING`; split and group expenses stay
+    `LOCAL_ONLY`.
+  - Edits keep `remoteId` and `createdAt`. This also fixes an existing
+    bug: editing used to reset `createdAt`.
+  - Converting a synced expense into a split queues a server delete.
+- ✅ **`TransactionSyncEngine`**:
+  - Batched idempotent upserts, marked synced only if the row is
+    unchanged since read.
+  - Soft deletes, then an overlapped, paged pull.
+  - A row the server rejects is marked `FAILED` instead of blocking the
+    queue.
+- ✅ **WorkManager**:
+  - Debounced sync after each write and on app start/foreground.
+  - Periodic sync every 15 minutes while signed in; cancelled on
+    sign-out.
+  - Only the signed-in account's queue runs.
+- ✅ **Account sheet sync status**: synced / waiting / syncing /
+  couldn't sync, with Retry.
+- **Known limits (accepted for step 3)**:
+  - An offline edit that syncs later can overwrite a newer edit from
+    another device, or revive a row another device deleted. This follows
+    from the approved conflict rule.
+  - `SyncWorker.doWork()` can't run under Robolectric (supabase-kt auth
+    init never completes there), so its decision logic is tested directly.
+  - Multi-device behaviour hasn't been tried by hand on two real devices
+    yet.
+- 🔎 **Found, not fixed** (correctness audit, priority 2):
+  - Deleting a group leaves its transactions with a dangling `groupId`
+    (no foreign key).
+  - `deletePerson` removes shares but leaves `isSplit = true` on the
+    transaction.
+  - Several `@Insert(REPLACE)` DAOs would cascade-delete child rows if
+    they ever replaced an existing parent.
+  - The widget duplicates the ledger balance maths instead of using the
+    repository.
+- ⏳ **Not yet started**: groups, invites and multi-user splits (step 4:
+  RLS changes need review), and Realtime.
 
 ### Web-Verified Notes (re-checked against current Supabase/Google docs)
 
