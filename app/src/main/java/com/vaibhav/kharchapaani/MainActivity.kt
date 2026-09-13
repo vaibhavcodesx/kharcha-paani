@@ -1,0 +1,513 @@
+package com.vaibhav.kharchapaani
+
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import android.os.Parcelable
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.vaibhav.kharchapaani.ui.components.AddFriendDialog
+import com.vaibhav.kharchapaani.ui.components.ConfirmBottomSheet
+import com.vaibhav.kharchapaani.ui.components.CreateGroupDialog
+import com.vaibhav.kharchapaani.ui.components.GroupDetailSheet
+import com.vaibhav.kharchapaani.ui.components.IouDialog
+import com.vaibhav.kharchapaani.ui.components.PersonLedgerSheet
+import com.vaibhav.kharchapaani.ui.components.SettleUpDialog
+import com.vaibhav.kharchapaani.ui.components.SimplifyDebtsDialog
+import com.vaibhav.kharchapaani.ui.components.StatementImportDialog
+import com.vaibhav.kharchapaani.ui.components.StatementParsingLoadingDialog
+import com.vaibhav.kharchapaani.ui.screens.HomeScreen
+import com.vaibhav.kharchapaani.ui.screens.InsightsScreen
+import com.vaibhav.kharchapaani.ui.screens.SplitsScreen
+import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
+import com.vaibhav.kharchapaani.ui.theme.CharcoalSurface
+import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
+import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
+import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
+import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
+import com.vaibhav.kharchapaani.ui.viewmodel.MainViewModel
+import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
+
+class MainActivity : ComponentActivity() {
+
+    private val viewModel: MainViewModel by viewModels()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+
+        handleIntent(intent)
+
+        setContent {
+            SplitFlowTheme {
+                SplitFlowApp(viewModel = viewModel)
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent == null) return
+
+        // 1. Shared Image (e.g. screenshot shared from GPay, Paytm, Gallery)
+        if (Intent.ACTION_SEND == intent.action && intent.type?.startsWith("image/") == true) {
+            val imageUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
+            }
+            if (imageUri != null) {
+                viewModel.handleSharedImageUri(this, imageUri)
+            }
+        }
+        // 2. Shared PDF Bank / UPI Statement
+        else if (Intent.ACTION_SEND == intent.action && intent.type == "application/pdf") {
+            val pdfUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
+            }
+            if (pdfUri != null) {
+                viewModel.handleSharedPdfUri(this, pdfUri)
+            }
+        }
+        // 3. Shared Text (e.g. SMS, WhatsApp payment text, or transaction message)
+        else if (Intent.ACTION_SEND == intent.action && (intent.type?.startsWith("text/") == true || intent.type == null)) {
+            val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
+            if (!sharedText.isNullOrBlank()) {
+                viewModel.parseInputText(sharedText)
+            }
+        }
+        // 4. Widget Actions
+        else if (intent.action == SplitFlowWidgetProvider.ACTION_QUICK_ADD) {
+            viewModel.setTab(0)
+            viewModel.openManualAdd("expense")
+        } else if (intent.action == SplitFlowWidgetProvider.ACTION_VOICE_LOG) {
+            viewModel.setTab(0)
+        } else if (intent.action == SplitFlowWidgetProvider.ACTION_VIEW_SPLITS) {
+            viewModel.setTab(1)
+        }
+    }
+}
+
+@Composable
+fun SplitFlowApp(viewModel: MainViewModel) {
+    val currentTab by viewModel.currentTab.collectAsState()
+    val rawTransactions by viewModel.rawTransactions.collectAsState()
+    val filteredTransactions by viewModel.filteredTransactions.collectAsState()
+    val totalNetOwed by viewModel.totalNetOwed.collectAsState()
+    val monthlyAnalytics by viewModel.monthlyAnalytics.collectAsState()
+    val personBalances by viewModel.personBalances.collectAsState()
+    val people by viewModel.people.collectAsState()
+    val groups by viewModel.groups.collectAsState()
+    val rawGroups by viewModel.rawGroups.collectAsState()
+    val isParsing by viewModel.isParsing.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val selectedFilter by viewModel.selectedFilter.collectAsState()
+
+    // Confirm Bottom Sheet State
+    val isConfirmSheetOpen by viewModel.isConfirmSheetOpen.collectAsState()
+    val editingTxId by viewModel.editingTransactionId.collectAsState()
+    val txType by viewModel.type.collectAsState()
+    val txAmount by viewModel.amount.collectAsState()
+    val txMerchant by viewModel.merchant.collectAsState()
+    val txCategory by viewModel.category.collectAsState()
+    val txPaymentMethod by viewModel.paymentMethod.collectAsState()
+    val txNote by viewModel.note.collectAsState()
+    val txDate by viewModel.date.collectAsState()
+    val txGroupId by viewModel.groupId.collectAsState()
+    val isSplit by viewModel.isSplit.collectAsState()
+    val splitMode by viewModel.splitMode.collectAsState()
+    val paidByPersonId by viewModel.paidByPersonId.collectAsState()
+    val shares by viewModel.shares.collectAsState()
+
+    // Dialogs & Modals
+    val selectedPersonForLedger by viewModel.selectedPersonForLedger.collectAsState()
+    val isSettleUpOpen by viewModel.isSettleUpOpen.collectAsState()
+    val settleUpPerson by viewModel.settleUpPerson.collectAsState()
+    val isIouOpen by viewModel.isIouOpen.collectAsState()
+    val isSimplifyDebtsOpen by viewModel.isSimplifyDebtsOpen.collectAsState()
+    val simplifiedDebts by viewModel.simplifiedDebts.collectAsState()
+    val isAddFriendOpen by viewModel.isAddFriendOpen.collectAsState()
+
+    // Group Modals
+    val isCreateGroupOpen by viewModel.isCreateGroupOpen.collectAsState()
+    val selectedGroupForDetail by viewModel.selectedGroupForDetail.collectAsState()
+
+    // AI Summary
+    val aiSummary by viewModel.aiSummary.collectAsState()
+    val isGeneratingSummary by viewModel.isGeneratingSummary.collectAsState()
+
+    // Statement Import State
+    val isImportStatementOpen by viewModel.isImportStatementOpen.collectAsState()
+    val isParsingStatement by viewModel.isParsingStatement.collectAsState()
+    val statementParseResult by viewModel.statementParseResult.collectAsState()
+    val statusMessage by viewModel.statusMessage.collectAsState()
+
+    val context = LocalContext.current
+    LaunchedEffect(statusMessage) {
+        statusMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            viewModel.clearStatusMessage()
+        }
+    }
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = CharcoalBg,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        bottomBar = {
+            NavigationBar(
+                containerColor = CharcoalSurface,
+                contentColor = OffWhiteText,
+                modifier = Modifier
+                    .background(CharcoalSurface)
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+            ) {
+                NavigationBarItem(
+                    selected = currentTab == 0,
+                    onClick = { viewModel.setTab(0) },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.ReceiptLong,
+                            contentDescription = "Activity",
+                            modifier = Modifier.size(22.dp)
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Activity",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = if (currentTab == 0) FontWeight.Bold else FontWeight.Normal,
+                                fontSize = 11.sp
+                            )
+                        )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = CharcoalBg,
+                        selectedTextColor = WarmAmberPrimary,
+                        indicatorColor = WarmAmberPrimary,
+                        unselectedIconColor = MutedWarmGray,
+                        unselectedTextColor = MutedWarmGray
+                    ),
+                    modifier = Modifier.testTag("tab_activity")
+                )
+
+                NavigationBarItem(
+                    selected = currentTab == 1,
+                    onClick = { viewModel.setTab(1) },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Group,
+                            contentDescription = "Splits & Groups",
+                            modifier = Modifier.size(22.dp)
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Splits & Trips",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = if (currentTab == 1) FontWeight.Bold else FontWeight.Normal,
+                                fontSize = 11.sp
+                            )
+                        )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = CharcoalBg,
+                        selectedTextColor = WarmAmberPrimary,
+                        indicatorColor = WarmAmberPrimary,
+                        unselectedIconColor = MutedWarmGray,
+                        unselectedTextColor = MutedWarmGray
+                    ),
+                    modifier = Modifier.testTag("tab_splits")
+                )
+
+                NavigationBarItem(
+                    selected = currentTab == 2,
+                    onClick = { viewModel.setTab(2) },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = "Insights",
+                            modifier = Modifier.size(22.dp)
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Insights",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = if (currentTab == 2) FontWeight.Bold else FontWeight.Normal,
+                                fontSize = 11.sp
+                            )
+                        )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = CharcoalBg,
+                        selectedTextColor = WarmAmberPrimary,
+                        indicatorColor = WarmAmberPrimary,
+                        unselectedIconColor = MutedWarmGray,
+                        unselectedTextColor = MutedWarmGray
+                    ),
+                    modifier = Modifier.testTag("tab_insights")
+                )
+            }
+        },
+        floatingActionButton = {
+            if (currentTab == 0) {
+                FloatingActionButton(
+                    onClick = { viewModel.openManualAdd("expense") },
+                    containerColor = WarmAmberPrimary,
+                    contentColor = CharcoalBg,
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .padding(bottom = 70.dp)
+                        .testTag("fab_add_transaction")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Transaction",
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+            }
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .statusBarsPadding()
+        ) {
+            AnimatedContent(
+                targetState = currentTab,
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                label = "MainTabs"
+            ) { targetTab ->
+                when (targetTab) {
+                    0 -> HomeScreen(
+                        transactions = filteredTransactions,
+                        totalNetOwed = totalNetOwed,
+                        monthlyAnalytics = monthlyAnalytics,
+                        isParsing = isParsing,
+                        searchQuery = searchQuery,
+                        selectedFilter = selectedFilter,
+                        onSearchChange = { viewModel.setSearchQuery(it) },
+                        onFilterChange = { viewModel.setSelectedFilter(it) },
+                        onParseText = { viewModel.parseInputText(it) },
+                        onParseImage = { viewModel.parseReceiptImage(it) },
+                        onParsePdf = { bytes, name -> viewModel.parseBankOrUpiStatement(bytes, name) },
+                        onManualAdd = { viewModel.openManualAdd(it) },
+                        onEditTransaction = { viewModel.openEditTransaction(it) },
+                        onDeleteTransaction = { viewModel.deleteTransaction(it) },
+                        onOpenIouDialog = { viewModel.openIouDialog() },
+                        onOpenSimplifyDebts = { viewModel.openSimplifyDebts() }
+                    )
+
+                    1 -> SplitsScreen(
+                        personBalances = personBalances,
+                        groups = groups,
+                        onOpenAddFriend = { viewModel.openAddFriend() },
+                        onDeleteFriend = { viewModel.deleteFriend(it) },
+                        onOpenCreateGroup = { viewModel.openCreateGroup() },
+                        onSelectGroup = { viewModel.selectGroupForDetail(it) },
+                        onDeleteGroup = { viewModel.deleteGroup(it) },
+                        onOpenSimplifyDebts = { viewModel.openSimplifyDebts() },
+                        onOpenIouDialog = { viewModel.openIouDialog() },
+                        onSettleUp = { viewModel.openSettleUp(it) },
+                        onViewHistory = { viewModel.openPersonLedger(it) }
+                    )
+
+                    2 -> InsightsScreen(
+                        analytics = monthlyAnalytics,
+                        transactions = rawTransactions,
+                        people = people,
+                        aiSummary = aiSummary,
+                        isGeneratingSummary = isGeneratingSummary,
+                        onGenerateAiSummary = { viewModel.generateAiFinancialSummary() },
+                        onExportCsv = { viewModel.exportCsv(it) },
+                        onEditTransaction = { viewModel.openEditTransaction(it) }
+                    )
+                }
+            }
+        }
+    }
+
+    // Confirm & Edit Bottom Sheet
+    ConfirmBottomSheet(
+        isOpen = isConfirmSheetOpen,
+        isParsing = isParsing,
+        type = txType,
+        amount = txAmount,
+        merchant = txMerchant,
+        category = txCategory,
+        paymentMethod = txPaymentMethod,
+        note = txNote,
+        date = txDate,
+        groupId = txGroupId,
+        availableGroups = rawGroups,
+        isSplit = isSplit,
+        splitMode = splitMode,
+        paidByPersonId = paidByPersonId,
+        shares = shares,
+        isEditing = editingTxId != null,
+        onTypeChange = { viewModel.updateType(it) },
+        onAmountChange = { viewModel.updateAmount(it) },
+        onMerchantChange = { viewModel.updateMerchant(it) },
+        onCategoryChange = { viewModel.updateCategory(it) },
+        onPaymentMethodChange = { viewModel.updatePaymentMethod(it) },
+        onNoteChange = { viewModel.updateNote(it) },
+        onDateChange = { viewModel.updateDate(it) },
+        onGroupIdChange = { viewModel.updateGroupId(it) },
+        onIsSplitChange = { viewModel.setIsSplit(it) },
+        onSplitModeChange = { viewModel.setSplitMode(it) },
+        onPaidByPersonIdChange = { viewModel.setPaidByPersonId(it) },
+        onTogglePersonShare = { viewModel.togglePersonShare(it) },
+        onExactAmountChange = { id, amt -> viewModel.updateExactShareAmount(id, amt) },
+        onPercentageChange = { id, pct -> viewModel.updateSharePercentage(id, pct) },
+        onOpenAddFriend = { viewModel.openAddFriend() },
+        onSave = { viewModel.saveCurrentTransaction() },
+        onDismiss = { viewModel.dismissConfirmSheet() }
+    )
+
+    // Settle Up Dialog
+    val currentPersonBalance = settleUpPerson?.let { p ->
+        personBalances.find { it.person.id == p.id }
+    }
+    SettleUpDialog(
+        isOpen = isSettleUpOpen,
+        person = settleUpPerson,
+        suggestedAmount = currentPersonBalance?.netBalance ?: 0.0,
+        onConfirm = { fromId, toId, amt, note ->
+            viewModel.recordSettlementPayment(fromId, toId, amt, note)
+        },
+        onDismiss = { viewModel.dismissSettleUp() }
+    )
+
+    // Direct IOU Dialog
+    IouDialog(
+        isOpen = isIouOpen,
+        people = people,
+        onConfirm = { fromId, toId, amt, note ->
+            viewModel.recordIou(fromId, toId, amt, note)
+        },
+        onDismiss = { viewModel.dismissIouDialog() }
+    )
+
+    // Simplify Debts Dialog
+    SimplifyDebtsDialog(
+        isOpen = isSimplifyDebtsOpen,
+        simplifiedDebts = simplifiedDebts,
+        onDismiss = { viewModel.dismissSimplifyDebts() }
+    )
+
+    // Create Group Dialog
+    CreateGroupDialog(
+        isOpen = isCreateGroupOpen,
+        allPeople = people,
+        onSaveGroup = { name, desc, emoji, color, memberIds ->
+            viewModel.createNewGroup(name, desc, emoji, color, memberIds)
+        },
+        onDismiss = { viewModel.dismissCreateGroup() }
+    )
+
+    // Group Detail Sheet
+    GroupDetailSheet(
+        groupDetails = selectedGroupForDetail,
+        onAddExpense = { groupId ->
+            viewModel.openManualAddForGroup(groupId)
+        },
+        onEditTransaction = { viewModel.openEditTransaction(it) },
+        onDismiss = { viewModel.dismissGroupDetail() }
+    )
+
+    // Person Ledger Sheet
+    if (selectedPersonForLedger != null) {
+        val ledgerFlow = viewModel.getPersonLedgerFlow(selectedPersonForLedger!!.id)
+        val ledgerItems by ledgerFlow.collectAsState(initial = emptyList())
+        PersonLedgerSheet(
+            person = selectedPersonForLedger,
+            ledgerItems = ledgerItems,
+            onSettleUp = {
+                viewModel.closePersonLedger()
+                viewModel.openSettleUp(it)
+            },
+            onDismiss = { viewModel.closePersonLedger() }
+        )
+    }
+
+    // Add Friend Dialog
+    AddFriendDialog(
+        isOpen = isAddFriendOpen,
+        onAdd = { name, colorHex ->
+            viewModel.addNewFriend(name, colorHex)
+        },
+        onDismiss = { viewModel.dismissAddFriend() }
+    )
+
+    // Bank & UPI Statement Parsing Loading Overlay
+    if (isParsingStatement) {
+        StatementParsingLoadingDialog(
+            onDismiss = { viewModel.dismissStatementImportDialog() }
+        )
+    }
+
+    // Bank & UPI Statement Import Dialog
+    if (statementParseResult != null) {
+        StatementImportDialog(
+            parseResult = statementParseResult!!,
+            onConfirmImport = { items ->
+                viewModel.confirmImportStatementTransactions(items)
+            },
+            onDismiss = {
+                viewModel.dismissStatementImportDialog()
+            }
+        )
+    }
+}
