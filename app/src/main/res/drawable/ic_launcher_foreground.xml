@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Center 66dp area safe zone: (21, 21) to (87, 87) -->
+
+    <!-- Ambient Glow Core -->
+    <path
+        android:fillColor="#1F1D1A"
+        android:strokeColor="#3D372E"
+        android:strokeWidth="2.5"
+        android:pathData="M54,23 C71.1,23 85,36.9 85,54 C85,71.1 71.1,85 54,85 C36.9,85 23,71.1 23,54 C23,36.9 36.9,23 54,23 Z" />
+
+    <!-- Outer Pulsing Amber Neon Ring -->
+    <path
+        android:strokeColor="#4DFF7A3D"
+        android:strokeWidth="3"
+        android:pathData="M54,27 C68.9,27 81,39.1 81,54 C81,68.9 68.9,81 54,81 C39.1,81 27,68.9 27,54 C27,39.1 39.1,27 54,27 Z" />
+
+    <!-- Top Rupee Horizontal Bar (Warm Amber) -->
+    <path
+        android:strokeColor="#FF7A3D"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M37,39 L71,39" />
+
+    <!-- Mid Rupee Split Bar (Chartreuse Lime) -->
+    <path
+        android:strokeColor="#C6F24C"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M37,49 L61,49" />
+
+    <!-- Rupee Main Bowl (Crisp Off-White) -->
+    <path
+        android:strokeColor="#F4F0E8"
+        android:strokeWidth="5.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M45,39 L45,59 C58,59 66,52 66,49 C66,42 58,39 45,39" />
+
+    <!-- Rupee Dynamic Diagonal Downward Flow Stroke -->
+    <path
+        android:strokeColor="#FF7A3D"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:pathData="M48,58 L68,78" />
+
+    <!-- Water/Paani Sparkle Drop in Chartreuse -->
+    <path
+        android:fillColor="#C6F24C"
+        android:pathData="M73,34 C73,39 68,43 64,43 C60,43 59,39 64,29 C68,23 73,28 73,34 Z" />
+
+    <!-- Dynamic accent sparkle stars -->
+    <path
+        android:fillColor="#818CF8"
+        android:pathData="M34,68 L36.5,72 L34,76 L31.5,72 Z" />
+    <path
+        android:fillColor="#C6F24C"
+        android:pathData="M73,66 A3,3 0 1,1 72.9,66 Z" />
+</vector>
