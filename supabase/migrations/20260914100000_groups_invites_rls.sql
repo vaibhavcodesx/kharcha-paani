@@ -13,6 +13,10 @@
 --   4. Transactions attachable to any group      -> writer must be an active member of that group
 -- Plus: splits, shares and settlements may only reference members; members can leave;
 -- groups are archived instead of hard-deleted; settlements are group-scoped.
+--
+-- No hard deletes (added in review): a hard delete never reaches other devices, so the soft-delete
+-- design from step 3 is enforced by the database, not just by the app. Client roles lose DELETE and
+-- TRUNCATE (which bypasses RLS) on every app table; the only real DELETE left is leaving a group.
 
 -- ============================================================
 -- Schema additions (all target tables have 0 rows)
@@ -24,8 +28,23 @@ alter table public.groups add column archived_at timestamptz;
 -- One split per transaction (matches the app's model); save_group_expense upserts on it.
 create unique index splits_transaction_id_key on public.splits (transaction_id);
 
--- A person appears at most once in a split.
-create unique index split_shares_split_profile_key on public.split_shares (split_id, profile_id);
+-- Shares are soft-deleted when someone is removed from a split, never hard-deleted.
+alter table public.split_shares add column deleted_at timestamptz;
+
+-- A person appears at most once among a split's active shares (removed shares stay as history).
+create unique index split_shares_active_split_profile_key
+  on public.split_shares (split_id, profile_id)
+  where deleted_at is null;
+
+-- Settlements are retracted by soft delete, so they need the same server-owned clock as
+-- transactions (private.set_updated_at comes from migration 20260913184544).
+alter table public.settlements
+  add column updated_at timestamptz not null default now(),
+  add column deleted_at timestamptz;
+
+create trigger settlements_set_updated_at
+  before insert or update on public.settlements
+  for each row execute function private.set_updated_at();
 
 create table public.group_invites (
   -- 8 characters from a 32-symbol alphabet without look-alikes (0/O, 1/I): 40 bits, multi-use until expiry.
@@ -140,6 +159,40 @@ grant execute on function private.shares_group_with(uuid) to authenticated;
 grant execute on function private.transaction_group_id(uuid) to authenticated;
 grant execute on function private.can_access_split(uuid) to authenticated;
 
+-- Members pull a group expense as one unit keyed on the transaction's updated_at. Any write to its
+-- split or shares, by save_group_expense or directly, must bump that clock, or the change would
+-- never reach other devices.
+create or replace function private.touch_parent_transaction()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_transaction_id uuid;
+begin
+  if tg_table_name = 'splits' then
+    v_transaction_id := new.transaction_id;
+  else
+    select s.transaction_id into v_transaction_id from public.splits s where s.id = new.split_id;
+  end if;
+  -- Only the clock changes; transactions_set_updated_at stamps it with now().
+  update public.transactions set updated_at = now() where id = v_transaction_id;
+  return null;
+end;
+$$;
+
+-- Trigger-only function: firing a trigger does not need EXECUTE.
+revoke execute on function private.touch_parent_transaction() from public, anon, authenticated;
+
+create trigger splits_touch_transaction
+  after insert or update on public.splits
+  for each row execute function private.touch_parent_transaction();
+
+create trigger split_shares_touch_transaction
+  after insert or update on public.split_shares
+  for each row execute function private.touch_parent_transaction();
+
 -- ============================================================
 -- profiles: gap 2
 -- ============================================================
@@ -181,6 +234,8 @@ create policy group_members_delete_self
 
 drop policy transactions_insert_own on public.transactions;
 drop policy transactions_update_own on public.transactions;
+-- Deleting is a soft delete (update deleted_at), which the update policy covers.
+drop policy transactions_delete_own on public.transactions;
 
 create policy transactions_insert_own
   on public.transactions for insert
@@ -207,6 +262,8 @@ create policy transactions_update_own
 
 drop policy splits_insert on public.splits;
 drop policy splits_update on public.splits;
+-- A split lives as long as its transaction, which is only ever soft-deleted.
+drop policy splits_delete on public.splits;
 
 -- is_active_group_member(null) is false, so personal transactions can't carry a split server-side
 -- (decision 1: sharing happens only inside groups).
@@ -236,6 +293,8 @@ create policy splits_update
 drop policy split_shares_select on public.split_shares;
 drop policy split_shares_insert on public.split_shares;
 drop policy split_shares_update on public.split_shares;
+-- Removing someone from a split soft-deletes their share (update deleted_at).
+drop policy split_shares_delete on public.split_shares;
 
 create policy split_shares_select
   on public.split_shares for select
@@ -274,7 +333,11 @@ create policy split_shares_update
       where s.id = split_shares.split_id
         and private.owns_transaction(s.transaction_id)
         and private.is_active_group_member(private.transaction_group_id(s.transaction_id))
-        and private.is_member_of(private.transaction_group_id(s.transaction_id), split_shares.profile_id)
+        -- A removed share may belong to someone who has since left the group; an active one may not.
+        and (
+          split_shares.deleted_at is not null
+          or private.is_member_of(private.transaction_group_id(s.transaction_id), split_shares.profile_id)
+        )
     )
   );
 
@@ -285,6 +348,8 @@ create policy split_shares_update
 drop policy settlements_select on public.settlements;
 drop policy settlements_insert on public.settlements;
 drop policy settlements_update on public.settlements;
+-- Either party retracts a settlement by soft delete (update deleted_at).
+drop policy settlements_delete on public.settlements;
 
 create policy settlements_select
   on public.settlements for select
@@ -484,7 +549,8 @@ $$;
 
 -- Saves a group expense with its split and shares in one transaction, so members never pull a
 -- half-written expense. SECURITY INVOKER: every row still passes the caller's RLS policies.
--- Shares are replaced wholesale; members pull the transaction with its current shares embedded.
+-- Shares are reconciled without hard deletes: people no longer in the split have their share
+-- soft-deleted, remaining shares are updated in place, and new people get new shares.
 create or replace function public.save_group_expense(p_transaction jsonb, p_split jsonb, p_shares jsonb)
 returns void
 language plpgsql
@@ -555,15 +621,35 @@ begin
     split_type = excluded.split_type
   returning id into v_split_id;
 
-  delete from public.split_shares where split_id = v_split_id;
+  update public.split_shares ss
+  set deleted_at = now()
+  where ss.split_id = v_split_id
+    and ss.deleted_at is null
+    and ss.profile_id not in (select (s ->> 'profile_id')::uuid from jsonb_array_elements(p_shares) s);
 
+  update public.split_shares ss
+  set share_amount = (s ->> 'share_amount')::numeric,
+      percentage = (s ->> 'percentage')::numeric
+  from jsonb_array_elements(p_shares) s
+  where ss.split_id = v_split_id
+    and ss.deleted_at is null
+    and ss.profile_id = (s ->> 'profile_id')::uuid;
+
+  -- A profile listed twice violates split_shares_active_split_profile_key and aborts the save.
   insert into public.split_shares (id, split_id, profile_id, share_amount, percentage)
   select coalesce((s ->> 'id')::uuid, gen_random_uuid()),
          v_split_id,
          (s ->> 'profile_id')::uuid,
          (s ->> 'share_amount')::numeric,
          (s ->> 'percentage')::numeric
-  from jsonb_array_elements(p_shares) s;
+  from jsonb_array_elements(p_shares) s
+  where not exists (
+    select 1
+    from public.split_shares ss
+    where ss.split_id = v_split_id
+      and ss.deleted_at is null
+      and ss.profile_id = (s ->> 'profile_id')::uuid
+  );
 end;
 $$;
 
@@ -581,3 +667,24 @@ grant execute on function public.revoke_group_invite(text) to authenticated;
 grant execute on function public.preview_invite(text) to authenticated;
 grant execute on function public.join_group(text) to authenticated;
 grant execute on function public.save_group_expense(jsonb, jsonb, jsonb) to authenticated;
+
+-- ============================================================
+-- No hard deletes from client roles
+-- ============================================================
+
+-- Dropping the delete policies already makes a DELETE match no rows; revoking the privilege makes it
+-- fail loudly instead, so a client bug surfaces as an error rather than a silent no-op. TRUNCATE
+-- ignores RLS entirely, and this project's default privileges grant it to anon and authenticated
+-- on every public table.
+revoke delete, truncate on
+  public.transactions,
+  public.splits,
+  public.split_shares,
+  public.settlements,
+  public.groups,
+  public.group_invites,
+  public.profiles
+from anon, authenticated;
+
+-- Leaving a group is the one real delete (group_members_delete_self).
+revoke truncate on public.group_members from anon, authenticated;

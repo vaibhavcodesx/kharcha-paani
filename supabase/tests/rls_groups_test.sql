@@ -48,6 +48,18 @@ exception when others then
   perform public._record(p_test, true, sqlstate || ': ' || sqlerrm);
 end $$;
 
+-- The statement must be refused with insufficient_privilege (42501) specifically. Used where another
+-- error could make a check pass for the wrong reason (e.g. TRUNCATE failing on a foreign key).
+create function public._expect_denied(p_test text, p_sql text) returns void language plpgsql as $$
+begin
+  execute p_sql;
+  perform public._record(p_test, false, 'succeeded, but should have been denied');
+exception when insufficient_privilege then
+  perform public._record(p_test, true, sqlstate || ': ' || sqlerrm);
+when others then
+  perform public._record(p_test, false, 'refused for another reason: ' || sqlstate || ': ' || sqlerrm);
+end $$;
+
 -- The statement must succeed.
 create function public._expect_ok(p_test text, p_sql text) returns void language plpgsql as $$
 begin
@@ -81,7 +93,7 @@ end $$;
 grant all on public._rls_results to authenticated, anon;
 grant usage on sequence public._rls_results_n_seq to authenticated, anon;
 grant execute on function public._as(uuid), public._as_anon(), public._as_admin(), public._record(text, boolean, text),
-  public._expect_error(text, text), public._expect_ok(text, text), public._expect_value(text, text, bigint),
+  public._expect_error(text, text), public._expect_denied(text, text), public._expect_ok(text, text), public._expect_value(text, text, bigint),
   public._expect_rows(text, text, int) to authenticated, anon;
 
 -- ------------------------------------------------------------
@@ -246,16 +258,18 @@ select public._expect_value('the edit left exactly one split',
 select public._as('00000000-0000-4000-8000-0000000000c1');
 select public._expect_value('carol (member, no longer in the split) still sees the expense',
   $q$ select count(*) from public.transactions where id = '30000000-0000-4000-8000-000000000001' $q$, 1);
-select public._expect_value('carol sees every share of the split, not just her own (gap 3)',
-  $q$ select count(*) from public.split_shares ss join public.splits s on s.id = ss.split_id where s.transaction_id = '30000000-0000-4000-8000-000000000001' $q$, 2);
+select public._expect_value('carol sees every active share of the split, not just her own (gap 3)',
+  $q$ select count(*) from public.split_shares ss join public.splits s on s.id = ss.split_id where s.transaction_id = '30000000-0000-4000-8000-000000000001' and ss.deleted_at is null $q$, 2);
+select public._expect_value('the edit soft-deleted carol''s removed share instead of deleting it',
+  $q$ select count(*) from public.split_shares ss join public.splits s on s.id = ss.split_id where s.transaction_id = '30000000-0000-4000-8000-000000000001' and ss.profile_id = '00000000-0000-4000-8000-0000000000c1' and ss.deleted_at is not null $q$, 1);
 select public._expect_value('carol cannot see alice''s personal transaction',
   $q$ select count(*) from public.transactions where id = '20000000-0000-4000-8000-000000000001' $q$, 0);
 
 select public._as('00000000-0000-4000-8000-0000000000b1');
 select public._expect_rows('bob cannot edit alice''s group expense (decision 2)',
   $q$ update public.transactions set note = 'bob was here' where id = '30000000-0000-4000-8000-000000000001' $q$, 0);
-select public._expect_rows('bob cannot delete alice''s group expense',
-  $q$ delete from public.transactions where id = '30000000-0000-4000-8000-000000000001' $q$, 0);
+select public._expect_denied('bob cannot hard-delete alice''s group expense',
+  $q$ delete from public.transactions where id = '30000000-0000-4000-8000-000000000001' $q$);
 select public._expect_error('bob cannot overwrite alice''s expense through save_group_expense',
   $q$ select public.save_group_expense(
         '{"id":"30000000-0000-4000-8000-000000000001","type":"expense","amount":1.00,"category":"Food","date":"2026-09-14T12:00:00Z","group_id":"10000000-0000-4000-8000-000000000001"}',
@@ -310,6 +324,76 @@ select public._expect_error('mallory cannot record a settlement with alice in al
   $q$ insert into public.settlements (from_profile_id, to_profile_id, amount, group_id) values ('00000000-0000-4000-8000-0000000000d1', '00000000-0000-4000-8000-0000000000a1', 10, '10000000-0000-4000-8000-000000000001') $q$);
 
 -- ------------------------------------------------------------
+-- No hard deletes: only soft deletes, which reach other devices
+-- ------------------------------------------------------------
+select public._as_admin();
+select public._expect_value('no client role holds DELETE or TRUNCATE on any app table except group_members',
+  $q$ select count(*) from unnest(array['public.transactions', 'public.splits', 'public.split_shares', 'public.settlements', 'public.groups', 'public.group_invites', 'public.profiles']::regclass[]) t
+      cross join unnest(array['anon', 'authenticated']) r
+      where has_table_privilege(r, t, 'DELETE') or has_table_privilege(r, t, 'TRUNCATE') $q$, 0);
+select public._expect_value('group_members: authenticated keeps DELETE (leaving) but not TRUNCATE; anon has neither',
+  $q$ select (has_table_privilege('authenticated', 'public.group_members', 'DELETE'))::int
+          + (not has_table_privilege('authenticated', 'public.group_members', 'TRUNCATE'))::int
+          + (not has_table_privilege('anon', 'public.group_members', 'TRUNCATE'))::int $q$, 3);
+
+select public._as('00000000-0000-4000-8000-0000000000a1');
+select public._expect_denied('alice cannot hard-delete her own personal transaction',
+  $q$ delete from public.transactions where id = '20000000-0000-4000-8000-000000000001' $q$);
+select public._expect_denied('alice cannot hard-delete her own group expense',
+  $q$ delete from public.transactions where id = '30000000-0000-4000-8000-000000000001' $q$);
+select public._expect_denied('alice cannot hard-delete the expense''s split',
+  $q$ delete from public.splits where transaction_id = '30000000-0000-4000-8000-000000000001' $q$);
+select public._expect_denied('alice cannot hard-delete a share of her own split',
+  $q$ delete from public.split_shares where split_id = '40000000-0000-4000-8000-000000000001' $q$);
+select public._expect_denied('alice cannot truncate settlements (truncate ignores RLS)',
+  $q$ truncate public.settlements $q$);
+select public._expect_value('after the refused deletes, both transactions, the split and its shares all still exist',
+  $q$ select (select count(*) from public.transactions where id in ('20000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000001'))
+          + (select count(*) from public.splits where transaction_id = '30000000-0000-4000-8000-000000000001')
+          + (select count(*) from public.split_shares where split_id = '40000000-0000-4000-8000-000000000001' and deleted_at is null) $q$, 5);
+
+-- A direct share edit (not through save_group_expense) must still bump the parent transaction, or
+-- members' pulls would never see it. The whole script is one transaction, so now() can't show the
+-- bump; the row's ctid changes whenever the row is rewritten.
+insert into public._ids select 'ctid', ctid::text from public.transactions where id = '30000000-0000-4000-8000-000000000001';
+select public._expect_rows('alice edits a share directly',
+  $q$ update public.split_shares set percentage = 50 where split_id = '40000000-0000-4000-8000-000000000001' and profile_id = '00000000-0000-4000-8000-0000000000a1' and deleted_at is null $q$, 1);
+select public._expect_value('the direct share edit bumped the parent transaction',
+  $q$ select count(*) from public.transactions where id = '30000000-0000-4000-8000-000000000001' and ctid::text <> (select value from public._ids where key = 'ctid') $q$, 1);
+
+select public._expect_ok('alice adds a second expense shared with carol',
+  $q$ select public.save_group_expense(
+        '{"id":"30000000-0000-4000-8000-000000000006","type":"expense","amount":10.00,"category":"Food","date":"2026-09-14T12:00:00Z","group_id":"10000000-0000-4000-8000-000000000001"}',
+        '{"id":"40000000-0000-4000-8000-000000000006","total_amount":10.00,"paid_by":"00000000-0000-4000-8000-0000000000a1"}',
+        '[{"profile_id":"00000000-0000-4000-8000-0000000000a1","share_amount":5.00},{"profile_id":"00000000-0000-4000-8000-0000000000c1","share_amount":5.00}]') $q$);
+select public._expect_error('the same person twice in one split is rejected',
+  $q$ select public.save_group_expense(
+        '{"id":"30000000-0000-4000-8000-000000000008","type":"expense","amount":10.00,"category":"Food","date":"2026-09-14T12:00:00Z","group_id":"10000000-0000-4000-8000-000000000001"}',
+        '{"id":"40000000-0000-4000-8000-000000000008","total_amount":10.00,"paid_by":"00000000-0000-4000-8000-0000000000a1"}',
+        '[{"profile_id":"00000000-0000-4000-8000-0000000000a1","share_amount":5.00},{"profile_id":"00000000-0000-4000-8000-0000000000a1","share_amount":5.00}]') $q$);
+select public._expect_ok('alice adds a third expense to delete',
+  $q$ select public.save_group_expense(
+        '{"id":"30000000-0000-4000-8000-000000000007","type":"expense","amount":20.00,"category":"Food","date":"2026-09-14T12:00:00Z","group_id":"10000000-0000-4000-8000-000000000001"}',
+        '{"id":"40000000-0000-4000-8000-000000000007","total_amount":20.00,"paid_by":"00000000-0000-4000-8000-0000000000a1"}',
+        '[{"profile_id":"00000000-0000-4000-8000-0000000000a1","share_amount":10.00},{"profile_id":"00000000-0000-4000-8000-0000000000b1","share_amount":10.00}]') $q$);
+select public._expect_rows('alice soft-deletes her group expense',
+  $q$ update public.transactions set deleted_at = now() where id = '30000000-0000-4000-8000-000000000007' $q$, 1);
+
+select public._as('00000000-0000-4000-8000-0000000000b1');
+select public._expect_value('bob pulls the soft-deleted expense and sees it is deleted',
+  $q$ select count(*) from public.transactions where id = '30000000-0000-4000-8000-000000000007' and deleted_at is not null $q$, 1);
+select public._expect_denied('bob cannot hard-delete the settlement he recorded',
+  $q$ delete from public.settlements where id = '50000000-0000-4000-8000-000000000001' $q$);
+select public._expect_rows('bob retracts his settlement by soft delete',
+  $q$ update public.settlements set deleted_at = now() where id = '50000000-0000-4000-8000-000000000001' $q$, 1);
+
+select public._as('00000000-0000-4000-8000-0000000000c1');
+select public._expect_value('carol (member) sees the settlement as retracted',
+  $q$ select count(*) from public.settlements where id = '50000000-0000-4000-8000-000000000001' and deleted_at is not null $q$, 1);
+select public._expect_rows('carol (not a party) cannot retract bob''s settlement',
+  $q$ update public.settlements set deleted_at = null where id = '50000000-0000-4000-8000-000000000001' $q$, 0);
+
+-- ------------------------------------------------------------
 -- Leaving
 -- ------------------------------------------------------------
 select public._as('00000000-0000-4000-8000-0000000000b1');
@@ -324,6 +408,21 @@ select public._expect_value('after leaving, carol no longer sees the group''s ex
 select public._expect_value('after leaving, carol no longer sees alice''s profile',
   $q$ select count(*) from public.profiles where id = '00000000-0000-4000-8000-0000000000a1' $q$, 0);
 
+select public._as('00000000-0000-4000-8000-0000000000a1');
+select public._expect_ok('alice removes carol (now a former member) from an old expense',
+  $q$ select public.save_group_expense(
+        '{"id":"30000000-0000-4000-8000-000000000006","type":"expense","amount":10.00,"category":"Food","date":"2026-09-14T12:00:00Z","group_id":"10000000-0000-4000-8000-000000000001"}',
+        '{"id":"40000000-0000-4000-8000-000000000006","total_amount":10.00,"paid_by":"00000000-0000-4000-8000-0000000000a1"}',
+        '[{"profile_id":"00000000-0000-4000-8000-0000000000a1","share_amount":10.00}]') $q$);
+select public._expect_value('carol''s share on that expense is soft-deleted, alice''s is now 10.00',
+  $q$ select count(*) from public.split_shares where split_id = '40000000-0000-4000-8000-000000000006'
+      and ((profile_id = '00000000-0000-4000-8000-0000000000c1' and deleted_at is not null) or (profile_id = '00000000-0000-4000-8000-0000000000a1' and deleted_at is null and share_amount = 10.00)) $q$, 2);
+select public._expect_error('a former member cannot be added back into a split',
+  $q$ select public.save_group_expense(
+        '{"id":"30000000-0000-4000-8000-000000000006","type":"expense","amount":10.00,"category":"Food","date":"2026-09-14T12:00:00Z","group_id":"10000000-0000-4000-8000-000000000001"}',
+        '{"id":"40000000-0000-4000-8000-000000000006","total_amount":10.00,"paid_by":"00000000-0000-4000-8000-0000000000a1"}',
+        '[{"profile_id":"00000000-0000-4000-8000-0000000000a1","share_amount":5.00},{"profile_id":"00000000-0000-4000-8000-0000000000c1","share_amount":5.00}]') $q$);
+
 -- ------------------------------------------------------------
 -- Archiving
 -- ------------------------------------------------------------
@@ -333,8 +432,8 @@ select public._expect_rows('bob (not the creator) cannot archive the group',
 
 select public._as('00000000-0000-4000-8000-0000000000a1');
 insert into public._ids select 'invite3', code from public.create_group_invite('10000000-0000-4000-8000-000000000001');
-select public._expect_rows('alice cannot hard-delete the group',
-  $q$ delete from public.groups where id = '10000000-0000-4000-8000-000000000001' $q$, 0);
+select public._expect_denied('alice cannot hard-delete the group',
+  $q$ delete from public.groups where id = '10000000-0000-4000-8000-000000000001' $q$);
 select public._expect_rows('alice archives the group',
   $q$ update public.groups set archived_at = now() where id = '10000000-0000-4000-8000-000000000001' $q$, 1);
 select public._expect_error('no new expenses in an archived group',
@@ -346,8 +445,8 @@ select public._expect_error('no new invites for an archived group',
   $q$ select * from public.create_group_invite('10000000-0000-4000-8000-000000000001') $q$);
 
 select public._as('00000000-0000-4000-8000-0000000000b1');
-select public._expect_value('bob still reads the archived group''s history',
-  $q$ select count(*) from public.transactions where group_id = '10000000-0000-4000-8000-000000000001' $q$, 1);
+select public._expect_value('bob still reads the archived group''s history (3 expenses, one soft-deleted)',
+  $q$ select count(*) from public.transactions where group_id = '10000000-0000-4000-8000-000000000001' $q$, 3);
 select public._expect_error('no settlements in an archived group',
   $q$ insert into public.settlements (from_profile_id, to_profile_id, amount, group_id) values ('00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-0000000000a1', 5, '10000000-0000-4000-8000-000000000001') $q$);
 
