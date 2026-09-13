@@ -541,8 +541,8 @@ Design approved on 2026-09-14:
 A fourth RLS gap turned up while re-reading the live policies:
 transactions could be attached to any group.
 
-- 🛑 **PR 1: RLS policies and database functions**
-  (`supabase/migrations/20260914100000_groups_invites_rls.sql`,
+- 🛑 **PR 1: RLS policies and database functions** (PR #7,
+  `supabase/migrations/20260914100000_groups_invites_rls.sql`,
   provisional version). **Written and tested locally; NOT applied to the
   live project**, waiting on the user's review (hard stop: it replaces
   RLS policies).
@@ -555,17 +555,48 @@ transactions could be attached to any group.
   - New `group_invites` table, plus `create_group`, `create_group_invite`,
     `revoke_group_invite`, `preview_invite`, `join_group` and the atomic
     `save_group_expense` (runs as the caller, so RLS still applies).
-  - **`supabase/tests/rls_groups_test.sql`**: 77 checks with alice, bob,
+  - **Review round 1 (2026-09-14): hard deletes closed at the database
+    level.**
+    - Hard deletes never reach other devices, so step 3's soft-delete
+      design was only guaranteed while the app behaved.
+    - Found while fixing: `anon` and `authenticated` held DELETE *and*
+      TRUNCATE on every public table (Supabase default privileges), and
+      TRUNCATE ignores RLS entirely.
+    - The fix:
+      - Delete policies dropped on transactions, splits, shares and
+        settlements.
+      - DELETE and TRUNCATE revoked from client roles on all app tables,
+        so deletes now fail loudly with `42501`. The only real delete
+        left is leaving a group.
+      - Shares are soft-deleted instead: `save_group_expense` now
+        soft-deletes removed shares, updates kept ones and inserts new
+        ones, with the unique index made partial.
+      - `settlements` gained `updated_at` / `deleted_at` so they can be
+        retracted.
+      - A trigger bumps the parent transaction on any split or share
+        write, so direct child edits still reach members.
+  - **`supabase/tests/rls_groups_test.sql`**: 100 checks with alice, bob,
     carol and mallory. It runs as a single transaction that ends in
     `ROLLBACK`.
     - Run locally on PGlite (PostgreSQL 18.3; live is 17.6), with a
       Supabase-style bootstrap that mirrors the live roles, `auth.uid()`
-      and default privileges: **77/77 pass**, and it rolled back
+      and default privileges: **100/100 pass**, and it rolled back
       cleanly.
     - Every expected refusal was checked to fail for the intended reason.
-    - Mutation-checked: restoring each old vulnerable policy makes that
-      gap's checks fail (gap 1: 15, gap 2: 3, gap 3: 1, gap 4: 2). A
-      re-granted anon EXECUTE is caught by a direct privilege check.
+      Hard-delete and truncate checks accept only `42501`.
+    - Mutation-checked (16 mutations), each caught:
+      - each original gap
+      - anon EXECUTE
+      - DELETE restored on each of five tables
+      - DELETE privilege alone
+      - TRUNCATE on transactions and on settlements
+      - no parent-bump trigger
+      - a strict membership check on removed shares
+      - no unique index on active shares
+    - The mutations caught two checks that passed for the wrong reason:
+      anon EXECUTE was masked by the function's own check, and a truncate
+      of `transactions` was blocked by a foreign key rather than the
+      privilege. Both checks were rewritten.
     - Includes the exact writes step 3's personal sync sends (upsert,
       soft delete, pull), so the 3 live personal transactions keep syncing.
   - After approval: apply, rename the file to the assigned version, run the
