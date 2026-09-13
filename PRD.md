@@ -362,16 +362,51 @@ split with.
     `profiles` row with `display_name` and `avatar_url` populated. The
     row was created by `on_auth_user_created` in the same transaction.
 - 🔎 **Carried forward**:
-  - *Before step 3*: replace `fallbackToDestructiveMigration()` with
-    real Room migrations.
-  - *Step 3*: the local Room ledger isn't tied to an account yet.
-    Signing out and back in as someone else shows the same local data,
-    so the sync layer must scope or clear it per user.
-  - *Step 5*: exclude the seeded Rahul/Priya/Arjun rows from the upload.
+  - ~~*Before step 3*: replace `fallbackToDestructiveMigration()`~~,
+    done (see step 3 prerequisites below).
+  - ~~*Step 3*: tie the local ledger to the account~~, done (see below).
+  - *Step 5*: exclude the seeded Rahul/Priya/Arjun/Alex rows and the
+    "Lonavala 2026" sample group from the upload.
   - *Part B*: the existing Home IOU button has the same
     IconButton + `bounceClick` double-clickable issue fixed on the new
     account button.
-- ⏳ **Not yet started**: the sync loop, groups/invites UI.
+
+#### Migration Plan step 3: prerequisites (PR #4, branch `feature/sync-personal-transactions`)
+
+- ✅ **Room migrations**:
+  - `fallbackToDestructiveMigration()` removed. A missing migration now
+    fails to open instead of wiping the ledger.
+  - The Room Gradle plugin exports a JSON schema per version to
+    `app/schemas` (v2 baseline committed), and migrations register in
+    `AppDatabase.ALL_MIGRATIONS`.
+  - `AppDatabaseMigrationSafetyTest` was mutation-checked: re-adding the
+    fallback makes it fail.
+- ✅ **Per-account ledgers** (design and all three decisions approved):
+  - One `ledger-<userId>.db` per account.
+  - The first account to sign in takes over the pre-accounts
+    `splitflow.db`, with the WAL checkpointed before the rename.
+  - New accounts start empty (seeding removed). Sign-out keeps the file.
+  - `AccountSessionHolder` gives each account its own `MainViewModel`,
+    cleared before that account's database closes.
+  - The widget shows only the signed-in account, and "Sign in" when
+    signed out.
+  - Fixed along the way: rotation no longer re-parses a shared screenshot.
+  - Accepted limit: separation is app-enforced, not encrypted.
+- ✅ **Gradle wrapper + Android CI** (pulled forward from Part C):
+  - Gradle 9.3.1 wrapper pinned to the official SHA-256.
+  - `android-ci.yml` runs `:app:testDebugUnitTest` on every PR (JDK 25)
+    and uploads the results.
+  - Reason: Windows Application Control blocks Robolectric's native SQLite
+    DLL on the dev machine, so database tests are verified on CI. Smart
+    App Control was deliberately left on.
+- ✅ **Verified on CI (Linux)**: 36 tests, 0 failures, 0 skipped,
+  including all 8 `LedgerDatabasesTest` and both
+  `AccountSessionHolderTest` cases.
+- **Process change (2026-09-13)**: PRs that don't touch RLS, auth, or
+  security config merge once CI is green and the results have been
+  checked. RLS/auth PRs and design discussions still wait for review.
+- ⏳ **Not yet started**: the sync loop itself (design discussion first),
+  groups/invites UI.
 
 ### Web-Verified Notes (re-checked against current Supabase/Google docs)
 
