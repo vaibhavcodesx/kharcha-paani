@@ -457,17 +457,73 @@ Design approved on 2026-09-14:
     from the approved conflict rule.
   - `SyncWorker.doWork()` can't run under Robolectric (supabase-kt auth
     init never completes there), so its decision logic is tested directly.
-  - Multi-device behaviour hasn't been tried by hand on two real devices
-    yet.
 - 🔎 **Found, not fixed** (correctness audit, priority 2):
   - Deleting a group leaves its transactions with a dangling `groupId`
     (no foreign key).
   - `deletePerson` removes shares but leaves `isSplit = true` on the
     transaction.
-  - Several `@Insert(REPLACE)` DAOs would cascade-delete child rows if
-    they ever replaced an existing parent.
+  - ~~REPLACE inserts could cascade-delete child rows~~: assessed and
+    fixed, see below.
   - The widget duplicates the ledger balance maths instead of using the
     repository.
+- ✅ **Two-device verification (2026-09-14, done by the user)**: phone
+  and emulator on the same account, changes made on each appeared on the
+  other. Sync works end to end.
+
+#### REPLACE-insert cascade risk: assessment and fix (2026-09-14, before step 4)
+
+- **The mechanism**: SQLite's `INSERT OR REPLACE` *deletes* the
+  conflicting row before inserting. Room turns foreign keys on
+  (`PRAGMA foreign_keys = ON` in the generated `AppDatabase_Impl`), so
+  that delete fires `ON DELETE CASCADE`. The three affected parent tables
+  are `groups` → `group_members` and `transactions` → `splits` →
+  `split_shares`.
+- **What triggers it**: a REPLACE insert into one of those tables with a
+  primary key that already exists, or (for `transactions`) a `remoteId`
+  that already exists.
+- **Origin**:
+  - All 8 REPLACE inserts in `Daos.kt` date from the AI Studio build.
+  - Step 3 added no REPLACE on a parent table: its REPLACE inserts write
+    to `pending_remote_deletes` and `sync_meta`, which have no children.
+  - Step 3 *did* add a second trigger key, the unique `transactions.remoteId`
+    index.
+- **Reproduced in real SQLite** (3.45, the exact v3 table definitions,
+  foreign keys on):
+  - REPLACE with an existing transaction id silently removed its split
+    and all 3 shares.
+  - REPLACE with an existing `remoteId` swapped in a copy with no split.
+  - REPLACE with an existing group id dropped its members from 3 to 0.
+  - ABORT and a true `ON CONFLICT DO UPDATE` both left the children
+    intact.
+- **Could it have affected shipped data? No.** Every call site was
+  traced:
+  - All inserts build new entities (`id = 0`, auto-generated, with a fresh
+    random `remoteId`).
+  - Edits use `@Update`.
+  - Sync pulls look rows up by `remoteId`, then insert with ABORT or run a
+    conditional UPDATE.
+- **Severity**:
+  - *Before the fix*: latent, since no current code could trigger it.
+    But the impact if triggered was high: splits, shares or members lost
+    with no error.
+  - *Likelihood rose sharply in step 4*: syncing groups, members, splits
+    and shares writes rows whose ids already exist locally, and the loss
+    would then have propagated to the server and friends' devices.
+- ✅ **Fix (PR #6)**:
+  - All 8 app-data inserts switched from REPLACE to ABORT, with a
+    header comment explaining why.
+  - `SyncDao`'s two REPLACE inserts stay, documented as safe: those tables
+    have no children, and overwriting is the intent.
+  - No schema change.
+  - `DuplicateInsertSafetyTest` checks that re-inserting an existing
+    transaction, split or group id throws and leaves children intact,
+    that a duplicate `remoteId` is rejected, and that a batch import
+    containing an existing id rolls back as a whole.
+- **Step 4 design input**: Room's `@Upsert` falls back to an update by
+  *primary key*, so it isn't a safe way to write synced rows keyed by
+  `remoteId`. Sync writes keep the explicit "find by remoteId, then
+  conditional update" pattern.
+
 - ⏳ **Not yet started**: groups, invites and multi-user splits (step 4:
   RLS changes need review), and Realtime.
 

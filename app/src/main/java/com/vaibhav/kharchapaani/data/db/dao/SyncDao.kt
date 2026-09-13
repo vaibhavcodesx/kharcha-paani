@@ -57,6 +57,8 @@ interface SyncDao {
     @Query("DELETE FROM transactions WHERE id = :id AND syncState = 'SYNCED'")
     suspend fun deleteIfSynced(id: Long): Int
 
+    // REPLACE is safe only because pending_remote_deletes and sync_meta have no child rows to
+    // cascade; overwriting is the intent (re-queueing a delete, advancing a cursor).
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPendingDelete(delete: PendingRemoteDeleteEntity)
 

@@ -16,6 +16,13 @@ import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import kotlinx.coroutines.flow.Flow
 
+/*
+ * Every insert here is ABORT, never REPLACE. SQLite's REPLACE deletes the conflicting row before
+ * inserting, and with foreign keys on that delete cascades: re-inserting an existing transaction,
+ * split or group would silently wipe its splits, shares or members. These inserts only ever create
+ * new rows, so a conflict is a bug and must fail loudly. Updates go through @Update or explicit
+ * queries; sync writes look rows up by remoteId first.
+ */
 @Dao
 interface PersonDao {
     @Query("SELECT * FROM people ORDER BY name ASC")
@@ -27,7 +34,7 @@ interface PersonDao {
     @Query("SELECT * FROM people WHERE id = :id LIMIT 1")
     suspend fun getPersonById(id: Long): PersonEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertPerson(person: PersonEntity): Long
 
     @Update
@@ -54,7 +61,7 @@ interface GroupDao {
     @Query("SELECT * FROM groups WHERE id = :groupId LIMIT 1")
     suspend fun getGroupByIdDirect(groupId: Long): GroupEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertGroup(group: GroupEntity): Long
 
     @Update
@@ -79,7 +86,7 @@ interface GroupDao {
     @Query("SELECT * FROM group_members")
     suspend fun getAllGroupMembersDirect(): List<GroupMemberEntity>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertGroupMembers(members: List<GroupMemberEntity>)
 
     @Query("DELETE FROM group_members WHERE groupId = :groupId")
@@ -106,10 +113,10 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE id = :id LIMIT 1")
     suspend fun getTransactionByIdDirect(id: Long): TransactionEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertTransaction(transaction: TransactionEntity): Long
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertTransactions(transactions: List<TransactionEntity>): List<Long>
 
     @Update
@@ -136,7 +143,7 @@ interface SplitDao {
     @Query("SELECT * FROM splits")
     suspend fun getAllSplitsDirect(): List<SplitEntity>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertSplit(split: SplitEntity): Long
 
     @Query("DELETE FROM splits WHERE transactionId = :txId")
@@ -154,7 +161,7 @@ interface SplitDao {
     @Query("SELECT * FROM split_shares")
     suspend fun getAllSplitSharesDirect(): List<SplitShareEntity>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertSplitShares(shares: List<SplitShareEntity>)
 
     @Query("DELETE FROM split_shares WHERE splitId = :splitId")
@@ -178,7 +185,7 @@ interface SettlementDao {
     @Query("SELECT * FROM settlements WHERE groupId = :groupId ORDER BY date DESC")
     fun getSettlementsForGroup(groupId: Long): Flow<List<SettlementEntity>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertSettlement(settlement: SettlementEntity): Long
 
     @Delete
