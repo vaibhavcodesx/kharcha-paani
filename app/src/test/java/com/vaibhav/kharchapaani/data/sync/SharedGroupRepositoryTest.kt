@@ -8,6 +8,7 @@ import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
+import com.vaibhav.kharchapaani.data.repository.ArchivedGroupException
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -16,6 +17,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -148,6 +150,41 @@ class SharedGroupRepositoryTest {
         assertEquals("Goa", db.groupDao().getGroupByIdDirect(theirs)?.name)
         assertEquals("Renamed", db.groupDao().getGroupByIdDirect(mine)?.name)
         assertEquals(emptyList<Long>(), db.groupDao().getAllGroupMembersDirect().map { it.personId })
+    }
+
+    @Test
+    fun `an archived shared group refuses new, edited and deleted expenses and settlements`() = runBlocking {
+        val groupId = sharedGroupBy(self)
+        val bob = groupmate()
+        val txId = repository.saveTransactionWithSplits(personalTransaction("Villa").copy(groupId = groupId))
+        val settlementId = repository.recordSettlement(fromPersonId = -1L, toPersonId = bob, amount = 10.0, groupId = groupId)
+        repository.setGroupArchived(groupId, archived = true)
+        val before = db.transactionDao().getTransactionByIdDirect(txId)!!
+        val personal = repository.saveTransactionWithSplits(personalTransaction("Chai"))
+
+        assertThrows(ArchivedGroupException::class.java) {
+            runBlocking { repository.saveTransactionWithSplits(personalTransaction("New").copy(groupId = groupId)) }
+        }
+        assertThrows(ArchivedGroupException::class.java) {
+            runBlocking { repository.updateTransactionWithSplits(before.copy(merchant = "Edited")) }
+        }
+        assertThrows(ArchivedGroupException::class.java) {
+            runBlocking { repository.deleteTransaction(txId) }
+        }
+        assertThrows("moving a personal expense into the archived group", ArchivedGroupException::class.java) {
+            runBlocking { repository.updateTransactionWithSplits(db.transactionDao().getTransactionByIdDirect(personal)!!.copy(groupId = groupId)) }
+        }
+        assertThrows(ArchivedGroupException::class.java) {
+            runBlocking { repository.recordSettlement(fromPersonId = bob, toPersonId = -1L, amount = 5.0, groupId = groupId) }
+        }
+        assertThrows(ArchivedGroupException::class.java) {
+            runBlocking { repository.deleteSettlement(settlementId) }
+        }
+
+        assertEquals("Villa", db.transactionDao().getTransactionByIdDirect(txId)?.merchant)
+        assertEquals(1, db.transactionDao().getAllTransactionsDirect().count { it.groupId == groupId })
+        assertNotNull(db.groupSyncDao().settlementById(settlementId))
+        assertEquals("nothing is queued that the server would refuse", emptyList<String>(), db.syncDao().pendingDeletes(10))
     }
 
     @Test

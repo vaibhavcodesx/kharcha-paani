@@ -563,7 +563,8 @@ fun SplitFlowApp(
         note = txNote,
         date = txDate,
         groupId = txGroupId,
-        availableGroups = rawGroups,
+        // Archived shared groups are read-only (decision 4), so they can't be picked for new expenses.
+        availableGroups = rawGroups.filterNot { it.isShared && it.isArchived },
         isSplit = isSplit,
         splitMode = splitMode,
         paidByPersonId = paidByPersonId,

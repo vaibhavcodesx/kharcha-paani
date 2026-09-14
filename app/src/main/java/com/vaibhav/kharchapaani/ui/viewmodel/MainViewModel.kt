@@ -31,6 +31,7 @@ import com.vaibhav.kharchapaani.data.model.SplitMode
 import com.vaibhav.kharchapaani.data.model.StatementParseResult
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
 import com.vaibhav.kharchapaani.data.repository.GeminiRepository
+import com.vaibhav.kharchapaani.data.repository.ArchivedGroupException
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.data.sync.SyncScheduler
 import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
@@ -308,6 +309,10 @@ class MainViewModel(
         if (!tx.isOwnedByMe) {
             val owner = people.value.firstOrNull { it.profileId == tx.ownerProfileId }?.name ?: "the member who added it"
             _statusMessage.value = "Only $owner can edit this expense."
+            return
+        }
+        rawGroups.value.firstOrNull { it.id == tx.groupId && it.isShared && it.isArchived }?.let { group ->
+            _statusMessage.value = archivedMessage(ArchivedGroupException(group.name))
             return
         }
         _editingTransactionId.value = tx.id
@@ -742,29 +747,42 @@ class MainViewModel(
         } else emptyList()
 
         viewModelScope.launch {
-            if (_editingTransactionId.value != null && _editingTransactionId.value != 0L) {
-                ledgerRepo.updateTransactionWithSplits(
-                    tx = tx,
-                    paidByPersonId = _paidByPersonId.value,
-                    shares = splitShareEntities,
-                    splitType = _splitMode.value.name.lowercase(Locale.getDefault())
-                )
-            } else {
-                ledgerRepo.saveTransactionWithSplits(
-                    tx = tx,
-                    paidByPersonId = _paidByPersonId.value,
-                    shares = splitShareEntities,
-                    splitType = _splitMode.value.name.lowercase(Locale.getDefault())
-                )
+            try {
+                if (_editingTransactionId.value != null && _editingTransactionId.value != 0L) {
+                    ledgerRepo.updateTransactionWithSplits(
+                        tx = tx,
+                        paidByPersonId = _paidByPersonId.value,
+                        shares = splitShareEntities,
+                        splitType = _splitMode.value.name.lowercase(Locale.getDefault())
+                    )
+                } else {
+                    ledgerRepo.saveTransactionWithSplits(
+                        tx = tx,
+                        paidByPersonId = _paidByPersonId.value,
+                        shares = splitShareEntities,
+                        splitType = _splitMode.value.name.lowercase(Locale.getDefault())
+                    )
+                }
+            } catch (e: ArchivedGroupException) {
+                _statusMessage.value = archivedMessage(e)
+                return@launch
             }
             _isConfirmSheetOpen.value = false
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
     }
 
+    private fun archivedMessage(e: ArchivedGroupException) =
+        "${e.groupName} is archived, so its expenses and settlements are read-only."
+
     fun deleteTransaction(txId: Long) {
         viewModelScope.launch {
-            ledgerRepo.deleteTransaction(txId)
+            try {
+                ledgerRepo.deleteTransaction(txId)
+            } catch (e: ArchivedGroupException) {
+                _statusMessage.value = archivedMessage(e)
+                return@launch
+            }
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
     }
@@ -843,13 +861,18 @@ class MainViewModel(
 
     fun recordSettlementPayment(fromPersonId: Long, toPersonId: Long, amount: Double, note: String) {
         viewModelScope.launch {
-            ledgerRepo.recordSettlement(
-                fromPersonId = fromPersonId,
-                toPersonId = toPersonId,
-                amount = amount,
-                note = note,
-                isIou = false
-            )
+            try {
+                ledgerRepo.recordSettlement(
+                    fromPersonId = fromPersonId,
+                    toPersonId = toPersonId,
+                    amount = amount,
+                    note = note,
+                    isIou = false
+                )
+            } catch (e: ArchivedGroupException) {
+                _statusMessage.value = archivedMessage(e)
+                return@launch
+            }
             dismissSettleUp()
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
@@ -865,13 +888,18 @@ class MainViewModel(
 
     fun recordIou(fromPersonId: Long, toPersonId: Long, amount: Double, note: String) {
         viewModelScope.launch {
-            ledgerRepo.recordSettlement(
-                fromPersonId = fromPersonId,
-                toPersonId = toPersonId,
-                amount = amount,
-                note = note,
-                isIou = true
-            )
+            try {
+                ledgerRepo.recordSettlement(
+                    fromPersonId = fromPersonId,
+                    toPersonId = toPersonId,
+                    amount = amount,
+                    note = note,
+                    isIou = true
+                )
+            } catch (e: ArchivedGroupException) {
+                _statusMessage.value = archivedMessage(e)
+                return@launch
+            }
             dismissIouDialog()
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
