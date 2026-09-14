@@ -35,6 +35,7 @@ import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.data.sync.SyncScheduler
 import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
 import com.vaibhav.kharchapaani.domain.DebtSimplifier
+import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.domain.LocalStatementParser
 import com.vaibhav.kharchapaani.util.NotificationHelper
@@ -218,8 +219,11 @@ class MainViewModel(
     private val _isCreateGroupOpen = MutableStateFlow(false)
     val isCreateGroupOpen: StateFlow<Boolean> = _isCreateGroupOpen.asStateFlow()
 
-    private val _selectedGroupForDetail = MutableStateFlow<GroupWithDetails?>(null)
-    val selectedGroupForDetail: StateFlow<GroupWithDetails?> = _selectedGroupForDetail.asStateFlow()
+    private val _selectedGroupIdForDetail = MutableStateFlow<Long?>(null)
+    // Follows live data: a sync can add members or rename, archive or remove the open group.
+    val selectedGroupForDetail: StateFlow<GroupWithDetails?> = combine(_selectedGroupIdForDetail, groups) { id, all ->
+        id?.let { selected -> all.firstOrNull { it.group.id == selected } }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     // AI Financial Summary
     private val _aiSummary = MutableStateFlow<String?>(null)
@@ -287,10 +291,9 @@ class MainViewModel(
         // Initialize shares with members of this group
         val grp = groups.value.find { it.group.id == targetGroupId }
         val memberIds = grp?.members?.map { it.id }?.toSet() ?: emptySet()
-        val currentPeople = people.value
         val shareInputs = mutableListOf<ShareInput>()
         shareInputs.add(ShareInput(personId = -1L, personName = "You", isSelected = true))
-        currentPeople.forEach { person ->
+        candidatesFor(targetGroupId).forEach { person ->
             val isMember = memberIds.contains(person.id)
             shareInputs.add(ShareInput(personId = person.id, personName = person.name, isSelected = isMember))
         }
@@ -301,6 +304,12 @@ class MainViewModel(
 
     fun openEditTransaction(fullTx: FullTransaction) {
         val tx = fullTx.transaction
+        // Decision 2: only the person who added a group expense can change it.
+        if (!tx.isOwnedByMe) {
+            val owner = people.value.firstOrNull { it.profileId == tx.ownerProfileId }?.name ?: "the member who added it"
+            _statusMessage.value = "Only $owner can edit this expense."
+            return
+        }
         _editingTransactionId.value = tx.id
         _type.value = tx.type
         _amount.value = if (tx.amount % 1.0 == 0.0) tx.amount.toLong().toString() else tx.amount.toString()
@@ -320,7 +329,7 @@ class MainViewModel(
                 else -> SplitMode.EQUAL
             }
 
-            val currentPeople = people.value
+            val currentPeople = candidatesFor(tx.groupId)
             val existingShareMap = fullTx.shares.associateBy { it.personId }
 
             val shareInputs = mutableListOf<ShareInput>()
@@ -548,7 +557,31 @@ class MainViewModel(
     }
 
     fun updateGroupId(newGroupId: Long?) {
+        val wasShared = isSharedGroup(_groupId.value)
         _groupId.value = newGroupId
+        if (wasShared || isSharedGroup(newGroupId)) {
+            // Participants of a shared group are its members, and only them.
+            val selected = _shares.value.filter { it.isSelected }.map { it.personId }.toSet()
+            _shares.value = listOf(ShareInput(personId = -1L, personName = "You", isSelected = -1L in selected)) +
+                candidatesFor(newGroupId).map { ShareInput(personId = it.id, personName = it.name, isSelected = it.id in selected) }
+            if (_paidByPersonId.value != -1L && _shares.value.none { it.personId == _paidByPersonId.value }) {
+                _paidByPersonId.value = -1L
+            }
+            recalculateShares()
+        }
+    }
+
+    private fun isSharedGroup(groupId: Long?): Boolean =
+        groupId != null && rawGroups.value.firstOrNull { it.id == groupId }?.isShared == true
+
+    /**
+     * Who can take part in a split: a shared group's members, since everyone in a synced split must
+     * be a member (decision 1); otherwise everyone, as before.
+     */
+    private fun candidatesFor(groupId: Long?): List<PersonEntity> {
+        if (!isSharedGroup(groupId)) return people.value
+        val memberIds = groups.value.firstOrNull { it.group.id == groupId }?.members?.map { it.id }?.toSet().orEmpty()
+        return people.value.filter { it.id in memberIds }
     }
 
     fun setIsSplit(split: Boolean) {
@@ -574,6 +607,8 @@ class MainViewModel(
 
     fun setPaidByPersonId(id: Long) {
         _paidByPersonId.value = id
+        // In a shared group the leftover paisa follow the payer.
+        if (isSharedGroup(_groupId.value)) recalculateShares()
     }
 
     fun togglePersonShare(personId: Long) {
@@ -617,6 +652,16 @@ class MainViewModel(
         val selected = current.filter { it.isSelected }
 
         if (selected.isEmpty()) return
+
+        if (isSharedGroup(_groupId.value) && _splitMode.value == SplitMode.EQUAL && total > 0) {
+            // Paisa-exact, leftover on the payer (decision 6), so the shares always sync.
+            val rounded = SplitRounding.equal(total, selected.map { it.personId }, _paidByPersonId.value)
+            _shares.value = current.map { item ->
+                rounded[item.personId]?.let { item.copy(amount = it, percentage = 100.0 / selected.size) }
+                    ?: item.copy(amount = 0.0, percentage = 0.0)
+            }
+            return
+        }
 
         when (_splitMode.value) {
             SplitMode.EQUAL -> {
@@ -676,12 +721,21 @@ class MainViewModel(
             isSplit = _isSplit.value
         )
 
+        val selectedShares = _shares.value.filter { it.isSelected && it.amount > 0 }
+        // Percentages like 33.3 x 3 leave the amounts a few paisa short; in a shared group that would
+        // never sync, so the amounts are taken proportionally to the percentages instead.
+        val sharedPercentageAmounts = if (
+            _isSplit.value && isSharedGroup(_groupId.value) && _splitMode.value == SplitMode.PERCENTAGE &&
+            selectedShares.isNotEmpty() && selectedShares.sumOf { it.percentage } > 0
+        ) {
+            SplitRounding.byWeights(total, selectedShares.associate { it.personId to it.percentage }, _paidByPersonId.value)
+        } else null
         val splitShareEntities = if (_isSplit.value) {
-            _shares.value.filter { it.isSelected && it.amount > 0 }.map {
+            selectedShares.map {
                 SplitShareEntity(
                     splitId = 0,
                     personId = it.personId,
-                    shareAmount = it.amount,
+                    shareAmount = sharedPercentageAmounts?.get(it.personId) ?: it.amount,
                     percentage = it.percentage
                 )
             }
@@ -729,25 +783,38 @@ class MainViewModel(
         description: String,
         emoji: String,
         colorHex: String,
-        memberPersonIds: List<Long>
+        memberPersonIds: List<Long>,
+        shared: Boolean = false,
     ) {
         viewModelScope.launch {
-            ledgerRepo.createGroup(name, description, emoji, colorHex, memberPersonIds)
+            if (shared) {
+                ledgerRepo.createSharedGroup(name, description, emoji, colorHex)
+            } else {
+                ledgerRepo.createGroup(name, description, emoji, colorHex, memberPersonIds)
+            }
             dismissCreateGroup()
-            _statusMessage.value = "Group '$name' created successfully!"
+            _statusMessage.value = if (shared) {
+                "Group '$name' created. Open it to invite people."
+            } else {
+                "Group '$name' created successfully!"
+            }
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
     }
 
     fun selectGroupForDetail(group: GroupWithDetails) {
-        _selectedGroupForDetail.value = group
+        _selectedGroupIdForDetail.value = group.group.id
     }
 
     fun dismissGroupDetail() {
-        _selectedGroupForDetail.value = null
+        _selectedGroupIdForDetail.value = null
     }
 
     fun deleteGroup(groupId: Long) {
+        if (isSharedGroup(groupId)) {
+            _statusMessage.value = "Shared groups can't be deleted. Open the group to archive or leave it."
+            return
+        }
         viewModelScope.launch {
             ledgerRepo.deleteGroup(groupId)
             dismissGroupDetail()

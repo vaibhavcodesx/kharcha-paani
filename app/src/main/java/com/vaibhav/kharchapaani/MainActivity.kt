@@ -1,5 +1,6 @@
 package com.vaibhav.kharchapaani
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -70,6 +71,11 @@ import com.vaibhav.kharchapaani.ui.components.AddFriendDialog
 import com.vaibhav.kharchapaani.ui.components.ConfirmBottomSheet
 import com.vaibhav.kharchapaani.ui.components.CreateGroupDialog
 import com.vaibhav.kharchapaani.ui.components.GroupDetailSheet
+import com.vaibhav.kharchapaani.domain.InviteLink
+import com.vaibhav.kharchapaani.ui.groups.JoinGroupSheet
+import com.vaibhav.kharchapaani.ui.groups.SharedGroupPanel
+import com.vaibhav.kharchapaani.ui.groups.SharedGroupsController
+import com.vaibhav.kharchapaani.ui.groups.SharedGroupsViewModel
 import com.vaibhav.kharchapaani.ui.components.IouDialog
 import com.vaibhav.kharchapaani.ui.components.PersonLedgerSheet
 import com.vaibhav.kharchapaani.ui.components.SettleUpDialog
@@ -177,6 +183,9 @@ class MainActivity : ComponentActivity() {
                 val viewModel: MainViewModel = viewModel(
                     factory = MainViewModel.factory(application, session.database, session.userId),
                 )
+                val sharedGroups: SharedGroupsViewModel = viewModel(
+                    factory = SharedGroupsViewModel.factory(application, session.database, session.userId),
+                )
                 // App start and every return to the foreground: push anything queued, pull the rest.
                 LifecycleStartEffect(viewModel) {
                     viewModel.requestSync()
@@ -184,12 +193,14 @@ class MainActivity : ComponentActivity() {
                 }
                 LaunchedEffect(viewModel, queuedIntent) {
                     if (queuedIntent != null) {
-                        routeIntent(queuedIntent, viewModel)
+                        routeIntent(queuedIntent, viewModel, sharedGroups.controller)
                         onIntentHandled()
                     }
                 }
                 SplitFlowApp(
                     viewModel = viewModel,
+                    sharedGroups = sharedGroups.controller,
+                    selfProfileId = session.userId,
                     authUiState = authUiState,
                     onRetryProfile = authViewModel::retryProfileLoad,
                     onSignOut = { authViewModel.signOut(this@MainActivity) },
@@ -198,7 +209,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun routeIntent(intent: Intent, viewModel: MainViewModel) {
+    private fun routeIntent(intent: Intent, viewModel: MainViewModel, sharedGroups: SharedGroupsController) {
+        // 0. Group invite link. Nothing is joined until the person confirms the preview.
+        if (intent.action == Intent.ACTION_VIEW && intent.data?.scheme == InviteLink.SCHEME) {
+            viewModel.setTab(1)
+            sharedGroups.openJoin(intent.dataString.orEmpty())
+            return
+        }
         // 1. Shared Image (e.g. screenshot shared from GPay, Paytm, Gallery)
         if (Intent.ACTION_SEND == intent.action && intent.type?.startsWith("image/") == true) {
             val imageUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -247,6 +264,8 @@ private enum class AuthGate { Loading, SignIn, LedgerFailed, App }
 @Composable
 fun SplitFlowApp(
     viewModel: MainViewModel,
+    sharedGroups: SharedGroupsController,
+    selfProfileId: String,
     authUiState: AuthUiState,
     onRetryProfile: () -> Unit,
     onSignOut: () -> Unit,
@@ -304,11 +323,19 @@ fun SplitFlowApp(
     val statementParseResult by viewModel.statementParseResult.collectAsState()
     val statusMessage by viewModel.statusMessage.collectAsState()
 
+    val sharedGroupsState by sharedGroups.state.collectAsStateWithLifecycle()
+
     val context = LocalContext.current
     LaunchedEffect(statusMessage) {
         statusMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
             viewModel.clearStatusMessage()
+        }
+    }
+    LaunchedEffect(sharedGroupsState.message) {
+        sharedGroupsState.message?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            sharedGroups.clearMessage()
         }
     }
 
@@ -471,6 +498,7 @@ fun SplitFlowApp(
                         onOpenAddFriend = { viewModel.openAddFriend() },
                         onDeleteFriend = { viewModel.deleteFriend(it) },
                         onOpenCreateGroup = { viewModel.openCreateGroup() },
+                        onJoinGroup = { sharedGroups.openJoin() },
                         onSelectGroup = { viewModel.selectGroupForDetail(it) },
                         onDeleteGroup = { viewModel.deleteGroup(it) },
                         onOpenSimplifyDebts = { viewModel.openSimplifyDebts() },
@@ -581,8 +609,8 @@ fun SplitFlowApp(
     CreateGroupDialog(
         isOpen = isCreateGroupOpen,
         allPeople = people,
-        onSaveGroup = { name, desc, emoji, color, memberIds ->
-            viewModel.createNewGroup(name, desc, emoji, color, memberIds)
+        onSaveGroup = { name, desc, emoji, color, memberIds, shared ->
+            viewModel.createNewGroup(name, desc, emoji, color, memberIds, shared)
         },
         onDismiss = { viewModel.dismissCreateGroup() }
     )
@@ -594,7 +622,32 @@ fun SplitFlowApp(
             viewModel.openManualAddForGroup(groupId)
         },
         onEditTransaction = { viewModel.openEditTransaction(it) },
-        onDismiss = { viewModel.dismissGroupDetail() }
+        onDismiss = {
+            sharedGroups.dismissInvite()
+            viewModel.dismissGroupDetail()
+        },
+        sharedGroupPanel = { details ->
+            val group = details.group
+            SharedGroupPanel(
+                group = group,
+                members = details.members,
+                isCreator = group.createdByProfileId == selfProfileId,
+                invite = sharedGroupsState.invite?.takeIf { it.groupId == group.id },
+                isLeaving = sharedGroupsState.leavingGroupId == group.id,
+                onCreateInvite = { sharedGroups.createInvite(group) },
+                onShareInvite = { link -> shareInviteLink(context, group.name, link) },
+                onRevokeInvite = { sharedGroups.revokeInvite() },
+                onSetArchived = { sharedGroups.setArchived(group, it) },
+                onLeave = { sharedGroups.leaveGroup(group) { viewModel.dismissGroupDetail() } },
+            )
+        },
+    )
+
+    JoinGroupSheet(
+        state = sharedGroupsState.join,
+        onInputChange = sharedGroups::onJoinInputChange,
+        onJoin = sharedGroups::confirmJoin,
+        onDismiss = sharedGroups::dismissJoin,
     )
 
     // Person Ledger Sheet
@@ -640,4 +693,12 @@ fun SplitFlowApp(
             }
         )
     }
+}
+
+private fun shareInviteLink(context: Context, groupName: String, link: String) {
+    val send = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, "Join \"$groupName\" on Kharcha Paani to split expenses together: $link")
+    }
+    context.startActivity(Intent.createChooser(send, "Share invite"))
 }
