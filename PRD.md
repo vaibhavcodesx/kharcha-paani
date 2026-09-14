@@ -679,8 +679,50 @@ transactions could be attached to any group.
     - a pulled expense replaces its local split on every pull, even when
       unchanged;
     - leaving a group discards changes still queued in it.
-- ⏳ **Then (fast-track)**: PR 4 group, invite and join UI; PR 5 the
-  Realtime doorbell.
+- ✅ **PR 4: shared group, invite and join UI** (PR #10, fast-track: no
+  RLS, auth or server changes).
+  - **Create:** "Share with others" in the create dialog. A shared group
+    starts with only the creator (names up to 60 characters).
+  - **Invite:** from the group sheet, as an 8-character code plus a
+    `kharchapaani://join/CODE` link, via Android's share sheet. The invite
+    can be turned off. Groups that haven't reached the server yet can't be
+    invited to, and the sheet says so.
+  - **Join:** by tapped link or the new Join entry on the Splits screen.
+    The group is always **previewed first** (name, inviter, member count)
+    and nothing is joined until confirmed. One message covers unknown,
+    expired and revoked codes.
+  - **Archive / restore** (creator only), and **leave**, with a
+    confirmation. Leaving removes the group and its history from the
+    device.
+  - **Expense entry in shared groups:**
+    - only members can be picked;
+    - equal splits round to paisa with the leftover on the payer;
+    - percentage splits become exact proportional amounts (33.3% × 3
+      still adds up);
+    - groupmates' expenses read "Added by X" and don't open the editor;
+    - archived groups take no new expenses;
+    - shared groups have no delete button.
+  - The group sheet now follows live data, so a sync updates it while
+    it's open.
+  - `SharedGroupsController` holds the state and uses no Android types.
+    `SupabaseGroupMembershipRemote` calls the PR 1 RPCs. `InviteLink`
+    parses links and codes.
+  - Also fixed:
+    - The group sheet's "Add Expense" button had both a `bounceClick` and
+      an `onClick` handler, so one tap could add twice.
+    - **Compose version skew:** `lifecycle-viewmodel-compose` 2.10, pulled
+      in through other AndroidX libraries, needs Compose UI 1.9.0 at
+      runtime. So the device and test runtimes ran Compose 1.9.0 while
+      BOM 2024.09.00 compiled against 1.7.0.
+      - Calls to APIs that 1.9 changed, like `FlowRow`, throw
+        `NoSuchMethodError`. The existing Create Group member picker has
+        the same call.
+      - CI caught this in the new panel's UI tests (2 failures). The BOM
+        is now 2025.08.00: Compose 1.9.0, Material3 1.3.2.
+  - Tests:
+    - JVM: `InviteLinkTest` (3), plus 2 new rounding cases.
+    - CI: `SharedGroupsControllerTest` (7) and `SharedGroupUiTest` (4).
+- ⏳ **Then (fast-track)**: PR 5 the Realtime doorbell.
 
 ### Web-Verified Notes (re-checked against current Supabase/Google docs)
 
