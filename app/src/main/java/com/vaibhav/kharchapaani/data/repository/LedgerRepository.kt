@@ -21,11 +21,7 @@ import com.vaibhav.kharchapaani.data.model.PersonBalance
 import com.vaibhav.kharchapaani.data.model.PersonLedgerItem
 import com.vaibhav.kharchapaani.domain.GroupBalances
 import com.vaibhav.kharchapaani.domain.SplitRounding
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.withContext
+import com.vaibhav.kharchapaani.domain.roundPaisa
 import java.io.File
 import java.io.FileWriter
 import java.text.SimpleDateFormat
@@ -34,6 +30,11 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import kotlin.math.abs
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 
 /**
  * @param onLocalTransactionChange called after a syncable write commits, so the account's sync
@@ -114,9 +115,9 @@ class LedgerRepository(
             val net = theyOweMe - iOweThem
             PersonBalance(
                 person = person,
-                netBalance = (net * 100).toLong() / 100.0,
-                totalTheyOweMe = (theyOweMe * 100).toLong() / 100.0,
-                totalIOweThem = (iOweThem * 100).toLong() / 100.0
+                netBalance = roundPaisa(net),
+                totalTheyOweMe = roundPaisa(theyOweMe),
+                totalIOweThem = roundPaisa(iOweThem)
             )
         }
     }.flowOn(Dispatchers.IO)
@@ -178,10 +179,10 @@ class LedgerRepository(
             GroupWithDetails(
                 group = group,
                 members = memberEntities,
-                totalExpenses = (totalExpenses * 100).toLong() / 100.0,
-                myPaidAmount = (myPaidAmount * 100).toLong() / 100.0,
-                myShare = (myShare * 100).toLong() / 100.0,
-                netBalanceForMe = (netBalance * 100).toLong() / 100.0,
+                totalExpenses = roundPaisa(totalExpenses),
+                myPaidAmount = roundPaisa(myPaidAmount),
+                myShare = roundPaisa(myShare),
+                netBalanceForMe = roundPaisa(netBalance),
                 transactionsCount = groupTxs.size,
                 transactions = groupTxs,
                 unsyncedChanges = if (!group.isShared) 0 else {
@@ -340,7 +341,7 @@ class LedgerRepository(
         val summaries = categoryTotals.map { (cat, amount) ->
             CategorySummary(
                 category = cat,
-                amount = (amount * 100).toLong() / 100.0,
+                amount = roundPaisa(amount),
                 percentage = if (totalPersonalExpense > 0) ((amount / totalPersonalExpense) * 100f).toFloat() else 0f,
                 count = categoryCounts[cat] ?: 1
             )
@@ -352,9 +353,9 @@ class LedgerRepository(
         val streak = calculateDailyStreak(transactions.filter { it.isOwnedByMe })
 
         MonthlyAnalytics(
-            totalExpense = (totalPersonalExpense * 100).toLong() / 100.0,
-            totalIncome = (totalIncome * 100).toLong() / 100.0,
-            netCashflow = ((totalIncome - totalPersonalExpense) * 100).toLong() / 100.0,
+            totalExpense = roundPaisa(totalPersonalExpense),
+            totalIncome = roundPaisa(totalIncome),
+            netCashflow = roundPaisa(totalIncome - totalPersonalExpense),
             categorySummaries = summaries,
             topMerchant = topMerchant,
             dailyStreak = streak,
@@ -576,10 +577,44 @@ class LedgerRepository(
         // A groupmate comes from their group's membership; removing them locally would corrupt
         // shared expenses. They go away when they leave, or when this account does.
         if (db.personDao().getPersonById(personId)?.profileId != null) return@withContext
-        db.splitDao().deleteSharesForPerson(personId)
-        db.settlementDao().deleteSettlementsForPerson(personId)
-        db.groupDao().deleteMemberByPersonId(personId)
-        db.personDao().deletePersonById(personId)
+        db.withTransaction {
+            val affected = db.splitDao().getSplitsInvolvingPerson(personId).mapNotNull { split ->
+                val tx = db.transactionDao().getTransactionByIdDirect(split.transactionId) ?: return@mapNotNull null
+                FullTransaction(tx, split, db.splitDao().getSharesForSplitDirect(split.id))
+            }
+            db.splitDao().deleteSharesForPerson(personId)
+            db.settlementDao().deleteSettlementsForPerson(personId)
+            db.groupDao().deleteMemberByPersonId(personId)
+            db.personDao().deletePersonById(personId)
+            affected.forEach { collapseSplitWithNobodyElse(it, deletedPersonId = personId) }
+        }
+    }
+
+    /**
+     * After a friend is removed, a split that no longer involves anyone but me stops being a split,
+     * so it doesn't keep showing as shared. What I spent stays what it was:
+     * - I paid: the expense is mine in full (their share was cleared, as the delete dialog says).
+     * - They paid: it becomes my own expense of the share I had.
+     * - They paid and I had no share: nothing of it was mine, so it goes.
+     * A split still paid by another friend stays: I still owe them.
+     */
+    private suspend fun collapseSplitWithNobodyElse(before: FullTransaction, deletedPersonId: Long) {
+        val split = before.split ?: return
+        val tx = before.transaction
+        // Local friends only ever appear in local records; shared ones never reach this path.
+        if (tx.syncState != SyncState.LOCAL_ONLY) return
+        if (split.paidByPersonId != -1L && split.paidByPersonId != deletedPersonId) return
+        if (db.splitDao().getSharesForSplitDirect(split.id).any { it.personId != -1L }) return
+
+        val myShare = before.myPersonalShare
+        db.splitDao().deleteSplitByTransactionId(tx.id)
+        when {
+            split.paidByPersonId == -1L ->
+                db.transactionDao().updateTransaction(tx.copy(isSplit = false, updatedAt = System.currentTimeMillis()))
+            myShare > 0 ->
+                db.transactionDao().updateTransaction(tx.copy(isSplit = false, amount = roundPaisa(myShare), updatedAt = System.currentTimeMillis()))
+            else -> db.transactionDao().deleteTransactionById(tx.id)
+        }
     }
 
     // Groups Operations
@@ -705,8 +740,13 @@ class LedgerRepository(
     suspend fun deleteGroup(groupId: Long) = withContext(Dispatchers.IO) {
         // Shared history belongs to every member; shared groups are archived instead.
         if (db.groupDao().getGroupByIdDirect(groupId)?.isShared == true) return@withContext
-        db.groupDao().deleteMembersForGroup(groupId)
-        db.groupDao().deleteGroupById(groupId)
+        db.withTransaction {
+            // The expenses and settlements stay, just no longer in a group that doesn't exist.
+            db.groupDao().detachTransactionsFromGroup(groupId)
+            db.groupDao().detachSettlementsFromGroup(groupId)
+            db.groupDao().deleteMembersForGroup(groupId)
+            db.groupDao().deleteGroupById(groupId)
+        }
     }
 
 

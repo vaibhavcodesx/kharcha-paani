@@ -289,7 +289,7 @@ fun SplitFlowApp(
     var isAccountSheetOpen by rememberSaveable { mutableStateOf(false) }
     val currentTab by viewModel.currentTab.collectAsState()
     val rawTransactions by viewModel.rawTransactions.collectAsState()
-    val filteredTransactions by viewModel.filteredTransactions.collectAsState()
+    val activityFeed by viewModel.activityFeed.collectAsState()
     val totalNetOwed by viewModel.totalNetOwed.collectAsState()
     val monthlyAnalytics by viewModel.monthlyAnalytics.collectAsState()
     val personBalances by viewModel.personBalances.collectAsState()
@@ -490,7 +490,7 @@ fun SplitFlowApp(
             ) { targetTab ->
                 when (targetTab) {
                     0 -> HomeScreen(
-                        transactions = filteredTransactions,
+                        activity = activityFeed,
                         totalNetOwed = totalNetOwed,
                         monthlyAnalytics = monthlyAnalytics,
                         isParsing = isParsing,
@@ -504,6 +504,7 @@ fun SplitFlowApp(
                         onManualAdd = { viewModel.openManualAdd(it) },
                         onEditTransaction = { viewModel.openEditTransaction(it) },
                         onDeleteTransaction = { viewModel.deleteTransaction(it) },
+                        onRetractSettlement = { viewModel.retractSettlement(it) },
                         onOpenIouDialog = { viewModel.openIouDialog() },
                         onOpenSimplifyDebts = { viewModel.openSimplifyDebts() },
                         accountInitial = authUiState.accountInitial,

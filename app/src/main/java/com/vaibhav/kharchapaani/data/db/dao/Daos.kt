@@ -49,6 +49,12 @@ interface PersonDao {
 
 @Dao
 interface GroupDao {
+    @Query("UPDATE transactions SET groupId = NULL WHERE groupId = :groupId")
+    suspend fun detachTransactionsFromGroup(groupId: Long)
+
+    @Query("UPDATE settlements SET groupId = NULL WHERE groupId = :groupId")
+    suspend fun detachSettlementsFromGroup(groupId: Long)
+
     @Query("SELECT * FROM groups ORDER BY createdAt DESC")
     fun getAllGroups(): Flow<List<GroupEntity>>
 
@@ -131,6 +137,10 @@ interface TransactionDao {
 
 @Dao
 interface SplitDao {
+    /** Splits a person pays for or has a share in; read before deleting that person. */
+    @Query("SELECT * FROM splits WHERE paidByPersonId = :personId OR id IN (SELECT splitId FROM split_shares WHERE personId = :personId)")
+    suspend fun getSplitsInvolvingPerson(personId: Long): List<SplitEntity>
+
     @Query("SELECT * FROM splits WHERE transactionId = :txId LIMIT 1")
     fun getSplitForTransaction(txId: Long): Flow<SplitEntity?>
 
