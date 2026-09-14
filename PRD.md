@@ -524,8 +524,94 @@ Design approved on 2026-09-14:
   `remoteId`. Sync writes keep the explicit "find by remoteId, then
   conditional update" pattern.
 
-- ⏳ **Not yet started**: groups, invites and multi-user splits (step 4:
-  RLS changes need review), and Realtime.
+#### Migration Plan step 4: groups, invites, multi-user splits
+
+Design approved on 2026-09-14:
+1. Sharing happens only inside groups; a 1:1 split means a two-person
+   group.
+2. Only the person who added a group expense can edit or delete it.
+3. Either party can record a settlement.
+4. Groups are archived rather than deleted; members can leave.
+5. Invites are 8-character codes that expire after 7 days, shared as
+   `kharchapaani://join/CODE`.
+6. Equal splits round to 2 decimals, with the leftover paisa going to the
+   payer.
+7. Existing local groups and friends stay local-only.
+
+A fourth RLS gap turned up while re-reading the live policies:
+transactions could be attached to any group.
+
+- ✅ **PR 1: RLS policies and database functions** (PR #7,
+  `supabase/migrations/20260914033124_groups_invites_rls.sql`). Reviewed
+  and approved by the user in two rounds, then **applied to live
+  2026-09-14**.
+  - Fixes all four gaps: joining only via invite code, profiles visible
+    only to groupmates, shares visible to group members, group writes
+    require membership.
+  - Also: members can leave, groups are archived instead of deleted,
+    settlements are group-scoped, and splits, shares and settlements may
+    only reference members.
+  - New `group_invites` table, plus `create_group`, `create_group_invite`,
+    `revoke_group_invite`, `preview_invite`, `join_group` and the atomic
+    `save_group_expense` (runs as the caller, so RLS still applies).
+  - **Review round 1 (2026-09-14): hard deletes closed at the database
+    level.**
+    - Hard deletes never reach other devices, so step 3's soft-delete
+      design was only guaranteed while the app behaved.
+    - Found while fixing: `anon` and `authenticated` held DELETE *and*
+      TRUNCATE on every public table (Supabase default privileges), and
+      TRUNCATE ignores RLS entirely.
+    - The fix:
+      - Delete policies dropped on transactions, splits, shares and
+        settlements.
+      - DELETE and TRUNCATE revoked from client roles on all app tables,
+        so deletes now fail loudly with `42501`. The only real delete
+        left is leaving a group.
+      - Shares are soft-deleted instead: `save_group_expense` now
+        soft-deletes removed shares, updates kept ones and inserts new
+        ones, with the unique index made partial.
+      - `settlements` gained `updated_at` / `deleted_at` so they can be
+        retracted.
+      - A trigger bumps the parent transaction on any split or share
+        write, so direct child edits still reach members.
+  - **`supabase/tests/rls_groups_test.sql`**: 100 checks with alice, bob,
+    carol and mallory. It runs as a single transaction that ends in
+    `ROLLBACK`.
+    - Run locally on PGlite (PostgreSQL 18.3; live is 17.6), with a
+      Supabase-style bootstrap that mirrors the live roles, `auth.uid()`
+      and default privileges: **100/100 pass**, and it rolled back
+      cleanly.
+    - Every expected refusal was checked to fail for the intended reason.
+      Hard-delete and truncate checks accept only `42501`.
+    - Mutation-checked (16 mutations), each caught:
+      - each original gap
+      - anon EXECUTE
+      - DELETE restored on each of five tables
+      - DELETE privilege alone
+      - TRUNCATE on transactions and on settlements
+      - no parent-bump trigger
+      - a strict membership check on removed shares
+      - no unique index on active shares
+    - The mutations caught two checks that passed for the wrong reason:
+      anon EXECUTE was masked by the function's own check, and a truncate
+      of `transactions` was blocked by a foreign key rather than the
+      privilege. Both checks were rewritten.
+    - Includes the exact writes step 3's personal sync sends (upsert,
+      soft delete, pull), so the 3 live personal transactions keep syncing.
+  - **Live verification**:
+    - Applied as version `20260914033124`. Supabase's stored statement
+      md5 `d7241d26…` is byte-identical to the reviewed file.
+    - `rls_groups_test.sql` run on live (PostgreSQL 17.6): **100/100 pass**
+      with the same refusal reasons as locally.
+    - Afterwards: 0 test users, profiles, helper tables or functions
+      left; the 3 real personal transactions are untouched.
+    - Security advisor: only the anticipated warning (`authenticated` can
+      execute the 5 definer RPCs) and the existing, irrelevant
+      leaked-password warning (Google-only sign-in).
+    - Performance advisor: only "unused index" notices (no data yet).
+- ⏳ **Then (fast-track)**: PR 2 additive sync columns and the Realtime
+  publication, PR 3 Room v4 and the group sync engine, PR 4 group, invite
+  and join UI, PR 5 the Realtime doorbell.
 
 ### Web-Verified Notes (re-checked against current Supabase/Google docs)
 
