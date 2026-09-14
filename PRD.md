@@ -541,11 +541,10 @@ Design approved on 2026-09-14:
 A fourth RLS gap turned up while re-reading the live policies:
 transactions could be attached to any group.
 
-- 🛑 **PR 1: RLS policies and database functions** (PR #7,
-  `supabase/migrations/20260914100000_groups_invites_rls.sql`,
-  provisional version). **Written and tested locally; NOT applied to the
-  live project**, waiting on the user's review (hard stop: it replaces
-  RLS policies).
+- ✅ **PR 1: RLS policies and database functions** (PR #7,
+  `supabase/migrations/20260914033124_groups_invites_rls.sql`). Reviewed
+  and approved by the user in two rounds, then **applied to live
+  2026-09-14**.
   - Fixes all four gaps: joining only via invite code, profiles visible
     only to groupmates, shares visible to group members, group writes
     require membership.
@@ -599,9 +598,17 @@ transactions could be attached to any group.
       privilege. Both checks were rewritten.
     - Includes the exact writes step 3's personal sync sends (upsert,
       soft delete, pull), so the 3 live personal transactions keep syncing.
-  - After approval: apply, rename the file to the assigned version, run the
-    same script on the live project (rolled back), and check the security
-    advisors.
+  - **Live verification**:
+    - Applied as version `20260914033124`. Supabase's stored statement
+      md5 `d7241d26…` is byte-identical to the reviewed file.
+    - `rls_groups_test.sql` run on live (PostgreSQL 17.6): **100/100 pass**
+      with the same refusal reasons as locally.
+    - Afterwards: 0 test users, profiles, helper tables or functions
+      left; the 3 real personal transactions are untouched.
+    - Security advisor: only the anticipated warning (`authenticated` can
+      execute the 5 definer RPCs) and the existing, irrelevant
+      leaked-password warning (Google-only sign-in).
+    - Performance advisor: only "unused index" notices (no data yet).
 - ⏳ **Then (fast-track)**: PR 2 additive sync columns and the Realtime
   publication, PR 3 Room v4 and the group sync engine, PR 4 group, invite
   and join UI, PR 5 the Realtime doorbell.
