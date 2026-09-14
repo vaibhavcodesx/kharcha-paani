@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.room.withTransaction
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
@@ -58,7 +59,7 @@ class MainViewModel(
     private val userId: String,
 ) : AndroidViewModel(application) {
 
-    private val ledgerRepo = LedgerRepository(db, onLocalTransactionChange = ::requestSync)
+    private val ledgerRepo = LedgerRepository(db, onLocalTransactionChange = ::requestSync, selfProfileId = userId)
 
     val syncStatus: StateFlow<SyncStatus> = combine(
         db.syncDao().observeUnsyncedChangeCount(),
@@ -75,7 +76,11 @@ class MainViewModel(
 
     fun retryFailedSync() {
         viewModelScope.launch {
-            db.syncDao().requeueFailed()
+            db.withTransaction {
+                db.syncDao().requeueFailedTransactions()
+                db.syncDao().requeueFailedGroups()
+                db.syncDao().requeueFailedSettlements()
+            }
             requestSync()
         }
     }

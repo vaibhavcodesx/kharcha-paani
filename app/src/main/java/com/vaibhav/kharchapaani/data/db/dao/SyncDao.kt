@@ -10,8 +10,10 @@ import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Sync bookkeeping for personal transactions. Step 3 only syncs rows with no group and no split;
- * that filter is repeated in every query as defence in depth, not just decided at write time.
+ * Sync bookkeeping for personal transactions, plus the tombstones, cursors and status counts that
+ * group sync ([GroupSyncDao]) shares. Personal pushes only take rows with no group and no split;
+ * that filter is repeated in the push query as defence in depth, not just decided at write time.
+ * FAILED only ever marks a row that was eligible to sync, so the counts and retry cover every kind.
  */
 @Dao
 interface SyncDao {
@@ -62,8 +64,8 @@ interface SyncDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPendingDelete(delete: PendingRemoteDeleteEntity)
 
-    @Query("SELECT remoteId FROM pending_remote_deletes ORDER BY deletedAt LIMIT :limit")
-    suspend fun pendingDeletes(limit: Int): List<String>
+    @Query("SELECT remoteId FROM pending_remote_deletes WHERE entityType = :entityType ORDER BY deletedAt LIMIT :limit")
+    suspend fun pendingDeletes(limit: Int, entityType: String = PendingRemoteDeleteEntity.TYPE_TRANSACTION): List<String>
 
     @Query("SELECT EXISTS(SELECT 1 FROM pending_remote_deletes WHERE remoteId = :remoteId)")
     suspend fun hasPendingDelete(remoteId: String): Boolean
@@ -80,16 +82,32 @@ interface SyncDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun putMeta(meta: SyncMetaEntity)
 
+    @Query("DELETE FROM sync_meta WHERE `key` = :key")
+    suspend fun deleteMeta(key: String)
+
+    /** Every queued upload or delete: personal and group transactions, shared groups and settlements. */
     @Query(
-        "SELECT (SELECT COUNT(*) FROM transactions WHERE syncState = 'PENDING' AND groupId IS NULL AND isSplit = 0) + " +
+        "SELECT (SELECT COUNT(*) FROM transactions WHERE syncState = 'PENDING') + " +
+            "(SELECT COUNT(*) FROM groups WHERE syncState = 'PENDING') + " +
+            "(SELECT COUNT(*) FROM settlements WHERE syncState = 'PENDING') + " +
             "(SELECT COUNT(*) FROM pending_remote_deletes)"
     )
     fun observeUnsyncedChangeCount(): Flow<Int>
 
-    @Query("SELECT COUNT(*) FROM transactions WHERE syncState = 'FAILED'")
+    @Query(
+        "SELECT (SELECT COUNT(*) FROM transactions WHERE syncState = 'FAILED') + " +
+            "(SELECT COUNT(*) FROM groups WHERE syncState = 'FAILED') + " +
+            "(SELECT COUNT(*) FROM settlements WHERE syncState = 'FAILED')"
+    )
     fun observeFailedCount(): Flow<Int>
 
     /** "Retry" for rows the server rejected, e.g. after a server-side fix. */
-    @Query("UPDATE transactions SET syncState = 'PENDING' WHERE syncState = 'FAILED' AND groupId IS NULL AND isSplit = 0")
-    suspend fun requeueFailed(): Int
+    @Query("UPDATE transactions SET syncState = 'PENDING' WHERE syncState = 'FAILED'")
+    suspend fun requeueFailedTransactions(): Int
+
+    @Query("UPDATE groups SET syncState = 'PENDING' WHERE syncState = 'FAILED'")
+    suspend fun requeueFailedGroups(): Int
+
+    @Query("UPDATE settlements SET syncState = 'PENDING' WHERE syncState = 'FAILED'")
+    suspend fun requeueFailedSettlements(): Int
 }

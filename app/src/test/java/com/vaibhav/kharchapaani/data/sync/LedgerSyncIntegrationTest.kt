@@ -124,7 +124,7 @@ class LedgerSyncIntegrationTest {
         val id = repository.saveTransactionWithSplits(personalTransaction("Rejected"))
         dao.markFailedIfUnchanged(id, db.transactionDao().getTransactionByIdDirect(id)!!.updatedAt)
 
-        assertEquals(1, dao.requeueFailed())
+        assertEquals(1, dao.requeueFailedTransactions())
         assertEquals(SyncState.PENDING, db.transactionDao().getTransactionByIdDirect(id)?.syncState)
     }
 
