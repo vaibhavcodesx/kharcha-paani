@@ -51,6 +51,22 @@ class SplitRoundingTest {
     }
 
     @Test
+    fun `percentages that don't quite total 100 still cover the amount exactly`() {
+        val shares = SplitRounding.byWeights(100.0, mapOf(-1L to 33.3, 2L to 33.3, 3L to 33.3), payerId = 2L)
+
+        assertEquals(mapOf(-1L to 33.33, 2L to 33.34, 3L to 33.33), shares)
+    }
+
+    @Test
+    fun `uneven weights split proportionally`() {
+        val shares = SplitRounding.byWeights(999.99, mapOf(-1L to 70.0, 2L to 30.0), payerId = -1L)
+
+        // 699.993 and 299.997 floor to 699.99 and 299.99; the 0.01 left over goes to the payer.
+        assertEquals(mapOf(-1L to 700.0, 2L to 299.99), shares)
+        assertEquals(BigDecimal("999.99"), shares.sumExact().setScale(2))
+    }
+
+    @Test
     fun `shares that don't cover the amount are refused rather than silently fixed`() {
         assertThrows(IllegalArgumentException::class.java) {
             SplitRounding.normalize(100.0, mapOf(-1L to 40.0, 2L to 40.0), payerId = -1L)

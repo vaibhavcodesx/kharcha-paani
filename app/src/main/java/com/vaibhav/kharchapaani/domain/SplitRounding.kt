@@ -34,6 +34,23 @@ object SplitRounding {
         return settleLeftover(total, rounded, payerId)
     }
 
+    /**
+     * Shares proportional to [weights] (percentages that may not total exactly 100, such as
+     * 33.3 x 3), rounded down to paisa with the leftover on the payer.
+     */
+    fun byWeights(amount: Double, weights: Map<Long, Double>, payerId: Long): Map<Long, Double> {
+        require(weights.isNotEmpty() && weights.values.all { it >= 0 }) { "weights must be non-negative" }
+        val totalWeight = weights.values.sum()
+        require(totalWeight > 0) { "at least one weight must be positive" }
+        val total = paisa(amount)
+        val floored = weights.mapValues { (_, weight) ->
+            BigDecimal.valueOf(total).multiply(BigDecimal.valueOf(weight))
+                .divide(BigDecimal.valueOf(totalWeight), 0, RoundingMode.FLOOR)
+                .longValueExact()
+        }
+        return settleLeftover(total, floored, payerId)
+    }
+
     fun toPaisa(rupees: Double): Long = paisa(rupees)
 
     private fun settleLeftover(total: Long, sharesInPaisa: Map<Long, Long>, payerId: Long): Map<Long, Double> {
