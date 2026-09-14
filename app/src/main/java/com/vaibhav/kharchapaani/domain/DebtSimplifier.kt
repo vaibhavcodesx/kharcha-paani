@@ -26,7 +26,6 @@ object DebtSimplifier {
         netBalances: Map<Long, Double>
     ): List<SimplifiedDebt> {
         val peopleMap = people.associateBy { it.id }
-        val meName = "You"
         val meId = -1L
 
         // Net position: positive = overall creditor, negative = overall debtor
@@ -45,12 +44,25 @@ object DebtSimplifier {
         }
         netPositions[meId] = myNet
 
+        return simplifyPositions(netPositions) { id -> peopleMap[id]?.name ?: "Friend" }
+    }
+
+    /**
+     * Simplifies positions that already cover everyone, such as [GroupBalances.netPositions] for a
+     * shared group, where debts between two groupmates don't pass through "me".
+     *
+     * @param netPositions personId -> net position (positive = owed money, negative = owes money)
+     */
+    fun simplifyPositions(netPositions: Map<Long, Double>, nameOf: (Long) -> String): List<SimplifiedDebt> {
+        val meId = -1L
+        val meName = "You"
+
         val creditors = mutableListOf<PersonNet>()
         val debtors = mutableListOf<PersonNet>()
 
         for ((id, net) in netPositions) {
             val rounded = (net * 100).toLong() / 100.0
-            val name = if (id == meId) meName else peopleMap[id]?.name ?: "Friend"
+            val name = if (id == meId) meName else nameOf(id)
             if (rounded > 0.01) {
                 creditors.add(PersonNet(id, name, rounded))
             } else if (rounded < -0.01) {

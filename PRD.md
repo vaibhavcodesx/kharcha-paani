@@ -609,9 +609,78 @@ transactions could be attached to any group.
       execute the 5 definer RPCs) and the existing, irrelevant
       leaked-password warning (Google-only sign-in).
     - Performance advisor: only "unused index" notices (no data yet).
-- ⏳ **Then (fast-track)**: PR 2 additive sync columns and the Realtime
-  publication, PR 3 Room v4 and the group sync engine, PR 4 group, invite
-  and join UI, PR 5 the Realtime doorbell.
+- ✅ **PR 2: group sync columns and the Realtime publication** (PR #8,
+  `supabase/migrations/20260914034325_group_sync_columns.sql`, fast-track:
+  purely additive).
+  - `groups` gained `updated_at` (trigger), `description` and `color_hex`.
+    Joining or leaving bumps the group's clock, so membership changes
+    reach members' devices.
+  - Partial pull indexes on group transactions and settlements.
+  - Realtime publishes `transactions`, `settlements` and `groups` only.
+    Members, splits and shares are covered by their parent's clock.
+  - `supabase/tests/group_sync_columns_test.sql`: 10 checks, rolled back.
+  - Live: applied and re-checked (3 columns, 2 triggers, the 3 published
+    tables; still 0 groups, and the 3 real transactions untouched). CI:
+    66 tests, 0 failures.
+- ✅ **PR 3: shared-group data layer and sync engine** (PR #9,
+  fast-track: no server changes; the Room migration is purely additive).
+  - **Room v4** (`MIGRATION_3_4`, `4.json`, `Migration3To4Test`):
+    - people carry a Supabase `profileId`;
+    - groups, splits and settlements get backfilled unique `remoteId`s,
+      and groups and settlements get sync state;
+    - transactions record `ownerProfileId` for groupmates' expenses;
+    - tombstones get an `entityType`.
+    - Every existing row stays `LOCAL_ONLY` (decision 7).
+  - **`SplitRounding`**: shares round to paisa with the leftover on the
+    payer (decision 6), so they pass `save_group_expense`'s exact-sum
+    check. Shares that don't add up are kept as entered and the expense
+    fails to sync, rather than silently changing what someone owes.
+  - **`GroupBalances`**: net positions for every member, including debts
+    between two groupmates, plus `DebtSimplifier.simplifyPositions`.
+    Shared groups' "your balance" now includes settlements.
+  - **`SupabaseGroupRemote`**:
+    - calls `create_group` and `save_group_expense`;
+    - pulls groups with embedded members, and expenses with embedded
+      splits (object, array or null all decode);
+    - pages settlements.
+    - A **403 on a group write is final** (the group is archived or the
+      writer left) instead of being retried forever.
+  - **`LedgerRepository` rules**:
+    - only the adder edits or deletes a group expense;
+    - only the two parties retract a settlement;
+    - only the creator renames, archives or un-archives a group;
+    - shared groups and groupmates can't be deleted locally;
+    - membership only comes from the server.
+    - Moving an expense out of a shared group retracts it and gives it a
+      new remote id, because members only pull their group's rows.
+    - Analytics and the streak ignore groupmates' expenses I have no share
+      in.
+  - **`GroupSyncEngine`**, run by `SyncWorker` after personal sync:
+    - Push: groups, then expenses, then settlements, then retractions.
+    - Pull: all visible groups with members, removing any this account has
+      left; then expenses and settlements by cursor.
+    - A newly visible group resets those cursors, so history from before
+      joining arrives.
+    - Same conflict rules as step 3.
+    - "Last synced" is written only after both engines finish.
+  - Status counts and Retry now include groups, group expenses and
+    settlements.
+  - Tests:
+    - JVM, run locally: `SplitRoundingTest` (8), `GroupBalancesTest` (3),
+      `RemoteGroupsDecodingTest` (3).
+    - Robolectric with real Room: `GroupSyncEngineTest` (11) against a fake
+      server that enforces the schema's rules, and
+      `SharedGroupRepositoryTest` (10).
+    - The first CI run had 1 failure, in the migration test's own
+      assertion: SQLite returns the REAL 300.0 as "300". It now compares
+      numerically.
+  - Logged for the correctness audit:
+    - `DebtSimplifier` truncates rather than rounds paisa;
+    - a pulled expense replaces its local split on every pull, even when
+      unchanged;
+    - leaving a group discards changes still queued in it.
+- ⏳ **Then (fast-track)**: PR 4 group, invite and join UI; PR 5 the
+  Realtime doorbell.
 
 ### Web-Verified Notes (re-checked against current Supabase/Google docs)
 

@@ -7,17 +7,31 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.util.UUID
 
-@Entity(tableName = "people")
+@Entity(
+    tableName = "people",
+    indices = [Index(value = ["profileId"], unique = true)],
+)
 data class PersonEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val avatarColor: String, // hex or preset identifier
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    /**
+     * The Supabase profile this person is, for members of shared groups. Null for local-only
+     * friends, who can't take part in anything that syncs (decision 1: every participant in a
+     * shared split is a registered user).
+     */
+    val profileId: String? = null,
+    val avatarUrl: String? = null,
 )
 
 @Entity(
     tableName = "groups",
-    indices = [Index(value = ["name"])]
+    indices = [
+        Index(value = ["name"]),
+        Index(value = ["remoteId"], unique = true),
+        Index(value = ["syncState"]),
+    ]
 )
 data class GroupEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -25,8 +39,17 @@ data class GroupEntity(
     val description: String = "",
     val emoji: String = "🏖️",
     val colorHex: String = "#FF7A3D",
-    val createdAt: Long = System.currentTimeMillis()
-)
+    val createdAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(defaultValue = "") val remoteId: String = UUID.randomUUID().toString(),
+    @ColumnInfo(defaultValue = "0") val updatedAt: Long = System.currentTimeMillis(),
+    /** LOCAL_ONLY groups are private to this phone (decision 7); any other state is a shared group. */
+    @ColumnInfo(defaultValue = "LOCAL_ONLY") val syncState: SyncState = SyncState.LOCAL_ONLY,
+    val archivedAt: Long? = null,
+    val createdByProfileId: String? = null,
+) {
+    val isShared: Boolean get() = syncState != SyncState.LOCAL_ONLY
+    val isArchived: Boolean get() = archivedAt != null
+}
 
 @Entity(
     tableName = "group_members",
@@ -72,7 +95,11 @@ data class TransactionEntity(
     /** Local write time. Pushes only mark a row synced if this hasn't changed since it was read. */
     @ColumnInfo(defaultValue = "0") val updatedAt: Long = System.currentTimeMillis(),
     @ColumnInfo(defaultValue = "LOCAL_ONLY") val syncState: SyncState = SyncState.LOCAL_ONLY,
-)
+    /** Who added it, when that isn't this account (a groupmate's expense): read-only here (decision 2). */
+    val ownerProfileId: String? = null,
+) {
+    val isOwnedByMe: Boolean get() = ownerProfileId == null
+}
 
 enum class SyncState {
     /** Matches the server copy as of the last push or pull. */
@@ -93,7 +120,13 @@ enum class SyncState {
 data class PendingRemoteDeleteEntity(
     @PrimaryKey val remoteId: String,
     val deletedAt: Long = System.currentTimeMillis(),
-)
+    @ColumnInfo(defaultValue = TYPE_TRANSACTION) val entityType: String = TYPE_TRANSACTION,
+) {
+    companion object {
+        const val TYPE_TRANSACTION = "transaction"
+        const val TYPE_SETTLEMENT = "settlement"
+    }
+}
 
 @Entity(tableName = "sync_meta")
 data class SyncMetaEntity(
@@ -111,14 +144,16 @@ data class SyncMetaEntity(
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["transactionId"])]
+    indices = [Index(value = ["transactionId"]), Index(value = ["remoteId"], unique = true)]
 )
 data class SplitEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val transactionId: Long,
     val totalAmount: Double,
     val paidByPersonId: Long = -1L, // -1 means "Me", otherwise PersonEntity.id
-    val splitType: String = "equal" // "equal", "exact", "percentage"
+    val splitType: String = "equal", // "equal", "exact", "percentage"
+    /** The server split id for group expenses; sent with every save so edits keep the same split. */
+    @ColumnInfo(defaultValue = "") val remoteId: String = UUID.randomUUID().toString(),
 )
 
 @Entity(
@@ -143,7 +178,14 @@ data class SplitShareEntity(
 
 @Entity(
     tableName = "settlements",
-    indices = [Index(value = ["fromPersonId"]), Index(value = ["toPersonId"]), Index(value = ["date"]), Index(value = ["groupId"])]
+    indices = [
+        Index(value = ["fromPersonId"]),
+        Index(value = ["toPersonId"]),
+        Index(value = ["date"]),
+        Index(value = ["groupId"]),
+        Index(value = ["remoteId"], unique = true),
+        Index(value = ["syncState"]),
+    ]
 )
 data class SettlementEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -154,5 +196,9 @@ data class SettlementEntity(
     val note: String = "",
     val isIou: Boolean = false, // true = informal IOU / direct debt, false = debt settlement
     val groupId: Long? = null,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(defaultValue = "") val remoteId: String = UUID.randomUUID().toString(),
+    @ColumnInfo(defaultValue = "0") val updatedAt: Long = System.currentTimeMillis(),
+    /** PENDING/SYNCED only inside shared groups; everything else stays LOCAL_ONLY (decision 1). */
+    @ColumnInfo(defaultValue = "LOCAL_ONLY") val syncState: SyncState = SyncState.LOCAL_ONLY,
 )

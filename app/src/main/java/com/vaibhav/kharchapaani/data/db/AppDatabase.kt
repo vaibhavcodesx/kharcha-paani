@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import com.vaibhav.kharchapaani.data.db.dao.GroupDao
+import com.vaibhav.kharchapaani.data.db.dao.GroupSyncDao
 import com.vaibhav.kharchapaani.data.db.dao.PersonDao
 import com.vaibhav.kharchapaani.data.db.dao.SettlementDao
 import com.vaibhav.kharchapaani.data.db.dao.SplitDao
@@ -33,7 +34,7 @@ import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
         PendingRemoteDeleteEntity::class,
         SyncMetaEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -43,6 +44,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun settlementDao(): SettlementDao
     abstract fun groupDao(): GroupDao
     abstract fun syncDao(): SyncDao
+    abstract fun groupSyncDao(): GroupSyncDao
 
     companion object {
         /**
@@ -50,7 +52,7 @@ abstract class AppDatabase : RoomDatabase() {
          * app/schemas and a MigrationTestHelper test. There is deliberately no destructive
          * fallback: a missing migration crashes on open instead of silently wiping the ledger.
          */
-        internal val ALL_MIGRATIONS = arrayOf<Migration>(MIGRATION_2_3)
+        internal val ALL_MIGRATIONS = arrayOf<Migration>(MIGRATION_2_3, MIGRATION_3_4)
 
         /** Open databases through [LedgerDatabases], which scopes the file to the signed-in account. */
         internal fun builder(context: Context, name: String): Builder<AppDatabase> =
