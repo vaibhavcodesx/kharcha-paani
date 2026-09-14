@@ -65,7 +65,8 @@ fun GroupDetailSheet(
     groupDetails: GroupWithDetails?,
     onAddExpense: (groupId: Long) -> Unit,
     onEditTransaction: (FullTransaction) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    sharedGroupPanel: @Composable (GroupWithDetails) -> Unit = {},
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -191,13 +192,18 @@ fun GroupDetailSheet(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Action to Add Expense directly to this group
+                if (group.isShared) {
+                    sharedGroupPanel(groupDetails)
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                // Action to Add Expense directly to this group. Archived groups are read-only (decision 4).
                 Button(
                     onClick = { onAddExpense(group.id) },
+                    enabled = !group.isArchived,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
-                        .bounceClick { onAddExpense(group.id) }
                         .testTag("add_group_expense_button"),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -246,6 +252,10 @@ fun GroupDetailSheet(
                             val tx = fullTx.transaction
                             val formattedTime = sdfDate.format(Date(tx.date))
                             val isSplit = fullTx.split != null
+                            // Decision 2: a groupmate's expense is read-only here.
+                            val addedBy = tx.ownerProfileId?.let { owner ->
+                                groupDetails.members.firstOrNull { it.profileId == owner }?.name ?: "a former member"
+                            }
 
                             Row(
                                 modifier = Modifier
@@ -253,7 +263,7 @@ fun GroupDetailSheet(
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(CharcoalCard)
                                     .border(1.dp, CharcoalBorder, RoundedCornerShape(12.dp))
-                                    .clickable { onEditTransaction(fullTx) }
+                                    .clickable(enabled = addedBy == null) { onEditTransaction(fullTx) }
                                     .padding(12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
@@ -268,7 +278,8 @@ fun GroupDetailSheet(
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = "$formattedTime • ${tx.paymentMethod} • ${if (isSplit) "Split" else "Direct"}",
+                                        text = addedBy?.let { "$formattedTime • Added by $it" }
+                                            ?: "$formattedTime • ${tx.paymentMethod} • ${if (isSplit) "Split" else "Direct"}",
                                         style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray)
                                     )
                                 }

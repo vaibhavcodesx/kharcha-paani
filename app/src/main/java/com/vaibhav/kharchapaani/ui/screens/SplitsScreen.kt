@@ -76,6 +76,7 @@ fun SplitsScreen(
     onOpenAddFriend: () -> Unit,
     onDeleteFriend: (Long) -> Unit,
     onOpenCreateGroup: () -> Unit,
+    onJoinGroup: () -> Unit,
     onSelectGroup: (GroupWithDetails) -> Unit,
     onDeleteGroup: (Long) -> Unit,
     onOpenSimplifyDebts: () -> Unit,
@@ -411,14 +412,28 @@ fun SplitsScreen(
                             fontWeight = FontWeight.Bold
                         )
                     )
-                    Text(
-                        text = "+ Create",
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            color = WarmAmberPrimary,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        modifier = Modifier.clickable { onOpenCreateGroup() }
-                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text(
+                            text = "Join",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                color = OffWhiteText,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            modifier = Modifier
+                                .clickable(onClickLabel = "Join a group with an invite") { onJoinGroup() }
+                                .padding(vertical = 12.dp)
+                        )
+                        Text(
+                            text = "+ Create",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                color = WarmAmberPrimary,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            modifier = Modifier
+                                .clickable { onOpenCreateGroup() }
+                                .padding(vertical = 12.dp)
+                        )
+                    }
                 }
             }
 

@@ -101,13 +101,18 @@ fun GroupCard(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "${groupDetails.members.size + 1} members • ${groupDetails.transactionsCount} expenses",
+                            text = "${groupDetails.members.size + 1} members • ${groupDetails.transactionsCount} expenses" + when {
+                                group.isArchived -> " • Archived"
+                                group.isShared -> " • Shared"
+                                else -> ""
+                            },
                             style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray)
                         )
                     }
                 }
 
-                IconButton(
+                // Shared groups are archived or left from their detail sheet, never deleted (decision 4).
+                if (!group.isShared) IconButton(
                     onClick = onDeleteGroup,
                     modifier = Modifier.size(32.dp)
                 ) {

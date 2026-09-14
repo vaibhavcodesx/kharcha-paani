@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -34,6 +35,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -63,6 +67,7 @@ import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 
 private val EMOJI_OPTIONS = listOf("⛰️", "🏖️", "🚗", "🏠", "🍕", "🎉", "✈️", "🍿", "💼", "🏕️")
+private const val MAX_SHARED_NAME = 60
 private val COLOR_OPTIONS = listOf("#FF7A3D", "#C6F24C", "#70C1FF", "#FFB3BA", "#818CF8", "#FBBF24")
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -70,7 +75,7 @@ private val COLOR_OPTIONS = listOf("#FF7A3D", "#C6F24C", "#70C1FF", "#FFB3BA", "
 fun CreateGroupDialog(
     isOpen: Boolean,
     allPeople: List<PersonEntity>,
-    onSaveGroup: (name: String, description: String, emoji: String, colorHex: String, memberIds: List<Long>) -> Unit,
+    onSaveGroup: (name: String, description: String, emoji: String, colorHex: String, memberIds: List<Long>, shared: Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
     if (!isOpen) return
@@ -80,6 +85,9 @@ fun CreateGroupDialog(
     var selectedEmoji by remember { mutableStateOf("⛰️") }
     var selectedColor by remember { mutableStateOf("#FF7A3D") }
     val selectedMemberIds = remember { mutableStateListOf<Long>() }
+    var isShared by remember { mutableStateOf(false) }
+    // The server caps shared group names at 60 characters.
+    val nameIsValid = groupName.isNotBlank() && (!isShared || groupName.trim().length <= MAX_SHARED_NAME)
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -213,61 +221,102 @@ fun CreateGroupDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Members Multi-Select
-                Text(
-                    text = "Select Group Members (You are included)",
-                    style = MaterialTheme.typography.labelMedium.copy(color = SubMutedWarmGray)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                if (allPeople.isEmpty()) {
-                    Text(
-                        text = "No friends added yet. You can add more members later.",
-                        style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(CharcoalCard)
+                        .toggleable(value = isShared, role = Role.Switch, onValueChange = { isShared = it })
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Share with others",
+                            style = MaterialTheme.typography.titleSmall.copy(color = OffWhiteText, fontWeight = FontWeight.Bold)
+                        )
+                        Text(
+                            text = if (isShared) {
+                                "Everyone you invite sees and adds expenses. Invite them by link once it's created."
+                            } else {
+                                "Only on this phone. Friends here don't need the app."
+                            },
+                            style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Switch(
+                        checked = isShared,
+                        onCheckedChange = null,
+                        colors = SwitchDefaults.colors(checkedTrackColor = WarmAmberPrimary, checkedThumbColor = CharcoalBg)
                     )
-                } else {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        allPeople.forEach { person ->
-                            val isSelected = selectedMemberIds.contains(person.id)
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = {
-                                    if (isSelected) {
-                                        selectedMemberIds.remove(person.id)
-                                    } else {
-                                        selectedMemberIds.add(person.id)
-                                    }
-                                },
-                                label = { Text(person.name) },
-                                leadingIcon = {
-                                    if (isSelected) {
-                                        Icon(
-                                            Icons.Default.Check,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                    }
-                                },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = ChartreuseSecondary,
-                                    selectedLabelColor = CharcoalBg,
-                                    selectedLeadingIconColor = CharcoalBg,
-                                    containerColor = CharcoalCard,
-                                    labelColor = OffWhiteText
-                                ),
-                                border = FilterChipDefaults.filterChipBorder(
-                                    enabled = true,
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // A shared group's members join through invites, not from the local friends list.
+                if (!isShared) {
+                    // Members Multi-Select
+                    Text(
+                        text = "Select Group Members (You are included)",
+                        style = MaterialTheme.typography.labelMedium.copy(color = SubMutedWarmGray)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (allPeople.isEmpty()) {
+                        Text(
+                            text = "No friends added yet. You can add more members later.",
+                            style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray)
+                        )
+                    } else {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            allPeople.forEach { person ->
+                                val isSelected = selectedMemberIds.contains(person.id)
+                                FilterChip(
                                     selected = isSelected,
-                                    borderColor = CharcoalBorder,
-                                    selectedBorderColor = ChartreuseSecondary
+                                    onClick = {
+                                        if (isSelected) {
+                                            selectedMemberIds.remove(person.id)
+                                        } else {
+                                            selectedMemberIds.add(person.id)
+                                        }
+                                    },
+                                    label = { Text(person.name) },
+                                    leadingIcon = {
+                                        if (isSelected) {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
+                                    },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = ChartreuseSecondary,
+                                        selectedLabelColor = CharcoalBg,
+                                        selectedLeadingIconColor = CharcoalBg,
+                                        containerColor = CharcoalCard,
+                                        labelColor = OffWhiteText
+                                    ),
+                                    border = FilterChipDefaults.filterChipBorder(
+                                        enabled = true,
+                                        selected = isSelected,
+                                        borderColor = CharcoalBorder,
+                                        selectedBorderColor = ChartreuseSecondary
+                                    )
                                 )
-                            )
+                            }
                         }
                     }
+                } else if (groupName.trim().length > MAX_SHARED_NAME) {
+                    Text(
+                        text = "Shared group names can be up to $MAX_SHARED_NAME characters.",
+                        style = MaterialTheme.typography.bodySmall.copy(color = WarmAmberPrimary)
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -291,17 +340,18 @@ fun CreateGroupDialog(
 
                     Button(
                         onClick = {
-                            if (groupName.isNotBlank()) {
+                            if (nameIsValid) {
                                 onSaveGroup(
                                     groupName,
                                     description,
                                     selectedEmoji,
                                     selectedColor,
-                                    selectedMemberIds.toList()
+                                    if (isShared) emptyList() else selectedMemberIds.toList(),
+                                    isShared
                                 )
                             }
                         },
-                        enabled = groupName.isNotBlank(),
+                        enabled = nameIsValid,
                         modifier = Modifier
                             .weight(1f)
                             .testTag("save_group_button"),
