@@ -19,6 +19,7 @@ import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
+import com.vaibhav.kharchapaani.data.model.ActivityItem
 import com.vaibhav.kharchapaani.data.model.FullTransaction
 import com.vaibhav.kharchapaani.data.model.GroupWithDetails
 import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
@@ -30,18 +31,21 @@ import com.vaibhav.kharchapaani.data.model.SimplifiedDebt
 import com.vaibhav.kharchapaani.data.model.SplitMode
 import com.vaibhav.kharchapaani.data.model.StatementParseResult
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
-import com.vaibhav.kharchapaani.data.repository.GeminiRepository
 import com.vaibhav.kharchapaani.data.repository.ArchivedGroupException
+import com.vaibhav.kharchapaani.data.repository.GeminiRepository
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.data.sync.SyncScheduler
 import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
+import com.vaibhav.kharchapaani.domain.ActivityFeed
 import com.vaibhav.kharchapaani.domain.DebtSimplifier
+import com.vaibhav.kharchapaani.domain.LocalStatementParser
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
-import com.vaibhav.kharchapaani.domain.LocalStatementParser
 import com.vaibhav.kharchapaani.util.NotificationHelper
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
+import java.util.Locale
+import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -49,8 +53,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.util.Locale
-import kotlin.math.roundToInt
 
 /**
  * Scoped to one signed-in account: [db] is that account's ledger file. A different account gets a
@@ -122,28 +124,28 @@ class MainViewModel(
             MonthlyAnalytics(0.0, 0.0, 0.0, emptyList(), "None", 0, "Food", 0.0)
         )
 
-    val filteredTransactions: StateFlow<List<FullTransaction>> = combine(
+    /** Recent Activity: transactions plus settlements and IOUs, filtered and searched together. */
+    val activityFeed: StateFlow<List<ActivityItem>> = combine(
         rawTransactions,
+        ledgerRepo.allSettlements,
+        combine(people, rawGroups) { people, groups -> people to groups },
         searchQuery,
         selectedFilter
-    ) { transactions, query, filter ->
-        transactions.filter { fullTx ->
-            val tx = fullTx.transaction
-            val matchesQuery = query.isBlank() ||
-                    tx.merchant.contains(query, ignoreCase = true) ||
-                    tx.category.contains(query, ignoreCase = true) ||
-                    tx.note.contains(query, ignoreCase = true)
-
-            val matchesFilter = when (filter) {
-                "Expenses" -> tx.type == "expense" && !tx.isSplit
-                "Income" -> tx.type == "income"
-                "Splits" -> tx.isSplit
-                else -> true
-            }
-
-            matchesQuery && matchesFilter
-        }
+    ) { transactions, settlements, (people, groups), query, filter ->
+        ActivityFeed.build(transactions, settlements, people, groups, query, filter)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun retractSettlement(settlementId: Long) {
+        viewModelScope.launch {
+            try {
+                ledgerRepo.deleteSettlement(settlementId)
+            } catch (e: ArchivedGroupException) {
+                _statusMessage.value = archivedMessage(e)
+                return@launch
+            }
+            SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
+        }
+    }
 
     // Overall Net Balance with friends
     val totalNetOwed: StateFlow<Double> = personBalances.combine(MutableStateFlow(Unit)) { balances, _ ->
