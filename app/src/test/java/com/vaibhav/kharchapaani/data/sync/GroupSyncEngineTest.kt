@@ -168,6 +168,30 @@ class GroupSyncEngineTest {
     }
 
     @Test
+    fun `pulling an unchanged expense again leaves its split and shares untouched, a real change rewrites them`() = runBlocking {
+        joinGoaWithBobAndCarol()
+        remote.expenseBy(owner = bob, id = "tx-same", groupId = goa, amount = 60.0, paidBy = bob, shares = mapOf(alice to 30.0, bob to 30.0))
+        engine.sync()
+        val row = transaction("tx-same")!!
+        val split = groupDao.splitForTransaction(row.id)!!
+        val shareIds = groupDao.sharesForSplit(split.id).map { it.id }.toSet()
+
+        // The same content arrives again with a newer clock, as the cursor overlap and parent bumps do.
+        remote.expenses["tx-same"] = remote.expenses.getValue("tx-same").copy(updatedAt = remote.tick())
+        db.syncDao().deleteMeta(GroupSyncEngine.GROUP_EXPENSES_PULL_CURSOR)
+        engine.pullGroupExpenses()
+
+        assertEquals(split.id, groupDao.splitForTransaction(row.id)!!.id)
+        assertEquals(shareIds, groupDao.sharesForSplit(split.id).map { it.id }.toSet())
+
+        remote.expenseBy(owner = bob, id = "tx-same", groupId = goa, amount = 60.0, paidBy = bob, shares = mapOf(alice to 20.0, bob to 40.0))
+        engine.pullGroupExpenses()
+
+        val rewritten = groupDao.splitForTransaction(row.id)!!
+        assertEquals(mapOf(-1L to 20.0, person(bob).id to 40.0), groupDao.sharesForSplit(rewritten.id).associate { it.personId to it.shareAmount })
+    }
+
+    @Test
     fun `a pulled delete removes a synced expense but never a queued local edit`() = runBlocking {
         joinGoaWithBobAndCarol()
         remote.expenseBy(owner = bob, id = "tx-1", groupId = goa, amount = 40.0, paidBy = bob, shares = mapOf(alice to 20.0, bob to 20.0))

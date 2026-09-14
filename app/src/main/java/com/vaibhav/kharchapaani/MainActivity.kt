@@ -661,6 +661,8 @@ fun SplitFlowApp(
                 isCreator = group.createdByProfileId == selfProfileId,
                 invite = sharedGroupsState.invite?.takeIf { it.groupId == group.id },
                 isLeaving = sharedGroupsState.leavingGroupId == group.id,
+                unsyncedChanges = details.unsyncedChanges,
+                onSyncNow = { viewModel.requestSync() },
                 onCreateInvite = { sharedGroups.createInvite(group) },
                 onShareInvite = { link -> shareInviteLink(context, group.name, link) },
                 onRevokeInvite = { sharedGroups.revokeInvite() },

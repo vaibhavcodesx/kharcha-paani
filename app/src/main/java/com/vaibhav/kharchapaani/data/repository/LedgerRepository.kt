@@ -184,7 +184,13 @@ class LedgerRepository(
                 myShare = roundPaisa(myShare),
                 netBalanceForMe = roundPaisa(netBalance),
                 transactionsCount = groupTxs.size,
-                transactions = groupTxs
+                transactions = groupTxs,
+                unsyncedChanges = if (!group.isShared) 0 else {
+                    val unsynced = setOf(SyncState.PENDING, SyncState.FAILED)
+                    groupTxs.count { it.transaction.syncState in unsynced } +
+                        settlements.count { it.groupId == group.id && it.syncState in unsynced } +
+                        (if (group.syncState in unsynced) 1 else 0)
+                },
             )
         }
     }.flowOn(Dispatchers.IO)
