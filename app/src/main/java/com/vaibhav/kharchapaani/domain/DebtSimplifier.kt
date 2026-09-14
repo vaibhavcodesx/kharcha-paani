@@ -36,7 +36,7 @@ object DebtSimplifier {
         // netBalances[personId] < 0 means I owe Person (Me is debtor, Person is creditor)
         var myNet = 0.0
         for ((personId, balance) in netBalances) {
-            if (abs(balance) > 0.01) {
+            if (abs(balance) >= HALF_PAISA) {
                 // balance > 0 => Person owes Me => Person net -= balance, My net += balance
                 netPositions[personId] = (netPositions[personId] ?: 0.0) - balance
                 myNet += balance
@@ -61,11 +61,11 @@ object DebtSimplifier {
         val debtors = mutableListOf<PersonNet>()
 
         for ((id, net) in netPositions) {
-            val rounded = (net * 100).toLong() / 100.0
+            val rounded = roundPaisa(net)
             val name = if (id == meId) meName else nameOf(id)
-            if (rounded > 0.01) {
+            if (rounded >= ONE_PAISA) {
                 creditors.add(PersonNet(id, name, rounded))
-            } else if (rounded < -0.01) {
+            } else if (rounded <= -ONE_PAISA) {
                 debtors.add(PersonNet(id, name, abs(rounded))) // store as positive debt
             }
         }
@@ -81,9 +81,9 @@ object DebtSimplifier {
             val debtor = debtors.first()
 
             val settleAmount = min(creditor.netAmount, debtor.netAmount)
-            val roundedAmount = (settleAmount * 100).toLong() / 100.0
+            val roundedAmount = roundPaisa(settleAmount)
 
-            if (roundedAmount > 0.01) {
+            if (roundedAmount >= ONE_PAISA) {
                 simplifiedPayments.add(
                     SimplifiedDebt(
                         fromPersonId = debtor.personId,
@@ -98,14 +98,18 @@ object DebtSimplifier {
             creditor.netAmount -= settleAmount
             debtor.netAmount -= settleAmount
 
-            if (creditor.netAmount < 0.01) {
+            if (creditor.netAmount < HALF_PAISA) {
                 creditors.removeAt(0)
             }
-            if (debtor.netAmount < 0.01) {
+            if (debtor.netAmount < HALF_PAISA) {
                 debtors.removeAt(0)
             }
         }
 
         return simplifiedPayments
     }
+
+    // A debt of exactly one paisa is still a debt; comparisons used to require more than 0.01.
+    private const val ONE_PAISA = 0.01
+    private const val HALF_PAISA = 0.005
 }

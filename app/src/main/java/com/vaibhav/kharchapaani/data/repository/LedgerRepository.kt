@@ -21,11 +21,7 @@ import com.vaibhav.kharchapaani.data.model.PersonBalance
 import com.vaibhav.kharchapaani.data.model.PersonLedgerItem
 import com.vaibhav.kharchapaani.domain.GroupBalances
 import com.vaibhav.kharchapaani.domain.SplitRounding
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.withContext
+import com.vaibhav.kharchapaani.domain.roundPaisa
 import java.io.File
 import java.io.FileWriter
 import java.text.SimpleDateFormat
@@ -34,6 +30,11 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import kotlin.math.abs
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 
 /**
  * @param onLocalTransactionChange called after a syncable write commits, so the account's sync
@@ -114,9 +115,9 @@ class LedgerRepository(
             val net = theyOweMe - iOweThem
             PersonBalance(
                 person = person,
-                netBalance = (net * 100).toLong() / 100.0,
-                totalTheyOweMe = (theyOweMe * 100).toLong() / 100.0,
-                totalIOweThem = (iOweThem * 100).toLong() / 100.0
+                netBalance = roundPaisa(net),
+                totalTheyOweMe = roundPaisa(theyOweMe),
+                totalIOweThem = roundPaisa(iOweThem)
             )
         }
     }.flowOn(Dispatchers.IO)
@@ -178,10 +179,10 @@ class LedgerRepository(
             GroupWithDetails(
                 group = group,
                 members = memberEntities,
-                totalExpenses = (totalExpenses * 100).toLong() / 100.0,
-                myPaidAmount = (myPaidAmount * 100).toLong() / 100.0,
-                myShare = (myShare * 100).toLong() / 100.0,
-                netBalanceForMe = (netBalance * 100).toLong() / 100.0,
+                totalExpenses = roundPaisa(totalExpenses),
+                myPaidAmount = roundPaisa(myPaidAmount),
+                myShare = roundPaisa(myShare),
+                netBalanceForMe = roundPaisa(netBalance),
                 transactionsCount = groupTxs.size,
                 transactions = groupTxs
             )
@@ -334,7 +335,7 @@ class LedgerRepository(
         val summaries = categoryTotals.map { (cat, amount) ->
             CategorySummary(
                 category = cat,
-                amount = (amount * 100).toLong() / 100.0,
+                amount = roundPaisa(amount),
                 percentage = if (totalPersonalExpense > 0) ((amount / totalPersonalExpense) * 100f).toFloat() else 0f,
                 count = categoryCounts[cat] ?: 1
             )
@@ -346,9 +347,9 @@ class LedgerRepository(
         val streak = calculateDailyStreak(transactions.filter { it.isOwnedByMe })
 
         MonthlyAnalytics(
-            totalExpense = (totalPersonalExpense * 100).toLong() / 100.0,
-            totalIncome = (totalIncome * 100).toLong() / 100.0,
-            netCashflow = ((totalIncome - totalPersonalExpense) * 100).toLong() / 100.0,
+            totalExpense = roundPaisa(totalPersonalExpense),
+            totalIncome = roundPaisa(totalIncome),
+            netCashflow = roundPaisa(totalIncome - totalPersonalExpense),
             categorySummaries = summaries,
             topMerchant = topMerchant,
             dailyStreak = streak,
