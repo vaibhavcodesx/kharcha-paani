@@ -817,9 +817,49 @@ transactions could be attached to any group.
       (`authenticated` can execute the 5 definer RPCs) and the irrelevant
       leaked-password notice.
     - Performance advisor: only "unused index" notices.
-- ⏳ **Step 4 end-of-step check-in**: re-run the two-device verification
-  after PR #14 is applied (settle up and IOU in a group, a split prompt,
-  archive read-only on both phones, leave).
+- ✅ **Step 4 complete (2026-09-14).** The two-device retest after PRs
+  #12–#14 passed end to end: settle up and IOU in a group, the split
+  prompt, archived groups read-only on both phones, and leaving.
+- ✅ **Correctness backlog batch** (PRs #15–#17, fast-track, 155 tests on
+  CI):
+  - **Settlements and IOUs missing from Recent Activity** (reported
+    after the retest).
+    - Home now merges them with transactions (`ActivityFeed`), newest
+      first, under All and Splits, and searchable.
+    - Rows read "Bob paid you" / "You lent Bob".
+    - Either party can retract one from its menu.
+  - **Duplicate click handlers** (the "IOU double-tap" item).
+    - Several buttons had their own `onClick` plus `bounceClick`'s
+      clickable.
+    - Correction to PR #10: Compose sends a tap to only one of two nested
+      clickables, so actions never ran twice. The real effects were a
+      second button announced by screen readers and a press animation
+      separate from the click.
+    - `pressBounce(interactionSource)` keeps one handler per control.
+  - **Paisa truncation.**
+    - `(x * 100).toLong() / 100.0` turned 33.33 into 33.32 and 0.29
+      into 0.28, and rounded negative balances toward zero.
+    - Balances, group totals, analytics, statement totals and the debt
+      simplifier now use `roundPaisa` (half up).
+    - The simplifier no longer drops exact one-paisa debts.
+  - **Deleting a local group** now detaches its expenses and settlements,
+    with their sync state unchanged, instead of leaving a dangling
+    `groupId`.
+  - **Deleting a friend** collapses splits that no longer involve anyone
+    else, keeping my spend the same: my full payment, or the share I had
+    when they paid. If none of it was mine, it's removed. Splits another
+    friend paid are kept.
+  - **The widget** reads `LedgerRepository`'s analytics and balances
+    instead of its own copy of the math.
+  - **Unchanged pulls:** a pulled group expense or settlement that matches
+    the local copy is no longer rewritten. The cursor overlap had been
+    replacing splits and shares on every sync.
+  - **Leaving a group** now warns how many changes there haven't synced,
+    with Sync now / Leave anyway, instead of silently dropping them.
+  - Also fixed: a race in `SharedGroupsControllerTest` (the leave callback
+    ran after the "left" message).
+  - One CI run failed before building (the runner timed out downloading
+    Gradle) and passed on re-run.
 
 ### Web-Verified Notes (re-checked against current Supabase/Google docs)
 
