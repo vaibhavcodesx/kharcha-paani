@@ -3,6 +3,7 @@ package com.vaibhav.kharchapaani.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,6 +59,7 @@ import com.vaibhav.kharchapaani.ui.components.DeleteFriendDialog
 import com.vaibhav.kharchapaani.ui.components.GroupCard
 import com.vaibhav.kharchapaani.ui.components.PersonBalanceCard
 import com.vaibhav.kharchapaani.ui.components.bounceClick
+import com.vaibhav.kharchapaani.ui.components.pressBounce
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -133,9 +135,6 @@ fun SplitsScreen(
                     color = WarmAmberPrimary,
                     modifier = Modifier
                         .bounceClick {
-                            if (selectedSection == 0) onOpenAddFriend() else onOpenCreateGroup()
-                        }
-                        .clickable {
                             if (selectedSection == 0) onOpenAddFriend() else onOpenCreateGroup()
                         }
                         .testTag("add_split_top_button")
@@ -301,12 +300,14 @@ fun SplitsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                val simplifyInteraction = remember { MutableInteractionSource() }
                 Button(
                     onClick = onOpenSimplifyDebts,
+                    interactionSource = simplifyInteraction,
                     modifier = Modifier
                         .weight(1f)
                         .height(46.dp)
-                        .bounceClick { onOpenSimplifyDebts() }
+                        .pressBounce(simplifyInteraction)
                         .testTag("simplify_debts_button"),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -328,12 +329,14 @@ fun SplitsScreen(
                     )
                 }
 
+                val iouInteraction = remember { MutableInteractionSource() }
                 Button(
                     onClick = onOpenIouDialog,
+                    interactionSource = iouInteraction,
                     modifier = Modifier
                         .weight(1f)
                         .height(46.dp)
-                        .bounceClick { onOpenIouDialog() }
+                        .pressBounce(iouInteraction)
                         .testTag("record_iou_button"),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(

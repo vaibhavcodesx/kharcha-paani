@@ -8,6 +8,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -199,9 +200,11 @@ fun StatementImportDialog(
                     }
                 }
 
+                val closeInteraction = remember { MutableInteractionSource() }
                 IconButton(
                     onClick = onDismiss,
-                    modifier = Modifier.bounceClick(onClick = onDismiss)
+                    interactionSource = closeInteraction,
+                    modifier = Modifier.pressBounce(closeInteraction)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
@@ -475,12 +478,14 @@ fun StatementImportDialog(
                     .padding(bottom = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                val cancelInteraction = remember { MutableInteractionSource() }
                 OutlinedButton(
                     onClick = onDismiss,
+                    interactionSource = cancelInteraction,
                     modifier = Modifier
                         .weight(1f)
                         .height(52.dp)
-                        .bounceClick(onClick = onDismiss),
+                        .pressBounce(cancelInteraction),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MutedWarmGray),
                     border = androidx.compose.foundation.BorderStroke(1.dp, CharcoalBorder)

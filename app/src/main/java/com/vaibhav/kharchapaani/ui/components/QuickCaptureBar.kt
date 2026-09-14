@@ -16,6 +16,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -185,11 +186,13 @@ fun QuickCaptureBar(
                 }),
                 trailingIcon = {
                     if (inputText.isNotEmpty()) {
+                        val clearInteraction = remember { MutableInteractionSource() }
                         IconButton(
                             onClick = { inputText = "" },
+                            interactionSource = clearInteraction,
                             modifier = Modifier
                                 .size(24.dp)
-                                .bounceClick { inputText = "" }
+                                .pressBounce(clearInteraction)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Clear,

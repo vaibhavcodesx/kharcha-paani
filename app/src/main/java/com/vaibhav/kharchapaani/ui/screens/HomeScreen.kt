@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ElectricBolt
@@ -50,25 +52,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vaibhav.kharchapaani.R
+import com.vaibhav.kharchapaani.data.model.ActivityItem
 import com.vaibhav.kharchapaani.data.model.FullTransaction
 import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
 import com.vaibhav.kharchapaani.ui.components.AnimatedRollingNumber
 import com.vaibhav.kharchapaani.ui.components.QuickCaptureBar
+import com.vaibhav.kharchapaani.ui.components.SettlementItemCard
 import com.vaibhav.kharchapaani.ui.components.TransactionItemCard
 import com.vaibhav.kharchapaani.ui.components.bounceClick
+import com.vaibhav.kharchapaani.ui.components.pressBounce
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -77,15 +81,15 @@ import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
+import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import com.vaibhav.kharchapaani.ui.theme.displayFontFamily
-import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.numericFontFamily
 import kotlin.math.abs
 
 @Composable
 fun HomeScreen(
-    transactions: List<FullTransaction>,
+    activity: List<ActivityItem>,
     totalNetOwed: Double,
     monthlyAnalytics: MonthlyAnalytics,
     isParsing: Boolean,
@@ -99,6 +103,7 @@ fun HomeScreen(
     onManualAdd: (String) -> Unit,
     onEditTransaction: (FullTransaction) -> Unit,
     onDeleteTransaction: (Long) -> Unit,
+    onRetractSettlement: (Long) -> Unit,
     onOpenIouDialog: () -> Unit,
     onOpenSimplifyDebts: () -> Unit,
     accountInitial: String,
@@ -282,7 +287,6 @@ fun HomeScreen(
                                 color = if (isOwedToMe) ChartreuseSecondary.copy(alpha = 0.2f) else WarmAmberPrimary.copy(alpha = 0.2f),
                                 modifier = Modifier
                                     .bounceClick(onClick = onOpenSimplifyDebts)
-                                    .clickable { onOpenSimplifyDebts() }
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -431,11 +435,13 @@ fun HomeScreen(
                     )
                 )
 
+                val searchInteraction = remember { MutableInteractionSource() }
                 IconButton(
                     onClick = { showSearch = !showSearch },
+                    interactionSource = searchInteraction,
                     modifier = Modifier
                         .size(32.dp)
-                        .bounceClick { showSearch = !showSearch }
+                        .pressBounce(searchInteraction)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -505,8 +511,8 @@ fun HomeScreen(
             }
         }
 
-        // Transactions List
-        if (transactions.isEmpty()) {
+        // Activity list: transactions, settlements and IOUs
+        if (activity.isEmpty()) {
             item {
                 Box(
                     modifier = Modifier
@@ -542,13 +548,20 @@ fun HomeScreen(
                 }
             }
         } else {
-            items(transactions, key = { it.transaction.id }) { fullTx ->
-                TransactionItemCard(
-                    fullTx = fullTx,
-                    onEdit = { onEditTransaction(fullTx) },
-                    onDelete = { onDeleteTransaction(fullTx.transaction.id) },
-                    modifier = Modifier.animateItem()
-                )
+            items(activity, key = { it.key }) { item ->
+                when (item) {
+                    is ActivityItem.Transaction -> TransactionItemCard(
+                        fullTx = item.fullTransaction,
+                        onEdit = { onEditTransaction(item.fullTransaction) },
+                        onDelete = { onDeleteTransaction(item.fullTransaction.transaction.id) },
+                        modifier = Modifier.animateItem()
+                    )
+                    is ActivityItem.Settlement -> SettlementItemCard(
+                        item = item,
+                        onRetract = { onRetractSettlement(item.settlement.id) },
+                        modifier = Modifier.animateItem()
+                    )
+                }
             }
         }
     }
