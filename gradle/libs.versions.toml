@@ -9,7 +9,9 @@ lifecycleViewmodelCompose = "2.8.7"
 lifecycleRuntimeCompose = "2.8.7"
 activityCompose = "1.10.1"
 kotlin = "2.2.10"
-composeBom = "2024.09.00"
+# Compose 1.9.0: lifecycle-viewmodel-compose 2.10 (resolved via other AndroidX libraries) needs it at
+# runtime, so an older BOM compiled against 1.7 APIs that 1.9 removed (FlowRow crashed).
+composeBom = "2025.08.00"
 googleDevtoolsKsp = "2.3.5"
 navigationCompose = "2.8.9"
 roomRuntime = "2.7.0"
