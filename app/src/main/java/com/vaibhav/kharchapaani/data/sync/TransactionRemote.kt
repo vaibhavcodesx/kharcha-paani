@@ -22,7 +22,10 @@ interface TransactionRemote {
      */
     suspend fun upsert(rows: List<TransactionUpload>)
 
-    /** Marks rows deleted; ids the server never received are a no-op. */
+    /**
+     * Marks rows deleted; ids the server never received are a no-op.
+     * @throws RowsRejectedException if RLS refuses the update (a group expense in an archived group).
+     */
     suspend fun softDelete(remoteIds: List<String>)
 
     /** Own personal rows with updated_at >= [since] (all rows if null), oldest first. */
@@ -47,11 +50,18 @@ class SupabaseTransactionRemote(
     @OptIn(ExperimentalTime::class)
     override suspend fun softDelete(remoteIds: List<String>) {
         // deleted_at is informational; the trigger's updated_at is what other devices pull on.
-        supabase.from(TABLE).update(buildJsonObject { put("deleted_at", Clock.System.now().toString()) }) {
-            filter {
-                eq("owner_id", ownerId)
-                isIn("id", remoteIds)
+        try {
+            supabase.from(TABLE).update(buildJsonObject { put("deleted_at", Clock.System.now().toString()) }) {
+                filter {
+                    eq("owner_id", ownerId)
+                    isIn("id", remoteIds)
+                }
             }
+        } catch (e: RestException) {
+            // A soft delete matching our own row can only be refused by an RLS check (the row's group
+            // is archived or we left it), which retrying never fixes. Expired sessions are 401.
+            if (e.statusCode == 401 || e.statusCode >= 500) throw e
+            throw RowsRejectedException(e.statusCode, e.error)
         }
     }
 

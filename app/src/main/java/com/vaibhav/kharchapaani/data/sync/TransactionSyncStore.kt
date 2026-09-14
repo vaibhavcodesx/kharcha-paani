@@ -22,6 +22,7 @@ interface TransactionSyncStore {
     suspend fun deleteIfSynced(localId: Long): Boolean
     suspend fun getMeta(key: String): String?
     suspend fun putMeta(key: String, value: String)
+    suspend fun deleteMeta(key: String)
 }
 
 class RoomTransactionSyncStore(private val db: AppDatabase) : TransactionSyncStore {
@@ -56,4 +57,5 @@ class RoomTransactionSyncStore(private val db: AppDatabase) : TransactionSyncSto
     override suspend fun deleteIfSynced(localId: Long) = dao.deleteIfSynced(localId) == 1
     override suspend fun getMeta(key: String) = dao.meta(key)
     override suspend fun putMeta(key: String, value: String) = dao.putMeta(SyncMetaEntity(key, value))
+    override suspend fun deleteMeta(key: String) = dao.deleteMeta(key)
 }

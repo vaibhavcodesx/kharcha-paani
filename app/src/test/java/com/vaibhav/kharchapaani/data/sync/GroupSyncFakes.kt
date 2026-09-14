@@ -144,6 +144,10 @@ class FakeGroupRemote(private val self: String) : GroupRemote {
     override suspend fun softDeleteSettlements(remoteIds: List<String>) {
         checkOnline()
         val stamp = tick()
+        // RLS: the new row must still be in an active group this account belongs to; one refusal fails the update.
+        remoteIds.mapNotNull { settlements[it] }
+            .filter { it.fromProfileId == self || it.toProfileId == self }
+            .forEach { row -> row.groupId?.let { requireActiveMember(it) } }
         remoteIds.forEach { id ->
             val row = settlements[id] ?: return@forEach
             if (row.fromProfileId == self || row.toProfileId == self) {
@@ -178,6 +182,10 @@ class FakeGroupRemote(private val self: String) : GroupRemote {
     fun join(groupId: String, profileId: String) {
         val group = groups.getValue(groupId)
         groups[groupId] = group.copy(members = group.members + RemoteGroupMember(profileId, profiles[profileId]), updatedAt = tick())
+    }
+
+    fun archive(groupId: String) {
+        groups[groupId] = groups.getValue(groupId).copy(archivedAt = tick(), updatedAt = tick())
     }
 
     fun leave(groupId: String, profileId: String) {
