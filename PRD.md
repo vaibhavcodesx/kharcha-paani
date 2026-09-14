@@ -722,7 +722,23 @@ transactions could be attached to any group.
   - Tests:
     - JVM: `InviteLinkTest` (3), plus 2 new rounding cases.
     - CI: `SharedGroupsControllerTest` (7) and `SharedGroupUiTest` (4).
-- ⏳ **Then (fast-track)**: PR 5 the Realtime doorbell.
+- ✅ **PR 5: Realtime doorbell** (PR #11, fast-track: no server changes;
+  Realtime delivers only RLS-visible rows from the 3 tables PR 2
+  published).
+  - While in the foreground and signed in, changes to `transactions`,
+    `settlements` or `groups` (or a reconnect that may have missed some)
+    schedule a normal sync after a 2-second quiet period.
+  - Events carry no data; rows still arrive only through pulls, so a lost
+    or duplicated event can't corrupt anything. Failed subscriptions
+    retry with backoff (1 s doubling, capped at 60 s).
+  - This device's own push echoes back as one extra pull-only pass, which
+    writes nothing and can't loop.
+  - `SyncDoorbell` (debounce and retry, `SyncDoorbellTest` on the JVM with
+    virtual time) and `SupabaseLedgerChanges` (the channel), run with
+    `repeatOnLifecycle(STARTED)`. New dependency: `realtime-kt` 3.6.0.
+- ⏳ **Step 4 end-of-step check-in**: two-device verification of shared
+  groups (create, invite by link, join, split expense, settle, leave, and
+  Realtime updates between the phones).
 
 ### Web-Verified Notes (re-checked against current Supabase/Google docs)
 
