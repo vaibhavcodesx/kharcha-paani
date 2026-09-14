@@ -535,7 +535,6 @@ fun DonutPieChartSection(
                         color = CharcoalElevated,
                         modifier = Modifier
                             .bounceClick { onSelectCategory(selectedCategory) }
-                            .clickable { onSelectCategory(selectedCategory) }
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,

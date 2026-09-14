@@ -3,6 +3,7 @@ package com.vaibhav.kharchapaani.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -200,12 +202,14 @@ fun PersonBalanceCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                val historyInteraction = remember { MutableInteractionSource() }
                 OutlinedButton(
                     onClick = onViewHistory,
+                    interactionSource = historyInteraction,
                     modifier = Modifier
                         .weight(1f)
                         .height(42.dp)
-                        .bounceClick(onClick = onViewHistory),
+                        .pressBounce(historyInteraction),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = OffWhiteText),
                     border = androidx.compose.foundation.BorderStroke(1.dp, CharcoalBorder)
@@ -226,12 +230,14 @@ fun PersonBalanceCard(
                     )
                 }
 
+                val settleInteraction = remember { MutableInteractionSource() }
                 Button(
                     onClick = onSettleUp,
+                    interactionSource = settleInteraction,
                     modifier = Modifier
                         .weight(1f)
                         .height(42.dp)
-                        .bounceClick(onClick = onSettleUp),
+                        .pressBounce(settleInteraction),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (isSettled) CharcoalElevated else WarmAmberPrimary,

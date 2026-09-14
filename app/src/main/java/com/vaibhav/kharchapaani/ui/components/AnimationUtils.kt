@@ -13,6 +13,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
@@ -53,6 +54,29 @@ import java.util.Locale
 /**
  * Modifier that scales down slightly on press with bouncy spring physics and triggers a subtle haptic feedback.
  */
+/**
+ * The same spring and haptic as [bounceClick] for a control that already handles its own click
+ * (Button, IconButton): pass the control the same [interactionSource]. Adding [bounceClick] with an
+ * onClick to such a control nests a second clickable, which screen readers announce as a second
+ * button.
+ */
+fun Modifier.pressBounce(interactionSource: InteractionSource, scaleDown: Float = 0.94f): Modifier = composed {
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val view = LocalView.current
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) scaleDown else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "press_bounce_scale"
+    )
+    LaunchedEffect(isPressed) {
+        if (isPressed) view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+    }
+    graphicsLayer {
+        scaleX = scale
+        scaleY = scale
+    }
+}
+
 fun Modifier.bounceClick(
     scaleDown: Float = 0.94f,
     onClick: (() -> Unit)? = null
