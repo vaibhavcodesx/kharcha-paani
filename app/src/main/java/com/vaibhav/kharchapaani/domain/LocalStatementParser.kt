@@ -77,15 +77,15 @@ object LocalStatementParser {
                 StatementMonthGroup(
                     monthYearKey = monthName,
                     monthSortKey = monthSortKey,
-                    totalExpense = (expenseSum * 100).toLong() / 100.0,
-                    totalIncome = (incomeSum * 100).toLong() / 100.0,
+                    totalExpense = roundPaisa(expenseSum),
+                    totalIncome = roundPaisa(incomeSum),
                     transactionCount = monthItems.size,
                     items = monthItems
                 )
             }.sortedByDescending { it.monthSortKey }
 
-        val totalExpense = (items.filter { it.type == "expense" }.sumOf { it.amount } * 100).toLong() / 100.0
-        val totalIncome = (items.filter { it.type == "income" }.sumOf { it.amount } * 100).toLong() / 100.0
+        val totalExpense = roundPaisa(items.filter { it.type == "expense" }.sumOf { it.amount })
+        val totalIncome = roundPaisa(items.filter { it.type == "income" }.sumOf { it.amount })
 
         return StatementParseResult(
             bankOrApp = bankOrApp.ifBlank { "Bank / UPI Statement" },
