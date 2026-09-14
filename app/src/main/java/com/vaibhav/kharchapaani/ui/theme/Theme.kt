@@ -31,10 +31,11 @@ fun KharchaPaaniTheme(
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    // Kharcha Paani uses the intentional dark-first warm-premium aesthetic
+    // Dark only, by the owner's decision (Part B): there is no light scheme to fall back to.
     MaterialTheme(
         colorScheme = SplitFlowDarkColorScheme,
         typography = Typography,
+        shapes = KpMaterialShapes,
         content = content
     )
 }

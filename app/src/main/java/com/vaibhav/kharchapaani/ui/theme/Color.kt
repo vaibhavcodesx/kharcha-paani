@@ -2,12 +2,16 @@ package com.vaibhav.kharchapaani.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// SplitFlow Warm-Premium Dark Palette
+// Kharcha Paani warm dark palette (dark only, by design)
 val CharcoalBg = Color(0xFF0E0D0C)
 val CharcoalSurface = Color(0xFF181615)
 val CharcoalElevated = Color(0xFF22201D)
 val CharcoalBorder = Color(0xFF2E2B27)
 val CharcoalCard = Color(0xFF1E1C1A)
+
+// Boundary for interactive controls (unselected chips, inputs, toggles): 3:1 on cards, as WCAG
+// requires for UI components. CharcoalBorder stays for purely decorative dividers.
+val OutlineInteractive = Color(0xFF726D65)
 
 // Functional Accent Colors
 val WarmAmberPrimary = Color(0xFFFF7A3D) // Expenses, primary CTAs, streak flame
@@ -22,7 +26,9 @@ val ChartreuseContainer = Color(0x33C6F24C)
 // Typography & Neutrals
 val OffWhiteText = Color(0xFFF4F0E8)
 val MutedWarmGray = Color(0xFFA09A8F)
-val SubMutedWarmGray = Color(0xFF6B665E)
+// Tertiary text (timestamps, captions). Was #6B665E, which measured 2.85–3.41:1 on the charcoal
+// surfaces and failed WCAG AA; #8D887E is 4.6:1 on the lightest surface it sits on.
+val SubMutedWarmGray = Color(0xFF8D887E)
 
 // Category Accent Colors (Curated Muted Palette)
 val CatFood = Color(0xFFFF9E79)
@@ -37,3 +43,7 @@ val CatIncome = Color(0xFFC6F24C)
 val CatOther = Color(0xFFD5D8DC)
 val ElectricIndigo = Color(0xFF818CF8)
 val SkyBlue = Color(0xFF38BDF8)
+
+// Signature gradient: amber through a saturated warm gold to lime, so the middle never goes brown.
+// Reserved for three places: the hero balance, the primary add/save action, the dock's active mark.
+val BrandGold = Color(0xFFFFB547)
