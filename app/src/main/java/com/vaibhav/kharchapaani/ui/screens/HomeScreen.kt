@@ -207,7 +207,6 @@ fun HomeScreen(
                             .clip(RoundedCornerShape(10.dp))
                             .background(CharcoalCard)
                             .border(1.dp, CharcoalBorder, RoundedCornerShape(10.dp))
-                            .bounceClick(onClick = onOpenIouDialog)
                             .testTag("home_iou_button")
                     ) {
                         Icon(
@@ -368,7 +367,6 @@ fun HomeScreen(
                                 AnimatedRollingNumber(
                                     targetValue = monthlyAnalytics.totalExpense,
                                     prefix = "₹",
-                                    fractionDigits = 0,
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         color = OffWhiteText,
                                         fontWeight = FontWeight.Bold,
@@ -395,7 +393,6 @@ fun HomeScreen(
                                 AnimatedRollingNumber(
                                     targetValue = monthlyAnalytics.totalIncome,
                                     prefix = "₹",
-                                    fractionDigits = 0,
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         color = ChartreuseSecondary,
                                         fontWeight = FontWeight.Bold,
@@ -552,6 +549,7 @@ fun HomeScreen(
                 when (item) {
                     is ActivityItem.Transaction -> TransactionItemCard(
                         fullTx = item.fullTransaction,
+                        isReadOnly = item.isReadOnly,
                         onEdit = { onEditTransaction(item.fullTransaction) },
                         onDelete = { onDeleteTransaction(item.fullTransaction.transaction.id) },
                         modifier = Modifier.animateItem()

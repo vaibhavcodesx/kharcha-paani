@@ -47,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vaibhav.kharchapaani.data.model.FullTransaction
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
@@ -67,7 +68,8 @@ fun TransactionItemCard(
     fullTx: FullTransaction,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isReadOnly: Boolean = false,
 ) {
     val tx = fullTx.transaction
     val isIncome = tx.type == "income"
@@ -93,9 +95,10 @@ fun TransactionItemCard(
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { dismissValue ->
             when (dismissValue) {
+                // A row the ledger won't delete must not animate away as if it had been deleted.
                 SwipeToDismissBoxValue.EndToStart -> {
-                    onDelete()
-                    true
+                    if (!isReadOnly) onDelete()
+                    !isReadOnly
                 }
                 SwipeToDismissBoxValue.StartToEnd -> {
                     onEdit()
@@ -108,6 +111,8 @@ fun TransactionItemCard(
 
     SwipeToDismissBox(
         state = dismissState,
+        enableDismissFromStartToEnd = !isReadOnly,
+        enableDismissFromEndToStart = !isReadOnly,
         modifier = modifier.clip(RoundedCornerShape(16.dp)),
         backgroundContent = {
             val direction = dismissState.dismissDirection
@@ -261,7 +266,7 @@ fun TransactionItemCard(
                     val amountColor = if (isIncome) ChartreuseSecondary else WarmAmberPrimary
 
                     Text(
-                        text = "$sign₹${String.format(Locale.US, "%.0f", displayAmount)}",
+                        text = "$sign${Money.format(displayAmount)}",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.ExtraBold,
                             color = amountColor,
@@ -272,7 +277,7 @@ fun TransactionItemCard(
 
                     if (fullTx.split != null) {
                         Text(
-                            text = "Total: ₹${String.format(Locale.US, "%.0f", tx.amount)}",
+                            text = "Total: ${Money.format(tx.amount)}",
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = SubMutedWarmGray,
                                 fontSize = 10.sp,
@@ -282,8 +287,8 @@ fun TransactionItemCard(
                     }
                 }
 
-                // Options Menu Button
-                Box {
+                // Options Menu Button: nothing to offer on a read-only row.
+                if (!isReadOnly) Box {
                     IconButton(
                         onClick = { showMenu = true },
                         modifier = Modifier.size(28.dp)

@@ -1,6 +1,8 @@
 package com.vaibhav.kharchapaani.ui.components
 
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -12,6 +14,11 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -28,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -36,19 +44,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
-import java.text.NumberFormat
 import java.util.Locale
 
 /**
@@ -119,7 +133,13 @@ fun Modifier.bounceClick(
 }
 
 /**
- * Animated rolling number counter for currency values.
+ * An odometer: when the amount changes, each digit that differs rolls to its new value (up when the
+ * amount grows, down when it shrinks) while unchanged digits stay still. Digits are aligned from the
+ * right, so "₹999" → "₹1,000" keeps the units column in place.
+ *
+ * The text comes from [Money.digits] on the exact value; the old version tweened a Float, which can't
+ * hold paisa above ₹10 lakh (12,34,567.89 showed as 12,34,567.88) and rounded to whole rupees when
+ * asked. [brush] fills the whole number with one gradient instead of restarting it on each digit.
  */
 @Composable
 fun AnimatedRollingNumber(
@@ -127,38 +147,53 @@ fun AnimatedRollingNumber(
     prefix: String = "₹",
     style: TextStyle = MaterialTheme.typography.titleLarge,
     color: Color = Color.Unspecified,
-    fractionDigits: Int = 2,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    brush: Brush? = null,
 ) {
-    val animatedValue = remember { Animatable(targetValue.toFloat()) }
+    val text = prefix + Money.digits(targetValue)
+    val lastValue = remember { mutableDoubleStateOf(targetValue) }
+    val goingUp = targetValue >= lastValue.doubleValue
+    LaunchedEffect(targetValue) { lastValue.doubleValue = targetValue }
 
-    LaunchedEffect(targetValue) {
-        animatedValue.animateTo(
-            targetValue = targetValue.toFloat(),
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioNoBouncy,
-                stiffness = Spring.StiffnessLow
-            )
-        )
-    }
-
-    val formatted = remember(animatedValue.value, fractionDigits) {
-        val locale = Locale.Builder().setLanguage("en").setRegion("IN").build()
-        val formatter = NumberFormat.getNumberInstance(locale).apply {
-            minimumFractionDigits = fractionDigits
-            maximumFractionDigits = fractionDigits
-        }
-        formatter.format(animatedValue.value.toDouble())
-    }
-
-    Text(
-        text = "$prefix$formatted",
-        style = style.copy(
-            fontFamily = com.vaibhav.kharchapaani.ui.theme.numericFontFamily
-        ),
-        color = color,
-        modifier = modifier
+    val digitStyle = style.copy(
+        fontFeatureSettings = "tnum",
+        fontFamily = style.fontFamily ?: com.vaibhav.kharchapaani.ui.theme.numericFontFamily,
     )
+    Row(
+        modifier = modifier
+            .clearAndSetSemantics { contentDescription = text }
+            .then(
+                if (brush != null) {
+                    Modifier
+                        .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+                        .drawWithContent {
+                            drawContent()
+                            drawRect(brush = brush, blendMode = BlendMode.SrcIn)
+                        }
+                } else {
+                    Modifier
+                }
+            ),
+    ) {
+        text.forEachIndexed { index, char ->
+            key(text.length - index) {
+                AnimatedContent(
+                    targetState = char,
+                    transitionSpec = {
+                        val spec = spring<IntOffset>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
+                        if (goingUp) {
+                            (slideInVertically(spec) { it } + fadeIn()) togetherWith (slideOutVertically(spec) { -it } + fadeOut())
+                        } else {
+                            (slideInVertically(spec) { -it } + fadeIn()) togetherWith (slideOutVertically(spec) { it } + fadeOut())
+                        }.using(SizeTransform(clip = true))
+                    },
+                    label = "digit",
+                ) { c ->
+                    Text(text = c.toString(), style = digitStyle, color = if (brush != null) Color.White else color)
+                }
+            }
+        }
+    }
 }
 
 /**

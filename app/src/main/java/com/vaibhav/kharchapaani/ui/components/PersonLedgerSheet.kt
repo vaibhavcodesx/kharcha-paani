@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.model.PersonLedgerItem
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -136,8 +137,8 @@ fun PersonLedgerSheet(
                         )
                         Text(
                             text = when {
-                                totalNet > 0.01 -> "Owes you ₹${String.format("%.2f", totalNet)}"
-                                totalNet < -0.01 -> "You owe ₹${String.format("%.2f", abs(totalNet))}"
+                                totalNet > 0.01 -> "Owes you ${Money.format(totalNet)}"
+                                totalNet < -0.01 -> "You owe ${Money.format(abs(totalNet))}"
                                 else -> "Settled up"
                             },
                             style = MaterialTheme.typography.bodySmall.copy(
@@ -267,7 +268,7 @@ fun PersonLedgerSheet(
                             }
 
                             Text(
-                                text = "${if (item.netChange > 0) "+" else "-"}₹${String.format("%.2f", abs(item.netChange))}",
+                                text = Money.format(item.netChange, showPlus = true),
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     color = if (item.netChange > 0) ChartreuseSecondary else WarmAmberPrimary,
                                     fontWeight = FontWeight.Bold

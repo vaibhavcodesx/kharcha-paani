@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
@@ -155,7 +156,7 @@ fun DeleteFriendDialog(
                             )
                             if (abs(currentBalance) > 0.01) {
                                 Text(
-                                    text = if (currentBalance > 0) "Owes you ₹${String.format("%.2f", currentBalance)}" else "You owe ₹${String.format("%.2f", abs(currentBalance))}",
+                                    text = if (currentBalance > 0) "Owes you ${Money.format(currentBalance)}" else "You owe ${Money.format(abs(currentBalance))}",
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         color = if (currentBalance > 0) ChartreuseSecondary else WarmAmberPrimary,
                                         fontWeight = FontWeight.SemiBold

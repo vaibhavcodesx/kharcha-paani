@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.groups.RecordInGroupSection
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
@@ -73,7 +74,7 @@ fun SettleUpDialog(
     var direction by remember { mutableStateOf(if (suggestedAmount < 0) 0 else 1) }
     var amountText by remember {
         mutableStateOf(
-            if (kotlin.math.abs(suggestedAmount) > 0) String.format("%.2f", kotlin.math.abs(suggestedAmount)) else ""
+            if (kotlin.math.abs(suggestedAmount) > 0) Money.input(kotlin.math.abs(suggestedAmount)) else ""
         )
     }
     var paymentMethod by remember { mutableStateOf("GPay") }

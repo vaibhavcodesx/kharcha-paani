@@ -12,6 +12,7 @@ import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.data.db.LedgerDatabases
 import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
+import com.vaibhav.kharchapaani.ui.format.Money
 import io.github.jan.supabase.auth.auth
 import java.text.NumberFormat
 import java.util.Calendar
@@ -66,16 +67,12 @@ class SplitFlowWidgetProvider : AppWidgetProvider() {
                 val monthlyIncome = analytics.totalIncome
                 val netOwedToMe = repository.personBalances.first().sumOf { it.netBalance }
 
-                val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.Builder().setLanguage("en").setRegion("IN").build()).apply {
-                    maximumFractionDigits = 0
-                }
-
-                val spentStr = currencyFormatter.format(monthlySpent)
-                val incomeStr = currencyFormatter.format(monthlyIncome)
+                val spentStr = Money.format(monthlySpent)
+                val incomeStr = Money.format(monthlyIncome)
                 val netBadgeStr = if (netOwedToMe > 0) {
-                    "+${currencyFormatter.format(netOwedToMe)} owed"
+                    "${Money.format(netOwedToMe, showPlus = true)} owed"
                 } else if (netOwedToMe < 0) {
-                    "-${currencyFormatter.format(-netOwedToMe)} owe"
+                    "${Money.format(-netOwedToMe)} you owe"
                 } else {
                     "Balanced"
                 }
