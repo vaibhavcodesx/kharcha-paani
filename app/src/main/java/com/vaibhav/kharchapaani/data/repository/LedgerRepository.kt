@@ -656,6 +656,22 @@ class LedgerRepository(
         db.groupDao().insertGroupMembers(members)
     }
 
+    /**
+     * After this account leaves a shared group: the group's history belongs to the members who
+     * remain, so it goes from this device with the membership. Anything still queued in it is
+     * dropped; the server would refuse it from a non-member.
+     */
+    suspend fun removeSharedGroupLocally(groupId: Long) = withContext(Dispatchers.IO) {
+        db.withTransaction {
+            val group = db.groupDao().getGroupByIdDirect(groupId) ?: return@withTransaction
+            if (!group.isShared) return@withTransaction
+            val dao = db.groupSyncDao()
+            dao.deleteTransactionsInGroup(groupId)
+            dao.deleteSettlementsInGroup(groupId)
+            dao.deleteGroup(groupId)
+        }
+    }
+
     /** Name, description, emoji and colour only: membership changes through invites and leaving. */
     private suspend fun updateSharedGroupDetails(stored: GroupEntity, edited: GroupEntity) {
         if (!isCreator(stored)) return
