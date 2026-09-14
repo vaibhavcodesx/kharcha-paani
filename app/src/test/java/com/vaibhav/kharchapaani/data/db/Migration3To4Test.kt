@@ -73,7 +73,7 @@ class Migration3To4Test {
             assertEquals(listOf("a1a1a1a1-0000-4000-8000-000000000001", "LOCAL_ONLY", null), transaction)
 
             val split = db.rows("SELECT totalAmount, remoteId FROM splits").single()
-            assertEquals("300.0", split[0])
+            assertEquals(300.0, split[0]!!.toDouble(), 0.0)
             assertUniqueV4(listOf(split[1]))
             assertEquals(2, db.rows("SELECT id FROM split_shares").size)
 
