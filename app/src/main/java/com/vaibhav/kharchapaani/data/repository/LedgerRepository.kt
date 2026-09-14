@@ -571,10 +571,44 @@ class LedgerRepository(
         // A groupmate comes from their group's membership; removing them locally would corrupt
         // shared expenses. They go away when they leave, or when this account does.
         if (db.personDao().getPersonById(personId)?.profileId != null) return@withContext
-        db.splitDao().deleteSharesForPerson(personId)
-        db.settlementDao().deleteSettlementsForPerson(personId)
-        db.groupDao().deleteMemberByPersonId(personId)
-        db.personDao().deletePersonById(personId)
+        db.withTransaction {
+            val affected = db.splitDao().getSplitsInvolvingPerson(personId).mapNotNull { split ->
+                val tx = db.transactionDao().getTransactionByIdDirect(split.transactionId) ?: return@mapNotNull null
+                FullTransaction(tx, split, db.splitDao().getSharesForSplitDirect(split.id))
+            }
+            db.splitDao().deleteSharesForPerson(personId)
+            db.settlementDao().deleteSettlementsForPerson(personId)
+            db.groupDao().deleteMemberByPersonId(personId)
+            db.personDao().deletePersonById(personId)
+            affected.forEach { collapseSplitWithNobodyElse(it, deletedPersonId = personId) }
+        }
+    }
+
+    /**
+     * After a friend is removed, a split that no longer involves anyone but me stops being a split,
+     * so it doesn't keep showing as shared. What I spent stays what it was:
+     * - I paid: the expense is mine in full (their share was cleared, as the delete dialog says).
+     * - They paid: it becomes my own expense of the share I had.
+     * - They paid and I had no share: nothing of it was mine, so it goes.
+     * A split still paid by another friend stays: I still owe them.
+     */
+    private suspend fun collapseSplitWithNobodyElse(before: FullTransaction, deletedPersonId: Long) {
+        val split = before.split ?: return
+        val tx = before.transaction
+        // Local friends only ever appear in local records; shared ones never reach this path.
+        if (tx.syncState != SyncState.LOCAL_ONLY) return
+        if (split.paidByPersonId != -1L && split.paidByPersonId != deletedPersonId) return
+        if (db.splitDao().getSharesForSplitDirect(split.id).any { it.personId != -1L }) return
+
+        val myShare = before.myPersonalShare
+        db.splitDao().deleteSplitByTransactionId(tx.id)
+        when {
+            split.paidByPersonId == -1L ->
+                db.transactionDao().updateTransaction(tx.copy(isSplit = false, updatedAt = System.currentTimeMillis()))
+            myShare > 0 ->
+                db.transactionDao().updateTransaction(tx.copy(isSplit = false, amount = roundPaisa(myShare), updatedAt = System.currentTimeMillis()))
+            else -> db.transactionDao().deleteTransactionById(tx.id)
+        }
     }
 
     // Groups Operations
@@ -700,8 +734,13 @@ class LedgerRepository(
     suspend fun deleteGroup(groupId: Long) = withContext(Dispatchers.IO) {
         // Shared history belongs to every member; shared groups are archived instead.
         if (db.groupDao().getGroupByIdDirect(groupId)?.isShared == true) return@withContext
-        db.groupDao().deleteMembersForGroup(groupId)
-        db.groupDao().deleteGroupById(groupId)
+        db.withTransaction {
+            // The expenses and settlements stay, just no longer in a group that doesn't exist.
+            db.groupDao().detachTransactionsFromGroup(groupId)
+            db.groupDao().detachSettlementsFromGroup(groupId)
+            db.groupDao().deleteMembersForGroup(groupId)
+            db.groupDao().deleteGroupById(groupId)
+        }
     }
 
 
