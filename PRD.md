@@ -736,9 +736,77 @@ transactions could be attached to any group.
   - `SyncDoorbell` (debounce and retry, `SyncDoorbellTest` on the JVM with
     virtual time) and `SupabaseLedgerChanges` (the channel), run with
     `repeatOnLifecycle(STARTED)`. New dependency: `realtime-kt` 3.6.0.
-- ⏳ **Step 4 end-of-step check-in**: two-device verification of shared
-  groups (create, invite by link, join, split expense, settle, leave, and
-  Realtime updates between the phones).
+- 🔎 **Step 4 two-device test (2026-09-14)** found two bugs; the follow-up
+  audit found more of the same two kinds.
+  - ✅ **Settle Up / Record IOU / group-less splits didn't sync** (PR #13).
+    - Not a missing sync flag. Both dialogs saved settlements with no
+      group, and the server only accepts settlements (and
+      `save_group_expense` only accepts splits) inside an active shared
+      group containing everyone involved (decision 1).
+    - Fix, as the user chose:
+      - with a groupmate, the dialogs ask for the shared group
+        (preselected when there's one, required when there are several),
+        or offer to create one;
+      - saving a split with groupmates outside a shared group asks to add
+        it to a group, create one, or keep it on this phone;
+      - friends without an account stay local as before.
+  - ✅ **Archived groups still accepted new expenses in the app** (PR
+    #12).
+    - The database already refused every write into an archived group:
+      4 checks in `rls_groups_test.sql`, and reconfirmed by an audit
+      probe.
+    - The app now hides archived groups from the picker and refuses writes
+      to them (`ArchivedGroupException`).
+  - ✅ **Found in the audit: a refused delete stalled sync forever** (PR
+    #12). Deleting or retracting in a group archived before the change
+    synced got a 403 that wasn't handled. The worker retried endlessly,
+    so neither personal nor group sync completed again. Refused deletes
+    are now isolated from their batch, dropped, and the row re-pulled.
+  - Audit of local writes: every write goes through `LedgerRepository`,
+    and each save/edit/delete path matches what the sync engines push.
+  - Audit of app-only rules vs RLS (rolled-back probe on the local
+    harness). Enforced by the database:
+    - editing or deleting others' expenses;
+    - writes into archived groups;
+    - an ex-member's invites and edits;
+    - edits to a split you were removed from.
+
+    **Gaps:**
+    - a creator who left could still rename, archive or un-archive the
+      group and revoke its invites;
+    - invites made by someone who left still admitted people;
+    - any owner could null a group expense's `group_id`.
+
+    **Judgement calls, approved by the user:**
+    - either party could rewrite a settlement;
+    - group names were only length-checked in `create_group`.
+- 🛑 **RLS fix for the audit gaps** (PR #14,
+  `supabase/migrations/20260914140000_leave_rules_and_immutable_records.sql`,
+  provisional version). **Written and tested locally; NOT applied to the
+  live project**, waiting on the user's review (hard stop: RLS, and a
+  constraint that validates existing rows).
+  - `groups_update_creator` and `revoke_group_invite` require current
+    membership.
+  - `preview_invite` / `join_group` only accept codes whose creator is
+    still a member.
+  - Trigger `transactions_keep_group`: a group expense can't change
+    `group_id`, except the foreign key's set-null when the service role
+    deletes the group.
+  - Trigger `settlements_lock_columns`: only `deleted_at` can change after
+    insert, with the same group-deletion exception.
+  - Constraint `groups_name_length`: 1–60 characters after trimming. The
+    one live group name was checked and passes.
+  - Both triggers raise `23514` (HTTP 400) rather than `42501`: the app
+    marks a 400 as a failed row, while personal sync retries a 403.
+  - `supabase/tests/rls_leave_and_immutability_test.sql`: **51/51** on
+    PGlite, rolled back cleanly.
+    - Every refusal checked for its exact SQLSTATE or message.
+    - Existing scripts still pass: `rls_groups_test.sql` 100/100,
+      `group_sync_columns_test.sql` 10/10.
+    - 11 mutations (each part undone), each caught.
+- ⏳ **Step 4 end-of-step check-in**: re-run the two-device verification
+  after PR #14 is applied (settle up and IOU in a group, a split prompt,
+  archive read-only on both phones, leave).
 
 ### Web-Verified Notes (re-checked against current Supabase/Google docs)
 
