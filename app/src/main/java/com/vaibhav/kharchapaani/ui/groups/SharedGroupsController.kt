@@ -179,8 +179,9 @@ class SharedGroupsController(
             result.fold(
                 onSuccess = {
                     repository.removeSharedGroupLocally(group.id)
-                    _state.update { it.copy(leavingGroupId = null, invite = null, message = "You left ${group.name}.") }
+                    // Callback first: anything observing the "left" state can rely on it having run.
                     onLeft()
+                    _state.update { it.copy(leavingGroupId = null, invite = null, message = "You left ${group.name}.") }
                 },
                 onFailure = { error -> _state.update { it.copy(leavingGroupId = null, message = error.message) } },
             )
