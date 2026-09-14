@@ -6,6 +6,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
 import com.vaibhav.kharchapaani.data.db.LedgerDatabases
+import com.vaibhav.kharchapaani.data.db.entity.SyncMetaEntity
 import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.exceptions.RestException
@@ -30,6 +31,9 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 remote = SupabaseTransactionRemote(supabase, ownerId = userId),
                 ownerId = userId,
             ).sync()
+            GroupSyncEngine(database, SupabaseGroupRemote(supabase), selfProfileId = userId).sync()
+            // Only a pass that got through both engines counts as "last synced".
+            database.syncDao().putMeta(SyncMetaEntity(TransactionSyncEngine.LAST_SYNCED_AT, System.currentTimeMillis().toString()))
         }
     }
 
