@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
@@ -43,6 +45,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
+import com.vaibhav.kharchapaani.domain.SharedRecordGroups
+import com.vaibhav.kharchapaani.ui.groups.RecordInGroupSection
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -57,10 +61,13 @@ fun SettleUpDialog(
     isOpen: Boolean,
     person: PersonEntity?,
     suggestedAmount: Double = 0.0,
-    onConfirm: (fromPersonId: Long, toPersonId: Long, amount: Double, note: String) -> Unit,
+    groupOptions: SharedRecordGroups.Options = SharedRecordGroups.Options(groups = emptyList(), withoutAccount = emptyList(), involvesGroupmates = false),
+    onCreateGroup: () -> Unit = {},
+    onConfirm: (fromPersonId: Long, toPersonId: Long, amount: Double, note: String, groupId: Long?) -> Unit,
     onDismiss: () -> Unit
 ) {
     if (!isOpen || person == null) return
+    var selectedGroupId by remember(person.id, groupOptions) { mutableStateOf(groupOptions.onlyGroup?.id) }
 
     // Direction: 0 = You paid Person (e.g. You paid back or settled debt), 1 = Person paid You
     var direction by remember { mutableStateOf(if (suggestedAmount < 0) 0 else 1) }
@@ -82,6 +89,7 @@ fun SettleUpDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(20.dp)
             ) {
                 // Header
@@ -200,19 +208,31 @@ fun SettleUpDialog(
                     )
                 )
 
+                Spacer(modifier = Modifier.height(12.dp))
+
+                RecordInGroupSection(
+                    otherPersonName = person.name,
+                    options = groupOptions,
+                    selectedGroupId = selectedGroupId,
+                    onSelectGroup = { selectedGroupId = it },
+                    onCreateGroup = onCreateGroup,
+                )
+
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Confirm Button
-                val valid = (amountText.toDoubleOrNull() ?: 0.0) > 0
+                // Confirm Button. With a groupmate, a group has to be chosen whenever one exists.
+                val valid = (amountText.toDoubleOrNull() ?: 0.0) > 0 &&
+                    (!groupOptions.canSync || selectedGroupId != null)
+                val groupId = selectedGroupId.takeIf { groupOptions.canSync }
                 Button(
                     onClick = {
                         val amt = amountText.toDoubleOrNull() ?: 0.0
                         if (direction == 0) {
                             // You paid person
-                            onConfirm(-1L, person.id, amt, noteText)
+                            onConfirm(-1L, person.id, amt, noteText, groupId)
                         } else {
                             // Person paid you
-                            onConfirm(person.id, -1L, amt, noteText)
+                            onConfirm(person.id, -1L, amt, noteText, groupId)
                         }
                     },
                     enabled = valid,
@@ -233,7 +253,7 @@ fun SettleUpDialog(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        "Record Settlement",
+                        if (groupOptions.involvesGroupmates && !groupOptions.canSync) "Save on this phone only" else "Record Settlement",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                 }
