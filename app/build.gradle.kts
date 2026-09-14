@@ -122,6 +122,7 @@ dependencies {
   implementation(platform(libs.supabase.bom))
   implementation(libs.supabase.auth)
   implementation(libs.supabase.postgrest)
+  implementation(libs.supabase.realtime)
   implementation(libs.ktor.client.okhttp)
   implementation(libs.multiplatform.settings)
   implementation(libs.androidx.work.runtime)

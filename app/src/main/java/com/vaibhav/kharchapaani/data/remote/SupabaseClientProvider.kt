@@ -9,6 +9,7 @@ import io.github.jan.supabase.auth.SettingsCodeVerifierCache
 import io.github.jan.supabase.auth.SettingsSessionManager
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.realtime.Realtime
 import io.ktor.client.engine.okhttp.OkHttp
 
 object SupabaseClientProvider {
@@ -40,6 +41,8 @@ object SupabaseClientProvider {
                 codeVerifierCache = SettingsCodeVerifierCache(authSettings)
             }
             install(Postgrest)
+            // Used only as a sync doorbell (SyncDoorbell); rows still arrive through pulls.
+            install(Realtime)
         }
     }
 }
