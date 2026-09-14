@@ -188,6 +188,23 @@ class SharedGroupRepositoryTest {
     }
 
     @Test
+    fun `a shared group counts the changes that would be lost by leaving it`() = runBlocking {
+        val groupId = sharedGroupBy(self)
+        val bob = groupmate()
+        val synced = repository.saveTransactionWithSplits(personalTransaction("Synced").copy(groupId = groupId))
+        db.syncDao().markSyncedIfUnchanged(synced, db.transactionDao().getTransactionByIdDirect(synced)!!.updatedAt)
+        repository.saveTransactionWithSplits(personalTransaction("Queued").copy(groupId = groupId))
+        repository.recordSettlement(fromPersonId = -1L, toPersonId = bob, amount = 5.0, groupId = groupId)
+        val localGroup = repository.createGroup("Local")
+        repository.saveTransactionWithSplits(personalTransaction("Local only").copy(groupId = localGroup))
+
+        val details = repository.groupsWithDetails.first()
+
+        assertEquals(2, details.single { it.group.id == groupId }.unsyncedChanges)
+        assertEquals(0, details.single { it.group.id == localGroup }.unsyncedChanges)
+    }
+
+    @Test
     fun `a groupmate can't be deleted as a local friend`() = runBlocking {
         val bob = groupmate()
 

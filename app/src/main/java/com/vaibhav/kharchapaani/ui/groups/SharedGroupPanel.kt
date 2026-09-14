@@ -64,6 +64,8 @@ fun SharedGroupPanel(
     isCreator: Boolean,
     invite: GroupInviteState?,
     isLeaving: Boolean,
+    unsyncedChanges: Int,
+    onSyncNow: () -> Unit,
     onCreateInvite: () -> Unit,
     onShareInvite: (link: String) -> Unit,
     onRevokeInvite: () -> Unit,
@@ -136,13 +138,32 @@ fun SharedGroupPanel(
             containerColor = CharcoalSurface,
             title = { Text("Leave ${group.name}?") },
             text = {
-                Text("Its expenses and settlements will be removed from this phone. Other members keep them, and you can rejoin with a new invite.")
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Its expenses and settlements will be removed from this phone. Other members keep them, and you can rejoin with a new invite.")
+                    if (unsyncedChanges > 0) {
+                        // Leaving first would throw these away: the server refuses them from a non-member.
+                        Text(
+                            text = if (unsyncedChanges == 1) {
+                                "1 change you made here hasn't synced yet and would be lost. Sync first to keep it."
+                            } else {
+                                "$unsyncedChanges changes you made here haven't synced yet and would be lost. Sync first to keep them."
+                            },
+                            color = WarmAmberPrimary,
+                        )
+                    }
+                }
             },
             confirmButton = {
-                TextButton(onClick = { confirmingLeave = false; onLeave() }) { Text("Leave", color = WarmAmberPrimary) }
+                TextButton(onClick = { confirmingLeave = false; onLeave() }) {
+                    Text(if (unsyncedChanges > 0) "Leave anyway" else "Leave", color = WarmAmberPrimary)
+                }
             },
             dismissButton = {
-                TextButton(onClick = { confirmingLeave = false }) { Text("Cancel", color = MutedWarmGray) }
+                if (unsyncedChanges > 0) {
+                    TextButton(onClick = { confirmingLeave = false; onSyncNow() }) { Text("Sync now", color = OffWhiteText) }
+                } else {
+                    TextButton(onClick = { confirmingLeave = false }) { Text("Cancel", color = MutedWarmGray) }
+                }
             },
         )
     }
@@ -228,6 +249,8 @@ private fun SharedGroupPanelPreview() {
             isCreator = true,
             invite = GroupInviteState(groupId = 1, code = "AB2CD3EF", expiresAtMillis = 1_800_000_000_000),
             isLeaving = false,
+            unsyncedChanges = 0,
+            onSyncNow = {},
             onCreateInvite = {},
             onShareInvite = {},
             onRevokeInvite = {},

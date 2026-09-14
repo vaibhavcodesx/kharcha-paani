@@ -71,6 +71,8 @@ class SharedGroupUiTest {
                     isCreator = false,
                     invite = GroupInviteState(groupId = 1, code = "AB2CD3EF", expiresAtMillis = 1_800_000_000_000),
                     isLeaving = false,
+                    unsyncedChanges = 0,
+                    onSyncNow = {},
                     onCreateInvite = {},
                     onShareInvite = { shared = it },
                     onRevokeInvite = {},
@@ -88,6 +90,39 @@ class SharedGroupUiTest {
     }
 
     @Test
+    fun `leaving with unsynced changes offers to sync first`() {
+        var leaves = 0
+        var syncs = 0
+        composeTestRule.setContent {
+            SplitFlowTheme {
+                SharedGroupPanel(
+                    group = GroupEntity(name = "Goa trip", syncState = SyncState.SYNCED),
+                    members = emptyList(),
+                    isCreator = false,
+                    invite = null,
+                    isLeaving = false,
+                    unsyncedChanges = 2,
+                    onSyncNow = { syncs++ },
+                    onCreateInvite = {},
+                    onShareInvite = {},
+                    onRevokeInvite = {},
+                    onSetArchived = {},
+                    onLeave = { leaves++ },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Leave group").performClick()
+        composeTestRule.onNodeWithText("2 changes you made here haven't synced yet and would be lost. Sync first to keep them.").assertExists()
+        composeTestRule.onNodeWithText("Sync now").performClick()
+        assertEquals(listOf(1, 0), listOf(syncs, leaves))
+
+        composeTestRule.onNodeWithText("Leave group").performClick()
+        composeTestRule.onNodeWithText("Leave anyway").performClick()
+        assertEquals(1, leaves)
+    }
+
+    @Test
     fun `leaving asks for confirmation first`() {
         var leaves = 0
         composeTestRule.setContent {
@@ -98,6 +133,8 @@ class SharedGroupUiTest {
                     isCreator = true,
                     invite = null,
                     isLeaving = false,
+                    unsyncedChanges = 0,
+                    onSyncNow = {},
                     onCreateInvite = {},
                     onShareInvite = {},
                     onRevokeInvite = {},

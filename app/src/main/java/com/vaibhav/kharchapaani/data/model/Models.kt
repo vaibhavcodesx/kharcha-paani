@@ -69,7 +69,9 @@ data class GroupWithDetails(
     val myShare: Double,
     val netBalanceForMe: Double, // > 0: group members owe me; < 0: I owe group
     val transactionsCount: Int,
-    val transactions: List<FullTransaction> = emptyList()
+    val transactions: List<FullTransaction> = emptyList(),
+    /** Expenses, settlements and group edits here that haven't reached the server yet. */
+    val unsyncedChanges: Int = 0,
 )
 
 data class SimplifiedDebt(
