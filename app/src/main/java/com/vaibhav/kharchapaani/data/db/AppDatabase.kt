@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import com.vaibhav.kharchapaani.data.db.dao.GroupDao
+import com.vaibhav.kharchapaani.data.db.dao.GroupSyncDao
 import com.vaibhav.kharchapaani.data.db.dao.PersonDao
 import com.vaibhav.kharchapaani.data.db.dao.SettlementDao
 import com.vaibhav.kharchapaani.data.db.dao.SplitDao
@@ -43,6 +44,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun settlementDao(): SettlementDao
     abstract fun groupDao(): GroupDao
     abstract fun syncDao(): SyncDao
+    abstract fun groupSyncDao(): GroupSyncDao
 
     companion object {
         /**
