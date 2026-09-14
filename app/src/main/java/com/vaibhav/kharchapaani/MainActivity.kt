@@ -52,12 +52,15 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleStartEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.key
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.repeatOnLifecycle
 import com.vaibhav.kharchapaani.ui.session.AccountSession
 import com.vaibhav.kharchapaani.ui.session.AccountSessionHolder
 import com.vaibhav.kharchapaani.ui.session.AccountSessionState
@@ -71,6 +74,9 @@ import com.vaibhav.kharchapaani.ui.components.AddFriendDialog
 import com.vaibhav.kharchapaani.ui.components.ConfirmBottomSheet
 import com.vaibhav.kharchapaani.ui.components.CreateGroupDialog
 import com.vaibhav.kharchapaani.ui.components.GroupDetailSheet
+import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
+import com.vaibhav.kharchapaani.data.sync.SupabaseLedgerChanges
+import com.vaibhav.kharchapaani.data.sync.SyncDoorbell
 import com.vaibhav.kharchapaani.domain.InviteLink
 import com.vaibhav.kharchapaani.ui.groups.JoinGroupSheet
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupPanel
@@ -190,6 +196,14 @@ class MainActivity : ComponentActivity() {
                 LifecycleStartEffect(viewModel) {
                     viewModel.requestSync()
                     onStopOrDispose { }
+                }
+                // While in the foreground, changes other people or devices make ring for a sync.
+                val lifecycle = LocalLifecycleOwner.current.lifecycle
+                LaunchedEffect(session.userId, lifecycle) {
+                    val changes = SupabaseLedgerChanges(SupabaseClientProvider.get(application), session.userId)
+                    lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                        SyncDoorbell(changes = changes::changes, ring = viewModel::requestSync).run()
+                    }
                 }
                 LaunchedEffect(viewModel, queuedIntent) {
                     if (queuedIntent != null) {
