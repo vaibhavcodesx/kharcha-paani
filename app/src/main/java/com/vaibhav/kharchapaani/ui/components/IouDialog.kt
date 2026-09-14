@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Handshake
@@ -44,6 +45,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
+import com.vaibhav.kharchapaani.domain.SharedRecordGroups
+import com.vaibhav.kharchapaani.ui.groups.RecordInGroupSection
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -58,7 +61,9 @@ import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 fun IouDialog(
     isOpen: Boolean,
     people: List<PersonEntity>,
-    onConfirm: (fromPersonId: Long, toPersonId: Long, amount: Double, note: String) -> Unit,
+    groupOptionsFor: (personId: Long) -> SharedRecordGroups.Options = { SharedRecordGroups.Options(groups = emptyList(), withoutAccount = emptyList(), involvesGroupmates = false) },
+    onCreateGroup: () -> Unit = {},
+    onConfirm: (fromPersonId: Long, toPersonId: Long, amount: Double, note: String, groupId: Long?) -> Unit,
     onDismiss: () -> Unit
 ) {
     if (!isOpen) return
@@ -68,6 +73,8 @@ fun IouDialog(
     var iouType by remember { mutableStateOf(0) }
     var amountText by remember { mutableStateOf("") }
     var noteText by remember { mutableStateOf("") }
+    val groupOptions = remember(selectedPersonId, groupOptionsFor) { groupOptionsFor(selectedPersonId) }
+    var selectedGroupId by remember(groupOptions) { mutableStateOf(groupOptions.onlyGroup?.id) }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -79,6 +86,7 @@ fun IouDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(20.dp)
             ) {
                 // Header
@@ -240,20 +248,32 @@ fun IouDialog(
                     )
                 )
 
+                Spacer(modifier = Modifier.height(12.dp))
+
+                RecordInGroupSection(
+                    otherPersonName = people.firstOrNull { it.id == selectedPersonId }?.name ?: "them",
+                    options = groupOptions,
+                    selectedGroupId = selectedGroupId,
+                    onSelectGroup = { selectedGroupId = it },
+                    onCreateGroup = onCreateGroup,
+                )
+
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Confirm Button
-                val valid = (amountText.toDoubleOrNull() ?: 0.0) > 0 && selectedPersonId != -1L
+                // Confirm Button. With a groupmate, a group has to be chosen whenever one exists.
+                val valid = (amountText.toDoubleOrNull() ?: 0.0) > 0 && selectedPersonId != -1L &&
+                    (!groupOptions.canSync || selectedGroupId != null)
+                val groupId = selectedGroupId.takeIf { groupOptions.canSync }
                 Button(
                     onClick = {
                         val amt = amountText.toDoubleOrNull() ?: 0.0
                         val reason = noteText.ifBlank { if (iouType == 0) "Informal Loan" else "Borrowed Amount" }
                         if (iouType == 0) {
                             // I lent money to friend (I paid -> to friend)
-                            onConfirm(-1L, selectedPersonId, amt, reason)
+                            onConfirm(-1L, selectedPersonId, amt, reason, groupId)
                         } else {
                             // Friend lent money to me (Friend paid -> to Me)
-                            onConfirm(selectedPersonId, -1L, amt, reason)
+                            onConfirm(selectedPersonId, -1L, amt, reason, groupId)
                         }
                     },
                     enabled = valid,
@@ -268,7 +288,7 @@ fun IouDialog(
                     )
                 ) {
                     Text(
-                        "Record IOU",
+                        if (groupOptions.involvesGroupmates && !groupOptions.canSync) "Save on this phone only" else "Record IOU",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                 }

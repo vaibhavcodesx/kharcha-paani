@@ -36,6 +36,7 @@ import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.data.sync.SyncScheduler
 import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
 import com.vaibhav.kharchapaani.domain.DebtSimplifier
+import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.domain.LocalStatementParser
@@ -705,9 +706,47 @@ class MainViewModel(
         _isConfirmSheetOpen.value = false
     }
 
-    fun saveCurrentTransaction() {
+    private val _splitGroupPrompt = MutableStateFlow<SharedRecordGroups.Options?>(null)
+    /** Non-null while asking where a split with groupmates should go (see [ShareSplitPrompt]). */
+    val splitGroupPrompt: StateFlow<SharedRecordGroups.Options?> = _splitGroupPrompt.asStateFlow()
+
+    /** Where a settlement, IOU or split with these people could sync. */
+    fun groupOptionsFor(personIds: Collection<Long>): SharedRecordGroups.Options =
+        SharedRecordGroups.optionsFor(personIds, people.value, groups.value)
+
+    fun shareSplitInGroup(groupId: Long) {
+        _splitGroupPrompt.value = null
+        updateGroupId(groupId)
+        saveCurrentTransaction(askForGroup = false)
+    }
+
+    fun saveSplitOnThisPhone() {
+        _splitGroupPrompt.value = null
+        saveCurrentTransaction(askForGroup = false)
+    }
+
+    fun dismissSplitGroupPrompt() {
+        _splitGroupPrompt.value = null
+    }
+
+    fun createGroupFromSplitPrompt() {
+        _splitGroupPrompt.value = null
+        openCreateSharedGroup()
+    }
+
+    fun saveCurrentTransaction(askForGroup: Boolean = true) {
         val total = _amount.value.toDoubleOrNull() ?: 0.0
         if (total <= 0) return
+
+        // A split with groupmates outside a shared group never reaches them (decision 1): ask first.
+        if (askForGroup && _isSplit.value && !isSharedGroup(_groupId.value)) {
+            val participants = _shares.value.filter { it.isSelected }.map { it.personId } + _paidByPersonId.value
+            val options = groupOptionsFor(participants)
+            if (options.involvesGroupmates) {
+                _splitGroupPrompt.value = options
+                return
+            }
+        }
 
         val merchantName = _merchant.value.ifBlank {
             if (_type.value == "income") "Income" else _category.value
@@ -788,7 +827,20 @@ class MainViewModel(
     }
 
     // Groups Management
+    private val _createGroupShared = MutableStateFlow(false)
+    /** Whether the create-group dialog opens with "Share with others" already on. */
+    val createGroupShared: StateFlow<Boolean> = _createGroupShared.asStateFlow()
+
     fun openCreateGroup() {
+        _createGroupShared.value = false
+        _isCreateGroupOpen.value = true
+    }
+
+    /** From a settlement, IOU or split that needs a shared group with someone. */
+    fun openCreateSharedGroup() {
+        _isSettleUpOpen.value = false
+        _isIouOpen.value = false
+        _createGroupShared.value = true
         _isCreateGroupOpen.value = true
     }
 
@@ -859,7 +911,7 @@ class MainViewModel(
         _settleUpPerson.value = null
     }
 
-    fun recordSettlementPayment(fromPersonId: Long, toPersonId: Long, amount: Double, note: String) {
+    fun recordSettlementPayment(fromPersonId: Long, toPersonId: Long, amount: Double, note: String, groupId: Long? = null) {
         viewModelScope.launch {
             try {
                 ledgerRepo.recordSettlement(
@@ -867,6 +919,7 @@ class MainViewModel(
                     toPersonId = toPersonId,
                     amount = amount,
                     note = note,
+                    groupId = groupId,
                     isIou = false
                 )
             } catch (e: ArchivedGroupException) {
@@ -886,7 +939,7 @@ class MainViewModel(
         _isIouOpen.value = false
     }
 
-    fun recordIou(fromPersonId: Long, toPersonId: Long, amount: Double, note: String) {
+    fun recordIou(fromPersonId: Long, toPersonId: Long, amount: Double, note: String, groupId: Long? = null) {
         viewModelScope.launch {
             try {
                 ledgerRepo.recordSettlement(
@@ -894,6 +947,7 @@ class MainViewModel(
                     toPersonId = toPersonId,
                     amount = amount,
                     note = note,
+                    groupId = groupId,
                     isIou = true
                 )
             } catch (e: ArchivedGroupException) {
