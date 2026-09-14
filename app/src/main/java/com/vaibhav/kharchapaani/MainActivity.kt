@@ -44,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -79,6 +80,7 @@ import com.vaibhav.kharchapaani.data.sync.SupabaseLedgerChanges
 import com.vaibhav.kharchapaani.data.sync.SyncDoorbell
 import com.vaibhav.kharchapaani.domain.InviteLink
 import com.vaibhav.kharchapaani.ui.groups.JoinGroupSheet
+import com.vaibhav.kharchapaani.ui.groups.ShareSplitPrompt
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupPanel
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupsController
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupsViewModel
@@ -325,6 +327,8 @@ fun SplitFlowApp(
 
     // Group Modals
     val isCreateGroupOpen by viewModel.isCreateGroupOpen.collectAsState()
+    val createGroupShared by viewModel.createGroupShared.collectAsState()
+    val splitGroupPrompt by viewModel.splitGroupPrompt.collectAsState()
     val selectedGroupForDetail by viewModel.selectedGroupForDetail.collectAsState()
 
     // AI Summary
@@ -597,8 +601,12 @@ fun SplitFlowApp(
         isOpen = isSettleUpOpen,
         person = settleUpPerson,
         suggestedAmount = currentPersonBalance?.netBalance ?: 0.0,
-        onConfirm = { fromId, toId, amt, note ->
-            viewModel.recordSettlementPayment(fromId, toId, amt, note)
+        groupOptions = remember(settleUpPerson, people, groups) {
+            viewModel.groupOptionsFor(listOfNotNull(settleUpPerson?.id))
+        },
+        onCreateGroup = { viewModel.openCreateSharedGroup() },
+        onConfirm = { fromId, toId, amt, note, groupId ->
+            viewModel.recordSettlementPayment(fromId, toId, amt, note, groupId)
         },
         onDismiss = { viewModel.dismissSettleUp() }
     )
@@ -607,8 +615,10 @@ fun SplitFlowApp(
     IouDialog(
         isOpen = isIouOpen,
         people = people,
-        onConfirm = { fromId, toId, amt, note ->
-            viewModel.recordIou(fromId, toId, amt, note)
+        groupOptionsFor = remember(people, groups) { { personId -> viewModel.groupOptionsFor(listOf(personId)) } },
+        onCreateGroup = { viewModel.openCreateSharedGroup() },
+        onConfirm = { fromId, toId, amt, note, groupId ->
+            viewModel.recordIou(fromId, toId, amt, note, groupId)
         },
         onDismiss = { viewModel.dismissIouDialog() }
     )
@@ -624,6 +634,7 @@ fun SplitFlowApp(
     CreateGroupDialog(
         isOpen = isCreateGroupOpen,
         allPeople = people,
+        initialShared = createGroupShared,
         onSaveGroup = { name, desc, emoji, color, memberIds, shared ->
             viewModel.createNewGroup(name, desc, emoji, color, memberIds, shared)
         },
@@ -656,6 +667,14 @@ fun SplitFlowApp(
                 onLeave = { sharedGroups.leaveGroup(group) { viewModel.dismissGroupDetail() } },
             )
         },
+    )
+
+    ShareSplitPrompt(
+        options = splitGroupPrompt,
+        onShareIn = viewModel::shareSplitInGroup,
+        onCreateGroup = viewModel::createGroupFromSplitPrompt,
+        onKeepLocal = viewModel::saveSplitOnThisPhone,
+        onDismiss = viewModel::dismissSplitGroupPrompt,
     )
 
     JoinGroupSheet(

@@ -75,6 +75,7 @@ private val COLOR_OPTIONS = listOf("#FF7A3D", "#C6F24C", "#70C1FF", "#FFB3BA", "
 fun CreateGroupDialog(
     isOpen: Boolean,
     allPeople: List<PersonEntity>,
+    initialShared: Boolean = false,
     onSaveGroup: (name: String, description: String, emoji: String, colorHex: String, memberIds: List<Long>, shared: Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -85,7 +86,7 @@ fun CreateGroupDialog(
     var selectedEmoji by remember { mutableStateOf("⛰️") }
     var selectedColor by remember { mutableStateOf("#FF7A3D") }
     val selectedMemberIds = remember { mutableStateListOf<Long>() }
-    var isShared by remember { mutableStateOf(false) }
+    var isShared by remember { mutableStateOf(initialShared) }
     // The server caps shared group names at 60 characters.
     val nameIsValid = groupName.isNotBlank() && (!isShared || groupName.trim().length <= MAX_SHARED_NAME)
 
