@@ -19,6 +19,8 @@ import com.vaibhav.kharchapaani.data.model.GroupWithDetails
 import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
 import com.vaibhav.kharchapaani.data.model.PersonBalance
 import com.vaibhav.kharchapaani.data.model.PersonLedgerItem
+import com.vaibhav.kharchapaani.domain.GroupBalances
+import com.vaibhav.kharchapaani.domain.SplitRounding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -30,15 +32,18 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 import kotlin.math.abs
 
 /**
- * @param onLocalTransactionChange called after a transaction write commits, so the account's sync
+ * @param onLocalTransactionChange called after a syncable write commits, so the account's sync
  * can be scheduled. Runs after the Room transaction, never inside it.
+ * @param selfProfileId the signed-in account's profile id; needed to create or edit shared groups.
  */
 class LedgerRepository(
     private val db: AppDatabase,
     private val onLocalTransactionChange: () -> Unit = {},
+    private val selfProfileId: String? = null,
 ) {
 
     val allPeople: Flow<List<PersonEntity>> = db.personDao().getAllPeople()
@@ -120,8 +125,9 @@ class LedgerRepository(
         allGroups,
         allGroupMembers,
         allPeople,
-        fullTransactions
-    ) { groups, groupMembers, people, transactions ->
+        fullTransactions,
+        allSettlements
+    ) { groups, groupMembers, people, transactions, settlements ->
         val membersByGroup = groupMembers.groupBy { it.groupId }
         val peopleMap = people.associateBy { it.id }
 
@@ -162,7 +168,12 @@ class LedgerRepository(
                 }
             }
 
-            val netBalance = (othersOweMeInGroup - iOweOthersInGroup)
+            val netBalance = if (group.isShared) {
+                // Groupmates' expenses and settlements move my position too, so use the group-wide view.
+                GroupBalances.netPositions(groupTxs, settlements.filter { it.groupId == group.id })[-1L] ?: 0.0
+            } else {
+                othersOweMeInGroup - iOweOthersInGroup
+            }
 
             GroupWithDetails(
                 group = group,
@@ -274,7 +285,10 @@ class LedgerRepository(
         val currentMonth = now.get(Calendar.MONTH)
         val currentYear = now.get(Calendar.YEAR)
 
-        val monthTransactions = transactions.filter { tx ->
+        val myTransactions = transactions.filter { tx ->
+            tx.isOwnedByMe || splitMap[tx.id]?.let { split -> shareMap[split.id].orEmpty().any { it.personId == -1L } } == true
+        }
+        val monthTransactions = myTransactions.filter { tx ->
             val cal = Calendar.getInstance().apply { timeInMillis = tx.date }
             cal.get(Calendar.MONTH) == currentMonth && cal.get(Calendar.YEAR) == currentYear
         }
@@ -329,7 +343,7 @@ class LedgerRepository(
         val topCategory = summaries.firstOrNull()?.category ?: "Food"
         val topCategoryAmount = summaries.firstOrNull()?.amount ?: 0.0
         val topMerchant = merchantTotals.maxByOrNull { it.value }?.key ?: (summaries.firstOrNull()?.category ?: "None")
-        val streak = calculateDailyStreak(transactions)
+        val streak = calculateDailyStreak(transactions.filter { it.isOwnedByMe })
 
         MonthlyAnalytics(
             totalExpense = (totalPersonalExpense * 100).toLong() / 100.0,
@@ -383,14 +397,16 @@ class LedgerRepository(
     ): Long = withContext(Dispatchers.IO) {
         val isSplit = shares.isNotEmpty()
         val txId = db.withTransaction {
+            val syncState = syncStateFor(groupId = tx.groupId, isSplit = isSplit)
             val txId = db.transactionDao().insertTransaction(
                 tx.copy(
                     isSplit = isSplit,
                     updatedAt = System.currentTimeMillis(),
-                    syncState = syncStateFor(groupId = tx.groupId, isSplit = isSplit),
+                    syncState = syncState,
+                    ownerProfileId = null,
                 )
             )
-            if (isSplit) insertSplit(txId, tx.amount, paidByPersonId, splitType, shares)
+            if (isSplit) insertSplit(txId, tx.amount, paidByPersonId, splitType, sharesFor(syncState, tx.groupId, tx.amount, paidByPersonId, shares))
             txId
         }
         onLocalTransactionChange()
@@ -402,9 +418,13 @@ class LedgerRepository(
     ): List<Long> = withContext(Dispatchers.IO) {
         if (transactions.isEmpty()) return@withContext emptyList()
         val now = System.currentTimeMillis()
-        val ids = db.transactionDao().insertTransactions(
-            transactions.map { it.copy(updatedAt = now, syncState = syncStateFor(it.groupId, it.isSplit)) }
-        )
+        val ids = db.withTransaction {
+            db.transactionDao().insertTransactions(
+                transactions.map {
+                    it.copy(updatedAt = now, syncState = syncStateFor(it.groupId, it.isSplit), ownerProfileId = null)
+                }
+            )
+        }
         onLocalTransactionChange()
         ids
     }
@@ -418,11 +438,21 @@ class LedgerRepository(
         val isSplit = shares.isNotEmpty()
         db.withTransaction {
             val existing = db.transactionDao().getTransactionByIdDirect(tx.id) ?: return@withTransaction
+            // Decision 2: only the person who added a group expense can change it. The UI hides the
+            // action; this keeps a stray call from queueing an edit the server would refuse.
+            if (!existing.isOwnedByMe) return@withTransaction
             val syncState = syncStateFor(groupId = tx.groupId, isSplit = isSplit)
+            // Moving an expense out of a shared group can't be expressed as an update: members of the
+            // old group only pull that group's rows and would never see it leave. Retract the old copy
+            // and give the row a new identity so the retraction and the new upload can't cancel out.
+            val leavesSharedGroup = existing.syncState != SyncState.LOCAL_ONLY &&
+                isSharedGroup(existing.groupId) && tx.groupId != existing.groupId
+            val remoteId = if (leavesSharedGroup) UUID.randomUUID().toString() else existing.remoteId
             when {
+                leavesSharedGroup -> db.syncDao().insertPendingDelete(PendingRemoteDeleteEntity(existing.remoteId))
                 // A re-queued upload must not be undone by an older queued delete of the same row.
                 syncState == SyncState.PENDING -> db.syncDao().clearPendingDeletes(listOf(existing.remoteId))
-                // Became a split/group expense (not synced until step 4): take the cloud copy down.
+                // Became a split outside any shared group (local-only): take the cloud copy down.
                 existing.syncState != SyncState.LOCAL_ONLY ->
                     db.syncDao().insertPendingDelete(PendingRemoteDeleteEntity(existing.remoteId))
             }
@@ -430,14 +460,23 @@ class LedgerRepository(
                 // The edit sheet builds a fresh entity; identity and creation time come from the stored row.
                 tx.copy(
                     isSplit = isSplit,
-                    remoteId = existing.remoteId,
+                    remoteId = remoteId,
                     createdAt = existing.createdAt,
                     updatedAt = System.currentTimeMillis(),
                     syncState = syncState,
+                    ownerProfileId = null,
                 )
             )
+            // Keep the split's server id across edits so save_group_expense updates the same split.
+            val splitRemoteId = db.groupSyncDao().splitForTransaction(tx.id)?.remoteId?.takeUnless { leavesSharedGroup }
             db.splitDao().deleteSplitByTransactionId(tx.id)
-            if (isSplit) insertSplit(tx.id, tx.amount, paidByPersonId, splitType, shares)
+            if (isSplit) {
+                insertSplit(
+                    tx.id, tx.amount, paidByPersonId, splitType,
+                    sharesFor(syncState, tx.groupId, tx.amount, paidByPersonId, shares),
+                    splitRemoteId,
+                )
+            }
         }
         onLocalTransactionChange()
     }
@@ -445,6 +484,7 @@ class LedgerRepository(
     suspend fun deleteTransaction(txId: Long) = withContext(Dispatchers.IO) {
         db.withTransaction {
             val existing = db.transactionDao().getTransactionByIdDirect(txId) ?: return@withTransaction
+            if (!existing.isOwnedByMe) return@withTransaction
             if (existing.syncState != SyncState.LOCAL_ONLY) {
                 db.syncDao().insertPendingDelete(PendingRemoteDeleteEntity(existing.remoteId))
             }
@@ -459,15 +499,15 @@ class LedgerRepository(
         paidByPersonId: Long,
         splitType: String,
         shares: List<SplitShareEntity>,
+        remoteId: String? = null,
     ) {
-        val splitId = db.splitDao().insertSplit(
-            SplitEntity(
-                transactionId = txId,
-                totalAmount = totalAmount,
-                paidByPersonId = paidByPersonId,
-                splitType = splitType
-            )
+        val split = SplitEntity(
+            transactionId = txId,
+            totalAmount = totalAmount,
+            paidByPersonId = paidByPersonId,
+            splitType = splitType
         )
+        val splitId = db.splitDao().insertSplit(remoteId?.let { split.copy(remoteId = it) } ?: split)
         db.splitDao().insertSplitShares(shares.map { it.copy(splitId = splitId) })
     }
 
@@ -480,6 +520,7 @@ class LedgerRepository(
         groupId: Long? = null,
         date: Long = System.currentTimeMillis()
     ): Long = withContext(Dispatchers.IO) {
+        val shared = db.withTransaction { isSharedGroup(groupId) }
         val settlement = SettlementEntity(
             fromPersonId = fromPersonId,
             toPersonId = toPersonId,
@@ -487,13 +528,30 @@ class LedgerRepository(
             date = date,
             note = note,
             isIou = isIou,
-            groupId = groupId
+            groupId = groupId,
+            // Decision 3: either party records it; inside a shared group it syncs to every member.
+            syncState = if (shared) SyncState.PENDING else SyncState.LOCAL_ONLY,
         )
-        db.settlementDao().insertSettlement(settlement)
+        val id = db.settlementDao().insertSettlement(settlement)
+        if (shared) onLocalTransactionChange()
+        id
     }
 
     suspend fun deleteSettlement(settlementId: Long) = withContext(Dispatchers.IO) {
-        db.settlementDao().deleteSettlementById(settlementId)
+        var queued = false
+        db.withTransaction {
+            val existing = db.groupSyncDao().settlementById(settlementId) ?: return@withTransaction
+            if (existing.syncState != SyncState.LOCAL_ONLY) {
+                // Only the two parties can retract a shared settlement (RLS); others see it read-only.
+                if (existing.fromPersonId != -1L && existing.toPersonId != -1L) return@withTransaction
+                db.syncDao().insertPendingDelete(
+                    PendingRemoteDeleteEntity(existing.remoteId, entityType = PendingRemoteDeleteEntity.TYPE_SETTLEMENT)
+                )
+                queued = true
+            }
+            db.settlementDao().deleteSettlementById(settlementId)
+        }
+        if (queued) onLocalTransactionChange()
     }
 
     suspend fun addPerson(name: String, avatarColor: String): Long = withContext(Dispatchers.IO) {
@@ -501,6 +559,9 @@ class LedgerRepository(
     }
 
     suspend fun deletePerson(personId: Long) = withContext(Dispatchers.IO) {
+        // A groupmate comes from their group's membership; removing them locally would corrupt
+        // shared expenses. They go away when they leave, or when this account does.
+        if (db.personDao().getPersonById(personId)?.profileId != null) return@withContext
         db.splitDao().deleteSharesForPerson(personId)
         db.settlementDao().deleteSettlementsForPerson(personId)
         db.groupDao().deleteMemberByPersonId(personId)
@@ -533,7 +594,58 @@ class LedgerRepository(
         groupId
     }
 
+    /**
+     * A shared group (decision 1) syncs to everyone who joins with an invite; membership comes only
+     * from the server, so it starts with just this account.
+     */
+    suspend fun createSharedGroup(
+        name: String,
+        description: String = "",
+        emoji: String = "🏖️",
+        colorHex: String = "#FF7A3D",
+    ): Long = withContext(Dispatchers.IO) {
+        val self = checkNotNull(selfProfileId) { "creating a shared group needs a signed-in account" }
+        val groupId = db.withTransaction {
+            val groupId = db.groupDao().insertGroup(
+                GroupEntity(
+                    name = name.trim(),
+                    description = description.trim(),
+                    emoji = emoji,
+                    colorHex = colorHex,
+                    syncState = SyncState.PENDING,
+                    createdByProfileId = self,
+                )
+            )
+            db.groupDao().insertGroupMembers(listOf(GroupMemberEntity(groupId = groupId, personId = -1L)))
+            groupId
+        }
+        onLocalTransactionChange()
+        groupId
+    }
+
+    /** Decision 4: shared groups are archived (and may be un-archived) by their creator, never deleted. */
+    suspend fun setGroupArchived(groupId: Long, archived: Boolean) = withContext(Dispatchers.IO) {
+        val changed = db.withTransaction {
+            val group = db.groupDao().getGroupByIdDirect(groupId) ?: return@withTransaction false
+            if (!group.isShared || !isCreator(group) || group.isArchived == archived) return@withTransaction false
+            db.groupDao().updateGroup(
+                group.copy(
+                    archivedAt = if (archived) System.currentTimeMillis() else null,
+                    updatedAt = System.currentTimeMillis(),
+                    syncState = SyncState.PENDING,
+                )
+            )
+            true
+        }
+        if (changed) onLocalTransactionChange()
+    }
+
     suspend fun updateGroup(group: GroupEntity, memberPersonIds: List<Long>) = withContext(Dispatchers.IO) {
+        val stored = db.groupDao().getGroupByIdDirect(group.id) ?: return@withContext
+        if (stored.isShared) {
+            updateSharedGroupDetails(stored, group)
+            return@withContext
+        }
         db.groupDao().updateGroup(group)
         db.groupDao().deleteMembersForGroup(group.id)
         val members = mutableListOf<GroupMemberEntity>()
@@ -544,15 +656,67 @@ class LedgerRepository(
         db.groupDao().insertGroupMembers(members)
     }
 
+    /** Name, description, emoji and colour only: membership changes through invites and leaving. */
+    private suspend fun updateSharedGroupDetails(stored: GroupEntity, edited: GroupEntity) {
+        if (!isCreator(stored)) return
+        db.groupDao().updateGroup(
+            stored.copy(
+                name = edited.name.trim(),
+                description = edited.description.trim(),
+                emoji = edited.emoji,
+                colorHex = edited.colorHex,
+                updatedAt = System.currentTimeMillis(),
+                syncState = SyncState.PENDING,
+            )
+        )
+        onLocalTransactionChange()
+    }
+
     suspend fun deleteGroup(groupId: Long) = withContext(Dispatchers.IO) {
+        // Shared history belongs to every member; shared groups are archived instead.
+        if (db.groupDao().getGroupByIdDirect(groupId)?.isShared == true) return@withContext
         db.groupDao().deleteMembersForGroup(groupId)
         db.groupDao().deleteGroupById(groupId)
     }
 
 
-    /** Step 3 syncs personal transactions only; split and group expenses wait for step 4. */
-    private fun syncStateFor(groupId: Long?, isSplit: Boolean): SyncState =
-        if (groupId == null && !isSplit) SyncState.PENDING else SyncState.LOCAL_ONLY
+    /**
+     * Personal transactions and anything in a shared group sync. Splits with local-only friends and
+     * expenses in local-only groups stay on this device (decision 7).
+     */
+    private suspend fun syncStateFor(groupId: Long?, isSplit: Boolean): SyncState = when {
+        isSharedGroup(groupId) -> SyncState.PENDING
+        groupId == null && !isSplit -> SyncState.PENDING
+        else -> SyncState.LOCAL_ONLY
+    }
+
+    private suspend fun isSharedGroup(groupId: Long?): Boolean =
+        groupId != null && db.groupDao().getGroupByIdDirect(groupId)?.isShared == true
+
+    private fun isCreator(group: GroupEntity): Boolean =
+        selfProfileId != null && group.createdByProfileId == selfProfileId
+
+    /**
+     * Shared-group shares are rounded to paisa with the leftover on the payer (decision 6), which the
+     * server requires. Shares that don't add up are kept as entered: sync marks that expense FAILED
+     * instead of this silently changing what someone owes.
+     */
+    private fun sharesFor(
+        syncState: SyncState,
+        groupId: Long?,
+        amount: Double,
+        paidByPersonId: Long,
+        shares: List<SplitShareEntity>,
+    ): List<SplitShareEntity> {
+        if (syncState != SyncState.PENDING || groupId == null || shares.isEmpty()) return shares
+        if (shares.map { it.personId }.toSet().size != shares.size) return shares
+        val rounded = try {
+            SplitRounding.normalize(amount, shares.associate { it.personId to it.shareAmount }, paidByPersonId)
+        } catch (e: IllegalArgumentException) {
+            return shares
+        }
+        return shares.map { it.copy(shareAmount = rounded.getValue(it.personId)) }
+    }
 
     /**
      * Professional, statement-like CSV generation for analysis, spreadsheets, and taxation.
