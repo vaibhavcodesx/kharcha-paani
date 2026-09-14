@@ -321,6 +321,29 @@ class GroupSyncEngine(
             syncState = SyncState.SYNCED,
             ownerProfileId = row.ownerId.takeIf { it != selfProfileId },
         )
+        val pulledSplit = split?.let {
+            SplitEntity(
+                transactionId = local?.id ?: 0L,
+                totalAmount = it.totalAmount,
+                paidByPersonId = personIdFor(it.paidBy),
+                splitType = it.splitType,
+                remoteId = it.id,
+            )
+        }
+        val pulledShares = row.activeShares.map { share ->
+            SplitShareEntity(
+                splitId = 0L,
+                personId = personIdFor(share.profileId),
+                shareAmount = share.shareAmount,
+                percentage = share.percentage,
+            )
+        }
+
+        // Pull pages overlap and every edit re-sends the whole expense, so most pulls of a known
+        // expense change nothing. Rewriting it anyway replaced its split and shares with new rows and
+        // re-emitted every ledger flow on each sync.
+        if (local != null && isUnchanged(local, pulled, pulledSplit, pulledShares)) return
+
         val transactionId = if (local == null) {
             syncDao.insertTransaction(pulled)
         } else {
@@ -328,27 +351,25 @@ class GroupSyncEngine(
             dao.deleteSplitForTransaction(local.id)
             local.id
         }
-        if (split == null) return
+        if (pulledSplit == null) return
 
-        val splitId = dao.insertSplit(
-            SplitEntity(
-                transactionId = transactionId,
-                totalAmount = split.totalAmount,
-                paidByPersonId = personIdFor(split.paidBy),
-                splitType = split.splitType,
-                remoteId = split.id,
-            )
-        )
-        dao.insertShares(
-            row.activeShares.map { share ->
-                SplitShareEntity(
-                    splitId = splitId,
-                    personId = personIdFor(share.profileId),
-                    shareAmount = share.shareAmount,
-                    percentage = share.percentage,
-                )
-            }
-        )
+        val splitId = dao.insertSplit(pulledSplit.copy(transactionId = transactionId))
+        dao.insertShares(pulledShares.map { it.copy(splitId = splitId) })
+    }
+
+    /** updated_at alone moving (a bump with identical content) isn't a change worth writing. */
+    private suspend fun isUnchanged(
+        local: TransactionEntity,
+        pulled: TransactionEntity,
+        pulledSplit: SplitEntity?,
+        pulledShares: List<SplitShareEntity>,
+    ): Boolean {
+        if (pulled.copy(id = local.id, updatedAt = local.updatedAt) != local) return false
+        val localSplit = dao.splitForTransaction(local.id)
+        if (pulledSplit == null || localSplit == null) return pulledSplit == null && localSplit == null
+        if (pulledSplit.copy(id = localSplit.id, transactionId = localSplit.transactionId) != localSplit) return false
+        fun key(share: SplitShareEntity) = Triple(share.personId, share.shareAmount, share.percentage)
+        return dao.sharesForSplit(localSplit.id).groupingBy(::key).eachCount() == pulledShares.groupingBy(::key).eachCount()
     }
 
     private suspend fun applySettlement(row: RemoteSettlement) {
@@ -374,7 +395,11 @@ class GroupSyncEngine(
             updatedAt = parseTimestamp(row.updatedAt),
             syncState = SyncState.SYNCED,
         )
-        if (local == null) dao.insertSettlement(pulled) else dao.updateSettlement(pulled.copy(id = local.id))
+        when {
+            local == null -> dao.insertSettlement(pulled)
+            pulled.copy(id = local.id, updatedAt = local.updatedAt) == local -> Unit
+            else -> dao.updateSettlement(pulled.copy(id = local.id))
+        }
     }
 
     /**
