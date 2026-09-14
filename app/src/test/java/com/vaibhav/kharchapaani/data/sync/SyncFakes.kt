@@ -65,6 +65,10 @@ class FakeSyncStore : TransactionSyncStore {
         return true
     }
 
+    override suspend fun deleteMeta(key: String) {
+        meta.remove(key)
+    }
+
     override suspend fun getMeta(key: String) = meta[key]
     override suspend fun putMeta(key: String, value: String) {
         meta[key] = value
@@ -80,6 +84,8 @@ class FakeTransactionRemote(private val ownerId: String) : TransactionRemote {
     val server = linkedMapOf<String, RemoteTransaction>()
     var online = true
     var rejectIds = emptySet<String>()
+    /** Deletes RLS refuses, e.g. an expense in a group that has since been archived. */
+    var refuseDeleteIds = emptySet<String>()
     var onUpsert: suspend (List<TransactionUpload>) -> Unit = {}
     val upsertCalls = mutableListOf<List<String>>()
     private var clockMillis = 1_800_000_000_000L
@@ -104,6 +110,8 @@ class FakeTransactionRemote(private val ownerId: String) : TransactionRemote {
 
     override suspend fun softDelete(remoteIds: List<String>) {
         if (!online) throw IOException("offline")
+        // One refused row fails the whole UPDATE, as in Postgres.
+        if (remoteIds.any { it in refuseDeleteIds }) throw RowsRejectedException(403, "new row violates row-level security policy")
         val stamp = tick()
         remoteIds.forEach { id -> server[id]?.let { server[id] = it.copy(deletedAt = stamp, updatedAt = stamp) } }
     }

@@ -397,6 +397,7 @@ class LedgerRepository(
     ): Long = withContext(Dispatchers.IO) {
         val isSplit = shares.isNotEmpty()
         val txId = db.withTransaction {
+            requireWritableGroup(tx.groupId)
             val syncState = syncStateFor(groupId = tx.groupId, isSplit = isSplit)
             val txId = db.transactionDao().insertTransaction(
                 tx.copy(
@@ -441,6 +442,8 @@ class LedgerRepository(
             // Decision 2: only the person who added a group expense can change it. The UI hides the
             // action; this keeps a stray call from queueing an edit the server would refuse.
             if (!existing.isOwnedByMe) return@withTransaction
+            requireWritableGroup(existing.groupId)
+            requireWritableGroup(tx.groupId)
             val syncState = syncStateFor(groupId = tx.groupId, isSplit = isSplit)
             // Moving an expense out of a shared group can't be expressed as an update: members of the
             // old group only pull that group's rows and would never see it leave. Retract the old copy
@@ -485,6 +488,7 @@ class LedgerRepository(
         db.withTransaction {
             val existing = db.transactionDao().getTransactionByIdDirect(txId) ?: return@withTransaction
             if (!existing.isOwnedByMe) return@withTransaction
+            requireWritableGroup(existing.groupId)
             if (existing.syncState != SyncState.LOCAL_ONLY) {
                 db.syncDao().insertPendingDelete(PendingRemoteDeleteEntity(existing.remoteId))
             }
@@ -520,7 +524,10 @@ class LedgerRepository(
         groupId: Long? = null,
         date: Long = System.currentTimeMillis()
     ): Long = withContext(Dispatchers.IO) {
-        val shared = db.withTransaction { isSharedGroup(groupId) }
+        val shared = db.withTransaction {
+            requireWritableGroup(groupId)
+            isSharedGroup(groupId)
+        }
         val settlement = SettlementEntity(
             fromPersonId = fromPersonId,
             toPersonId = toPersonId,
@@ -541,6 +548,7 @@ class LedgerRepository(
         var queued = false
         db.withTransaction {
             val existing = db.groupSyncDao().settlementById(settlementId) ?: return@withTransaction
+            requireWritableGroup(existing.groupId)
             if (existing.syncState != SyncState.LOCAL_ONLY) {
                 // Only the two parties can retract a shared settlement (RLS); others see it read-only.
                 if (existing.fromPersonId != -1L && existing.toPersonId != -1L) return@withTransaction
@@ -706,6 +714,15 @@ class LedgerRepository(
         else -> SyncState.LOCAL_ONLY
     }
 
+    /**
+     * Decision 4: an archived shared group is read-only. The server already refuses these writes
+     * (RLS requires an active group); refusing here too means nothing is queued that can only fail.
+     */
+    private suspend fun requireWritableGroup(groupId: Long?) {
+        val group = groupId?.let { db.groupDao().getGroupByIdDirect(it) } ?: return
+        if (group.isShared && group.isArchived) throw ArchivedGroupException(group.name)
+    }
+
     private suspend fun isSharedGroup(groupId: Long?): Boolean =
         groupId != null && db.groupDao().getGroupByIdDirect(groupId)?.isShared == true
 
@@ -811,3 +828,6 @@ class LedgerRepository(
         sb.toString()
     }
 }
+
+/** A write into an archived shared group, which is read-only for everyone (decision 4). */
+class ArchivedGroupException(val groupName: String) : IllegalStateException("$groupName is archived and read-only")

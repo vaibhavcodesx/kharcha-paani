@@ -134,10 +134,11 @@ class SupabaseGroupRemote(private val supabase: SupabaseClient) : GroupRemote {
     }
 
     @OptIn(ExperimentalTime::class)
-    override suspend fun softDeleteSettlements(remoteIds: List<String>) {
+    override suspend fun softDeleteSettlements(remoteIds: List<String>) = rejectingContent {
         supabase.from("settlements").update(buildJsonObject { put("deleted_at", Clock.System.now().toString()) }) {
             filter { isIn("id", remoteIds) }
         }
+        Unit
     }
 
     override suspend fun settlementsChangedSince(since: String?, limit: Int): List<RemoteSettlement> =

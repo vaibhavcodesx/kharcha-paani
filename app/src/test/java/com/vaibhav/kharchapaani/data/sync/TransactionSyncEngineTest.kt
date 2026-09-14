@@ -116,6 +116,30 @@ class TransactionSyncEngineTest {
     }
 
     @Test
+    fun `a delete the server refuses is dropped without blocking other deletes or the rest of sync`() = runBlocking {
+        val refused = store.add(personalTransaction("In an archived group"))
+        val fine = store.add(personalTransaction("Normal"))
+        engine.sync()
+        store.rows.remove(refused.id)
+        store.rows.remove(fine.id)
+        store.pendingDeletes += listOf(refused.remoteId, fine.remoteId)
+        remote.refuseDeleteIds = setOf(refused.remoteId)
+        store.meta[GroupSyncEngine.GROUP_EXPENSES_PULL_CURSOR] = "2026-09-14T00:00:00Z"
+        val pending = store.add(personalTransaction("Queued after"))
+
+        engine.sync()
+
+        assertNotNull("the other delete still went through", remote.server.getValue(fine.remoteId).deletedAt)
+        assertNull(remote.server.getValue(refused.remoteId).deletedAt)
+        assertTrue("the refused tombstone must not be retried forever", store.pendingDeletes.isEmpty())
+        assertNull(
+            "group expenses are re-pulled so the refused row comes back where it still exists",
+            store.meta[GroupSyncEngine.GROUP_EXPENSES_PULL_CURSOR],
+        )
+        assertEquals(SyncState.SYNCED, store.rows.getValue(pending.id).syncState)
+    }
+
+    @Test
     fun `pull brings in new rows, applies updates, and removes deletes from other devices`() = runBlocking {
         val edited = store.add(personalTransaction("Original"))
         val deleted = store.add(personalTransaction("Will be deleted", updatedAt = 2))

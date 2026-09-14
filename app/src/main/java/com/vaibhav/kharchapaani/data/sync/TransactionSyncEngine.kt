@@ -65,9 +65,28 @@ class TransactionSyncEngine(
         repeat(MAX_PUSH_BATCHES) {
             val ids = store.pendingDeletes(PUSH_BATCH_SIZE)
             if (ids.isEmpty()) return
-            remote.softDelete(ids)
+            try {
+                remote.softDelete(ids)
+            } catch (e: RowsRejectedException) {
+                // One refused row fails the whole update; send them singly so the rest still go.
+                ids.forEach { deleteSingle(it) }
+            }
             store.clearPendingDeletes(ids)
             if (ids.size < PUSH_BATCH_SIZE) return
+        }
+    }
+
+    /**
+     * A refused delete is dropped rather than retried forever, which would stall every later sync.
+     * The row still exists on the server, so group expenses are pulled again from the start and it
+     * reappears here, matching what the other members see.
+     */
+    private suspend fun deleteSingle(remoteId: String) {
+        try {
+            remote.softDelete(listOf(remoteId))
+        } catch (e: RowsRejectedException) {
+            Log.w(TAG, "Server refused to delete transaction $remoteId (${e.statusCode}): ${e.message}")
+            store.deleteMeta(GroupSyncEngine.GROUP_EXPENSES_PULL_CURSOR)
         }
     }
 

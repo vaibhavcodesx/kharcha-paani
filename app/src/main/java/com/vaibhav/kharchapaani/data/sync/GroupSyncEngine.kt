@@ -196,7 +196,20 @@ class GroupSyncEngine(
         repeat(MAX_BATCHES) {
             val ids = syncDao.pendingDeletes(BATCH_SIZE, PendingRemoteDeleteEntity.TYPE_SETTLEMENT)
             if (ids.isEmpty()) return
-            remote.softDeleteSettlements(ids)
+            try {
+                remote.softDeleteSettlements(ids)
+            } catch (e: RowsRejectedException) {
+                ids.forEach { id ->
+                    try {
+                        remote.softDeleteSettlements(listOf(id))
+                    } catch (single: RowsRejectedException) {
+                        // Refused for good (archived group, or no longer a member): drop it and pull
+                        // settlements again so the row, which still exists, comes back here.
+                        Log.w(TAG, "Server refused to retract settlement $id (${single.statusCode}): ${single.message}")
+                        syncDao.deleteMeta(SETTLEMENTS_PULL_CURSOR)
+                    }
+                }
+            }
             syncDao.clearPendingDeletes(ids)
             if (ids.size < BATCH_SIZE) return
         }

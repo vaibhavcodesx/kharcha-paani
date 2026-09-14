@@ -277,6 +277,24 @@ class GroupSyncEngineTest {
     }
 
     @Test
+    fun `a retraction the server refuses after the group is archived is dropped and the settlement restored`() = runBlocking {
+        val group = joinGoaWithBobAndCarol()
+        val settlementId = repository.recordSettlement(fromPersonId = -1L, toPersonId = person(bob).id, amount = 40.0, groupId = group.id)
+        engine.sync()
+        val remoteId = groupDao.settlementById(settlementId)!!.remoteId
+
+        // Retracted offline; meanwhile the creator archives the group on their phone.
+        repository.deleteSettlement(settlementId)
+        remote.archive(goa)
+        engine.sync()
+
+        assertEquals("a refused tombstone isn't retried forever", emptyList<String>(), db.syncDao().pendingDeletes(10, PendingRemoteDeleteEntity.TYPE_SETTLEMENT))
+        assertNull(remote.settlements.getValue(remoteId).deletedAt)
+        assertNotNull("the settlement still exists for everyone, so it comes back here", groupDao.settlementByRemoteId(remoteId))
+        assertNotNull(localGroup().archivedAt)
+    }
+
+    @Test
     fun `offline sync leaves everything queued`() = runBlocking {
         val groupId = repository.createSharedGroup("Flat")
         remote.online = false
