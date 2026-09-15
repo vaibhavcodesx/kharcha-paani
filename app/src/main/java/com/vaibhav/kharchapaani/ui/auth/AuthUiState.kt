@@ -9,6 +9,8 @@ data class AuthUiState(
     val isSigningIn: Boolean = false,
     val signInFailure: GoogleSignInFailure? = null,
     val profile: ProfileState = ProfileState.Idle,
+    val isSavingProfile: Boolean = false,
+    val profileSaveFailed: Boolean = false,
 ) {
     val displayName: String?
         get() = (profile as? ProfileState.Loaded)?.profile?.displayName?.takeIf { it.isNotBlank() }
@@ -16,8 +18,12 @@ data class AuthUiState(
     val email: String?
         get() = (authState as? AuthState.SignedIn)?.email
 
-    val accountInitial: String
-        get() = (displayName ?: email)?.firstOrNull()?.uppercase() ?: "?"
+    val avatarEmoji: String?
+        get() = (profile as? ProfileState.Loaded)?.profile?.avatarEmoji
+
+    /** The emoji this account picked, or the first letter of its name (or email). */
+    val accountAvatar: String
+        get() = avatarEmoji ?: (displayName ?: email)?.firstOrNull()?.uppercase() ?: "?"
 }
 
 sealed interface ProfileState {

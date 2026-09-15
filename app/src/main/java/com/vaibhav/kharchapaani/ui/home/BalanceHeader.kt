@@ -54,7 +54,7 @@ import kotlin.math.abs
 @Composable
 fun BalanceHeader(
     netBalance: Double,
-    accountInitial: String,
+    accountAvatar: String,
     onOpenAccount: () -> Unit,
     onOpenSimplifyDebts: () -> Unit,
     modifier: Modifier = Modifier,
@@ -77,7 +77,7 @@ fun BalanceHeader(
                     .weight(1f)
                     .semantics { heading() },
             )
-            AccountAvatar(initial = accountInitial, syncStatus = syncStatus, onClick = onOpenAccount)
+            AccountAvatar(avatar = accountAvatar, syncStatus = syncStatus, onClick = onOpenAccount)
         }
         AnimatedRollingNumber(
             targetValue = abs(netBalance),
@@ -104,7 +104,7 @@ fun BalanceHeader(
 }
 
 @Composable
-private fun AccountAvatar(initial: String, syncStatus: SyncStatus, onClick: () -> Unit) {
+private fun AccountAvatar(avatar: String, syncStatus: SyncStatus, onClick: () -> Unit) {
     val syncDescription = SyncBadge.describe(syncStatus)
     // One clickable rather than IconButton + bounceClick, so TalkBack sees a single "Account" button.
     // Compose expands the touch target to 48dp.
@@ -124,7 +124,7 @@ private fun AccountAvatar(initial: String, syncStatus: SyncStatus, onClick: () -
             .testTag("home_account_button"),
     ) {
         Text(
-            text = initial,
+            text = avatar,
             style = MaterialTheme.typography.titleLarge,
             color = WarmAmberLight,
             modifier = Modifier.clearAndSetSemantics {},

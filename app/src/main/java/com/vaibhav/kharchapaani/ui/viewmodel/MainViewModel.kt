@@ -36,6 +36,7 @@ import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
 import com.vaibhav.kharchapaani.data.repository.ArchivedGroupException
 import com.vaibhav.kharchapaani.data.repository.GeminiRepository
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
+import com.vaibhav.kharchapaani.data.settings.AppSettings
 import com.vaibhav.kharchapaani.data.sync.SyncScheduler
 import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
 import com.vaibhav.kharchapaani.domain.ActivityFeed
@@ -108,6 +109,15 @@ class MainViewModel(
         }
     }
     private val geminiRepo = GeminiRepository()
+
+    private val settings = AppSettings(application)
+
+    val askBeforeDiscarding: StateFlow<Boolean> = settings.askBeforeDiscarding
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    fun setAskBeforeDiscarding(ask: Boolean) {
+        viewModelScope.launch { settings.setAskBeforeDiscarding(ask) }
+    }
 
     // Navigation Tab (0: Home/Activity, 1: Splits & Groups, 2: Analytics)
     private val _currentTab = MutableStateFlow(0)
