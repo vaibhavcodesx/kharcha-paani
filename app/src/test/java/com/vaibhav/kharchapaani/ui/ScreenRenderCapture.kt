@@ -149,7 +149,7 @@ class ScreenRenderCapture {
                     authState = com.vaibhav.kharchapaani.data.auth.AuthState.SignedIn(userId = "u1", email = "vaibhav@example.com", isRefreshPending = false),
                     profile = com.vaibhav.kharchapaani.ui.auth.ProfileState.Loaded(com.vaibhav.kharchapaani.data.auth.Profile(id = "u1", displayName = "Vaibhav", avatarEmoji = "🦊")),
                 ),
-                syncStatus = com.vaibhav.kharchapaani.ui.sync.SyncStatus(lastSyncedAt = 0L),
+                syncStatus = com.vaibhav.kharchapaani.ui.sync.SyncStatus(lastSyncedAt = System.currentTimeMillis() - 5 * 60_000L),
                 askBeforeDiscarding = true,
                 onSaveProfile = { _, _ -> }, onAskBeforeDiscardingChange = {}, onOpenExport = {},
                 onRetryFailedSync = {}, onRetryProfile = {}, onSignOut = {},

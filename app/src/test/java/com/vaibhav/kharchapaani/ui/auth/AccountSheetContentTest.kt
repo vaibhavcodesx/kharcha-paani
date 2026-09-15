@@ -60,6 +60,7 @@ class AccountSheetContentTest {
         show()
 
         composeTestRule.onNodeWithTag("profile_name_input").performTextReplacement("Priya Sharma")
+        composeTestRule.onNodeWithTag("avatar_row").performClick()
         composeTestRule.onNodeWithTag("avatar_🦊").performScrollTo().performClick()
         composeTestRule.onNodeWithTag("profile_save_button").performClick()
 
@@ -70,6 +71,7 @@ class AccountSheetContentTest {
     fun `going back to initials clears the emoji`() {
         show(ProfileState.Loaded(Profile(id = "u1", displayName = "Priya", avatarEmoji = "🐼")))
 
+        composeTestRule.onNodeWithTag("avatar_row").performClick()
         composeTestRule.onNodeWithTag("avatar_initials").performScrollTo().performClick()
         composeTestRule.onNodeWithTag("profile_save_button").performClick()
 

@@ -8,6 +8,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import com.vaibhav.kharchapaani.ui.components.ExpandableDetail
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -132,6 +136,7 @@ fun AccountSheetContent(
     // Keyed on what's saved, so a successful save (or a reload) resets the fields to it.
     var name by rememberSaveable(saved?.displayName) { mutableStateOf(saved?.displayName.orEmpty()) }
     var emoji by rememberSaveable(saved?.avatarEmoji) { mutableStateOf(saved?.avatarEmoji) }
+    var avatarOpen by rememberSaveable { mutableStateOf(false) }
     val cleanName = ProfileEdit.cleanName(name)
     val changed = saved != null && ProfileEdit.hasChanges(saved.displayName, saved.avatarEmoji, name, emoji)
     val previewAvatar = emoji ?: (cleanName ?: state.email)?.firstOrNull()?.uppercase() ?: "?"
@@ -211,26 +216,23 @@ fun AccountSheetContent(
                     .semantics { liveRegion = LiveRegionMode.Polite },
             )
 
-            Eyebrow("Avatar")
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-                verticalArrangement = Arrangement.spacedBy(Spacing.s),
-                modifier = Modifier.selectableGroup().padding(bottom = Spacing.xl),
-            ) {
-                AvatarTile(
-                    label = "Initials",
-                    selected = emoji == null,
-                    onSelect = { emoji = null },
-                    testTag = "avatar_initials",
+            // Collapsed until wanted: open, the grid would push everything else off the sheet.
+            Box(Modifier.testTag("avatar_row")) {
+                ExpandableDetail(
+                    label = "Avatar",
+                    value = emoji ?: "Initials",
+                    expanded = avatarOpen,
+                    onToggle = { avatarOpen = !avatarOpen },
+                    position = RowPosition.Single,
                 ) {
-                    Text((cleanName ?: state.email)?.firstOrNull()?.uppercase() ?: "?", style = MaterialTheme.typography.titleMedium, color = WarmAmberLight)
-                }
-                ProfileEdit.avatarEmoji.forEach { choice ->
-                    AvatarTile(label = choice, selected = emoji == choice, onSelect = { emoji = choice }, testTag = "avatar_$choice") {
-                        Text(choice, fontSize = 22.sp)
-                    }
+                    AvatarGrid(
+                        initial = (cleanName ?: state.email)?.firstOrNull()?.uppercase() ?: "?",
+                        selected = emoji,
+                        onSelect = { emoji = it },
+                    )
                 }
             }
+            Spacer(Modifier.height(Spacing.xl))
         }
 
         Eyebrow("Account")
@@ -302,16 +304,54 @@ private fun Eyebrow(text: String) {
     Text(text.uppercase(), style = EyebrowText, modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() })
 }
 
+/** Initials, then every offered emoji, six to a row with the tiles sharing the width evenly. */
 @Composable
-private fun AvatarTile(label: String, selected: Boolean, onSelect: () -> Unit, testTag: String, content: @Composable () -> Unit) {
+private fun AvatarGrid(initial: String, selected: String?, onSelect: (String?) -> Unit) {
+    val choices: List<String?> = listOf(null) + ProfileEdit.avatarEmoji
+    Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+        choices.chunked(AVATAR_COLUMNS).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                row.forEach { choice ->
+                    AvatarTile(
+                        label = choice ?: "Initials",
+                        selected = selected == choice,
+                        onSelect = { onSelect(choice) },
+                        testTag = choice?.let { "avatar_$it" } ?: "avatar_initials",
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        if (choice == null) {
+                            Text(initial, style = MaterialTheme.typography.titleMedium, color = WarmAmberLight)
+                        } else {
+                            Text(choice, fontSize = 22.sp)
+                        }
+                    }
+                }
+                repeat(AVATAR_COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
+            }
+        }
+    }
+}
+
+private const val AVATAR_COLUMNS = 6
+
+@Composable
+private fun AvatarTile(
+    label: String,
+    selected: Boolean,
+    onSelect: () -> Unit,
+    testTag: String,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
     val shape = SquircleShape(15.dp)
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(48.dp)
+        modifier = modifier
+            .heightIn(min = 48.dp)
+            .aspectRatio(1f)
             .clip(shape)
-            .background(if (selected) WarmAmberPrimary.copy(alpha = 0.18f) else CharcoalCard)
-            .border(if (selected) 2.dp else 1.dp, if (selected) WarmAmberPrimary else CharcoalCard, shape)
+            .background(if (selected) WarmAmberPrimary.copy(alpha = 0.18f) else CharcoalElevated)
+            .border(if (selected) 2.dp else 0.dp, if (selected) WarmAmberPrimary else CharcoalElevated, shape)
             .selectable(selected = selected, role = Role.RadioButton, onClick = onSelect)
             .semantics { contentDescription = label }
             .testTag(testTag),
