@@ -60,6 +60,8 @@ import com.vaibhav.kharchapaani.ui.components.GroupCard
 import com.vaibhav.kharchapaani.ui.components.PersonBalanceCard
 import com.vaibhav.kharchapaani.ui.components.bounceClick
 import com.vaibhav.kharchapaani.ui.components.pressBounce
+import com.vaibhav.kharchapaani.ui.components.ScreenHeader
+import com.vaibhav.kharchapaani.ui.shell.dockClearance
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -106,29 +108,15 @@ fun SplitsScreen(
             .fillMaxSize()
             .background(CharcoalBg)
             .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(top = 12.dp, bottom = 96.dp),
+        contentPadding = PaddingValues(top = 12.dp, bottom = dockClearance()),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         // Top Header
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            ScreenHeader(
+                title = "Splits",
+                supporting = "Who owes whom, with friends and on trips",
             ) {
-                Column {
-                    Text(
-                        text = "Split & Trip Ledger",
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = OffWhiteText
-                        )
-                    )
-                    Text(
-                        text = "Real-time 2-way debt settlement & group trips",
-                        style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray)
-                    )
-                }
 
                 Surface(
                     shape = RoundedCornerShape(12.dp),

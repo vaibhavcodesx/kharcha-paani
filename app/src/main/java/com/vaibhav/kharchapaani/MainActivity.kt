@@ -13,32 +13,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.ReceiptLong
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -48,11 +26,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import com.vaibhav.kharchapaani.ui.shell.AppTab
+import com.vaibhav.kharchapaani.ui.shell.KpDock
+import com.vaibhav.kharchapaani.ui.theme.KpMotion
+import com.vaibhav.kharchapaani.ui.theme.LocalHazeState
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -94,11 +75,7 @@ import com.vaibhav.kharchapaani.ui.screens.HomeScreen
 import com.vaibhav.kharchapaani.ui.screens.InsightsScreen
 import com.vaibhav.kharchapaani.ui.screens.SplitsScreen
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
-import com.vaibhav.kharchapaani.ui.theme.CharcoalSurface
-import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
-import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
-import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import com.vaibhav.kharchapaani.ui.viewmodel.MainViewModel
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 
@@ -357,135 +334,21 @@ fun SplitFlowApp(
         }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = CharcoalBg,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        bottomBar = {
-            NavigationBar(
-                containerColor = CharcoalSurface,
-                contentColor = OffWhiteText,
-                modifier = Modifier
-                    .background(CharcoalSurface)
-                    .windowInsetsPadding(WindowInsets.navigationBars)
-            ) {
-                NavigationBarItem(
-                    selected = currentTab == 0,
-                    onClick = { viewModel.setTab(0) },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.ReceiptLong,
-                            contentDescription = "Activity",
-                            modifier = Modifier.size(22.dp)
-                        )
-                    },
-                    label = {
-                        Text(
-                            "Activity",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = if (currentTab == 0) FontWeight.Bold else FontWeight.Normal,
-                                fontSize = 11.sp
-                            )
-                        )
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = CharcoalBg,
-                        selectedTextColor = WarmAmberPrimary,
-                        indicatorColor = WarmAmberPrimary,
-                        unselectedIconColor = MutedWarmGray,
-                        unselectedTextColor = MutedWarmGray
-                    ),
-                    modifier = Modifier.testTag("tab_activity")
-                )
-
-                NavigationBarItem(
-                    selected = currentTab == 1,
-                    onClick = { viewModel.setTab(1) },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Group,
-                            contentDescription = "Splits & Groups",
-                            modifier = Modifier.size(22.dp)
-                        )
-                    },
-                    label = {
-                        Text(
-                            "Splits & Trips",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = if (currentTab == 1) FontWeight.Bold else FontWeight.Normal,
-                                fontSize = 11.sp
-                            )
-                        )
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = CharcoalBg,
-                        selectedTextColor = WarmAmberPrimary,
-                        indicatorColor = WarmAmberPrimary,
-                        unselectedIconColor = MutedWarmGray,
-                        unselectedTextColor = MutedWarmGray
-                    ),
-                    modifier = Modifier.testTag("tab_splits")
-                )
-
-                NavigationBarItem(
-                    selected = currentTab == 2,
-                    onClick = { viewModel.setTab(2) },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = "Insights",
-                            modifier = Modifier.size(22.dp)
-                        )
-                    },
-                    label = {
-                        Text(
-                            "Insights",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = if (currentTab == 2) FontWeight.Bold else FontWeight.Normal,
-                                fontSize = 11.sp
-                            )
-                        )
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = CharcoalBg,
-                        selectedTextColor = WarmAmberPrimary,
-                        indicatorColor = WarmAmberPrimary,
-                        unselectedIconColor = MutedWarmGray,
-                        unselectedTextColor = MutedWarmGray
-                    ),
-                    modifier = Modifier.testTag("tab_insights")
-                )
-            }
-        },
-        floatingActionButton = {
-            if (currentTab == 0) {
-                FloatingActionButton(
-                    onClick = { viewModel.openManualAdd("expense") },
-                    containerColor = WarmAmberPrimary,
-                    contentColor = CharcoalBg,
-                    shape = CircleShape,
-                    modifier = Modifier
-                        .padding(bottom = 70.dp)
-                        .testTag("fab_add_transaction")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Add Transaction",
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
-            }
-        }
-    ) { innerPadding ->
+    val hazeState = rememberHazeState()
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(CharcoalBg)
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .hazeSource(hazeState)
                 .statusBarsPadding()
         ) {
             AnimatedContent(
                 targetState = currentTab,
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                transitionSpec = { KpMotion.tabTransition(forward = targetState > initialState) },
                 label = "MainTabs"
             ) { targetTab ->
                 when (targetTab) {
@@ -538,6 +401,15 @@ fun SplitFlowApp(
                     )
                 }
             }
+        }
+        // Only the dock samples the content: sheets and dialogs are other windows (see LocalHazeState).
+        CompositionLocalProvider(LocalHazeState provides hazeState) {
+            KpDock(
+                currentTab = AppTab.entries[currentTab],
+                onSelectTab = { viewModel.setTab(it.ordinal) },
+                onAdd = { viewModel.openManualAdd("expense") },
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
         }
     }
 
