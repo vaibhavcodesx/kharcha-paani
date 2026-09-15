@@ -12,8 +12,6 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -33,17 +31,13 @@ import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.domain.Categories
 import com.vaibhav.kharchapaani.domain.CategoryPrefs
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
-import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
-import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
 import com.vaibhav.kharchapaani.ui.theme.EyebrowText
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
-import com.vaibhav.kharchapaani.ui.theme.OutlineInteractive
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
-import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 
 @Composable
 fun CategoriesSheet(isOpen: Boolean, prefs: CategoryPrefs, onChange: ((CategoryPrefs) -> CategoryPrefs) -> Unit, onDismiss: () -> Unit) {
@@ -162,17 +156,10 @@ private fun ChoiceSection(
                                 Icon(KpIcons.Delete, contentDescription = "Remove $name", tint = MutedWarmGray, modifier = Modifier.size(20.dp))
                             }
                             name in locked -> Text("Always shown", style = MaterialTheme.typography.bodySmall, color = SubMutedWarmGray)
-                            else -> Switch(
-                                checked = name !in hidden,
-                                onCheckedChange = null,
-                                colors = SwitchDefaults.colors(
-                                    checkedTrackColor = WarmAmberPrimary,
-                                    checkedThumbColor = CharcoalBg,
-                                    uncheckedTrackColor = CharcoalElevated,
-                                    uncheckedThumbColor = MutedWarmGray,
-                                    uncheckedBorderColor = OutlineInteractive,
-                                ),
-                            )
+                            // A quiet tick, not a switch: a column of bright switches drew the eye away
+                            // from the names (seen in the render review).
+                            name !in hidden -> Icon(KpIcons.Check, contentDescription = null, tint = WarmAmberLight, modifier = Modifier.padding(end = Spacing.s).size(20.dp))
+                            else -> Text("Hidden", style = MaterialTheme.typography.bodySmall, color = SubMutedWarmGray, modifier = Modifier.padding(end = Spacing.s))
                         }
                     },
                     toggle = if (!isCustom && name !in locked) ({ onToggleHidden(name, name !in hidden) }) else null,
@@ -229,8 +216,8 @@ private fun ChoiceRow(
             .heightIn(min = 56.dp)
             .clip(position.shape)
             .background(CharcoalCard)
-            .then(if (toggle != null) Modifier.toggleable(value = shown, role = Role.Switch, onValueChange = { toggle() }) else Modifier)
-            .padding(start = Spacing.l, end = Spacing.s, top = Spacing.xs, bottom = Spacing.xs)
+            .then(if (toggle != null) Modifier.toggleable(value = shown, role = Role.Checkbox, onValueChange = { toggle() }) else Modifier)
+            .padding(start = Spacing.l, end = Spacing.m, top = Spacing.xs, bottom = Spacing.xs)
             .testTag(tag),
     ) {
         if (showBadge) CategoryBadge(name, Modifier.padding(end = Spacing.m))
