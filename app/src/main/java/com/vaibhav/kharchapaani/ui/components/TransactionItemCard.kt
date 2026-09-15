@@ -17,10 +17,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -28,6 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
@@ -48,6 +52,7 @@ import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.abs
 
 /**
  * One expense or income in the Home timeline. The day it belongs to is its section header, so the
@@ -77,7 +82,24 @@ fun TransactionItemCard(
 
     val currentOnEdit by rememberUpdatedState(onEdit)
     val currentOnDelete by rememberUpdatedState(onDelete)
-    val dismissState = rememberSwipeToDismissBoxState()
+    // Deliberate swipes only. The default commits after 56dp, or after any quick flick however
+    // short, so a sideways twitch while scrolling deleted rows. Now the finger has to carry the row
+    // nearly half its width, fast or slow. The state isn't saved: a row Undo brings back must arrive
+    // settled, not still swiped away, which would delete it again.
+    val density = LocalDensity.current
+    var rowWidth by remember { mutableFloatStateOf(0f) }
+    val dismissState = remember(density) {
+        lateinit var state: SwipeToDismissBoxState
+        state = SwipeToDismissBoxState(
+            initialValue = SwipeToDismissBoxValue.Settled,
+            density = density,
+            confirmValueChange = { target ->
+                target == SwipeToDismissBoxValue.Settled || SwipeCommit.isFarEnough(state.requireOffset(), rowWidth)
+            },
+            positionalThreshold = { distance -> distance * SwipeCommit.FRACTION },
+        )
+        state
+    }
     // Act once the row has settled: confirmValueChange can run more than once per swipe, which
     // deleted the same expense twice.
     LaunchedEffect(dismissState.currentValue) {
@@ -96,7 +118,7 @@ fun TransactionItemCard(
         state = dismissState,
         enableDismissFromStartToEnd = !isReadOnly,
         enableDismissFromEndToStart = !isReadOnly,
-        modifier = modifier.clip(position.shape),
+        modifier = modifier.clip(position.shape).onSizeChanged { rowWidth = it.width.toFloat() },
         backgroundContent = {
             when (dismissState.dismissDirection) {
                 SwipeToDismissBoxValue.StartToEnd -> SwipeReveal(WarmAmberPrimary, CharcoalBg, KpIcons.Write, "Edit", Alignment.CenterStart)
@@ -180,3 +202,10 @@ private fun SwipeReveal(background: Color, content: Color, icon: ImageVector, la
 
 // 4.8:1 behind OffWhite label text.
 private val DeleteRed = Color(0xFFC62F2F)
+
+/** How far a row must be dragged before letting go deletes or edits it. */
+internal object SwipeCommit {
+    const val FRACTION = 0.45f
+
+    fun isFarEnough(offsetPx: Float, rowWidthPx: Float): Boolean = rowWidthPx > 0f && abs(offsetPx) >= rowWidthPx * FRACTION
+}

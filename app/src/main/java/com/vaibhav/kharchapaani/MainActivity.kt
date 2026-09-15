@@ -16,7 +16,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
@@ -338,6 +340,26 @@ fun SplitFlowApp(
         statusMessage?.let {
             messageScope.launch { snackbarHostState.showSnackbar(it) }
             viewModel.clearStatusMessage()
+        }
+    }
+    val undoPrompt by viewModel.undoPrompt.collectAsState()
+    LaunchedEffect(undoPrompt) {
+        val prompt = undoPrompt ?: return@LaunchedEffect
+        viewModel.clearUndoPrompt()
+        // A second delete replaces the first's snackbar, which commits the first.
+        snackbarHostState.currentSnackbarData?.dismiss()
+        messageScope.launch {
+            var undone = false
+            try {
+                undone = snackbarHostState.showSnackbar(
+                    message = prompt.message,
+                    actionLabel = "Undo",
+                    duration = SnackbarDuration.Long,
+                ) == SnackbarResult.ActionPerformed
+            } finally {
+                // Also when the snackbar is cut short (the screen goes away): the swipe meant delete.
+                if (undone) viewModel.undoDelete(prompt.txId) else viewModel.commitDelete(prompt.txId)
+            }
         }
     }
     LaunchedEffect(sharedGroupsState.message) {
