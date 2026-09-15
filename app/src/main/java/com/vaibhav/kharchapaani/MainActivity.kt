@@ -246,6 +246,7 @@ class MainActivity : ComponentActivity() {
             viewModel.openManualAdd("expense")
         } else if (intent.action == SplitFlowWidgetProvider.ACTION_VOICE_LOG) {
             viewModel.setTab(0)
+            viewModel.requestVoiceCapture()
         } else if (intent.action == SplitFlowWidgetProvider.ACTION_VIEW_SPLITS) {
             viewModel.setTab(1)
         }
@@ -274,6 +275,7 @@ fun SplitFlowApp(
     val groups by viewModel.groups.collectAsState()
     val rawGroups by viewModel.rawGroups.collectAsState()
     val isParsing by viewModel.isParsing.collectAsState()
+    val voiceCaptureRequested by viewModel.voiceCaptureRequested.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedFilter by viewModel.selectedFilter.collectAsState()
 
@@ -370,6 +372,8 @@ fun SplitFlowApp(
                         onOpenIouDialog = { viewModel.openIouDialog() },
                         onOpenSimplifyDebts = { viewModel.openSimplifyDebts() },
                         accountInitial = authUiState.accountInitial,
+                        startVoiceCapture = voiceCaptureRequested,
+                        onVoiceCaptureStarted = viewModel::onVoiceCaptureStarted,
                         onOpenAccount = { isAccountSheetOpen = true }
                     )
 

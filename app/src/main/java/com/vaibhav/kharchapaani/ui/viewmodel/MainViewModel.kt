@@ -159,6 +159,18 @@ class MainViewModel(
     private val _isParsing = MutableStateFlow(false)
     val isParsing: StateFlow<Boolean> = _isParsing.asStateFlow()
 
+    // Set by the widget's Speak button; Home starts listening once, then clears it.
+    private val _voiceCaptureRequested = MutableStateFlow(false)
+    val voiceCaptureRequested: StateFlow<Boolean> = _voiceCaptureRequested.asStateFlow()
+
+    fun requestVoiceCapture() {
+        _voiceCaptureRequested.value = true
+    }
+
+    fun onVoiceCaptureStarted() {
+        _voiceCaptureRequested.value = false
+    }
+
     private val _editingTransactionId = MutableStateFlow<Long?>(null)
     val editingTransactionId: StateFlow<Long?> = _editingTransactionId.asStateFlow()
 

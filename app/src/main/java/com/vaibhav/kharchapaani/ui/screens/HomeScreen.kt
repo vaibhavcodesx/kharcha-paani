@@ -97,6 +97,8 @@ fun HomeScreen(
     onOpenAccount: () -> Unit,
     modifier: Modifier = Modifier,
     today: LocalDate = LocalDate.now(),
+    startVoiceCapture: Boolean = false,
+    onVoiceCaptureStarted: () -> Unit = {},
 ) {
     var showSearch by rememberSaveable { mutableStateOf(searchQuery.isNotEmpty()) }
     val days = remember(activity, today) { ActivityDays.group(activity, today, ZoneId.systemDefault()) }
@@ -123,6 +125,8 @@ fun HomeScreen(
                 onParseImage = onParseImage,
                 onParsePdf = onParsePdf,
                 onOpenIou = onOpenIouDialog,
+                startVoiceCapture = startVoiceCapture,
+                onVoiceCaptureStarted = onVoiceCaptureStarted,
                 modifier = Modifier.padding(top = Spacing.xl),
             )
         }
