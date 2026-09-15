@@ -22,7 +22,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36])
+// Phone-sized: on the default 470dp screen, scrolling a chip "into view" left it under the floating
+// glass action bar, so taps landed on the bar.
+@Config(sdk = [36], qualifiers = "w411dp-h891dp")
 class RecordInGroupUiTest {
 
     @get:Rule
