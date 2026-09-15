@@ -54,6 +54,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.KeyboardType
@@ -222,26 +223,21 @@ fun ConfirmSheetContent(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Spacing.page),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = when {
-                        isEditing && isIncome -> "Edit income"
-                        isEditing -> "Edit expense"
-                        isIncome -> "New income"
-                        else -> "New expense"
-                    },
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                SegmentedControl(
-                    options = listOf("expense", "income"),
-                    selected = type,
-                    label = { if (it == "income") "Income" else "Expense" },
-                    onSelect = onTypeChange,
-                    accentFor = { if (it == "income") ChartreuseSecondary else WarmAmberPrimary },
-                    modifier = Modifier.width(196.dp),
-                )
-            }
+            // The Expense / Income control names the sheet; a "New expense" title beside it said the
+            // same thing twice.
+            Text(
+                text = if (isEditing) "EDITING" else "NEW ENTRY",
+                style = EyebrowText,
+                modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() },
+            )
+            SegmentedControl(
+                options = listOf("expense", "income"),
+                selected = type,
+                label = { if (it == "income") "Income" else "Expense" },
+                onSelect = onTypeChange,
+                accentFor = { if (it == "income") ChartreuseSecondary else WarmAmberPrimary },
+                modifier = Modifier.fillMaxWidth(),
+            )
 
             if (isParsing) {
                 ParsingPlaceholder()
@@ -404,12 +400,12 @@ fun ConfirmSheetContent(
 @Composable
 private fun AmountField(amount: String, onAmountChange: (String) -> Unit, accent: Color) {
     Row(
-        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
         modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xl),
     ) {
-        Text("₹", style = MoneyText.hero, color = accent)
-        Box(Modifier.padding(start = Spacing.xs)) {
+        // A smaller symbol on the number's baseline, so the amount leads rather than the "₹".
+        Text("₹", style = MoneyText.large, color = accent, modifier = Modifier.alignByBaseline())
+        Box(Modifier.padding(start = Spacing.xs).alignByBaseline()) {
             if (amount.isEmpty()) Text("0", style = MoneyText.hero, color = SubMutedWarmGray)
             BasicTextField(
                 value = amount,

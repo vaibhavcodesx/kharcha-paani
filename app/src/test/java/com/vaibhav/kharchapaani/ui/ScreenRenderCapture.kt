@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.view.View
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -23,6 +24,7 @@ import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
 import com.vaibhav.kharchapaani.data.model.ShareInput
 import com.vaibhav.kharchapaani.data.model.SplitMode
 import com.vaibhav.kharchapaani.ui.components.ConfirmSheetContent
+import com.vaibhav.kharchapaani.ui.components.SheetHandle
 import com.vaibhav.kharchapaani.ui.screens.HomeScreen
 import com.vaibhav.kharchapaani.ui.shell.AppTab
 import com.vaibhav.kharchapaani.ui.shell.KpDock
@@ -97,7 +99,8 @@ class ScreenRenderCapture {
 
     @Test
     fun `quick add confirm sheet`() = capture("confirm_sheet") {
-        Box(Modifier.fillMaxSize().background(CharcoalSurface)) {
+        Column(Modifier.fillMaxSize().background(CharcoalSurface), horizontalAlignment = Alignment.CenterHorizontally) {
+            SheetHandle()
             ConfirmSheetContent(
                 isParsing = false, isEditing = false, type = "expense", amount = "370", merchant = "McDonald's",
                 category = "Food", paymentMethod = "GPay", note = "", date = at(today, 13, 20), groupId = 7,
