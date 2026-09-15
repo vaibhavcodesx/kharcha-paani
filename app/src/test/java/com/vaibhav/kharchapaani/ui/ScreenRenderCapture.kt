@@ -4,6 +4,17 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
+import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
+import com.vaibhav.kharchapaani.data.db.entity.SyncState
+import com.vaibhav.kharchapaani.data.model.GroupWithDetails
+import com.vaibhav.kharchapaani.data.model.PersonBalance
+import com.vaibhav.kharchapaani.domain.SharedRecordGroups
+import com.vaibhav.kharchapaani.ui.components.SettleUpContent
+import com.vaibhav.kharchapaani.ui.components.TripCard
+import com.vaibhav.kharchapaani.ui.screens.SplitsScreen
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -111,6 +122,53 @@ class ScreenRenderCapture {
                 onNoteChange = {}, onDateChange = {}, onGroupIdChange = {}, onIsSplitChange = {}, onSplitModeChange = {},
                 onPaidByPersonIdChange = {}, onTogglePersonShare = {}, onExactAmountChange = { _, _ -> },
                 onPercentageChange = { _, _ -> }, onOpenAddFriend = {}, onSave = {},
+            )
+        }
+    }
+
+    private val rohan = PersonEntity(id = 2, name = "Rohan Mehta", avatarColor = "#70C1FF", profileId = "r")
+    private val meera = PersonEntity(id = 3, name = "Meera", avatarColor = "#FFB3BA")
+    private val arjun = PersonEntity(id = 4, name = "Arjun", avatarColor = "#B5EAD7")
+    private val kabir = PersonEntity(id = 5, name = "Kabir", avatarColor = "#D7BDE2")
+
+    @Test
+    fun `splits`() = capture("splits") {
+        SplitsScreen(
+            personBalances = listOf(
+                PersonBalance(meera, 1250.5, 1250.5, 0.0),
+                PersonBalance(arjun, 0.0, 0.0, 0.0),
+                PersonBalance(rohan, -415.5, 0.0, 415.5),
+                PersonBalance(kabir, 3200.0, 3200.0, 0.0),
+            ),
+            groups = trips,
+            onOpenAddFriend = {}, onDeleteFriend = {}, onOpenCreateGroup = {}, onJoinGroup = {}, onSelectGroup = {},
+            onDeleteGroup = {}, onOpenSimplifyDebts = {}, onOpenIouDialog = {}, onSettleUp = {}, onViewHistory = {},
+        )
+    }
+
+    private val trips = listOf(
+        GroupWithDetails(GroupEntity(id = 7, name = "Goa trip", emoji = "🏖️", colorHex = "#70C1FF", syncState = SyncState.SYNCED), listOf(rohan, meera, arjun, kabir), 24500.0, 9000.0, 4900.0, 4100.0, 18),
+        GroupWithDetails(GroupEntity(id = 8, name = "Flat 402", emoji = "🏠", colorHex = "#C6F24C"), listOf(meera), 61200.75, 20000.0, 30600.38, -10600.38, 42),
+        GroupWithDetails(GroupEntity(id = 9, name = "Lonavala monsoon weekend with college friends", emoji = "⛰️", colorHex = "#FF7A3D"), listOf(arjun, kabir), 8400.0, 2800.0, 2800.0, 0.0, 6),
+    )
+
+    @Test
+    fun `trip cards`() = capture("trip_cards") {
+        Column(Modifier.fillMaxSize().background(CharcoalBg).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            trips.forEach { TripCard(details = it, onOpen = {}, onDelete = {}) }
+        }
+    }
+
+    @Test
+    fun `settle up sheet`() = capture("settle_up_sheet") {
+        Column(Modifier.fillMaxSize().background(CharcoalSurface), horizontalAlignment = Alignment.CenterHorizontally) {
+            SheetHandle()
+            SettleUpContent(
+                person = rohan,
+                suggestedAmount = 1250.5,
+                groupOptions = SharedRecordGroups.Options(listOf(trips[0].group, GroupEntity(id = 11, name = "Flat 402", emoji = "🏠", syncState = SyncState.SYNCED)), emptyList(), involvesGroupmates = true),
+                onCreateGroup = {},
+                onConfirm = { _, _, _, _, _ -> },
             )
         }
     }
