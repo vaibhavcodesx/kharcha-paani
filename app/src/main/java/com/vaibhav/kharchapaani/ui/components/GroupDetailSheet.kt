@@ -1,66 +1,49 @@
 package com.vaibhav.kharchapaani.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.ReceiptLong
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.vaibhav.kharchapaani.data.model.FullTransaction
 import com.vaibhav.kharchapaani.data.model.GroupWithDetails
+import com.vaibhav.kharchapaani.domain.GroupExpenseCredit
 import com.vaibhav.kharchapaani.ui.format.Money
-import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
-import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
-import com.vaibhav.kharchapaani.ui.theme.CharcoalSurface
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
+import com.vaibhav.kharchapaani.ui.theme.EyebrowText
+import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
-import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
-import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
+import com.vaibhav.kharchapaani.ui.theme.Spacing
+import com.vaibhav.kharchapaani.ui.theme.SquircleShape
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.abs
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupDetailSheet(
     groupDetails: GroupWithDetails?,
@@ -69,237 +52,139 @@ fun GroupDetailSheet(
     onDismiss: () -> Unit,
     sharedGroupPanel: @Composable (GroupWithDetails) -> Unit = {},
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    if (groupDetails == null) return
+    KpModalSheet(onDismiss = onDismiss) {
+        GroupDetailContent(groupDetails, onAddExpense, onEditTransaction, sharedGroupPanel)
+    }
+}
 
-    if (groupDetails != null) {
-        val group = groupDetails.group
-        val sdfDate = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault())
+/**
+ * A group: what it's spent and where you stand, the shared-group controls when it's shared, and its
+ * expenses with who added and who paid each. Adding an expense floats in the glass bar; archived
+ * groups are read-only (decision 4), so the bar says so instead.
+ */
+@Composable
+fun GroupDetailContent(
+    groupDetails: GroupWithDetails,
+    onAddExpense: (groupId: Long) -> Unit,
+    onEditTransaction: (FullTransaction) -> Unit,
+    sharedGroupPanel: @Composable (GroupWithDetails) -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
+    val group = groupDetails.group
+    val dateFormat = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
+    val accent = remember(group.colorHex) { parseColor(group.colorHex) }
+    val net = groupDetails.netBalanceForMe
 
-        ModalBottomSheet(
-            onDismissRequest = onDismiss,
-            sheetState = sheetState,
-            containerColor = CharcoalSurface,
-            contentColor = OffWhiteText,
-            dragHandle = { SheetHandle() },
-            modifier = Modifier.imePadding()
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .navigationBarsPadding()
+    SheetScaffold(
+        modifier = modifier,
+        actionBar = {
+            GlassActionBar(
+                label = "Add expense",
+                disabledLabel = "Archived groups are read-only",
+                enabled = !group.isArchived,
+                onClick = { onAddExpense(group.id) },
+                buttonTestTag = "add_group_expense_button",
+            )
+        },
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.l)) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(52.dp).clip(SquircleShape(16.dp)).background(accent.copy(alpha = 0.18f)),
             ) {
-                // Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(WarmAmberPrimary.copy(alpha = 0.15f))
-                                .border(1.dp, WarmAmberPrimary.copy(alpha = 0.4f), RoundedCornerShape(16.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(text = group.emoji, fontSize = 24.sp)
-                        }
-
-                        Spacer(modifier = Modifier.width(14.dp))
-
-                        Column {
-                            Text(
-                                text = group.name,
-                                style = MaterialTheme.typography.headlineSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = OffWhiteText
-                                )
-                            )
-                            if (group.description.isNotBlank()) {
-                                Text(
-                                    text = group.description,
-                                    style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray)
-                                )
-                            }
-                        }
-                    }
-
-                    IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Close", tint = MutedWarmGray)
-                    }
+                Text(group.emoji, style = MaterialTheme.typography.headlineLarge)
+            }
+            Column(Modifier.weight(1f).padding(start = Spacing.m)) {
+                Text(group.name, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
+                if (group.description.isNotBlank()) {
+                    Text(group.description, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
+            }
+        }
 
-                Spacer(modifier = Modifier.height(16.dp))
+        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+            Figure("Spent", Money.format(groupDetails.totalExpenses), OffWhiteText, Modifier.weight(1f))
+            Divider()
+            Figure("Your share", Money.format(groupDetails.myShare), OffWhiteText, Modifier.weight(1f))
+            Divider()
+            Figure(
+                label = when {
+                    net >= 0.005 -> "You're owed"
+                    net <= -0.005 -> "You owe"
+                    else -> "Settled"
+                },
+                value = Money.format(abs(net)),
+                color = if (net >= 0.005) ChartreuseSecondary else if (net <= -0.005) OffWhiteText else MutedWarmGray,
+                modifier = Modifier.weight(1f),
+            )
+        }
 
-                // Group Balance Card
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(CharcoalCard)
-                        .border(1.dp, CharcoalBorder, RoundedCornerShape(16.dp))
-                        .padding(14.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = "Group Total Spend",
-                                style = MaterialTheme.typography.labelMedium.copy(color = SubMutedWarmGray)
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            AnimatedRollingNumber(
-                                targetValue = groupDetails.totalExpenses,
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = OffWhiteText
-                                )
-                            )
-                        }
+        if (group.isShared) {
+            Box(Modifier.padding(top = Spacing.xl)) { sharedGroupPanel(groupDetails) }
+        }
 
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = "Your Total Share",
-                                style = MaterialTheme.typography.labelMedium.copy(color = SubMutedWarmGray)
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            AnimatedRollingNumber(
-                                targetValue = groupDetails.myShare,
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = WarmAmberPrimary
-                                )
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                if (group.isShared) {
-                    sharedGroupPanel(groupDetails)
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-
-                // Action to Add Expense directly to this group. Archived groups are read-only (decision 4).
-                Button(
-                    onClick = { onAddExpense(group.id) },
-                    enabled = !group.isArchived,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .testTag("add_group_expense_button"),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = WarmAmberPrimary,
-                        contentColor = CharcoalBg
-                    )
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Add Expense to ${group.name}", fontWeight = FontWeight.Bold)
-                }
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                // Group Expenses Header
-                Text(
-                    text = "Group Expenses (${groupDetails.transactions.size})",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = OffWhiteText
-                    )
+        Text(
+            text = "Expenses · ${groupDetails.transactions.size}",
+            style = MaterialTheme.typography.titleSmall,
+            color = OffWhiteText,
+            modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s).semantics { heading() },
+        )
+        if (groupDetails.transactions.isEmpty()) {
+            Text(
+                text = if (group.isArchived) "Nothing was logged in this group." else "Nothing logged here yet. Add the first expense below.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            groupDetails.transactions.forEachIndexed { index, expense ->
+                GroupExpenseRow(
+                    expense = expense,
+                    detail = "${dateFormat.format(Date(expense.transaction.date))} · ${GroupExpenseCredit.line(expense, groupDetails.members)}",
+                    position = RowPosition.of(index, groupDetails.transactions.size),
+                    // Decision 2: only the person who added a group expense can edit it.
+                    onClick = if (expense.transaction.isOwnedByMe) ({ onEditTransaction(expense) }) else null,
                 )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                if (groupDetails.transactions.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No expenses logged in this group yet. Tap '+ Add Expense' above to log food, travel, or lodging.",
-                            style = MaterialTheme.typography.bodyMedium.copy(color = MutedWarmGray)
-                        )
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(260.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(groupDetails.transactions, key = { it.transaction.id }) { fullTx ->
-                            val tx = fullTx.transaction
-                            val formattedTime = sdfDate.format(Date(tx.date))
-                            val isSplit = fullTx.split != null
-                            // Decision 2: a groupmate's expense is read-only here.
-                            val addedBy = tx.ownerProfileId?.let { owner ->
-                                groupDetails.members.firstOrNull { it.profileId == owner }?.name ?: "a former member"
-                            }
-
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(CharcoalCard)
-                                    .border(1.dp, CharcoalBorder, RoundedCornerShape(12.dp))
-                                    .clickable(enabled = addedBy == null) { onEditTransaction(fullTx) }
-                                    .padding(12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = tx.merchant.ifBlank { tx.category },
-                                        style = MaterialTheme.typography.titleSmall.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            color = OffWhiteText
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = addedBy?.let { "$formattedTime • Added by $it" }
-                                            ?: "$formattedTime • ${tx.paymentMethod} • ${if (isSplit) "Split" else "Direct"}",
-                                        style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray)
-                                    )
-                                }
-
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Text(
-                                        text = Money.format(tx.amount),
-                                        style = MaterialTheme.typography.titleMedium.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            color = OffWhiteText,
-                                            fontFamily = com.vaibhav.kharchapaani.ui.theme.numericFontFamily
-                                        )
-                                    )
-                                    Text(
-                                        text = "Your share: ${Money.format(fullTx.myPersonalShare)}",
-                                        style = MaterialTheme.typography.bodySmall.copy(
-                                            color = WarmAmberPrimary,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
+}
+
+@Composable
+private fun GroupExpenseRow(expense: FullTransaction, detail: String, position: RowPosition, onClick: (() -> Unit)?) {
+    val tx = expense.transaction
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 64.dp)
+            .clip(position.shape)
+            .background(CharcoalCard)
+            .then(if (onClick != null) Modifier.clickable(onClickLabel = "Edit", onClick = onClick) else Modifier.semantics(mergeDescendants = true) {})
+            .padding(horizontal = Spacing.l, vertical = Spacing.m)
+            .testTag("group_expense_${tx.id}"),
+    ) {
+        CategoryBadge(tx.category)
+        Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
+            Text(tx.merchant.ifBlank { tx.category }, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(detail, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(Money.format(tx.amount), style = MoneyText.row, color = OffWhiteText)
+            Text("yours ${Money.format(expense.myPersonalShare)}", style = MoneyText.small)
+        }
+    }
+}
+
+@Composable
+private fun Figure(label: String, value: String, color: androidx.compose.ui.graphics.Color, modifier: Modifier) {
+    Column(modifier.semantics(mergeDescendants = true) {}) {
+        Text(label.uppercase(), style = EyebrowText, maxLines = 1)
+        Text(value, style = MoneyText.title, color = color, maxLines = 1)
+    }
+}
+
+@Composable
+private fun Divider() {
+    Box(Modifier.padding(horizontal = Spacing.m).width(1.dp).fillMaxHeight().background(CharcoalBorder))
 }
