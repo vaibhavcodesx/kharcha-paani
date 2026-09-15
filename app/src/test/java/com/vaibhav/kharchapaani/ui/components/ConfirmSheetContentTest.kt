@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.vaibhav.kharchapaani.data.model.SplitMode
@@ -35,6 +36,7 @@ class ConfirmSheetContentTest {
         onCategoryChange: (String) -> Unit = {},
         onIsSplitChange: (Boolean) -> Unit = {},
         onSave: () -> Unit = {},
+        categories: List<String> = com.vaibhav.kharchapaani.domain.Categories.expenseCategories(com.vaibhav.kharchapaani.domain.CategoryPrefs()),
     ) {
         SplitFlowTheme {
             ConfirmSheetContent(
@@ -45,9 +47,23 @@ class ConfirmSheetContentTest {
                 onCategoryChange = onCategoryChange, onPaymentMethodChange = {}, onNoteChange = {}, onDateChange = {},
                 onGroupIdChange = {}, onIsSplitChange = onIsSplitChange, onSplitModeChange = {}, onPaidByPersonIdChange = {},
                 onTogglePersonShare = {}, onExactAmountChange = { _, _ -> }, onPercentageChange = { _, _ -> },
-                onOpenAddFriend = {}, onSave = onSave,
+                onOpenAddFriend = {}, onSave = onSave, categories = categories,
             )
         }
+    }
+
+    @Test
+    fun `your own categories are offered, and an entry's hidden or unknown category still shows`() {
+        val mine = com.vaibhav.kharchapaani.domain.Categories.expenseCategories(
+            com.vaibhav.kharchapaani.domain.CategoryPrefs(customExpense = listOf("Pets"), hiddenCategories = setOf("Team Payment")),
+        )
+        composeTestRule.setContent { Sheet(category = "Team Payment", categories = mine) }
+
+        composeTestRule.onNodeWithText("Category").performClick()
+
+        composeTestRule.onNodeWithText("Pets").assertExists()
+        // Hidden from new entries, but this one has it, so it's still there to keep.
+        composeTestRule.onAllNodesWithText("Team Payment").fetchSemanticsNodes().let { assertEquals(2, it.size) }
     }
 
     @Test

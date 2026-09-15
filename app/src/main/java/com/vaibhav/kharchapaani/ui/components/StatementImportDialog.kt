@@ -48,6 +48,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.vaibhav.kharchapaani.data.model.StatementParseResult
+import com.vaibhav.kharchapaani.domain.Categories
+import com.vaibhav.kharchapaani.domain.CategoryPrefs
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
@@ -68,20 +70,14 @@ import com.vaibhav.kharchapaani.ui.theme.SquircleShape
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 
-// The statement parser's category set. It includes Groceries, Investment and Income (Salary), which
-// the rest of the app doesn't know; reconciling them is part of editable categories (backlog item 7).
-val STATEMENT_CATEGORIES = listOf(
-    "Food", "Transport", "Shopping", "Bills", "Groceries", "Entertainment", "Health", "Rent",
-    "Investment", "Income (Salary)", "Income (Client)", "Income (Other)", "Other",
-)
-
 @Composable
 fun StatementImportDialog(
     parseResult: StatementParseResult,
     onConfirmImport: (List<StatementTransactionItem>) -> Unit,
     onDismiss: () -> Unit,
+    prefs: CategoryPrefs = CategoryPrefs(),
 ) {
-    KpModalSheet(onDismiss = onDismiss) { StatementImportContent(parseResult, onConfirmImport) }
+    KpModalSheet(onDismiss = onDismiss) { StatementImportContent(parseResult, onConfirmImport, prefs = prefs) }
 }
 
 /**
@@ -93,6 +89,7 @@ fun StatementImportContent(
     parseResult: StatementParseResult,
     onConfirmImport: (List<StatementTransactionItem>) -> Unit,
     modifier: Modifier = Modifier,
+    prefs: CategoryPrefs = CategoryPrefs(),
 ) {
     var items by remember(parseResult) { mutableStateOf(parseResult.allItems) }
     val expanded = remember(parseResult) {
@@ -176,6 +173,8 @@ fun StatementImportContent(
                             monthItems.forEach { item ->
                                 StatementTransactionRow(
                                     item = item,
+                                    // The same choices as everywhere else: an income row offers income categories.
+                                    categories = Categories.categoriesFor(if (item.type.equals("income", ignoreCase = true)) "income" else "expense", prefs),
                                     onToggleSelected = { checked -> items = items.map { if (it.id == item.id) it.copy(isSelected = checked) else it } },
                                     onChangeCategory = { category -> items = items.map { if (it.id == item.id) it.copy(category = category) else it } },
                                 )
@@ -194,6 +193,7 @@ fun StatementTransactionRow(
     onToggleSelected: (Boolean) -> Unit,
     onChangeCategory: (String) -> Unit,
     modifier: Modifier = Modifier,
+    categories: List<String> = Categories.expenseCategories(CategoryPrefs()),
 ) {
     var categoryMenu by remember { mutableStateOf(false) }
     val isIncome = item.type.equals("income", ignoreCase = true)
@@ -211,7 +211,7 @@ fun StatementTransactionRow(
                 modifier = Modifier.clickable(onClickLabel = "Change category, now ${item.category}") { categoryMenu = true },
             )
             DropdownMenu(expanded = categoryMenu, onDismissRequest = { categoryMenu = false }, containerColor = CharcoalElevated, shape = KpShapes.medium) {
-                STATEMENT_CATEGORIES.forEach { category ->
+                categories.forEach { category ->
                     DropdownMenuItem(
                         text = { Text(category, style = MaterialTheme.typography.bodyLarge, color = if (category == item.category) WarmAmberLight else OffWhiteText) },
                         onClick = {

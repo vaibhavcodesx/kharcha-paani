@@ -9,6 +9,8 @@ import com.vaibhav.kharchapaani.data.model.ParsedTransactionResult
 import com.vaibhav.kharchapaani.data.model.StatementParseResult
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
 import com.vaibhav.kharchapaani.domain.LocalHeuristicParser
+import com.vaibhav.kharchapaani.domain.Categories
+import com.vaibhav.kharchapaani.domain.CategoryPrefs
 import com.vaibhav.kharchapaani.domain.LocalStatementParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -42,7 +44,8 @@ class GeminiRepository {
 
     suspend fun parseMessyText(
         rawText: String,
-        knownFriends: List<String> = emptyList()
+        knownFriends: List<String> = emptyList(),
+        choices: ParseChoices = ParseChoices.defaults,
     ): ParsedTransactionResult = withContext(Dispatchers.IO) {
         val apiKey = getApiKey()
         if (apiKey.isBlank()) {
@@ -61,8 +64,8 @@ class GeminiRepository {
             - type: "expense" (default) or "income" (if money received, salary, client payout, etc.)
             - amount: total numeric value in standard currency (e.g. 370.0)
             - merchant: Clean merchant or description (e.g. "McDonald's", "Uber", "Priya (Loan)", "Client X")
-            - category: Pick the best match among [Food, Transport, Shopping, Bills, Entertainment, Health, Rent, Team Payment, Income (Client), Income (Other), Other]
-            - paymentMethod: Pick best among [GPay, PhonePe, Paytm, Cash, Card, Bank Transfer, Other]
+            - category: Pick the best match among [${choices.categoryList}]
+            - paymentMethod: Pick best among [${choices.paymentList}]
             - splitWith: Array of friends' names mentioned in input to split with (e.g. ["Rahul", "Priya"])
             - note: Short summary or original memo
             
@@ -146,7 +149,8 @@ class GeminiRepository {
 
     suspend fun parseReceiptOrScreenshot(
         bitmap: Bitmap,
-        knownFriends: List<String> = emptyList()
+        knownFriends: List<String> = emptyList(),
+        choices: ParseChoices = ParseChoices.defaults,
     ): ParsedTransactionResult = withContext(Dispatchers.IO) {
         val apiKey = getApiKey()
         if (apiKey.isBlank()) {
@@ -162,8 +166,8 @@ class GeminiRepository {
             - type: "expense" (paid to merchant/friend) or "income" (received money)
             - amount: total transaction amount as a float number
             - merchant: receiver/merchant name or payment destination (e.g. "Starbucks", "Uber", "Swiggy", "PhonePe Merchant")
-            - category: Pick the best fit among [Food, Transport, Shopping, Bills, Entertainment, Health, Rent, Team Payment, Income (Client), Income (Other), Other]
-            - paymentMethod: Pick best among [GPay, PhonePe, Paytm, Cash, Card, Bank Transfer, Other]
+            - category: Pick the best fit among [${choices.categoryList}]
+            - paymentMethod: Pick best among [${choices.paymentList}]
             - note: short description or reference ID
             
             Return ONLY valid JSON matching this schema:
@@ -313,7 +317,8 @@ class GeminiRepository {
 
     suspend fun parseBankOrUpiStatementPdf(
         pdfBytes: ByteArray,
-        fileName: String = "statement.pdf"
+        fileName: String = "statement.pdf",
+        choices: ParseChoices = ParseChoices.defaults,
     ): StatementParseResult? = withContext(Dispatchers.IO) {
         val apiKey = getApiKey()
         // Null means "couldn't read it". This used to return a generated sample statement (two
@@ -334,7 +339,7 @@ class GeminiRepository {
             - type: "expense" (for debits, payments, withdrawals, sent money, Dr, purchases, -) OR "income" (for credits, salary, deposits, cashbacks, refunds, received money, Cr, +)
             - amount: strictly positive numeric float value (e.g. 350.0)
             - merchant: Clean, human-friendly merchant or payee name (e.g. "Swiggy", "Uber", "Amazon", "Infosys Salary", "Tea Stall", "Ramesh Kumar")
-            - category: Best category from [Food, Transport, Shopping, Bills, Entertainment, Health, Rent, Groceries, Investment, Income (Salary), Income (Client), Income (Other), Other]
+            - category: Best category from [${choices.categoryList}]
             - paymentMethod: e.g. "UPI", "GPay", "PhonePe", "Paytm", "Debit Card", "Net Banking", "NEFT", "IMPS", "Bank Transfer"
             - note: Original narration or transaction reference id
             
@@ -421,8 +426,8 @@ class GeminiRepository {
                                     type = itemObj.optString("type", "expense"),
                                     amount = kotlin.math.abs(itemObj.optDouble("amount", 0.0)),
                                     merchant = itemObj.optString("merchant", "Merchant"),
-                                    category = itemObj.optString("category", "Food"),
-                                    paymentMethod = itemObj.optString("paymentMethod", "UPI"),
+                                    category = choices.categoryFor(itemObj.optString("type", "expense"), itemObj.optString("category")),
+                                    paymentMethod = choices.paymentFor(itemObj.optString("paymentMethod", "UPI")),
                                     note = itemObj.optString("note", ""),
                                     isSelected = true
                                 )
@@ -455,5 +460,33 @@ class GeminiRepository {
         }
         scaled.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
         return Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
+    }
+}
+
+/** The categories and payment methods a parser may answer with: this account's own choices. */
+data class ParseChoices(val expenseCategories: List<String>, val incomeCategories: List<String>, val paymentMethods: List<String>) {
+    val categoryList: String get() = (expenseCategories + incomeCategories).joinToString(", ")
+    val paymentList: String get() = paymentMethods.joinToString(", ")
+
+    /** A parsed category as one of these choices; unknown ones land on Other rather than a one-off. */
+    fun categoryFor(type: String, raw: String?): String =
+        if (type.equals("income", ignoreCase = true)) {
+            Categories.match(raw, incomeCategories, Categories.OTHER_INCOME)
+        } else {
+            Categories.match(raw, expenseCategories, Categories.OTHER)
+        }
+
+    /** A parsed payment method in this account's spelling when it's one of them, else as read (e.g. "NEFT"). */
+    fun paymentFor(raw: String?): String =
+        Categories.match(raw, paymentMethods, fallback = raw?.trim()?.takeIf { it.isNotEmpty() } ?: Categories.OTHER)
+
+    companion object {
+        val defaults = of(CategoryPrefs())
+
+        fun of(prefs: CategoryPrefs) = ParseChoices(
+            Categories.expenseCategories(prefs),
+            Categories.incomeCategories(prefs),
+            Categories.paymentMethods(prefs),
+        )
     }
 }
