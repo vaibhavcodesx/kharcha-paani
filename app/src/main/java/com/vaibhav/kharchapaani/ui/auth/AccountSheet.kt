@@ -1,6 +1,8 @@
 package com.vaibhav.kharchapaani.ui.auth
 
 import android.text.format.DateUtils
+import com.vaibhav.kharchapaani.ui.theme.KpShapes
+import com.vaibhav.kharchapaani.ui.components.SheetHandle
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -73,6 +75,8 @@ fun AccountSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = CharcoalSurface,
+        shape = KpShapes.sheet,
+        dragHandle = { SheetHandle() },
     ) {
         AccountSheetContent(
             state = state,

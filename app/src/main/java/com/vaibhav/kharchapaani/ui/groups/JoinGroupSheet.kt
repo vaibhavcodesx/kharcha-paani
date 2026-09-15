@@ -1,6 +1,8 @@
 package com.vaibhav.kharchapaani.ui.groups
 
 import androidx.compose.foundation.background
+import com.vaibhav.kharchapaani.ui.theme.KpShapes
+import com.vaibhav.kharchapaani.ui.components.SheetHandle
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -59,6 +61,8 @@ fun JoinGroupSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = CharcoalSurface,
+        shape = KpShapes.sheet,
+        dragHandle = { SheetHandle() },
         contentColor = OffWhiteText,
         modifier = Modifier.imePadding(),
     ) {

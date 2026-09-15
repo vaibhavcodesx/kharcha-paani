@@ -34,10 +34,8 @@ import com.vaibhav.kharchapaani.ui.components.AnimatedRollingNumber
 import com.vaibhav.kharchapaani.ui.components.bounceClick
 import com.vaibhav.kharchapaani.ui.theme.BrandGradient
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
-import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
 import com.vaibhav.kharchapaani.ui.theme.EyebrowText
-import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
@@ -126,21 +124,18 @@ private fun AccountAvatar(initial: String, onClick: () -> Unit) {
     }
 }
 
-/** This month at a glance: what I spent (my share) against what came in. */
+/**
+ * This month at a glance: what I spent (my share) against what came in. Deliberately not a card, so
+ * the capture card below is the only raised surface above the feed.
+ */
 @Composable
 fun MonthStrip(analytics: MonthlyAnalytics, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(KpShapes.large)
-            .background(CharcoalCard)
-            .padding(horizontal = Spacing.l, vertical = Spacing.m),
-    ) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
             MonthFigure(label = "Spent this month", amount = analytics.totalExpense, color = OffWhiteText, modifier = Modifier.weight(1f))
             Box(
                 Modifier
-                    .padding(horizontal = Spacing.l)
+                    .padding(horizontal = Spacing.xl)
                     .width(1.dp)
                     .fillMaxHeight()
                     .background(CharcoalBorder)

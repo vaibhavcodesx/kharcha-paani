@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,7 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,7 +45,7 @@ import java.util.Locale
 /**
  * A settlement or IOU in the Home timeline. Money that came to you is green; money you paid or lent
  * is plain; a settlement between two groupmates is muted. Only a party can retract one, so others
- * get no menu.
+ * get no menu; the row isn't tappable for them at all.
  */
 @Composable
 fun SettlementItemCard(
@@ -66,59 +66,69 @@ fun SettlementItemCard(
         settlement.note.takeIf { it.isNotBlank() },
     ).joinToString(" · ")
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = 64.dp)
-            .clip(position.shape)
-            .background(CharcoalCard)
-            .semantics(mergeDescendants = true) {}
-            .padding(start = Spacing.l, end = if (item.involvesMe) Spacing.xs else Spacing.l, top = Spacing.m, bottom = Spacing.m)
-            .testTag("settlement_item_${settlement.id}"),
-    ) {
-        Box(
-            contentAlignment = Alignment.Center,
+    val accent = if (incoming) ChartreuseSecondary else WarmAmberLight
+
+    // The row itself opens the menu, so its amount lines up with every other row's instead of
+    // sitting left of a ⋯ button.
+    Box(modifier.fillMaxWidth().clip(position.shape)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .size(40.dp)
-                .clip(KpShapes.small)
-                .background(CharcoalElevated),
+                .fillMaxWidth()
+                .heightIn(min = 64.dp)
+                .background(CharcoalCard)
+                .then(
+                    if (item.involvesMe) {
+                        Modifier.clickable(onClickLabel = "More options for ${item.title}") { showMenu = true }
+                    } else {
+                        Modifier.semantics(mergeDescendants = true) {}
+                    }
+                )
+                .padding(horizontal = Spacing.l, vertical = Spacing.m)
+                .testTag("settlement_item_${settlement.id}"),
         ) {
-            Icon(
-                imageVector = if (settlement.isIou) KpIcons.Lend else KpIcons.Settle,
-                contentDescription = null,
-                tint = if (incoming) ChartreuseSecondary else WarmAmberLight,
-                modifier = Modifier.size(20.dp),
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(KpShapes.small)
+                    .background(accent.copy(alpha = 0.14f)),
+            ) {
+                Icon(
+                    imageVector = if (settlement.isIou) KpIcons.Lend else KpIcons.Settle,
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
+                Text(text = item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(text = detail, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Text(
+                text = (if (outgoing) "-" else if (incoming) "+" else "") + Money.format(settlement.amount),
+                style = MoneyText.row,
+                color = when {
+                    incoming -> ChartreuseSecondary
+                    outgoing -> OffWhiteText
+                    else -> MutedWarmGray
+                },
             )
         }
-        Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
-            Text(text = item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(text = detail, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-        Text(
-            text = (if (outgoing) "-" else if (incoming) "+" else "") + Money.format(settlement.amount),
-            style = MoneyText.row,
-            color = when {
-                incoming -> ChartreuseSecondary
-                outgoing -> OffWhiteText
-                else -> MutedWarmGray
-            },
-        )
-        if (item.involvesMe) {
-            Box {
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(KpIcons.More, contentDescription = "More options for ${item.title}", tint = MutedWarmGray, modifier = Modifier.size(20.dp))
-                }
-                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }, containerColor = CharcoalElevated, shape = KpShapes.medium) {
-                    DropdownMenuItem(
-                        text = { Text(if (settlement.isIou) "Delete IOU" else "Retract settlement", color = OffWhiteText) },
-                        onClick = {
-                            showMenu = false
-                            onRetract()
-                        },
-                    )
-                }
-            }
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false },
+            containerColor = CharcoalElevated,
+            shape = KpShapes.medium,
+            modifier = Modifier.align(Alignment.TopEnd),
+        ) {
+            DropdownMenuItem(
+                text = { Text(if (settlement.isIou) "Delete IOU" else "Retract settlement", color = OffWhiteText) },
+                onClick = {
+                    showMenu = false
+                    onRetract()
+                },
+            )
         }
     }
 }
