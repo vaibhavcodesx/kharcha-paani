@@ -1,6 +1,11 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.performCustomAccessibilityActionWithLabel
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -78,5 +83,27 @@ class TransactionItemCardTest {
         assertEquals(1, edits)
         assertEquals(0, deletes)
         composeTestRule.onNodeWithTag("transaction_item_9").assertIsDisplayed()
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun `TalkBack gets edit and delete on an editable row`() {
+        var deletes = 0
+        composeTestRule.setContent {
+            SplitFlowTheme { TransactionItemCard(tx, onEdit = {}, onDelete = { deletes++ }) }
+        }
+
+        composeTestRule.onNodeWithTag("transaction_item_9").performCustomAccessibilityActionWithLabel("Delete")
+
+        assertEquals(1, deletes)
+    }
+
+    @Test
+    fun `a read-only row offers TalkBack no actions`() {
+        composeTestRule.setContent {
+            SplitFlowTheme { TransactionItemCard(tx, onEdit = {}, onDelete = {}, isReadOnly = true) }
+        }
+
+        composeTestRule.onNodeWithTag("transaction_item_9").assert(SemanticsMatcher.keyNotDefined(SemanticsActions.CustomActions))
     }
 }
