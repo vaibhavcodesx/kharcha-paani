@@ -14,6 +14,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -161,10 +162,63 @@ class GroupSyncEngineTest {
         val shares = groupDao.sharesForSplit(split.id).associate { it.personId to it.shareAmount }
         assertEquals(mapOf(-1L to 30.0, person(bob).id to 30.0, person(carol).id to 30.0), shares)
 
-        // Decision 2: it can't be edited or deleted here.
+        // Bob added it and Bob paid: it can't be edited or deleted here.
         repository.deleteTransaction(row.id)
         repository.updateTransactionWithSplits(row.copy(merchant = "Changed"))
         assertEquals("Shack", db.transactionDao().getTransactionByIdDirect(row.id)?.merchant)
+    }
+
+    @Test
+    fun `an expense a groupmate added but I paid can be edited here and the edit reaches the server`() = runBlocking {
+        joinGoaWithBobAndCarol()
+        remote.expenseBy(owner = bob, id = "tx-paid-by-me", groupId = goa, amount = 90.0, paidBy = alice, shares = mapOf(alice to 45.0, bob to 45.0))
+        engine.sync()
+        val row = transaction("tx-paid-by-me")!!
+        val full = db.transactionDao().getAllTransactionsDirect().first { it.id == row.id }
+        val split = groupDao.splitForTransaction(row.id)!!
+        assertEquals(-1L, split.paidByPersonId)
+
+        repository.updateTransactionWithSplits(
+            full.copy(merchant = "Shack (fixed)", amount = 100.0),
+            paidByPersonId = -1L,
+            shares = listOf(
+                SplitShareEntity(splitId = 0, personId = -1L, shareAmount = 50.0),
+                SplitShareEntity(splitId = 0, personId = person(bob).id, shareAmount = 50.0),
+            ),
+            splitType = "exact",
+        )
+
+        val edited = db.transactionDao().getTransactionByIdDirect(row.id)!!
+        assertEquals("Shack (fixed)", edited.merchant)
+        assertEquals(SyncState.PENDING, edited.syncState)
+        assertEquals("it still belongs to Bob, who added it", bob, edited.ownerProfileId)
+
+        engine.pushGroupExpenses()
+
+        assertEquals(SyncState.SYNCED, db.transactionDao().getTransactionByIdDirect(row.id)?.syncState)
+        val server = remote.expenses.getValue("tx-paid-by-me")
+        assertEquals(listOf("Shack (fixed)", 100.0, bob, alice), listOf(server.merchant, server.amount, server.ownerId, server.split!!.paidBy))
+    }
+
+    @Test
+    fun `the payer of a groupmate's expense can delete it but can't hand the payment to someone else`() = runBlocking {
+        joinGoaWithBobAndCarol()
+        remote.expenseBy(owner = bob, id = "tx-mine-to-pay", groupId = goa, amount = 60.0, paidBy = alice, shares = mapOf(alice to 30.0, bob to 30.0))
+        engine.sync()
+        val row = transaction("tx-mine-to-pay")!!
+
+        // Only Bob, who added it, can say someone else paid.
+        repository.updateTransactionWithSplits(
+            row.copy(merchant = "Carol paid?"),
+            paidByPersonId = person(carol).id,
+            shares = listOf(SplitShareEntity(splitId = 0, personId = -1L, shareAmount = 30.0), SplitShareEntity(splitId = 0, personId = person(bob).id, shareAmount = 30.0)),
+        )
+        assertEquals("Shack", db.transactionDao().getTransactionByIdDirect(row.id)?.merchant)
+
+        repository.deleteTransaction(row.id)
+
+        assertNull(db.transactionDao().getTransactionByIdDirect(row.id))
+        assertTrue(db.syncDao().hasPendingDelete("tx-mine-to-pay"))
     }
 
     @Test

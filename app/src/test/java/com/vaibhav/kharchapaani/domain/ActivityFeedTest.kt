@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.domain
 
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
+import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
@@ -62,12 +63,19 @@ class ActivityFeedTest {
         val mine = expense(20, 10, "Mine")
         val theirs = expense(21, 20, "Theirs").let { it.copy(transaction = it.transaction.copy(ownerProfileId = "bob")) }
         val inArchived = expense(22, 30, "Archived").let { it.copy(transaction = it.transaction.copy(groupId = 8)) }
+        // Bob added it to a group, but I paid: I can edit it too.
+        val theyAddedIPaid = expense(23, 40, "They added, I paid").let {
+            it.copy(
+                transaction = it.transaction.copy(ownerProfileId = "bob", groupId = 9, isSplit = true),
+                split = SplitEntity(id = 5, transactionId = 23, totalAmount = 100.0, paidByPersonId = -1L),
+            )
+        }
 
-        val readOnly = ActivityFeed.build(listOf(mine, theirs, inArchived), emptyList(), emptyList(), listOf(archived), "", ActivityFeed.ALL)
+        val readOnly = ActivityFeed.build(listOf(mine, theirs, inArchived, theyAddedIPaid), emptyList(), emptyList(), listOf(archived), "", ActivityFeed.ALL)
             .filterIsInstance<ActivityItem.Transaction>()
             .associate { it.fullTransaction.transaction.merchant to it.isReadOnly }
 
-        assertEquals(mapOf("Mine" to false, "Theirs" to true, "Archived" to true), readOnly)
+        assertEquals(mapOf("Mine" to false, "Theirs" to true, "Archived" to true, "They added, I paid" to false), readOnly)
     }
 
     @Test
