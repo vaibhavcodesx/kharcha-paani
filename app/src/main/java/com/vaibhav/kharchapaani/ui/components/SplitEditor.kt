@@ -111,10 +111,13 @@ fun SplitEditor(
             modifier = Modifier.fillMaxWidth().padding(top = Spacing.xs),
         )
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = 48.dp)) {
             Text("SPLIT BETWEEN", style = EyebrowText, modifier = Modifier.weight(1f))
-            TextButton(onClick = onOpenAddFriend) {
-                Text("Add a friend", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+            // A friend added here is only on this phone, so can't be in a groupmate's group expense.
+            if (payerLockedBy == null) {
+                TextButton(onClick = onOpenAddFriend) {
+                    Text("Add a friend", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+                }
             }
         }
 

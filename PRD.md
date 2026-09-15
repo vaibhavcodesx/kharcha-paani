@@ -530,6 +530,10 @@ Design approved on 2026-09-14:
 1. Sharing happens only inside groups; a 1:1 split means a two-person
    group.
 2. Only the person who added a group expense can edit or delete it.
+   *Amended by backlog item 11 (owner, 2026-09-15; migration
+   `payer_can_edit_group_expenses`, PR #31): the person who paid can
+   edit and delete it too. Only the adder can change who paid or move it
+   out of its group, and it always stays owned by the adder.*
 3. Either party can record a settlement.
 4. Groups are archived rather than deleted; members can leave.
 5. Invites are 8-character codes that expire after 7 days, shared as

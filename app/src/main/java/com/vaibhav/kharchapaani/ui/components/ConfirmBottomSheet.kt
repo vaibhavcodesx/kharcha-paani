@@ -247,14 +247,17 @@ fun ConfirmSheetContent(
             style = EyebrowText,
             modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() },
         )
-        SegmentedControl(
-            options = listOf("expense", "income"),
-            selected = type,
-            label = { if (it == "income") "Income" else "Expense" },
-            onSelect = onTypeChange,
-            accentFor = { if (it == "income") ChartreuseSecondary else WarmAmberPrimary },
-            modifier = Modifier.fillMaxWidth(),
-        )
+        // A groupmate's expense stays an expense: only its adder could make it something else.
+        if (addedBy == null) {
+            SegmentedControl(
+                options = listOf("expense", "income"),
+                selected = type,
+                label = { if (it == "income") "Income" else "Expense" },
+                onSelect = onTypeChange,
+                accentFor = { if (it == "income") ChartreuseSecondary else WarmAmberPrimary },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
         if (isParsing) {
             ParsingPlaceholder()
