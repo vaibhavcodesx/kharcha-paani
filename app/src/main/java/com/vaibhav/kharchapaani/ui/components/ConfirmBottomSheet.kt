@@ -129,17 +129,7 @@ fun ConfirmBottomSheet(
 ) {
     if (!isOpen) return
     val focusManager = LocalFocusManager.current
-    ModalBottomSheet(
-        onDismissRequest = {
-            focusManager.clearFocus()
-            onDismiss()
-        },
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = CharcoalSurface,
-        contentColor = OffWhiteText,
-        shape = KpShapes.sheet,
-        dragHandle = { SheetHandle() },
-    ) {
+    KpModalSheet(onDismiss = onDismiss) {
         ConfirmSheetContent(
             isParsing = isParsing, isEditing = isEditing, type = type, amount = amount, merchant = merchant,
             category = category, paymentMethod = paymentMethod, note = note, date = date, groupId = groupId,
@@ -210,239 +200,165 @@ fun ConfirmSheetContent(
     fun toggle(detail: Detail) {
         open = if (open == detail) null else detail
     }
-    val hazeState = rememberHazeState()
     val context = LocalContext.current
     val dateText = remember(date) { describeDate(date) }
     val group = availableGroups.firstOrNull { it.id == groupId }
 
-    Box(modifier.fillMaxWidth().imePadding()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .hazeSource(hazeState)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.page),
-        ) {
-            // The Expense / Income control names the sheet; a "New expense" title beside it said the
-            // same thing twice.
-            Text(
-                text = if (isEditing) "EDITING" else "NEW ENTRY",
-                style = EyebrowText,
-                modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() },
-            )
+    SheetScaffold(
+        modifier = modifier,
+        actionBar = if (isParsing) null else {
+            {
+                val value = amount.toDoubleOrNull() ?: 0.0
+                GlassActionBar(
+                    label = if (isEditing) "Update" else "Save",
+                    disabledLabel = "Add an amount",
+                    enabled = value > 0,
+                    onClick = onSave,
+                    summary = if (value > 0) Money.format(value) else "₹0",
+                    detail = listOfNotNull(merchant.ifBlank { null } ?: category, paymentMethod.ifBlank { null }).joinToString(" · "),
+                    buttonTestTag = "confirm_save_button",
+                )
+            }
+        },
+    ) {
+        // The Expense / Income control names the sheet; a "New expense" title beside it said the
+        // same thing twice.
+        Text(
+            text = if (isEditing) "EDITING" else "NEW ENTRY",
+            style = EyebrowText,
+            modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() },
+        )
+        SegmentedControl(
+            options = listOf("expense", "income"),
+            selected = type,
+            label = { if (it == "income") "Income" else "Expense" },
+            onSelect = onTypeChange,
+            accentFor = { if (it == "income") ChartreuseSecondary else WarmAmberPrimary },
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        if (isParsing) {
+            ParsingPlaceholder()
+            return@SheetScaffold
+        }
+
+        BigAmountField(amount = amount, onAmountChange = onAmountChange, accent = accent, testTag = "confirm_amount_input")
+
+        // What was understood, one row per detail.
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            SheetRow(label = "Merchant", position = RowPosition.First) {
+                SheetTextInput(
+                    value = merchant,
+                    onValueChange = onMerchantChange,
+                    placeholder = if (isIncome) "Who paid you" else "Where or what",
+                    fieldTestTag = "confirm_merchant_input",
+                )
+            }
+            ExpandableDetail(
+                label = "Category",
+                value = category,
+                icon = CategoryHelper.getCategoryIcon(category),
+                iconTint = CategoryHelper.getCategoryColor(category),
+                expanded = open == Detail.Category,
+                onToggle = { toggle(Detail.Category) },
+                position = RowPosition.Middle,
+            ) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                    CategoryHelper.allCategories.forEach { cat ->
+                        ChoiceChip(
+                            label = cat,
+                            selected = cat == category,
+                            icon = CategoryHelper.getCategoryIcon(cat),
+                            iconTint = CategoryHelper.getCategoryColor(cat),
+                            accent = CategoryHelper.getCategoryColor(cat),
+                            onClick = {
+                                onCategoryChange(cat)
+                                open = null
+                            },
+                        )
+                    }
+                }
+            }
+            ExpandableDetail(
+                label = if (isIncome) "Received via" else "Paid with",
+                value = paymentMethod,
+                expanded = open == Detail.Payment,
+                onToggle = { toggle(Detail.Payment) },
+                position = RowPosition.Middle,
+            ) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                    CategoryHelper.allPaymentMethods.forEach { method ->
+                        ChoiceChip(label = method, selected = method == paymentMethod, onClick = {
+                            onPaymentMethodChange(method)
+                            open = null
+                        })
+                    }
+                }
+            }
+            ExpandableDetail(
+                label = "When",
+                value = dateText,
+                icon = KpIcons.Calendar,
+                expanded = open == Detail.When,
+                onToggle = { toggle(Detail.When) },
+                position = if (availableGroups.isEmpty()) RowPosition.Last else RowPosition.Middle,
+            ) {
+                val now = System.currentTimeMillis()
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                    ChoiceChip("Now", selected = false, onClick = { onDateChange(now); open = null })
+                    ChoiceChip("2 hours ago", selected = false, onClick = { onDateChange(now - 2 * HOUR); open = null })
+                    ChoiceChip("Yesterday", selected = false, onClick = { onDateChange(now - 24 * HOUR); open = null })
+                    ChoiceChip(
+                        label = "Pick a date…",
+                        selected = false,
+                        icon = KpIcons.Calendar,
+                        onClick = { pickDateTime(context, date) { onDateChange(it); open = null } },
+                        modifier = Modifier.testTag("transaction_date_picker_button"),
+                    )
+                }
+            }
+            if (availableGroups.isNotEmpty()) {
+                ExpandableDetail(
+                    label = "Group",
+                    value = group?.let { "${it.emoji} ${it.name}" } ?: "None",
+                    expanded = open == Detail.Group,
+                    onToggle = { toggle(Detail.Group) },
+                    position = RowPosition.Last,
+                ) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                        ChoiceChip("None", selected = groupId == null, onClick = { onGroupIdChange(null); open = null })
+                        availableGroups.forEach { g ->
+                            ChoiceChip("${g.emoji} ${g.name}", selected = g.id == groupId, onClick = { onGroupIdChange(g.id); open = null })
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!isIncome) {
+            Text("WHO'S IT FOR", style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s))
             SegmentedControl(
-                options = listOf("expense", "income"),
-                selected = type,
-                label = { if (it == "income") "Income" else "Expense" },
-                onSelect = onTypeChange,
-                accentFor = { if (it == "income") ChartreuseSecondary else WarmAmberPrimary },
+                options = listOf(false, true),
+                selected = isSplit,
+                label = { if (it) "Split it" else "Just me" },
+                onSelect = onIsSplitChange,
+                testTagFor = { if (it) "split_with_friends_button" else "for_me_button" },
                 modifier = Modifier.fillMaxWidth(),
             )
-
-            if (isParsing) {
-                ParsingPlaceholder()
-                return@Column
-            }
-
-            AmountField(amount = amount, onAmountChange = onAmountChange, accent = accent)
-
-            // What was understood, one row per detail.
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                DetailRow(label = "Merchant", position = RowPosition.First) {
-                    Box(Modifier.weight(1f)) {
-                        if (merchant.isEmpty()) {
-                            Text(if (isIncome) "Who paid you" else "Where or what", style = MaterialTheme.typography.bodyLarge, color = SubMutedWarmGray)
-                        }
-                        BasicTextField(
-                            value = merchant,
-                            onValueChange = onMerchantChange,
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = OffWhiteText),
-                            cursorBrush = SolidColor(WarmAmberPrimary),
-                            modifier = Modifier.fillMaxWidth().testTag("confirm_merchant_input"),
-                        )
-                    }
-                }
-                ExpandableDetail(
-                    label = "Category",
-                    value = category,
-                    icon = CategoryHelper.getCategoryIcon(category),
-                    iconTint = CategoryHelper.getCategoryColor(category),
-                    expanded = open == Detail.Category,
-                    onToggle = { toggle(Detail.Category) },
-                    position = RowPosition.Middle,
-                ) {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                        CategoryHelper.allCategories.forEach { cat ->
-                            ChoiceChip(
-                                label = cat,
-                                selected = cat == category,
-                                icon = CategoryHelper.getCategoryIcon(cat),
-                                iconTint = CategoryHelper.getCategoryColor(cat),
-                                accent = CategoryHelper.getCategoryColor(cat),
-                                onClick = {
-                                    onCategoryChange(cat)
-                                    open = null
-                                },
-                            )
-                        }
-                    }
-                }
-                ExpandableDetail(
-                    label = if (isIncome) "Received via" else "Paid with",
-                    value = paymentMethod,
-                    expanded = open == Detail.Payment,
-                    onToggle = { toggle(Detail.Payment) },
-                    position = RowPosition.Middle,
-                ) {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                        CategoryHelper.allPaymentMethods.forEach { method ->
-                            ChoiceChip(label = method, selected = method == paymentMethod, onClick = {
-                                onPaymentMethodChange(method)
-                                open = null
-                            })
-                        }
-                    }
-                }
-                ExpandableDetail(
-                    label = "When",
-                    value = dateText,
-                    icon = KpIcons.Calendar,
-                    expanded = open == Detail.When,
-                    onToggle = { toggle(Detail.When) },
-                    position = if (availableGroups.isEmpty()) RowPosition.Last else RowPosition.Middle,
-                ) {
-                    val now = System.currentTimeMillis()
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                        ChoiceChip("Now", selected = false, onClick = { onDateChange(now); open = null })
-                        ChoiceChip("2 hours ago", selected = false, onClick = { onDateChange(now - 2 * HOUR); open = null })
-                        ChoiceChip("Yesterday", selected = false, onClick = { onDateChange(now - 24 * HOUR); open = null })
-                        ChoiceChip(
-                            label = "Pick a date…",
-                            selected = false,
-                            icon = KpIcons.Calendar,
-                            onClick = { pickDateTime(context, date) { onDateChange(it); open = null } },
-                            modifier = Modifier.testTag("transaction_date_picker_button"),
-                        )
-                    }
-                }
-                if (availableGroups.isNotEmpty()) {
-                    ExpandableDetail(
-                        label = "Group",
-                        value = group?.let { "${it.emoji} ${it.name}" } ?: "None",
-                        expanded = open == Detail.Group,
-                        onToggle = { toggle(Detail.Group) },
-                        position = RowPosition.Last,
-                    ) {
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                            ChoiceChip("None", selected = groupId == null, onClick = { onGroupIdChange(null); open = null })
-                            availableGroups.forEach { g ->
-                                ChoiceChip("${g.emoji} ${g.name}", selected = g.id == groupId, onClick = { onGroupIdChange(g.id); open = null })
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (!isIncome) {
-                Text("WHO'S IT FOR", style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s))
-                SegmentedControl(
-                    options = listOf(false, true),
-                    selected = isSplit,
-                    label = { if (it) "Split it" else "Just me" },
-                    onSelect = onIsSplitChange,
-                    testTagFor = { if (it) "split_with_friends_button" else "for_me_button" },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                AnimatedVisibility(visible = isSplit, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
-                    SplitEditor(
-                        amount = amount, splitMode = splitMode, paidByPersonId = paidByPersonId, shares = shares,
-                        onSplitModeChange = onSplitModeChange, onPaidByPersonIdChange = onPaidByPersonIdChange,
-                        onTogglePersonShare = onTogglePersonShare, onExactAmountChange = onExactAmountChange,
-                        onPercentageChange = onPercentageChange, onOpenAddFriend = onOpenAddFriend,
-                        modifier = Modifier.padding(top = Spacing.m),
-                    )
-                }
-            }
-
-            DetailRow(label = "Note", position = RowPosition.Single, modifier = Modifier.padding(top = Spacing.xl)) {
-                Box(Modifier.weight(1f)) {
-                    if (note.isEmpty()) Text("Optional", style = MaterialTheme.typography.bodyLarge, color = SubMutedWarmGray)
-                    BasicTextField(
-                        value = note,
-                        onValueChange = onNoteChange,
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = OffWhiteText),
-                        cursorBrush = SolidColor(WarmAmberPrimary),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-
-            // Room to scroll the last row clear of the floating save bar.
-            Spacer(Modifier.navigationBarsPadding().height(SaveBarClearance))
-        }
-
-        if (!isParsing) {
-            CompositionLocalProvider(LocalHazeState provides hazeState) {
-                SaveBar(
-                    amount = amount,
-                    summary = listOfNotNull(merchant.ifBlank { null } ?: category, paymentMethod.ifBlank { null }).joinToString(" · "),
-                    isEditing = isEditing,
-                    onSave = onSave,
-                    modifier = Modifier.align(Alignment.BottomCenter),
+            AnimatedVisibility(visible = isSplit, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+                SplitEditor(
+                    amount = amount, splitMode = splitMode, paidByPersonId = paidByPersonId, shares = shares,
+                    onSplitModeChange = onSplitModeChange, onPaidByPersonIdChange = onPaidByPersonIdChange,
+                    onTogglePersonShare = onTogglePersonShare, onExactAmountChange = onExactAmountChange,
+                    onPercentageChange = onPercentageChange, onOpenAddFriend = onOpenAddFriend,
+                    modifier = Modifier.padding(top = Spacing.m),
                 )
             }
         }
-    }
-}
 
-@Composable
-private fun AmountField(amount: String, onAmountChange: (String) -> Unit, accent: Color) {
-    Row(
-        horizontalArrangement = Arrangement.Center,
-        modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xl),
-    ) {
-        // A smaller symbol on the number's baseline, so the amount leads rather than the "₹".
-        Text("₹", style = MoneyText.large, color = accent, modifier = Modifier.alignByBaseline())
-        Box(Modifier.padding(start = Spacing.xs).alignByBaseline()) {
-            if (amount.isEmpty()) Text("0", style = MoneyText.hero, color = SubMutedWarmGray)
-            BasicTextField(
-                value = amount,
-                onValueChange = onAmountChange,
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                textStyle = MoneyText.hero.copy(color = OffWhiteText),
-                cursorBrush = SolidColor(accent),
-                modifier = Modifier
-                    // As wide as what's typed, so "₹" and the number stay centred together.
-                    .width(IntrinsicSize.Min)
-                    .widthIn(min = 2.dp)
-                    .semantics { contentDescription = "Amount in rupees" }
-                    .testTag("confirm_amount_input"),
-            )
+        SheetRow(label = "Note", position = RowPosition.Single, modifier = Modifier.padding(top = Spacing.xl)) {
+            SheetTextInput(value = note, onValueChange = onNoteChange, placeholder = "Optional")
         }
-    }
-}
-
-@Composable
-private fun DetailRow(
-    label: String,
-    position: RowPosition,
-    modifier: Modifier = Modifier,
-    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .clip(position.shape)
-            .background(CharcoalCard)
-            .padding(horizontal = Spacing.l, vertical = Spacing.s),
-    ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(LabelWidth))
-        content()
     }
 }
 
@@ -467,7 +383,7 @@ private fun ExpandableDetail(
                 .semantics { if (expanded) stateDescription = "Choices shown" }
                 .padding(horizontal = Spacing.l, vertical = Spacing.s),
         ) {
-            Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(LabelWidth))
+            Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(SheetLabelWidth))
             if (icon != null) Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.padding(end = Spacing.s).size(18.dp))
             Text(value, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
             Icon(
@@ -479,54 +395,6 @@ private fun ExpandableDetail(
         }
         AnimatedVisibility(visible = expanded, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
             Box(Modifier.padding(start = Spacing.l, end = Spacing.l, bottom = Spacing.m)) { choices() }
-        }
-    }
-}
-
-/**
- * Save, floating over the sheet. The glass is only the rim: the summary and the button sit on the
- * solid core. Disabled, the button says what's missing instead of just dimming.
- */
-@Composable
-private fun SaveBar(amount: String, summary: String, isEditing: Boolean, onSave: () -> Unit, modifier: Modifier = Modifier) {
-    val value = amount.toDoubleOrNull() ?: 0.0
-    val canSave = value > 0
-    GlassPanel(
-        shape = SquircleShape(28.dp),
-        coreShape = SquircleShape(23.dp),
-        bezel = 5.dp,
-        modifier = modifier
-            .navigationBarsPadding()
-            .padding(horizontal = Spacing.m, vertical = Spacing.m)
-            .fillMaxWidth(),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(Spacing.s)) {
-            Column(Modifier.weight(1f).padding(horizontal = Spacing.s)) {
-                Text(if (canSave) Money.format(value) else "₹0", style = MoneyText.title)
-                if (summary.isNotBlank()) {
-                    Text(summary, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .heightIn(min = 52.dp)
-                    .clip(KpShapes.action)
-                    .then(if (canSave) Modifier.background(BrandGradient.diagonal()) else Modifier.background(CharcoalElevated))
-                    .clickable(enabled = canSave, role = Role.Button, onClick = onSave)
-                    .padding(horizontal = Spacing.xl)
-                    .testTag("confirm_save_button"),
-            ) {
-                Text(
-                    text = when {
-                        !canSave -> "Add an amount"
-                        isEditing -> "Update"
-                        else -> "Save"
-                    },
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (canSave) CharcoalBg else MutedWarmGray,
-                )
-            }
         }
     }
 }
@@ -600,5 +468,3 @@ private fun pickDateTime(context: android.content.Context, initial: Long, onPick
 }
 
 private const val HOUR = 60 * 60 * 1000L
-private val LabelWidth = 96.dp
-private val SaveBarClearance = 104.dp

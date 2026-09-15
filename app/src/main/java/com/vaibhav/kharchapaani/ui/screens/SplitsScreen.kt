@@ -1,77 +1,65 @@
 package com.vaibhav.kharchapaani.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ElectricBolt
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Handshake
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.model.GroupWithDetails
 import com.vaibhav.kharchapaani.data.model.PersonBalance
 import com.vaibhav.kharchapaani.ui.components.AnimatedRollingNumber
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.components.DeleteFriendDialog
-import com.vaibhav.kharchapaani.ui.components.GroupCard
-import com.vaibhav.kharchapaani.ui.components.PersonBalanceCard
-import com.vaibhav.kharchapaani.ui.components.bounceClick
-import com.vaibhav.kharchapaani.ui.components.pressBounce
+import com.vaibhav.kharchapaani.ui.components.FriendRow
+import com.vaibhav.kharchapaani.ui.components.RowPosition
 import com.vaibhav.kharchapaani.ui.components.ScreenHeader
+import com.vaibhav.kharchapaani.ui.components.SegmentedControl
+import com.vaibhav.kharchapaani.ui.components.TripCard
 import com.vaibhav.kharchapaani.ui.shell.dockClearance
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
-import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
+import com.vaibhav.kharchapaani.ui.theme.EyebrowText
+import com.vaibhav.kharchapaani.ui.theme.KpShapes
+import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
-import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
-import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
-import com.vaibhav.kharchapaani.ui.theme.numericFontFamily
+import com.vaibhav.kharchapaani.ui.theme.Spacing
+import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
+import kotlin.math.abs
+
+private enum class SplitsSection { Friends, Groups }
 
 @Composable
 fun SplitsScreen(
@@ -89,11 +77,14 @@ fun SplitsScreen(
     onViewHistory: (PersonEntity) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val totalOwedToMe = personBalances.filter { it.netBalance > 0 }.sumOf { it.netBalance }
-    val totalIOwe = personBalances.filter { it.netBalance < 0 }.sumOf { it.netBalance }
-
-    var selectedSection by remember { mutableIntStateOf(0) } // 0: Friends, 1: Trips & Groups
+    val owedToMe = personBalances.filter { it.netBalance > 0 }.sumOf { it.netBalance }
+    val iOwe = abs(personBalances.filter { it.netBalance < 0 }.sumOf { it.netBalance })
+    var section by rememberSaveable { mutableStateOf(SplitsSection.Friends) }
     var friendToDelete by remember { mutableStateOf<PersonBalance?>(null) }
+    // Who needs attention first: the biggest balances either way, then everyone who's settled.
+    val friends = remember(personBalances) {
+        personBalances.sortedWith(compareBy<PersonBalance> { abs(it.netBalance) < 0.005 }.thenByDescending { abs(it.netBalance) }.thenBy { it.person.name })
+    }
 
     DeleteFriendDialog(
         person = friendToDelete?.person,
@@ -106,363 +97,164 @@ fun SplitsScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(CharcoalBg)
-            .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(top = 12.dp, bottom = dockClearance()),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+            .background(CharcoalBg),
+        contentPadding = PaddingValues(start = Spacing.page, end = Spacing.page, top = Spacing.l, bottom = dockClearance()),
     ) {
-        // Top Header
-        item {
-            ScreenHeader(
-                title = "Splits",
-                supporting = "Who owes whom, with friends and on trips",
-            ) {
-
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = WarmAmberPrimary,
-                    modifier = Modifier
-                        .bounceClick {
-                            if (selectedSection == 0) onOpenAddFriend() else onOpenCreateGroup()
-                        }
-                        .testTag("add_split_top_button")
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (selectedSection == 0) Icons.Default.PersonAdd else Icons.Default.Add,
-                            contentDescription = null,
-                            tint = CharcoalBg,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = if (selectedSection == 0) "Add Friend" else "New Group",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                color = CharcoalBg,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                        )
+        item(key = "header") {
+            ScreenHeader(title = "Splits", supporting = "Who owes whom, with friends and on trips")
+        }
+        item(key = "summary") {
+            BalanceSummary(
+                owedToMe = owedToMe,
+                iOwe = iOwe,
+                onOpenSimplifyDebts = onOpenSimplifyDebts,
+                onOpenIou = onOpenIouDialog,
+                modifier = Modifier.padding(top = Spacing.l),
+            )
+        }
+        item(key = "sections") {
+            SegmentedControl(
+                options = SplitsSection.entries,
+                selected = section,
+                label = {
+                    when (it) {
+                        SplitsSection.Friends -> "Friends · ${personBalances.size}"
+                        SplitsSection.Groups -> "Groups · ${groups.size}"
                     }
-                }
-            }
+                },
+                onSelect = { section = it },
+                testTagFor = { "splits_tab_${it.name.lowercase()}" },
+                modifier = Modifier.fillMaxWidth().padding(top = Spacing.xl),
+            )
         }
 
-        // Section Tabs: Friends vs Groups
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(CharcoalCard)
-                    .border(1.dp, CharcoalBorder, RoundedCornerShape(14.dp))
-                    .padding(4.dp)
-            ) {
-                // Friends Tab
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(if (selectedSection == 0) WarmAmberPrimary else Color.Transparent)
-                        .clickable { selectedSection = 0 }
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            tint = if (selectedSection == 0) CharcoalBg else MutedWarmGray,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Friends (${personBalances.size})",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                color = if (selectedSection == 0) CharcoalBg else MutedWarmGray,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
-                }
-
-                // Trips & Groups Tab
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(if (selectedSection == 1) WarmAmberPrimary else Color.Transparent)
-                        .clickable { selectedSection = 1 }
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Group,
-                            contentDescription = null,
-                            tint = if (selectedSection == 1) CharcoalBg else MutedWarmGray,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Trips & Groups (${groups.size})",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                color = if (selectedSection == 1) CharcoalBg else MutedWarmGray,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
-                }
-            }
-        }
-
-        // Summary Card
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(CharcoalCard)
-                    .border(1.2.dp, CharcoalBorder, RoundedCornerShape(20.dp))
-                    .padding(18.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text(
-                            text = "Total to Collect",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                color = ChartreuseSecondary,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        AnimatedRollingNumber(
-                            targetValue = totalOwedToMe,
-                            prefix = "+₹",
-                            style = MaterialTheme.typography.headlineMedium.copy(
-                                color = ChartreuseSecondary,
-                                fontWeight = FontWeight.ExtraBold,
-                                fontFamily = numericFontFamily
-                            )
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .width(1.dp)
-                            .height(44.dp)
-                            .background(CharcoalBorder)
-                    )
-
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            text = "Total to Pay",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                color = WarmAmberPrimary,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        AnimatedRollingNumber(
-                            targetValue = kotlin.math.abs(totalIOwe),
-                            prefix = "-₹",
-                            style = MaterialTheme.typography.headlineMedium.copy(
-                                color = WarmAmberPrimary,
-                                fontWeight = FontWeight.ExtraBold,
-                                fontFamily = numericFontFamily
-                            )
-                        )
-                    }
-                }
-            }
-        }
-
-        // Action Toolbar (Simplify & IOU)
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                val simplifyInteraction = remember { MutableInteractionSource() }
-                Button(
-                    onClick = onOpenSimplifyDebts,
-                    interactionSource = simplifyInteraction,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(46.dp)
-                        .pressBounce(simplifyInteraction)
-                        .testTag("simplify_debts_button"),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = CharcoalElevated,
-                        contentColor = OffWhiteText
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, CharcoalBorder)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ElectricBolt,
-                        contentDescription = null,
-                        tint = WarmAmberPrimary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        "Simplify Debts",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-                    )
-                }
-
-                val iouInteraction = remember { MutableInteractionSource() }
-                Button(
-                    onClick = onOpenIouDialog,
-                    interactionSource = iouInteraction,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(46.dp)
-                        .pressBounce(iouInteraction)
-                        .testTag("record_iou_button"),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = CharcoalElevated,
-                        contentColor = OffWhiteText
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, CharcoalBorder)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Handshake,
-                        contentDescription = null,
-                        tint = ChartreuseSecondary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        "Record IOU",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-                    )
-                }
-            }
-        }
-
-        if (selectedSection == 0) {
-            // FRIENDS LIST
-            item {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "Friends & Balances (${personBalances.size})",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        color = OffWhiteText,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-            }
-
-            if (personBalances.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(CharcoalCard)
-                            .padding(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No teammates added yet. Tap '+ Add Friend' above to start splitting.",
-                            style = MaterialTheme.typography.bodyMedium.copy(color = MutedWarmGray)
-                        )
-                    }
-                }
-            } else {
-                items(personBalances, key = { it.person.id }) { pBalance ->
-                    PersonBalanceCard(
-                        personBalance = pBalance,
-                        onSettleUp = { onSettleUp(pBalance.person) },
-                        onViewHistory = { onViewHistory(pBalance.person) },
-                        onDelete = { friendToDelete = pBalance }
-                    )
-                }
-            }
-        } else {
-            // TRIPS & GROUPS LIST
-            item {
-                Spacer(modifier = Modifier.height(2.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Active Trip Groups (${groups.size})",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            color = OffWhiteText,
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Text(
-                            text = "Join",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                color = OffWhiteText,
-                                fontWeight = FontWeight.Bold
-                            ),
-                            modifier = Modifier
-                                .clickable(onClickLabel = "Join a group with an invite") { onJoinGroup() }
-                                .padding(vertical = 12.dp)
-                        )
-                        Text(
-                            text = "+ Create",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                color = WarmAmberPrimary,
-                                fontWeight = FontWeight.Bold
-                            ),
-                            modifier = Modifier
-                                .clickable { onOpenCreateGroup() }
-                                .padding(vertical = 12.dp)
-                        )
-                    }
-                }
-            }
-
-            if (groups.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(CharcoalCard)
-                            .padding(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "No trip groups created yet.",
-                                style = MaterialTheme.typography.titleSmall.copy(
-                                    color = OffWhiteText,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Create a group for your next trip, outing, or apartment to track shared expenses together.",
-                                style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray)
-                            )
+        when (section) {
+            SplitsSection.Friends -> {
+                item(key = "friends_header") {
+                    SectionActions {
+                        TextButton(onClick = onOpenAddFriend, modifier = Modifier.testTag("add_friend_button")) {
+                            Text("Add a friend", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
                         }
                     }
                 }
-            } else {
-                items(groups, key = { it.group.id }) { groupItem ->
-                    GroupCard(
-                        groupDetails = groupItem,
-                        onClick = { onSelectGroup(groupItem) },
-                        onDeleteGroup = { onDeleteGroup(groupItem.group.id) }
+                if (friends.isEmpty()) {
+                    item(key = "friends_empty") {
+                        EmptySection(
+                            title = "No friends yet",
+                            body = "Add the people you split with. They don't need the app; to split across phones, share a group with them.",
+                        )
+                    }
+                }
+                itemsIndexed(friends, key = { _, it -> "friend_${it.person.id}" }) { index, balance ->
+                    FriendRow(
+                        balance = balance,
+                        position = RowPosition.of(index, friends.size),
+                        onOpenHistory = { onViewHistory(balance.person) },
+                        onSettleUp = { onSettleUp(balance.person) },
+                        onDelete = { friendToDelete = balance },
+                        modifier = Modifier.animateItem().padding(top = if (index == 0) 0.dp else 2.dp),
+                    )
+                }
+            }
+            SplitsSection.Groups -> {
+                item(key = "groups_header") {
+                    SectionActions {
+                        TextButton(onClick = onJoinGroup, modifier = Modifier.testTag("join_group_button")) {
+                            Text("Join", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
+                        }
+                        TextButton(onClick = onOpenCreateGroup, modifier = Modifier.testTag("create_group_button")) {
+                            Text("New group", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+                        }
+                    }
+                }
+                if (groups.isEmpty()) {
+                    item(key = "groups_empty") {
+                        EmptySection(
+                            title = "No groups yet",
+                            body = "Make one for a trip or a flat. A shared group keeps everyone you invite in sync; join one with the code a friend sends.",
+                        )
+                    }
+                }
+                items(groups, key = { "group_${it.group.id}" }) { details ->
+                    TripCard(
+                        details = details,
+                        onOpen = { onSelectGroup(details) },
+                        onDelete = { onDeleteGroup(details.group.id) },
+                        modifier = Modifier.animateItem().padding(bottom = Spacing.m),
                     )
                 }
             }
         }
+    }
+}
+
+/**
+ * The page's answer in two numbers, and what to do about them: see the fewest payments that clear
+ * everything, or log money lent outside an expense.
+ */
+@Composable
+private fun BalanceSummary(
+    owedToMe: Double,
+    iOwe: Double,
+    onOpenSimplifyDebts: () -> Unit,
+    onOpenIou: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+            SummaryFigure("Owed to you", owedToMe, ChartreuseSecondary, Modifier.weight(1f))
+            Box(Modifier.padding(horizontal = Spacing.xl).width(1.dp).fillMaxHeight().background(CharcoalBorder))
+            SummaryFigure("You owe", iOwe, OffWhiteText, Modifier.weight(1f))
+        }
+        Row(Modifier.padding(top = Spacing.s).offset(x = -Spacing.m)) {
+            if (owedToMe >= 0.005 || iOwe >= 0.005) {
+                TextButton(onClick = onOpenSimplifyDebts, modifier = Modifier.testTag("simplify_debts_button")) {
+                    Text("See who pays whom", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+                }
+            }
+            TextButton(onClick = onOpenIou, modifier = Modifier.testTag("record_iou_button")) {
+                Text("Log an IOU", style = MaterialTheme.typography.labelLarge, color = MutedWarmGray)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SummaryFigure(label: String, amount: Double, color: androidx.compose.ui.graphics.Color, modifier: Modifier) {
+    Column(modifier.semantics(mergeDescendants = true) {}) {
+        Text(label.uppercase(), style = EyebrowText)
+        // Half the width holds about nine characters at the large size; lakh-scale totals step down.
+        AnimatedRollingNumber(
+            targetValue = amount,
+            style = if (Money.format(amount).length > 9) MoneyText.title else MoneyText.large,
+            color = color,
+        )
+    }
+}
+
+/** A section's create actions, at the end. The Friends | Groups control above already names it. */
+@Composable
+private fun SectionActions(actions: @Composable () -> Unit) {
+    Row(
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(top = Spacing.s, bottom = Spacing.xs),
+    ) {
+        actions()
+    }
+}
+
+@Composable
+private fun EmptySection(title: String, body: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(KpShapes.large)
+            .background(CharcoalCard)
+            .padding(Spacing.xl),
+    ) {
+        Text(title, style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(Spacing.xs))
+        Text(body, style = MaterialTheme.typography.bodyMedium)
     }
 }

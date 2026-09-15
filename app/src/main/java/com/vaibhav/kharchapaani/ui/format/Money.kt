@@ -38,9 +38,15 @@ object Money {
         return "$sign₹${digits(rounded)}"
     }
 
-    /** An amount for an editable text field: no ₹, no grouping, no trailing zeros ("33.33", "35"). */
+    /** A number for an editable text field: no ₹, no grouping, no trailing zeros ("33.33", "35", "12.5"). */
     fun input(amount: Double): String =
         BigDecimal.valueOf(roundPaisa(amount)).stripTrailingZeros().toPlainString()
+
+    /** Money prefilled into an amount field: whole rupees bare, paisa to two places ("1250", "1250.50"). */
+    fun editable(amount: Double): String {
+        val paisa = BigDecimal.valueOf(roundPaisa(amount))
+        return if (paisa.stripTrailingZeros().scale() <= 0) paisa.setScale(0).toPlainString() else paisa.setScale(2).toPlainString()
+    }
 
     private fun groupIndian(value: Long): String {
         val s = value.toString()
