@@ -7,6 +7,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.hasScrollToKeyAction
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -72,6 +74,12 @@ class InsightsMonthPickerTest {
         absent.forEach { composeTestRule.onNodeWithTag("category_row_$it").assertDoesNotExist() }
     }
 
+    // Stat tiles set their labels in capitals, and the highlights row may not be composed until scrolled to.
+    private fun assertPerDayLabel(label: String) {
+        composeTestRule.onNode(hasScrollToKeyAction()).performScrollToKey("highlights")
+        composeTestRule.onNodeWithText(label).assertExists()
+    }
+
     @Test
     fun `opens on this month, which can't step forward`() {
         showInsights()
@@ -91,7 +99,7 @@ class InsightsMonthPickerTest {
         composeTestRule.onNodeWithTag("month_label").assertTextEquals("August 2026")
         composeTestRule.onNodeWithTag("month_next").assertIsEnabled()
         assertCategories(present = listOf("Shopping"), absent = listOf("Rent", "Food", "Health"))
-        composeTestRule.onNodeWithText("Per day").performScrollTo()
+        assertPerDayLabel("PER DAY")
     }
 
     @Test
@@ -115,7 +123,7 @@ class InsightsMonthPickerTest {
 
         composeTestRule.onNodeWithTag("month_label").assertTextEquals("September 2026")
         assertCategories(present = listOf("Rent", "Food"), absent = listOf("Shopping", "Health"))
-        composeTestRule.onNodeWithText("Per day so far").performScrollTo()
+        assertPerDayLabel("PER DAY SO FAR")
     }
 
     @Test
