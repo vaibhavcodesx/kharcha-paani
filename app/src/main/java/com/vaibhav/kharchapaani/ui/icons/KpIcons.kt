@@ -44,6 +44,85 @@ object KpIcons {
         line("M12 5v14M5 12h14", width = 2.25f)
     }
 
+    // Capture and actions
+
+    val Mic = kpIcon("Mic") {
+        tone("M9 5.5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0z")
+        line("M9 5.5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0z")
+        line("M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6")
+    }
+
+    /** A bill inside a viewfinder. */
+    val Scan = kpIcon("Scan") {
+        tone("M8.5 7h7v10l-1.75-1-1.75 1-1.75-1-1.75 1z")
+        line("M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2")
+        line("M8.5 7h7v10l-1.75-1-1.75 1-1.75-1-1.75 1z")
+    }
+
+    /** A bank statement page. */
+    val Statement = kpIcon("Statement") {
+        tone("M7.5 3H14l4 4v12.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19.5v-15A1.5 1.5 0 0 1 7.5 3z")
+        line("M7.5 3H14l4 4v12.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19.5v-15A1.5 1.5 0 0 1 7.5 3z")
+        line("M14 3v4h4M9 12h6M9 15.5h4")
+    }
+
+    /** Money going to someone: a coin and an arrow out. */
+    val Lend = kpIcon("Lend") {
+        tone("M3.5 12a5.5 5.5 0 1 0 11 0a5.5 5.5 0 1 0-11 0z")
+        line("M3.5 12a5.5 5.5 0 1 0 11 0a5.5 5.5 0 1 0-11 0z")
+        line("M16.5 12H21M18.5 9.5L21 12l-2.5 2.5")
+    }
+
+    /** Money that went both ways and evened out. */
+    val Settle = kpIcon("Settle") {
+        line("M4 8.5h14M14.5 5L18 8.5 14.5 12")
+        line("M20 15.5H6M9.5 12L6 15.5 9.5 19")
+    }
+
+    val Write = kpIcon("Write") {
+        tone("M4 20l1-4L15.5 5.5a2.1 2.1 0 0 1 3 3L8 19z")
+        line("M4 20l1-4L15.5 5.5a2.1 2.1 0 0 1 3 3L8 19z")
+        line("M13.5 7.5l3 3")
+    }
+
+    val Send = kpIcon("Send") {
+        line("M12 19V5M6 11l6-6 6 6", width = 2.25f)
+    }
+
+    val Search = kpIcon("Search") {
+        tone("M4.5 10.5a6 6 0 1 0 12 0a6 6 0 1 0-12 0z")
+        line("M4.5 10.5a6 6 0 1 0 12 0a6 6 0 1 0-12 0z")
+        line("M15 15l5 5")
+    }
+
+    val Calendar = kpIcon("Calendar") {
+        tone("M4 6.5A1.5 1.5 0 0 1 5.5 5h13A1.5 1.5 0 0 1 20 6.5V10H4z")
+        line("M5.5 5h13A1.5 1.5 0 0 1 20 6.5v12a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-12A1.5 1.5 0 0 1 5.5 5z")
+        line("M8 3v4M16 3v4M4 10h16")
+    }
+
+    val Close = kpIcon("Close") {
+        line("M6.5 6.5l11 11M17.5 6.5l-11 11")
+    }
+
+    val Check = kpIcon("Check") {
+        line("M5 12.5l4.5 4.5L19 7.5", width = 2.25f)
+    }
+
+    val Delete = kpIcon("Delete") {
+        tone("M6.5 7h11l-.9 11.6a1.5 1.5 0 0 1-1.5 1.4H8.9a1.5 1.5 0 0 1-1.5-1.4z")
+        line("M5 7h14M9.5 7V5.5A1.5 1.5 0 0 1 11 4h2a1.5 1.5 0 0 1 1.5 1.5V7")
+        line("M6.5 7l.9 11.6a1.5 1.5 0 0 0 1.5 1.4h6.2a1.5 1.5 0 0 0 1.5-1.4L17.5 7M10.5 11v5M13.5 11v5")
+    }
+
+    val More = kpIcon("More") {
+        solid("M4.25 12a1.75 1.75 0 1 0 3.5 0a1.75 1.75 0 1 0-3.5 0zM10.25 12a1.75 1.75 0 1 0 3.5 0a1.75 1.75 0 1 0-3.5 0zM16.25 12a1.75 1.75 0 1 0 3.5 0a1.75 1.75 0 1 0-3.5 0z")
+    }
+
+    val ChevronDown = kpIcon("ChevronDown") {
+        line("M6 9.5l6 6 6-6")
+    }
+
     // Categories
 
     val Food = kpIcon("Food") {
