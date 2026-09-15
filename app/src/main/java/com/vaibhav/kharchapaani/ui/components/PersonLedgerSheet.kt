@@ -84,16 +84,7 @@ fun PersonLedgerSheet(
         sheetState = sheetState,
         containerColor = CharcoalSurface,
         contentColor = OffWhiteText,
-        dragHandle = {
-            Box(
-                modifier = Modifier
-                    .padding(vertical = 12.dp)
-                    .width(40.dp)
-                    .height(4.dp)
-                    .clip(CircleShape)
-                    .background(CharcoalBorder)
-            )
-        }
+        dragHandle = { SheetHandle() }
     ) {
         Column(
             modifier = Modifier

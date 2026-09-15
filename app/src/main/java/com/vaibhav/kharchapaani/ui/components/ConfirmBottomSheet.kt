@@ -137,15 +137,7 @@ fun ConfirmBottomSheet(
         containerColor = CharcoalSurface,
         contentColor = OffWhiteText,
         shape = KpShapes.sheet,
-        dragHandle = {
-            Box(
-                Modifier
-                    .padding(vertical = Spacing.m)
-                    .size(width = 36.dp, height = 4.dp)
-                    .clip(SquircleShape(2.dp))
-                    .background(CharcoalBorder)
-            )
-        },
+        dragHandle = { SheetHandle() },
     ) {
         ConfirmSheetContent(
             isParsing = isParsing, isEditing = isEditing, type = type, amount = amount, merchant = merchant,

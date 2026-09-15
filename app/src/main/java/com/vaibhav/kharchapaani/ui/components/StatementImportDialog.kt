@@ -141,16 +141,7 @@ fun StatementImportDialog(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = CharcoalBg,
-        dragHandle = {
-            Box(
-                modifier = Modifier
-                    .padding(vertical = 8.dp)
-                    .width(40.dp)
-                    .height(4.dp)
-                    .clip(CircleShape)
-                    .background(MutedWarmGray.copy(alpha = 0.4f))
-            )
-        },
+        dragHandle = { SheetHandle() },
         modifier = modifier.fillMaxHeight(0.92f)
     ) {
         Column(
