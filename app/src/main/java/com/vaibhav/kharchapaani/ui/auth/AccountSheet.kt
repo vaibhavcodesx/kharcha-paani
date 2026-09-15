@@ -102,6 +102,8 @@ fun AccountSheet(
     onRetryProfile: () -> Unit,
     onSignOut: () -> Unit,
     onDismiss: () -> Unit,
+    upiId: String? = null,
+    onOpenUpi: () -> Unit = {},
 ) {
     KpModalSheet(onDismiss = onDismiss) {
         AccountSheetContent(
@@ -114,6 +116,8 @@ fun AccountSheet(
             onRetryFailedSync = onRetryFailedSync,
             onRetryProfile = onRetryProfile,
             onSignOut = onSignOut,
+            upiId = upiId,
+            onOpenUpi = onOpenUpi,
         )
     }
 }
@@ -131,6 +135,8 @@ fun AccountSheetContent(
     onRetryProfile: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
+    upiId: String? = null,
+    onOpenUpi: () -> Unit = {},
 ) {
     val saved = (state.profile as? ProfileState.Loaded)?.profile
     // Keyed on what's saved, so a successful save (or a reload) resets the fields to it.
@@ -254,9 +260,17 @@ fun AccountSheetContent(
         Eyebrow("Settings")
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             SettingRow(
+                title = "UPI ID for getting paid",
+                detail = upiId ?: "Add yours so friends can scan to pay you",
+                position = RowPosition.First,
+                modifier = Modifier.clickable(onClickLabel = "Set up UPI", onClick = onOpenUpi).testTag("setting_upi"),
+            ) {
+                Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
+            }
+            SettingRow(
                 title = "Ask before discarding an entry",
                 detail = "When you close a half-filled expense",
-                position = RowPosition.First,
+                position = RowPosition.Middle,
                 modifier = Modifier
                     .toggleable(value = askBeforeDiscarding, role = Role.Switch, onValueChange = onAskBeforeDiscardingChange)
                     .testTag("setting_ask_before_discarding"),

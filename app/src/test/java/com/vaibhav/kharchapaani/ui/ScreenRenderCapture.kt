@@ -228,6 +228,32 @@ class ScreenRenderCapture {
     }
 
     @Test
+    fun `settle up with a UPI code`() = capture("settle_up_upi") {
+        Column(Modifier.fillMaxSize().background(CharcoalSurface), horizontalAlignment = Alignment.CenterHorizontally) {
+            SheetHandle()
+            SettleUpContent(
+                person = rohan,
+                suggestedAmount = 1250.5,
+                groupOptions = SharedRecordGroups.Options(emptyList(), emptyList(), involvesGroupmates = false),
+                onCreateGroup = {},
+                onConfirm = { _, _, _, _, _ -> },
+                upiPayee = com.vaibhav.kharchapaani.domain.UpiPayee("vaibhav@okaxis", "Vaibhav"),
+            )
+        }
+    }
+
+    @Test
+    fun `upi sheet`() = capture("upi_sheet") {
+        Column(Modifier.fillMaxSize().background(CharcoalSurface), horizontalAlignment = Alignment.CenterHorizontally) {
+            SheetHandle()
+            com.vaibhav.kharchapaani.ui.components.UpiContent(
+                saved = com.vaibhav.kharchapaani.domain.UpiPayee("vaibhav@okaxis", "Vaibhav Chauhan"),
+                defaultName = "Vaibhav", onSave = {}, onRemove = {},
+            )
+        }
+    }
+
+    @Test
     fun `insights with a category open`() = capture("insights") {
         val food = activity.filterIsInstance<ActivityItem.Transaction>().map { it.fullTransaction }
         InsightsScreen(

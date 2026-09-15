@@ -5,7 +5,9 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.vaibhav.kharchapaani.domain.UpiPayee
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -23,7 +25,28 @@ class AppSettings(context: Context) {
         store.edit { it[ASK_BEFORE_DISCARDING] = ask }
     }
 
+    /** This account's UPI ID and payee name (backlog item 9). Per account, since it's theirs to be paid on. */
+    fun upiPayee(userId: String): Flow<UpiPayee?> = store.data.map { prefs ->
+        val id = prefs[upiIdKey(userId)]
+        val name = prefs[upiNameKey(userId)]
+        if (id != null && name != null) UpiPayee(id, name) else null
+    }
+
+    suspend fun setUpiPayee(userId: String, payee: UpiPayee?) {
+        store.edit { prefs ->
+            if (payee == null) {
+                prefs.remove(upiIdKey(userId))
+                prefs.remove(upiNameKey(userId))
+            } else {
+                prefs[upiIdKey(userId)] = payee.upiId
+                prefs[upiNameKey(userId)] = payee.name
+            }
+        }
+    }
+
     private companion object {
         val ASK_BEFORE_DISCARDING = booleanPreferencesKey("ask_before_discarding")
+        fun upiIdKey(userId: String) = stringPreferencesKey("upi_id_$userId")
+        fun upiNameKey(userId: String) = stringPreferencesKey("upi_name_$userId")
     }
 }

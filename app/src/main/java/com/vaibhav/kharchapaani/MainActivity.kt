@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import com.vaibhav.kharchapaani.ui.components.ExportSheet
+import com.vaibhav.kharchapaani.ui.components.UpiSheet
 import com.vaibhav.kharchapaani.ui.shell.KpSnackbarHost
 import com.vaibhav.kharchapaani.ui.shell.snackbarClearance
 import androidx.compose.foundation.layout.padding
@@ -278,6 +279,8 @@ fun SplitFlowApp(
 ) {
     var isAccountSheetOpen by rememberSaveable { mutableStateOf(false) }
     val askBeforeDiscarding by viewModel.askBeforeDiscarding.collectAsStateWithLifecycle()
+    val upiPayee by viewModel.upiPayee.collectAsStateWithLifecycle()
+    val isUpiOpen by viewModel.isUpiOpen.collectAsStateWithLifecycle()
     val currentTab by viewModel.currentTab.collectAsState()
     val rawTransactions by viewModel.rawTransactions.collectAsState()
     val activityFeed by viewModel.activityFeed.collectAsState()
@@ -476,6 +479,11 @@ fun SplitFlowApp(
             state = authUiState,
             syncStatus = syncStatus,
             askBeforeDiscarding = askBeforeDiscarding,
+            upiId = upiPayee?.upiId,
+            onOpenUpi = {
+                isAccountSheetOpen = false
+                viewModel.openUpi()
+            },
             onSaveProfile = onSaveProfile,
             onAskBeforeDiscardingChange = viewModel::setAskBeforeDiscarding,
             onOpenExport = {
@@ -557,7 +565,17 @@ fun SplitFlowApp(
         onConfirm = { fromId, toId, amt, note, groupId ->
             viewModel.recordSettlementPayment(fromId, toId, amt, note, groupId)
         },
-        onDismiss = { viewModel.dismissSettleUp() }
+        onDismiss = { viewModel.dismissSettleUp() },
+        upiPayee = upiPayee,
+    )
+
+    UpiSheet(
+        isOpen = isUpiOpen,
+        saved = upiPayee,
+        defaultName = authUiState.displayName.orEmpty(),
+        onSave = { viewModel.saveUpi(it) },
+        onRemove = { viewModel.saveUpi(null) },
+        onDismiss = { viewModel.closeUpi() },
     )
 
     // IOU
