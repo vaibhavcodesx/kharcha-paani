@@ -33,11 +33,19 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,6 +78,7 @@ import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.launch
 
 /**
  * The one sheet window every task in the app opens in: full height from the start, the shared grab
@@ -77,19 +86,90 @@ import dev.chrisbanes.haze.rememberHazeState
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun KpModalSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+fun KpModalSheet(
+    onDismiss: () -> Unit,
+    discardGuard: DiscardGuard? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     val focusManager = LocalFocusManager.current
+    val scope = rememberCoroutineScope()
+    val guard by rememberUpdatedState(discardGuard)
+    var askingToDiscard by remember { mutableStateOf(false) }
+    var discarding by remember { mutableStateOf(false) }
+    val mustAsk = { !discarding && guard?.hasUnsavedInput?.invoke() == true }
+
+    // A swipe down or a tap outside is refused while there's something to lose, and asks instead.
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { target ->
+            if (target == SheetValue.Hidden && mustAsk()) {
+                askingToDiscard = true
+                false
+            } else {
+                true
+            }
+        },
+    )
     ModalBottomSheet(
         onDismissRequest = {
-            focusManager.clearFocus()
-            onDismiss()
+            if (mustAsk()) {
+                // Back hides the sheet without asking the state first, so bring it back to ask.
+                askingToDiscard = true
+                scope.launch { sheetState.show() }
+            } else {
+                focusManager.clearFocus()
+                onDismiss()
+            }
         },
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetState = sheetState,
         containerColor = CharcoalSurface,
         contentColor = OffWhiteText,
         shape = KpShapes.sheet,
         dragHandle = { SheetHandle() },
-        content = content,
+    ) {
+        content()
+        val shownGuard = guard
+        if (askingToDiscard && shownGuard != null) {
+            DiscardDialog(
+                guard = shownGuard,
+                onKeepEditing = { askingToDiscard = false },
+                onDiscard = {
+                    askingToDiscard = false
+                    discarding = true
+                    focusManager.clearFocus()
+                    scope.launch { sheetState.hide() }.invokeOnCompletion { onDismiss() }
+                },
+            )
+        }
+    }
+}
+
+/** Makes a sheet ask before closing while [hasUnsavedInput] says closing would lose something. */
+class DiscardGuard(
+    val title: String,
+    val message: String,
+    val hasUnsavedInput: () -> Boolean,
+)
+
+@Composable
+private fun DiscardDialog(guard: DiscardGuard, onKeepEditing: () -> Unit, onDiscard: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onKeepEditing,
+        containerColor = CharcoalSurface,
+        shape = KpShapes.large,
+        title = { Text(guard.title, style = MaterialTheme.typography.headlineMedium) },
+        text = { Text(guard.message, style = MaterialTheme.typography.bodyMedium) },
+        confirmButton = {
+            TextButton(onClick = onDiscard) {
+                Text("Discard", style = MaterialTheme.typography.labelLarge, color = DestructiveText)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onKeepEditing) {
+                Text("Keep editing", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
+            }
+        },
+        titleContentColor = OffWhiteText,
     )
 }
 

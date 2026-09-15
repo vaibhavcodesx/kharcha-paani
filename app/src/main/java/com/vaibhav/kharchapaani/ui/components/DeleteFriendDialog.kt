@@ -67,7 +67,7 @@ fun DeleteFriendDialog(
                 },
                 modifier = Modifier.testTag("confirm_delete_friend_button"),
             ) {
-                Text("Delete", style = MaterialTheme.typography.labelLarge, color = DeleteText)
+                Text("Delete", style = MaterialTheme.typography.labelLarge, color = DestructiveText)
             }
         },
         dismissButton = {
@@ -80,4 +80,4 @@ fun DeleteFriendDialog(
 }
 
 // A light red for text on the dark surface (7.9:1); the swipe reveal's #C62F2F is a fill, too dark for text.
-private val DeleteText = Color(0xFFFF8A80)
+internal val DestructiveText = Color(0xFFFF8A80)

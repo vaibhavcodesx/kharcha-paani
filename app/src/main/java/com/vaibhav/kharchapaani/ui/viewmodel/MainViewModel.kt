@@ -38,6 +38,7 @@ import com.vaibhav.kharchapaani.data.sync.SyncScheduler
 import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
 import com.vaibhav.kharchapaani.domain.ActivityFeed
 import com.vaibhav.kharchapaani.domain.DebtSimplifier
+import com.vaibhav.kharchapaani.domain.EntryDraft
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
@@ -410,8 +411,31 @@ class MainViewModel(
             initSharesForCurrentPeople()
         }
 
+        editBaseline = currentDraft()
         _isConfirmSheetOpen.value = true
     }
+
+    // The expense as it was when its edit opened, to tell whether closing the sheet loses changes.
+    private var editBaseline: EntryDraft? = null
+
+    private fun currentDraft() = EntryDraft(
+        type = _type.value,
+        amount = _amount.value,
+        merchant = _merchant.value,
+        category = _category.value,
+        paymentMethod = _paymentMethod.value,
+        note = _note.value,
+        date = _date.value,
+        groupId = _groupId.value,
+        isSplit = _isSplit.value,
+        splitMode = _splitMode.value,
+        paidByPersonId = _paidByPersonId.value,
+        shares = _shares.value,
+    )
+
+    /** Whether closing the quick-add sheet now would lose what's in it. */
+    fun hasUnsavedEntry(): Boolean =
+        EntryDraft.isUnsaved(currentDraft(), original = editBaseline.takeIf { _editingTransactionId.value != null })
 
     fun parseInputText(rawText: String) {
         if (rawText.isBlank()) return

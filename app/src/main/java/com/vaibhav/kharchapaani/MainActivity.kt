@@ -511,7 +511,8 @@ fun SplitFlowApp(
         onPercentageChange = { id, pct -> viewModel.updateSharePercentage(id, pct) },
         onOpenAddFriend = { viewModel.openAddFriend() },
         onSave = { viewModel.saveCurrentTransaction() },
-        onDismiss = { viewModel.dismissConfirmSheet() }
+        onDismiss = { viewModel.dismissConfirmSheet() },
+        hasUnsavedInput = { viewModel.hasUnsavedEntry() },
     )
 
     // Settle up

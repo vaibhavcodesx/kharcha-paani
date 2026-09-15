@@ -128,11 +128,18 @@ fun ConfirmBottomSheet(
     onPercentageChange: (Long, Double) -> Unit,
     onOpenAddFriend: () -> Unit,
     onSave: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    hasUnsavedInput: () -> Boolean = { false },
 ) {
     if (!isOpen) return
     val focusManager = LocalFocusManager.current
-    KpModalSheet(onDismiss = onDismiss) {
+    val noun = if (type == "income") "income" else "expense"
+    val discardGuard = DiscardGuard(
+        title = if (isEditing) "Discard your changes?" else "Discard this $noun?",
+        message = if (isEditing) "The $noun stays as it was." else "What you've entered won't be saved.",
+        hasUnsavedInput = hasUnsavedInput,
+    )
+    KpModalSheet(onDismiss = onDismiss, discardGuard = discardGuard) {
         ConfirmSheetContent(
             isParsing = isParsing, isEditing = isEditing, notice = notice, type = type, amount = amount, merchant = merchant,
             category = category, paymentMethod = paymentMethod, note = note, date = date, groupId = groupId,
