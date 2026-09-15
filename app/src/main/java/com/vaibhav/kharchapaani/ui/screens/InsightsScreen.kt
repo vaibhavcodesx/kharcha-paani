@@ -62,6 +62,7 @@ import com.vaibhav.kharchapaani.ui.components.CategoryBadge
 import com.vaibhav.kharchapaani.ui.components.CategoryHelper
 import com.vaibhav.kharchapaani.ui.components.RowPosition
 import com.vaibhav.kharchapaani.ui.components.ScreenHeader
+import com.vaibhav.kharchapaani.ui.components.pairedFigureStyle
 import com.vaibhav.kharchapaani.ui.components.shimmerLoading
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.shell.dockClearance
@@ -158,9 +159,10 @@ private fun CashFlow(analytics: MonthlyAnalytics, modifier: Modifier = Modifier)
     val left = analytics.netCashflow
     Column(modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
-            Figure("Spent", analytics.totalExpense, OffWhiteText, Modifier.weight(1f))
+            val style = pairedFigureStyle(analytics.totalExpense, analytics.totalIncome)
+            Figure("Spent", analytics.totalExpense, OffWhiteText, style, Modifier.weight(1f))
             Box(Modifier.padding(horizontal = Spacing.xl).width(1.dp).fillMaxHeight().background(CharcoalBorder))
-            Figure("Came in", analytics.totalIncome, ChartreuseSecondary, Modifier.weight(1f))
+            Figure("Came in", analytics.totalIncome, ChartreuseSecondary, style, Modifier.weight(1f))
         }
         Text(
             text = when {
@@ -176,14 +178,10 @@ private fun CashFlow(analytics: MonthlyAnalytics, modifier: Modifier = Modifier)
 }
 
 @Composable
-private fun Figure(label: String, amount: Double, color: Color, modifier: Modifier) {
+private fun Figure(label: String, amount: Double, color: Color, style: androidx.compose.ui.text.TextStyle, modifier: Modifier) {
     Column(modifier.semantics(mergeDescendants = true) {}) {
         Text(label.uppercase(), style = EyebrowText)
-        AnimatedRollingNumber(
-            targetValue = amount,
-            style = if (Money.format(amount).length > 9) MoneyText.title else MoneyText.large,
-            color = color,
-        )
+        AnimatedRollingNumber(targetValue = amount, style = style, color = color)
     }
 }
 

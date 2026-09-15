@@ -43,6 +43,7 @@ import com.vaibhav.kharchapaani.ui.components.DeleteFriendDialog
 import com.vaibhav.kharchapaani.ui.components.FriendRow
 import com.vaibhav.kharchapaani.ui.components.RowPosition
 import com.vaibhav.kharchapaani.ui.components.ScreenHeader
+import com.vaibhav.kharchapaani.ui.components.pairedFigureStyle
 import com.vaibhav.kharchapaani.ui.components.SegmentedControl
 import com.vaibhav.kharchapaani.ui.components.TripCard
 import com.vaibhav.kharchapaani.ui.shell.dockClearance
@@ -202,9 +203,10 @@ private fun BalanceSummary(
 ) {
     Column(modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
-            SummaryFigure("Owed to you", owedToMe, ChartreuseSecondary, Modifier.weight(1f))
+            val style = pairedFigureStyle(owedToMe, iOwe)
+            SummaryFigure("Owed to you", owedToMe, ChartreuseSecondary, style, Modifier.weight(1f))
             Box(Modifier.padding(horizontal = Spacing.xl).width(1.dp).fillMaxHeight().background(CharcoalBorder))
-            SummaryFigure("You owe", iOwe, OffWhiteText, Modifier.weight(1f))
+            SummaryFigure("You owe", iOwe, OffWhiteText, style, Modifier.weight(1f))
         }
         Row(Modifier.padding(top = Spacing.s).offset(x = -Spacing.m)) {
             if (owedToMe >= 0.005 || iOwe >= 0.005) {
@@ -220,15 +222,10 @@ private fun BalanceSummary(
 }
 
 @Composable
-private fun SummaryFigure(label: String, amount: Double, color: androidx.compose.ui.graphics.Color, modifier: Modifier) {
+private fun SummaryFigure(label: String, amount: Double, color: androidx.compose.ui.graphics.Color, style: androidx.compose.ui.text.TextStyle, modifier: Modifier) {
     Column(modifier.semantics(mergeDescendants = true) {}) {
         Text(label.uppercase(), style = EyebrowText)
-        // Half the width holds about nine characters at the large size; lakh-scale totals step down.
-        AnimatedRollingNumber(
-            targetValue = amount,
-            style = if (Money.format(amount).length > 9) MoneyText.title else MoneyText.large,
-            color = color,
-        )
+        AnimatedRollingNumber(targetValue = amount, style = style, color = color)
     }
 }
 

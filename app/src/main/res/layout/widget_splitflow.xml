@@ -52,17 +52,26 @@
             android:textSize="12sp" />
     </LinearLayout>
 
-    <LinearLayout
+    <!-- The two figures sit centred in the space, with their labels on one baseline (centring each
+         column on its own put CAME IN lower than SPENT THIS MONTH). -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:gravity="center_vertical"
+        android:layout_weight="1">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:baselineAligned="true"
+        android:gravity="top"
         android:orientation="horizontal">
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:baselineAlignedChildIndex="0"
             android:orientation="vertical">
 
             <TextView
@@ -89,6 +98,7 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:baselineAlignedChildIndex="0"
             android:gravity="end"
             android:orientation="vertical">
 
@@ -113,6 +123,7 @@
                 android:textSize="18sp" />
         </LinearLayout>
     </LinearLayout>
+    </FrameLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
