@@ -5,11 +5,15 @@ object ProfileEdit {
 
     const val MAX_NAME_LENGTH = 40
 
-    /** Friendly faces and things, picked to read at 30dp in a member stack. Null means initials. */
+    /**
+     * Friendly faces and things, picked to read at 30dp in a member stack. Null means initials. All are
+     * Emoji 3.0 or older, so they draw on Android 7 (minSdk 24) without a downloaded emoji font; 🧋 and
+     * 🥳 didn't.
+     */
     val avatarEmoji: List<String> = listOf(
-        "😎", "🤓", "🥳", "😇", "🤠", "🧐", "😺", "🐶",
+        "😎", "🤓", "😜", "😇", "🤠", "🙃", "😺", "🐶",
         "🦊", "🐼", "🐯", "🦁", "🐸", "🐵", "🦄", "🐙",
-        "🌻", "🌈", "🔥", "⚡", "🍕", "🍩", "☕", "🧋",
+        "🌻", "🌈", "🔥", "⚡", "🍕", "🍩", "☕", "🍉",
         "⚽", "🏏", "🎸", "🎮", "✈️", "🏍️", "🚀", "🌍",
     )
 
