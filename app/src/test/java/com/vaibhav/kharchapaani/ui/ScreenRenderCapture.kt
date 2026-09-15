@@ -31,12 +31,14 @@ import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.data.model.ActivityItem
 import com.vaibhav.kharchapaani.data.model.FullTransaction
+import com.vaibhav.kharchapaani.data.model.CategorySummary
 import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
 import com.vaibhav.kharchapaani.data.model.ShareInput
 import com.vaibhav.kharchapaani.data.model.SplitMode
 import com.vaibhav.kharchapaani.ui.components.ConfirmSheetContent
 import com.vaibhav.kharchapaani.ui.components.SheetHandle
 import com.vaibhav.kharchapaani.ui.screens.HomeScreen
+import com.vaibhav.kharchapaani.ui.screens.InsightsScreen
 import com.vaibhav.kharchapaani.ui.shell.AppTab
 import com.vaibhav.kharchapaani.ui.shell.KpDock
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
@@ -171,6 +173,60 @@ class ScreenRenderCapture {
                 onConfirm = { _, _, _, _, _ -> },
             )
         }
+    }
+
+    @Test
+    fun `insights with a category open`() = capture("insights") {
+        val food = activity.filterIsInstance<ActivityItem.Transaction>().map { it.fullTransaction }
+        InsightsScreen(
+            analytics = MonthlyAnalytics(
+                totalExpense = 18420.25, totalIncome = 42000.0, netCashflow = 23579.75,
+                categorySummaries = listOf(
+                    CategorySummary("Bills", 6840.75, 37.1f, 4),
+                    CategorySummary("Food", 5120.5, 27.8f, 23),
+                    CategorySummary("Entertainment", 3600.0, 19.5f, 3),
+                    CategorySummary("Transport", 1959.0, 10.6f, 14),
+                    CategorySummary("Shopping", 900.0, 4.9f, 2),
+                ),
+                topMerchant = "Swiggy", dailyStreak = 6,
+            ),
+            transactions = food, aiSummary = null, isGeneratingSummary = false,
+            onGenerateAiSummary = {}, onExportCsv = {}, today = today,
+        )
+    }
+
+    /** The widget's real layout, inflated the way the launcher does, at a 4x2 size. */
+    @Test
+    fun `home screen widget`() {
+        val context: android.content.Context = org.robolectric.RuntimeEnvironment.getApplication()
+        val density = context.resources.displayMetrics.density
+        val parent = android.widget.FrameLayout(context)
+        val widget = android.view.LayoutInflater.from(context).inflate(com.vaibhav.kharchapaani.R.layout.widget_splitflow, parent, false)
+        val summary = com.vaibhav.kharchapaani.widget.WidgetSummary.of(18420.25, 42000.0, 2450.5)
+        widget.findViewById<android.widget.TextView>(com.vaibhav.kharchapaani.R.id.widget_month_spent).text = summary.spent
+        widget.findViewById<android.widget.TextView>(com.vaibhav.kharchapaani.R.id.widget_month_income).text = summary.income
+        widget.findViewById<android.widget.TextView>(com.vaibhav.kharchapaani.R.id.widget_net_owed_badge).apply {
+            text = summary.balance
+            setTextColor(summary.balanceColor)
+        }
+        val width = (340 * density).toInt()
+        val height = (170 * density).toInt()
+        val backdrop = (16 * density).toInt()
+        widget.measure(
+            android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
+            android.view.View.MeasureSpec.makeMeasureSpec(height, android.view.View.MeasureSpec.EXACTLY),
+        )
+        widget.layout(0, 0, width, height)
+        // A plain wallpaper-ish backdrop around it, so the rounded corners and border show.
+        val image = Bitmap.createBitmap(width + backdrop * 2, height + backdrop * 2, Bitmap.Config.ARGB_8888)
+        Canvas(image).apply {
+            drawColor(0xFF3A4A5C.toInt())
+            translate(backdrop.toFloat(), backdrop.toFloat())
+            widget.draw(this)
+        }
+        val out = File("build/test-results/testDebugUnitTest/screens/widget.png").apply { parentFile?.mkdirs() }
+        out.outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        assertTrue(out.length() > 0)
     }
 
     @Composable
