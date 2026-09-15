@@ -123,6 +123,7 @@ dependencies {
   implementation(libs.supabase.auth)
   implementation(libs.supabase.postgrest)
   implementation(libs.supabase.realtime)
+  implementation(libs.haze)
   implementation(libs.ktor.client.okhttp)
   implementation(libs.multiplatform.settings)
   implementation(libs.androidx.work.runtime)

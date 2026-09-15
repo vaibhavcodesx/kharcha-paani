@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vaibhav.kharchapaani.data.model.ActivityItem
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalSurface
@@ -104,7 +105,7 @@ fun SettlementItemCard(
                 Text(text = detail, style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray), maxLines = 1)
             }
             Text(
-                text = (if (outgoing) "-" else if (incoming) "+" else "") + "₹" + String.format(Locale.US, "%,.2f", settlement.amount).removeSuffix(".00"),
+                text = (if (outgoing) "-" else if (incoming) "+" else "") + Money.format(settlement.amount),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = accent, fontFamily = numericFontFamily),
             )
             if (item.involvesMe) {

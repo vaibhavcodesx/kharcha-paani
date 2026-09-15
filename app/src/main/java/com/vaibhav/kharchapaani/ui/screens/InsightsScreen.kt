@@ -88,6 +88,7 @@ import com.vaibhav.kharchapaani.ui.components.AnimatedRollingNumber
 import com.vaibhav.kharchapaani.ui.components.CategoryHelper
 import com.vaibhav.kharchapaani.ui.components.bounceClick
 import com.vaibhav.kharchapaani.ui.components.shimmerLoading
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -413,7 +414,7 @@ fun CashFlowOverviewCard(analytics: MonthlyAnalytics) {
                     }
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "₹${String.format("%.2f", analytics.totalExpense)}",
+                        text = Money.format(analytics.totalExpense),
                         style = MaterialTheme.typography.titleLarge.copy(
                             color = WarmAmberPrimary,
                             fontWeight = FontWeight.Bold
@@ -437,7 +438,7 @@ fun CashFlowOverviewCard(analytics: MonthlyAnalytics) {
                     }
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "₹${String.format("%.2f", analytics.totalIncome)}",
+                        text = Money.format(analytics.totalIncome),
                         style = MaterialTheme.typography.titleLarge.copy(
                             color = ChartreuseSecondary,
                             fontWeight = FontWeight.Bold
@@ -475,7 +476,7 @@ fun CashFlowOverviewCard(analytics: MonthlyAnalytics) {
                 }
 
                 Text(
-                    text = "${if (analytics.netCashflow >= 0) "+" else ""}₹${String.format("%.2f", analytics.netCashflow)}",
+                    text = Money.format(analytics.netCashflow, showPlus = true),
                     style = MaterialTheme.typography.titleMedium.copy(
                         color = if (analytics.netCashflow >= 0) ChartreuseSecondary else WarmAmberPrimary,
                         fontWeight = FontWeight.Bold
@@ -614,7 +615,7 @@ fun DonutPieChartSection(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "₹${String.format("%.0f", highlightedItem?.amount ?: analytics.totalExpense)}",
+                            text = Money.format(highlightedItem?.amount ?: analytics.totalExpense),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 color = if (highlightedItem != null) CategoryHelper.getCategoryColor(highlightedItem.category) else OffWhiteText,
                                 fontWeight = FontWeight.ExtraBold
@@ -622,7 +623,7 @@ fun DonutPieChartSection(
                         )
                         if (highlightedItem != null) {
                             Text(
-                                text = "${String.format("%.1f", highlightedItem.percentage)}%",
+                                text = "${String.format(Locale.US, "%.1f", highlightedItem.percentage)}%",
                                 style = MaterialTheme.typography.labelSmall.copy(color = SubMutedWarmGray)
                             )
                         }
@@ -662,7 +663,7 @@ fun DonutPieChartSection(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "${item.category} (${String.format("%.0f", item.percentage)}%)",
+                                    text = "${item.category} (${String.format(Locale.US, "%.0f", item.percentage)}%)",
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         color = if (isSelected) catColor else OffWhiteText,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
@@ -755,12 +756,12 @@ fun CategoryDrilldownSection(
 
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(
-                                    text = "₹${String.format("%.2f", myShare)}",
+                                    text = Money.format(myShare),
                                     style = MaterialTheme.typography.bodyMedium.copy(color = WarmAmberPrimary, fontWeight = FontWeight.Bold)
                                 )
                                 if (isSplit) {
                                     Text(
-                                        text = "Split bill: ₹${String.format("%.0f", tx.amount)}",
+                                        text = "Split bill: ${Money.format(tx.amount)}",
                                         style = MaterialTheme.typography.bodySmall.copy(color = ChartreuseSecondary, fontSize = 10.sp)
                                     )
                                 }
@@ -926,14 +927,14 @@ fun CategoryBreakdownList(
 
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
-                                text = "₹${String.format("%.2f", catSummary.amount)}",
+                                text = Money.format(catSummary.amount),
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     color = OffWhiteText,
                                     fontWeight = FontWeight.Bold
                                 )
                             )
                             Text(
-                                text = "${String.format("%.1f", catSummary.percentage)}%",
+                                text = "${String.format(Locale.US, "%.1f", catSummary.percentage)}%",
                                 style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray)
                             )
                         }
@@ -1223,7 +1224,7 @@ fun NotionTableView(
 
                             // Total Bill
                             Text(
-                                text = "₹${String.format("%.2f", tx.amount)}",
+                                text = Money.format(tx.amount),
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = if (isIncome) ChartreuseSecondary else OffWhiteText,
                                     fontWeight = FontWeight.SemiBold
@@ -1237,7 +1238,7 @@ fun NotionTableView(
                                 modifier = Modifier.width(105.dp)
                             ) {
                                 Text(
-                                    text = "₹${String.format("%.2f", myShare)}",
+                                    text = Money.format(myShare),
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         color = if (split != null) ChartreuseSecondary else WarmAmberPrimary,
                                         fontWeight = FontWeight.Bold
@@ -1293,12 +1294,12 @@ fun NotionTableView(
                             modifier = Modifier.width(400.dp)
                         )
                         Text(
-                            text = "₹${String.format("%.0f", totalBillSum)}",
+                            text = Money.format(totalBillSum),
                             style = MaterialTheme.typography.bodySmall.copy(color = OffWhiteText, fontWeight = FontWeight.Bold),
                             modifier = Modifier.width(100.dp)
                         )
                         Text(
-                            text = "₹${String.format("%.0f", totalYourShareSum)}",
+                            text = Money.format(totalYourShareSum),
                             style = MaterialTheme.typography.bodySmall.copy(color = ChartreuseSecondary, fontWeight = FontWeight.Bold),
                             modifier = Modifier.width(105.dp)
                         )

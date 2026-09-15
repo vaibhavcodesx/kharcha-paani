@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.model.ShareInput
 import com.vaibhav.kharchapaani.data.model.SplitMode
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
@@ -862,7 +863,7 @@ fun ConfirmBottomSheet(
                                             when (splitMode) {
                                                 SplitMode.EQUAL -> {
                                                     Text(
-                                                        text = "₹${String.format(Locale.US, "%.0f", share.amount)}",
+                                                        text = Money.format(share.amount),
                                                         style = MaterialTheme.typography.labelLarge.copy(
                                                             color = WarmAmberPrimary,
                                                             fontWeight = FontWeight.Bold,
@@ -872,7 +873,7 @@ fun ConfirmBottomSheet(
                                                 }
                                                 SplitMode.EXACT -> {
                                                     OutlinedTextField(
-                                                        value = if (share.amount > 0) String.format(Locale.US, "%.0f", share.amount) else "",
+                                                        value = if (share.amount > 0) Money.input(share.amount) else "",
                                                         onValueChange = {
                                                             val exactVal = it.toDoubleOrNull() ?: 0.0
                                                             onExactAmountChange(share.personId, exactVal)
@@ -896,7 +897,7 @@ fun ConfirmBottomSheet(
                                                 }
                                                 SplitMode.PERCENTAGE -> {
                                                     OutlinedTextField(
-                                                        value = if (share.percentage > 0) String.format(Locale.US, "%.0f", share.percentage) else "",
+                                                        value = if (share.percentage > 0) Money.input(share.percentage) else "",
                                                         onValueChange = {
                                                             val pctVal = it.toDoubleOrNull() ?: 0.0
                                                             onPercentageChange(share.personId, pctVal)
@@ -930,7 +931,7 @@ fun ConfirmBottomSheet(
                                     if (abs(diff) > 0.01) {
                                         Spacer(modifier = Modifier.height(6.dp))
                                         Text(
-                                            text = if (diff > 0) "₹${String.format(Locale.US, "%.2f", diff)} remaining to allocate" else "₹${String.format(Locale.US, "%.2f", -diff)} over total amount",
+                                            text = if (diff > 0) "${Money.format(diff)} remaining to allocate" else "${Money.format(-diff)} over total amount",
                                             style = MaterialTheme.typography.labelSmall.copy(color = WarmAmberPrimary)
                                         )
                                     }

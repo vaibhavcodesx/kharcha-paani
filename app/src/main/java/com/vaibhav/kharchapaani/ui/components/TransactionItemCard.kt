@@ -34,9 +34,11 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vaibhav.kharchapaani.data.model.FullTransaction
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
@@ -67,7 +70,8 @@ fun TransactionItemCard(
     fullTx: FullTransaction,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isReadOnly: Boolean = false,
 ) {
     val tx = fullTx.transaction
     val isIncome = tx.type == "income"
@@ -90,24 +94,27 @@ fun TransactionItemCard(
         }
     }
 
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { dismissValue ->
-            when (dismissValue) {
-                SwipeToDismissBoxValue.EndToStart -> {
-                    onDelete()
-                    true
-                }
-                SwipeToDismissBoxValue.StartToEnd -> {
-                    onEdit()
-                    false
-                }
-                SwipeToDismissBoxValue.Settled -> false
+    val currentOnEdit by rememberUpdatedState(onEdit)
+    val currentOnDelete by rememberUpdatedState(onDelete)
+    val dismissState = rememberSwipeToDismissBoxState()
+    // Act once the row has settled: confirmValueChange can run more than once per swipe, which
+    // deleted the same expense twice.
+    LaunchedEffect(dismissState.currentValue) {
+        when (dismissState.currentValue) {
+            SwipeToDismissBoxValue.EndToStart -> currentOnDelete()
+            SwipeToDismissBoxValue.StartToEnd -> {
+                currentOnEdit()
+                dismissState.reset()
             }
+            SwipeToDismissBoxValue.Settled -> Unit
         }
-    )
+    }
 
+    // A row the ledger won't delete must not swipe away as if it had been deleted.
     SwipeToDismissBox(
         state = dismissState,
+        enableDismissFromStartToEnd = !isReadOnly,
+        enableDismissFromEndToStart = !isReadOnly,
         modifier = modifier.clip(RoundedCornerShape(16.dp)),
         backgroundContent = {
             val direction = dismissState.dismissDirection
@@ -261,7 +268,7 @@ fun TransactionItemCard(
                     val amountColor = if (isIncome) ChartreuseSecondary else WarmAmberPrimary
 
                     Text(
-                        text = "$sign₹${String.format(Locale.US, "%.0f", displayAmount)}",
+                        text = "$sign${Money.format(displayAmount)}",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.ExtraBold,
                             color = amountColor,
@@ -272,7 +279,7 @@ fun TransactionItemCard(
 
                     if (fullTx.split != null) {
                         Text(
-                            text = "Total: ₹${String.format(Locale.US, "%.0f", tx.amount)}",
+                            text = "Total: ${Money.format(tx.amount)}",
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = SubMutedWarmGray,
                                 fontSize = 10.sp,
@@ -282,8 +289,8 @@ fun TransactionItemCard(
                     }
                 }
 
-                // Options Menu Button
-                Box {
+                // Options Menu Button: nothing to offer on a read-only row.
+                if (!isReadOnly) Box {
                     IconButton(
                         onClick = { showMenu = true },
                         modifier = Modifier.size(28.dp)

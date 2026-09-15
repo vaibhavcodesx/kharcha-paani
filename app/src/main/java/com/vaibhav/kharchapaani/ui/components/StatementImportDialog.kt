@@ -75,6 +75,7 @@ import androidx.compose.ui.unit.sp
 import com.vaibhav.kharchapaani.data.model.StatementMonthGroup
 import com.vaibhav.kharchapaani.data.model.StatementParseResult
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -270,7 +271,7 @@ fun StatementImportDialog(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            "-₹${String.format("%.0f", totalExpenseSelected)}",
+                            "-${Money.format(totalExpenseSelected)}",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 color = WarmAmberPrimary,
                                 fontWeight = FontWeight.Bold
@@ -300,7 +301,7 @@ fun StatementImportDialog(
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                "+₹${String.format("%.0f", totalIncomeSelected)}",
+                                "+${Money.format(totalIncomeSelected)}",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     color = ChartreuseSecondary,
                                     fontWeight = FontWeight.Bold
@@ -416,7 +417,7 @@ fun StatementImportDialog(
                                             )
                                         )
                                         Text(
-                                            text = "${currentMonthItems.count { it.isSelected }}/${currentMonthItems.size} items • ₹${String.format("%.0f", monthExpense)} spent",
+                                            text = "${currentMonthItems.count { it.isSelected }}/${currentMonthItems.size} items • ${Money.format(monthExpense)} spent",
                                             style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray)
                                         )
                                     }
@@ -678,7 +679,7 @@ fun StatementTransactionRow(
         Column(horizontalAlignment = Alignment.End) {
             val isIncome = item.type.equals("income", ignoreCase = true)
             Text(
-                text = "${if (isIncome) "+₹" else "-₹"}${String.format("%.2f", item.amount)}",
+                text = "${if (isIncome) "+" else "-"}${Money.format(item.amount)}",
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = if (isIncome) ChartreuseSecondary else WarmAmberPrimary,
                     fontWeight = FontWeight.Bold

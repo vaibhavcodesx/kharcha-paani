@@ -3,6 +3,7 @@ package com.vaibhav.kharchapaani.domain
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
+import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.data.model.ActivityItem
 import com.vaibhav.kharchapaani.data.model.FullTransaction
@@ -53,6 +54,20 @@ class ActivityFeedTest {
         assertEquals(listOf("tx_1"), feed(filter = ActivityFeed.EXPENSES).map { it.key })
         assertEquals(listOf("tx_3"), feed(filter = ActivityFeed.INCOME).map { it.key })
         assertEquals(listOf("settlement_12", "settlement_10", "settlement_11", "tx_2"), feed(filter = ActivityFeed.SPLITS).map { it.key })
+    }
+
+    @Test
+    fun `groupmates' expenses and expenses in archived groups are read-only`() {
+        val archived = GroupEntity(id = 8, name = "Old trip", syncState = SyncState.SYNCED, archivedAt = 1L)
+        val mine = expense(20, 10, "Mine")
+        val theirs = expense(21, 20, "Theirs").let { it.copy(transaction = it.transaction.copy(ownerProfileId = "bob")) }
+        val inArchived = expense(22, 30, "Archived").let { it.copy(transaction = it.transaction.copy(groupId = 8)) }
+
+        val readOnly = ActivityFeed.build(listOf(mine, theirs, inArchived), emptyList(), emptyList(), listOf(archived), "", ActivityFeed.ALL)
+            .filterIsInstance<ActivityItem.Transaction>()
+            .associate { it.fullTransaction.transaction.merchant to it.isReadOnly }
+
+        assertEquals(mapOf("Mine" to false, "Theirs" to true, "Archived" to true), readOnly)
     }
 
     @Test

@@ -8,7 +8,8 @@ sealed interface ActivityItem {
     val date: Long
     val createdAt: Long
 
-    data class Transaction(val fullTransaction: FullTransaction) : ActivityItem {
+    /** [isReadOnly]: a groupmate added it, or its shared group is archived; it can't be edited or deleted here. */
+    data class Transaction(val fullTransaction: FullTransaction, val isReadOnly: Boolean = false) : ActivityItem {
         override val key get() = "tx_${fullTransaction.transaction.id}"
         override val date get() = fullTransaction.transaction.date
         override val createdAt get() = fullTransaction.transaction.createdAt

@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.vaibhav.kharchapaani.data.model.SimplifiedDebt
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -190,7 +191,7 @@ fun SimplifyDebtsDialog(
                                 }
 
                                 Text(
-                                    text = "₹${String.format("%.2f", debt.amount)}",
+                                    text = Money.format(debt.amount),
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         color = ChartreuseSecondary,
                                         fontWeight = FontWeight.Bold

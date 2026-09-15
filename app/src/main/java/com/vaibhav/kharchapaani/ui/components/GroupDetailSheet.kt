@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vaibhav.kharchapaani.data.model.FullTransaction
 import com.vaibhav.kharchapaani.data.model.GroupWithDetails
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -286,7 +287,7 @@ fun GroupDetailSheet(
 
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text(
-                                        text = "₹${String.format(Locale.US, "%.0f", tx.amount)}",
+                                        text = Money.format(tx.amount),
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             fontWeight = FontWeight.Bold,
                                             color = OffWhiteText,
@@ -294,7 +295,7 @@ fun GroupDetailSheet(
                                         )
                                     )
                                     Text(
-                                        text = "Your share: ₹${String.format(Locale.US, "%.0f", fullTx.myPersonalShare)}",
+                                        text = "Your share: ${Money.format(fullTx.myPersonalShare)}",
                                         style = MaterialTheme.typography.bodySmall.copy(
                                             color = WarmAmberPrimary,
                                             fontWeight = FontWeight.SemiBold

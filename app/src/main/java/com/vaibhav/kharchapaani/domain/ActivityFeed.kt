@@ -24,6 +24,7 @@ object ActivityFeed {
     ): List<ActivityItem> {
         val names = people.associate { it.id to it.name }
         val groupNames = groups.associate { it.id to it.name }
+        val archivedSharedGroups = groups.filter { it.isShared && it.isArchived }.map { it.id }.toSet()
         fun nameOf(id: Long) = if (id == ME) "You" else names[id] ?: "Friend"
 
         val transactionItems = transactions
@@ -41,7 +42,7 @@ object ActivityFeed {
                 }
                 matchesQuery && matchesFilter
             }
-            .map { ActivityItem.Transaction(it) }
+            .map { ActivityItem.Transaction(it, isReadOnly = !it.transaction.isOwnedByMe || it.transaction.groupId in archivedSharedGroups) }
 
         // Settlements and IOUs are money moving between people, so they belong with splits, not
         // with personal expenses or income.
