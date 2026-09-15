@@ -40,6 +40,7 @@ import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
+import kotlin.math.floor
 
 /** The QR modules for [text]; the 4-module quiet zone scanners need is included. */
 internal fun qrMatrix(text: String): BitMatrix =
@@ -62,11 +63,13 @@ fun QrCode(text: String, contentDescription: String, modifier: Modifier = Modifi
             .background(Color.White)
             .semantics { this.contentDescription = contentDescription },
     ) {
-        val cell = this.size.width / matrix.width
+        // Whole pixels per module, centred: fractional cells drew uneven, blurry modules that cheap
+        // cameras misread.
+        val cell = floor(this.size.width / matrix.width)
+        val inset = floor((this.size.width - cell * matrix.width) / 2)
         for (y in 0 until matrix.height) {
             for (x in 0 until matrix.width) {
-                // A hair over one cell, so anti-aliased edges don't leave white seams between modules.
-                if (matrix[x, y]) drawRect(Color.Black, Offset(x * cell, y * cell), Size(cell + 0.5f, cell + 0.5f))
+                if (matrix[x, y]) drawRect(Color.Black, Offset(inset + x * cell, inset + y * cell), Size(cell, cell))
             }
         }
     }
