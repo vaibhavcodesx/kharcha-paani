@@ -738,7 +738,7 @@ fun StatementParsingLoadingDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Gemini AI is reading transactions, categorizing expenses, and sorting dates into respective months...",
+                    text = "Reading your statement and sorting entries by month…",
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = SubMutedWarmGray,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center

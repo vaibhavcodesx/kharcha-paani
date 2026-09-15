@@ -28,6 +28,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import com.vaibhav.kharchapaani.ui.sync.SyncBadge
+import com.vaibhav.kharchapaani.ui.sync.SyncBadgeOverlay
+import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
 import com.vaibhav.kharchapaani.ui.components.AnimatedRollingNumber
@@ -54,6 +58,7 @@ fun BalanceHeader(
     onOpenAccount: () -> Unit,
     onOpenSimplifyDebts: () -> Unit,
     modifier: Modifier = Modifier,
+    syncStatus: SyncStatus = SyncStatus(),
 ) {
     val owedToMe = netBalance >= 0.005
     val iOwe = netBalance <= -0.005
@@ -72,7 +77,7 @@ fun BalanceHeader(
                     .weight(1f)
                     .semantics { heading() },
             )
-            AccountAvatar(initial = accountInitial, onClick = onOpenAccount)
+            AccountAvatar(initial = accountInitial, syncStatus = syncStatus, onClick = onOpenAccount)
         }
         AnimatedRollingNumber(
             targetValue = abs(netBalance),
@@ -99,9 +104,11 @@ fun BalanceHeader(
 }
 
 @Composable
-private fun AccountAvatar(initial: String, onClick: () -> Unit) {
+private fun AccountAvatar(initial: String, syncStatus: SyncStatus, onClick: () -> Unit) {
+    val syncDescription = SyncBadge.describe(syncStatus)
     // One clickable rather than IconButton + bounceClick, so TalkBack sees a single "Account" button.
     // Compose expands the touch target to 48dp.
+    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(48.dp)) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -112,6 +119,7 @@ private fun AccountAvatar(initial: String, onClick: () -> Unit) {
             .semantics {
                 contentDescription = "Account"
                 role = Role.Button
+                if (syncDescription != null) stateDescription = syncDescription
             }
             .testTag("home_account_button"),
     ) {
@@ -121,6 +129,8 @@ private fun AccountAvatar(initial: String, onClick: () -> Unit) {
             color = WarmAmberLight,
             modifier = Modifier.clearAndSetSemantics {},
         )
+    }
+    SyncBadgeOverlay(syncStatus, avatarSize = 40.dp)
     }
 }
 

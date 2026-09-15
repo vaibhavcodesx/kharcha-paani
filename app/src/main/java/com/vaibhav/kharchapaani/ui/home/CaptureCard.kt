@@ -76,6 +76,7 @@ fun CaptureCard(
     // The home-screen widget's Speak button: start listening straight away.
     startVoiceCapture: Boolean = false,
     onVoiceCaptureStarted: () -> Unit = {},
+    onCaptureFailed: (String) -> Unit = {},
 ) {
     var input by rememberSaveable { mutableStateOf("") }
     val context = LocalContext.current
@@ -99,8 +100,8 @@ fun CaptureCard(
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
             .putExtra(RecognizerIntent.EXTRA_PROMPT, "Say what you spent, like “coffee 150 card”")
-        // No speech recogniser installed: there's nothing to launch.
         runCatching { speechLauncher.launch(intent) }
+            .onFailure { onCaptureFailed("Voice input isn't available on this phone. Type it instead.") }
     }
     LaunchedEffect(startVoiceCapture) {
         if (startVoiceCapture) {
@@ -111,10 +112,8 @@ fun CaptureCard(
 
     val pdfPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
-            runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }
-                .getOrNull()
-                ?.takeIf { it.isNotEmpty() }
-                ?.let { onParsePdf(it, "statement.pdf") }
+            val bytes = runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
+            if (bytes != null && bytes.isNotEmpty()) onParsePdf(bytes, "statement.pdf") else onCaptureFailed("Couldn't open that PDF.")
         }
     }
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -128,7 +127,7 @@ fun CaptureCard(
                     @Suppress("DEPRECATION")
                     MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
                 }
-            }.getOrNull()?.let(onParseImage)
+            }.getOrNull()?.let(onParseImage) ?: onCaptureFailed("Couldn't open that image.")
         }
     }
 

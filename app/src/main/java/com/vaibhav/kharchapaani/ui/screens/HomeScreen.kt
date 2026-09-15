@@ -61,6 +61,7 @@ import com.vaibhav.kharchapaani.ui.home.CaptureCard
 import com.vaibhav.kharchapaani.ui.home.MonthStrip
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.shell.dockClearance
+import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
@@ -99,6 +100,8 @@ fun HomeScreen(
     today: LocalDate = LocalDate.now(),
     startVoiceCapture: Boolean = false,
     onVoiceCaptureStarted: () -> Unit = {},
+    syncStatus: SyncStatus = SyncStatus(),
+    onShowMessage: (String) -> Unit = {},
 ) {
     var showSearch by rememberSaveable { mutableStateOf(searchQuery.isNotEmpty()) }
     val days = remember(activity, today) { ActivityDays.group(activity, today, ZoneId.systemDefault()) }
@@ -115,6 +118,7 @@ fun HomeScreen(
                 accountInitial = accountInitial,
                 onOpenAccount = onOpenAccount,
                 onOpenSimplifyDebts = onOpenSimplifyDebts,
+                syncStatus = syncStatus,
             )
         }
         item(key = "month") { MonthStrip(monthlyAnalytics, Modifier.padding(top = Spacing.s)) }
@@ -126,6 +130,7 @@ fun HomeScreen(
                 onParsePdf = onParsePdf,
                 onOpenIou = onOpenIouDialog,
                 startVoiceCapture = startVoiceCapture,
+                onCaptureFailed = onShowMessage,
                 onVoiceCaptureStarted = onVoiceCaptureStarted,
                 modifier = Modifier.padding(top = Spacing.xl),
             )

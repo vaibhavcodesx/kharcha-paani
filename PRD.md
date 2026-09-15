@@ -944,6 +944,23 @@ transactions could be attached to any group.
     `~/.gradle/gradle.properties` now caps the heap at 2 GB, uses 2
     workers and runs no daemon, and every build is checked for leftover
     Java processes.
+  - ✅ **Insights and widget (PR #24, 198 tests on CI):**
+    - Insights is one page:
+      - spent vs came in;
+      - ranked category bars in one amber hue (a donut can't compare
+        close values; per-category pastels only repeated the label);
+      - two stat tiles;
+      - the AI review on request.
+    - The Notion table is cut.
+    - **Bug fixed:** a category's entry list showed every month's
+      transactions under a this-month chart.
+    - **Bug fixed:** the widget's Speak button opened the app without
+      starting voice capture.
+    - **Widget rebuilt:** app mark and name instead of "⚡ SplitFlow",
+      theme colours, the app's own icons, 48dp buttons. Placed widgets
+      keep working (same provider class).
+    - Figures shown side by side now step down in size together (on
+      Insights and Splits).
 - 📌 **Backlog (owner, 2026-09-14): "filter by category".** The
   Notion-style Insights table was cut in Part B, but the owner wants a
   way to see entries for one category later. Not scheduled.
@@ -1062,6 +1079,90 @@ just confirm the theme file looks correct.
    surfaces by definition.
 
 ---
+
+## Feature & Fix Backlog (owner, 2026-09-15)
+
+Recorded here as the permanent record before work starts. It is
+sequenced after Part B's last batch.
+
+**Cross-cutting rule (not optional):**
+- nothing merges that breaks an existing screen, existing sync or
+  existing tests;
+- every page has to work end to end, not just look right in a screenshot;
+- anything else worth fixing found along the way is brought to the
+  owner, not silently scoped out.
+
+**Reporting:** checkpoints at meaningful points, not per item.
+
+### Group A — straightforward fixes (fast-track, no design proposal)
+
+1. **Swipe-to-delete triggers accidentally while scrolling, with no undo.**
+   - Raise the swipe distance threshold.
+   - Add Undo (a snackbar after delete). Say so if a confirm dialog is
+     actually better.
+2. **The quick-add sheet dismisses too easily.** A small downward scroll
+   closes it and loses the entry. Ask before discarding unsaved input.
+3. **CSV export only seems to cover the last 10–20 expenses.** Let the
+   owner pick a month or a custom date range, and export everything in it.
+4. **Verify that Insights/spending views filter correctly by month.**
+   - Seed transactions across several months.
+   - Confirm the month picker shows the right data for each, with tests,
+     not by eyeballing.
+5. **Group activity doesn't show who paid when someone else added the
+   expense.** The payer data already exists (balances use it).
+   - Show both when they differ, e.g. "Added by Priya · Paid by Rohan".
+6. **Profile entry point.**
+   - An avatar/name area opens a profile screen, with settings reachable
+     from there.
+   - Edit display name and profile photo.
+   - The photo needs Supabase Storage: check whether the existing setup
+     can be reused or needs extending.
+   - Storage access rules are RLS on `storage.objects`, so any policy
+     change is a hard stop for review.
+   - This screen is also the home for items 7 and 9 and the settings
+     parts of items 2 and 3.
+
+### Group B — short design proposal first (like the sync/RLS designs)
+
+7. **Editable expense categories and payment methods**, managed in
+   settings: defaults plus your own.
+   - Propose local-only vs synced, with the real tradeoff.
+   - A custom category on a group expense has to display on groupmates'
+     devices.
+8. **Subscriptions:** recurring fixed-amount expenses (name, amount,
+   frequency, payment method) that count into monthly spending without
+   re-entry.
+   - Propose: materialise a real transaction each period (background
+     job), or compute projected entries on the fly?
+   - What happens to past months when one is added retroactively or
+     cancelled?
+   - Owner's note: this is not the earlier "no recurring payments"
+     decision, which was about irregular payments to teammates.
+   - *No such decision is written in this PRD or in `docs/` (searched
+     2026-09-15). It is recorded here as the owner describes it.*
+9. **UPI ID and QR code in settings**, so a friend settling up can scan
+   or copy it.
+   - Use the real deep-link format
+     (`upi://pay?pa=…&pn=…&cu=INR`) so GPay/PhonePe/Paytm open it.
+10. **Better group screen.**
+    - The owner's example: a pie of each member's share of group
+      spending.
+    - Audit what else earns its place day to day (trends, biggest
+      spender, per-group categories, …).
+    - Bring a short list of proposals before building.
+
+### Group C — hard stop: RLS change, owner review before live
+
+11. **Let the payer of a group expense edit and delete it too**, not only
+    the person who added it.
+    - This reverses step 4's design decision 2 ("Only the person who
+      added a group expense can edit or delete it").
+    - Write the RLS change, test it locally, and bring the PR for review
+      before applying to live, as with every RLS change.
+
+### Backlog status
+
+- ⏳ Not started. Part B batch 6 (states and voice) runs first.
 
 ## PART C — Testing & Quality
 

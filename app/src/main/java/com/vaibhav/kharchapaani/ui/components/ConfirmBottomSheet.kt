@@ -52,7 +52,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -96,6 +98,7 @@ fun ConfirmBottomSheet(
     isOpen: Boolean,
     isParsing: Boolean,
     isEditing: Boolean,
+    notice: String? = null,
     type: String,
     amount: String,
     merchant: String,
@@ -131,7 +134,7 @@ fun ConfirmBottomSheet(
     val focusManager = LocalFocusManager.current
     KpModalSheet(onDismiss = onDismiss) {
         ConfirmSheetContent(
-            isParsing = isParsing, isEditing = isEditing, type = type, amount = amount, merchant = merchant,
+            isParsing = isParsing, isEditing = isEditing, notice = notice, type = type, amount = amount, merchant = merchant,
             category = category, paymentMethod = paymentMethod, note = note, date = date, groupId = groupId,
             availableGroups = availableGroups, isSplit = isSplit, splitMode = splitMode, paidByPersonId = paidByPersonId,
             shares = shares, onTypeChange = onTypeChange, onAmountChange = onAmountChange, onMerchantChange = onMerchantChange,
@@ -163,6 +166,7 @@ private enum class Detail { Category, Payment, When, Group }
 fun ConfirmSheetContent(
     isParsing: Boolean,
     isEditing: Boolean,
+    notice: String? = null,
     type: String,
     amount: String,
     merchant: String,
@@ -240,6 +244,22 @@ fun ConfirmSheetContent(
         if (isParsing) {
             ParsingPlaceholder()
             return@SheetScaffold
+        }
+
+        if (notice != null) {
+            Text(
+                text = notice,
+                style = MaterialTheme.typography.bodyMedium,
+                color = OffWhiteText,
+                modifier = Modifier
+                    .padding(top = Spacing.l)
+                    .fillMaxWidth()
+                    .clip(KpShapes.medium)
+                    .background(CharcoalCard)
+                    .padding(Spacing.l)
+                    .semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("confirm_notice"),
+            )
         }
 
         BigAmountField(amount = amount, onAmountChange = onAmountChange, accent = accent, testTag = "confirm_amount_input")
