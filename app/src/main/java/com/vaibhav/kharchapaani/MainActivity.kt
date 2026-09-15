@@ -279,6 +279,9 @@ fun SplitFlowApp(
     val activityFeed by viewModel.activityFeed.collectAsState()
     val totalNetOwed by viewModel.totalNetOwed.collectAsState()
     val monthlyAnalytics by viewModel.monthlyAnalytics.collectAsState()
+    val insightsAnalytics by viewModel.insightsAnalytics.collectAsState()
+    val insightsMonth by viewModel.insightsMonth.collectAsState()
+    val earliestInsightsMonth by viewModel.earliestInsightsMonth.collectAsState()
     val personBalances by viewModel.personBalances.collectAsState()
     val people by viewModel.people.collectAsState()
     val groups by viewModel.groups.collectAsState()
@@ -433,7 +436,7 @@ fun SplitFlowApp(
                     )
 
                     2 -> InsightsScreen(
-                        analytics = monthlyAnalytics,
+                        analytics = insightsAnalytics,
                         transactions = rawTransactions,
                         people = people,
                         aiSummary = aiSummary,
@@ -442,6 +445,9 @@ fun SplitFlowApp(
                         onExportCsv = { viewModel.exportCsv(it) },
                         onEditTransaction = { viewModel.openEditTransaction(it) },
                         aiSummaryFailed = aiSummaryFailed,
+                        month = insightsMonth,
+                        earliestMonth = earliestInsightsMonth,
+                        onMonthChange = { viewModel.setInsightsMonth(it) },
                     )
                 }
             }

@@ -13,22 +13,24 @@ import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
-import com.vaibhav.kharchapaani.data.model.CategorySummary
 import com.vaibhav.kharchapaani.data.model.FullTransaction
 import com.vaibhav.kharchapaani.data.model.GroupWithDetails
 import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
 import com.vaibhav.kharchapaani.data.model.PersonBalance
 import com.vaibhav.kharchapaani.data.model.PersonLedgerItem
 import com.vaibhav.kharchapaani.domain.GroupBalances
+import com.vaibhav.kharchapaani.domain.MonthAnalytics
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.domain.roundPaisa
 import java.io.File
 import java.io.FileWriter
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.ZoneId
 import kotlin.math.abs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -280,121 +282,17 @@ class LedgerRepository(
         items.sortedByDescending { it.date }
     }.flowOn(Dispatchers.IO)
 
-    val monthlyAnalytics: Flow<MonthlyAnalytics> = combine(
-        allTransactions,
-        allSplits,
-        allSplitShares
-    ) { transactions, splits, shares ->
-        val splitMap = splits.associateBy { it.transactionId }
-        val shareMap = shares.groupBy { it.splitId }
+    /** This month, for Home and the widget. */
+    val monthlyAnalytics: Flow<MonthlyAnalytics> = analyticsFor { YearMonth.now(it) }
 
-        val now = Calendar.getInstance()
-        val currentMonth = now.get(Calendar.MONTH)
-        val currentYear = now.get(Calendar.YEAR)
+    /** Any month, for Insights' month picker. */
+    fun monthlyAnalyticsFor(month: YearMonth): Flow<MonthlyAnalytics> = analyticsFor { month }
 
-        val myTransactions = transactions.filter { tx ->
-            tx.isOwnedByMe || splitMap[tx.id]?.let { split -> shareMap[split.id].orEmpty().any { it.personId == -1L } } == true
-        }
-        val monthTransactions = myTransactions.filter { tx ->
-            val cal = Calendar.getInstance().apply { timeInMillis = tx.date }
-            cal.get(Calendar.MONTH) == currentMonth && cal.get(Calendar.YEAR) == currentYear
-        }
-
-        var totalPersonalExpense = 0.0
-        var totalIncome = 0.0
-        val categoryTotals = mutableMapOf<String, Double>()
-        val categoryCounts = mutableMapOf<String, Int>()
-        val merchantTotals = mutableMapOf<String, Double>()
-
-        for (tx in monthTransactions) {
-            if (tx.type.equals("income", ignoreCase = true)) {
-                totalIncome += tx.amount
-            } else {
-                val split = splitMap[tx.id]
-                val personalExpenseAmount = if (split != null) {
-                    val splitShares = shareMap[split.id] ?: emptyList()
-                    if (split.paidByPersonId == -1L) {
-                        val myShare = splitShares.find { it.personId == -1L }?.shareAmount
-                        if (myShare != null) {
-                            myShare
-                        } else {
-                            val friendsShare = splitShares.filter { it.personId != -1L }.sumOf { it.shareAmount }
-                            (tx.amount - friendsShare).coerceAtLeast(0.0)
-                        }
-                    } else {
-                        val myShare = splitShares.find { it.personId == -1L }?.shareAmount ?: 0.0
-                        myShare
-                    }
-                } else {
-                    tx.amount
-                }
-
-                totalPersonalExpense += personalExpenseAmount
-                categoryTotals[tx.category] = (categoryTotals[tx.category] ?: 0.0) + personalExpenseAmount
-                categoryCounts[tx.category] = (categoryCounts[tx.category] ?: 0) + 1
-                if (tx.merchant.isNotBlank()) {
-                    merchantTotals[tx.merchant] = (merchantTotals[tx.merchant] ?: 0.0) + personalExpenseAmount
-                }
-            }
-        }
-
-        val summaries = categoryTotals.map { (cat, amount) ->
-            CategorySummary(
-                category = cat,
-                amount = roundPaisa(amount),
-                percentage = if (totalPersonalExpense > 0) ((amount / totalPersonalExpense) * 100f).toFloat() else 0f,
-                count = categoryCounts[cat] ?: 1
-            )
-        }.sortedByDescending { it.amount }
-
-        val topCategory = summaries.firstOrNull()?.category ?: "Food"
-        val topCategoryAmount = summaries.firstOrNull()?.amount ?: 0.0
-        val topMerchant = merchantTotals.maxByOrNull { it.value }?.key ?: (summaries.firstOrNull()?.category ?: "None")
-        val streak = calculateDailyStreak(transactions.filter { it.isOwnedByMe })
-
-        MonthlyAnalytics(
-            totalExpense = roundPaisa(totalPersonalExpense),
-            totalIncome = roundPaisa(totalIncome),
-            netCashflow = roundPaisa(totalIncome - totalPersonalExpense),
-            categorySummaries = summaries,
-            topMerchant = topMerchant,
-            dailyStreak = streak,
-            topCategory = topCategory,
-            topCategoryAmount = topCategoryAmount
-        )
-    }.flowOn(Dispatchers.IO)
-
-    private fun calculateDailyStreak(transactions: List<TransactionEntity>): Int {
-        if (transactions.isEmpty()) return 0
-        val sdf = SimpleDateFormat("yyyyMMdd", Locale.getDefault())
-        val daysWithTransactions = transactions.map { sdf.format(Date(it.date)) }.toSet()
-
-        val cal = Calendar.getInstance()
-        var streak = 0
-        val todayStr = sdf.format(cal.time)
-
-        if (!daysWithTransactions.contains(todayStr)) {
-            cal.add(Calendar.DAY_OF_YEAR, -1)
-            val yesterdayStr = sdf.format(cal.time)
-            if (!daysWithTransactions.contains(yesterdayStr)) {
-                return 0
-            }
-        } else {
-            streak++
-            cal.add(Calendar.DAY_OF_YEAR, -1)
-        }
-
-        while (true) {
-            val dateStr = sdf.format(cal.time)
-            if (daysWithTransactions.contains(dateStr)) {
-                streak++
-                cal.add(Calendar.DAY_OF_YEAR, -1)
-            } else {
-                break
-            }
-        }
-        return streak
-    }
+    private fun analyticsFor(month: (ZoneId) -> YearMonth): Flow<MonthlyAnalytics> =
+        combine(allTransactions, allSplits, allSplitShares) { transactions, splits, shares ->
+            val zone = ZoneId.systemDefault()
+            MonthAnalytics.of(transactions, splits, shares, month(zone), LocalDate.now(zone), zone)
+        }.flowOn(Dispatchers.IO)
 
     suspend fun saveTransactionWithSplits(
         tx: TransactionEntity,

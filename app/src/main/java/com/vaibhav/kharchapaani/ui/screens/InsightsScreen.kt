@@ -60,11 +60,13 @@ import com.vaibhav.kharchapaani.domain.MonthInsights
 import com.vaibhav.kharchapaani.ui.components.AnimatedRollingNumber
 import com.vaibhav.kharchapaani.ui.components.CategoryBadge
 import com.vaibhav.kharchapaani.ui.components.CategoryHelper
+import com.vaibhav.kharchapaani.ui.components.MonthSwitcher
 import com.vaibhav.kharchapaani.ui.components.RowPosition
 import com.vaibhav.kharchapaani.ui.components.ScreenHeader
 import com.vaibhav.kharchapaani.ui.components.pairedFigureStyle
 import com.vaibhav.kharchapaani.ui.components.shimmerLoading
 import com.vaibhav.kharchapaani.ui.format.Money
+import com.vaibhav.kharchapaani.ui.format.MonthNames
 import com.vaibhav.kharchapaani.ui.shell.dockClearance
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
@@ -82,17 +84,18 @@ import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import java.text.SimpleDateFormat
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
-import java.time.format.TextStyle
 import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
- * One page for the month: what went out against what came in, where it went (ranked bars you can
- * open), a couple of highlights, and an on-demand AI read. The Charts / Notion table / AI tabs are
- * gone; the table repeated Home's feed (a "filter by category" view is on the backlog instead).
+ * One page for a month, this one unless another is picked: what went out against what came in,
+ * where it went (ranked bars you can open), a couple of highlights, and an on-demand AI read. The
+ * Charts / Notion table / AI tabs are gone; the table repeated Home's feed (a "filter by category"
+ * view is on the backlog instead).
  */
 @Composable
 fun InsightsScreen(
@@ -107,13 +110,18 @@ fun InsightsScreen(
     modifier: Modifier = Modifier,
     today: LocalDate = LocalDate.now(),
     aiSummaryFailed: Boolean = false,
+    month: YearMonth = YearMonth.from(today),
+    earliestMonth: YearMonth = month,
+    onMonthChange: (YearMonth) -> Unit = {},
 ) {
     val context = LocalContext.current
-    var selected by rememberSaveable { mutableStateOf<String?>(null) }
-    val monthName = remember(today) { today.month.getDisplayName(TextStyle.FULL, Locale.getDefault()) }
-    val selectedEntries = remember(transactions, selected, today) {
-        selected?.let { MonthInsights.categoryEntries(transactions, it, today, ZoneId.systemDefault()) }.orEmpty()
+    val isThisMonth = month == YearMonth.from(today)
+    // A category opened in one month closes when the month changes.
+    var selected by rememberSaveable(month) { mutableStateOf<String?>(null) }
+    val selectedEntries = remember(transactions, selected, month) {
+        selected?.let { MonthInsights.categoryEntries(transactions, it, month, ZoneId.systemDefault()) }.orEmpty()
     }
+    val possessive = MonthNames.possessive(month, today)
 
     LazyColumn(
         modifier = modifier
@@ -122,13 +130,28 @@ fun InsightsScreen(
         contentPadding = PaddingValues(start = Spacing.page, end = Spacing.page, top = Spacing.l, bottom = dockClearance()),
     ) {
         item(key = "header") {
-            ScreenHeader(title = "Insights", supporting = "Where your money went in $monthName") {
+            ScreenHeader(title = "Insights", supporting = "Where your money went, month by month") {
                 TextButton(onClick = { onExportCsv(context) }, modifier = Modifier.testTag("export_csv_button")) {
                     Text("Export", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
                 }
             }
         }
-        item(key = "cashflow") { CashFlow(analytics, Modifier.padding(top = Spacing.l)) }
+        item(key = "month") {
+            MonthSwitcher(
+                month = month,
+                earliest = earliestMonth,
+                latest = YearMonth.from(today),
+                onMonthChange = onMonthChange,
+                modifier = Modifier.padding(top = Spacing.m),
+            )
+        }
+        item(key = "cashflow") {
+            CashFlow(
+                analytics = analytics,
+                emptyText = if (isThisMonth) "Nothing logged this month yet." else "Nothing was logged in ${MonthNames.short(month, today)}.",
+                modifier = Modifier.padding(top = Spacing.xl),
+            )
+        }
         item(key = "categories") {
             CategoryBreakdown(
                 summaries = analytics.categorySummaries,
@@ -136,11 +159,22 @@ fun InsightsScreen(
                 onSelect = { selected = if (selected == it) null else it },
                 entries = selectedEntries,
                 onEditTransaction = onEditTransaction,
+                possessive = possessive,
+                emptyText = if (isThisMonth) {
+                    "Once you log an expense this month, you'll see which categories it went to here."
+                } else {
+                    "Nothing was spent in ${MonthNames.short(month, today)}."
+                },
                 modifier = Modifier.padding(top = Spacing.xxl),
             )
         }
         item(key = "highlights") {
-            Highlights(analytics, MonthInsights.dailyAverage(analytics.totalExpense, today), Modifier.padding(top = Spacing.xxl))
+            Highlights(
+                analytics = analytics,
+                perDay = MonthInsights.dailyAverage(analytics.totalExpense, month, today),
+                perDayLabel = if (isThisMonth) "Per day so far" else "Per day",
+                modifier = Modifier.padding(top = Spacing.xxl),
+            )
         }
         item(key = "review") {
             MonthReview(
@@ -148,6 +182,7 @@ fun InsightsScreen(
                 isGenerating = isGeneratingSummary,
                 failed = aiSummaryFailed,
                 hasSpending = analytics.totalExpense > 0,
+                possessive = possessive,
                 onGenerate = onGenerateAiSummary,
                 modifier = Modifier.padding(top = Spacing.xxl),
             )
@@ -157,7 +192,7 @@ fun InsightsScreen(
 
 /** Out against in, and what's left, as numbers rather than a chart: three values are a table, not a plot. */
 @Composable
-private fun CashFlow(analytics: MonthlyAnalytics, modifier: Modifier = Modifier) {
+private fun CashFlow(analytics: MonthlyAnalytics, emptyText: String, modifier: Modifier = Modifier) {
     val left = analytics.netCashflow
     Column(modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
@@ -168,7 +203,7 @@ private fun CashFlow(analytics: MonthlyAnalytics, modifier: Modifier = Modifier)
         }
         Text(
             text = when {
-                analytics.totalIncome <= 0 && analytics.totalExpense <= 0 -> "Nothing logged this month yet."
+                analytics.totalIncome <= 0 && analytics.totalExpense <= 0 -> emptyText
                 left >= 0.005 -> "${Money.format(left)} more came in than went out."
                 left <= -0.005 -> "${Money.format(abs(left))} more went out than came in."
                 else -> "Exactly as much went out as came in."
@@ -199,6 +234,8 @@ private fun CategoryBreakdown(
     onSelect: (String) -> Unit,
     entries: List<FullTransaction>,
     onEditTransaction: ((FullTransaction) -> Unit)?,
+    possessive: String,
+    emptyText: String,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.fillMaxWidth()) {
@@ -208,10 +245,7 @@ private fun CategoryBreakdown(
             modifier = Modifier.semantics { heading() }.padding(bottom = Spacing.m),
         )
         if (summaries.isEmpty()) {
-            Text(
-                "Once you log an expense this month, you'll see which categories it went to here.",
-                style = MaterialTheme.typography.bodyMedium,
-            )
+            Text(emptyText, style = MaterialTheme.typography.bodyMedium)
             return@Column
         }
         val largest = summaries.maxOf { it.amount }.coerceAtLeast(0.01)
@@ -224,6 +258,7 @@ private fun CategoryBreakdown(
                     emphasis = selected == null || isSelected,
                     isSelected = isSelected,
                     position = RowPosition.of(index, summaries.size),
+                    possessive = possessive,
                     onClick = { onSelect(summary.category) },
                 )
                 AnimatedVisibility(visible = isSelected, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
@@ -241,6 +276,7 @@ private fun CategoryBarRow(
     emphasis: Boolean,
     isSelected: Boolean,
     position: RowPosition,
+    possessive: String,
     onClick: () -> Unit,
 ) {
     val grown by animateFloatAsState(fraction, animationSpec = tween(600), label = "bar_${summary.category}")
@@ -253,7 +289,7 @@ private fun CategoryBarRow(
             .clickable(role = Role.Button, onClickLabel = if (isSelected) "Close ${summary.category}" else "Show ${summary.category} entries", onClick = onClick)
             .semantics(mergeDescendants = true) {
                 this.selected = isSelected
-                stateDescription = "${summary.percentage.roundToInt()} percent of this month's spending"
+                stateDescription = "${summary.percentage.roundToInt()} percent of $possessive spending"
             }
             .padding(horizontal = Spacing.l, vertical = Spacing.m)
             .testTag("category_row_${summary.category}"),
@@ -325,14 +361,14 @@ private fun CategoryEntries(entries: List<FullTransaction>, onEditTransaction: (
 
 /** Two single numbers, so two stat tiles rather than a chart. */
 @Composable
-private fun Highlights(analytics: MonthlyAnalytics, perDay: Double, modifier: Modifier = Modifier) {
+private fun Highlights(analytics: MonthlyAnalytics, perDay: Double, perDayLabel: String, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
         StatTile(
             label = "Spent most at",
             value = analytics.topMerchant.takeIf { analytics.totalExpense > 0 && it != "None" } ?: "—",
             modifier = Modifier.weight(1f),
         )
-        StatTile(label = "Per day so far", value = Money.format(perDay), money = true, modifier = Modifier.weight(1f))
+        StatTile(label = perDayLabel, value = Money.format(perDay), money = true, modifier = Modifier.weight(1f))
     }
 }
 
@@ -359,7 +395,15 @@ private fun StatTile(label: String, value: String, modifier: Modifier = Modifier
 
 /** An on-demand read of the month from the AI, only once there's something to read. */
 @Composable
-private fun MonthReview(summary: String?, isGenerating: Boolean, failed: Boolean, hasSpending: Boolean, onGenerate: () -> Unit, modifier: Modifier = Modifier) {
+private fun MonthReview(
+    summary: String?,
+    isGenerating: Boolean,
+    failed: Boolean,
+    hasSpending: Boolean,
+    possessive: String,
+    onGenerate: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier
             .fillMaxWidth()
@@ -375,7 +419,7 @@ private fun MonthReview(summary: String?, isGenerating: Boolean, failed: Boolean
                 listOf(1f, 0.92f, 0.6f).forEach { width ->
                     Box(Modifier.fillMaxWidth(width).height(14.dp).clip(KpShapes.small).background(CharcoalElevated).shimmerLoading())
                 }
-                Text("Reading this month's entries…", style = MaterialTheme.typography.bodyMedium)
+                Text("Reading $possessive entries…", style = MaterialTheme.typography.bodyMedium)
             }
             summary != null -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 Text(summary, style = MaterialTheme.typography.bodyLarge)
@@ -387,7 +431,7 @@ private fun MonthReview(summary: String?, isGenerating: Boolean, failed: Boolean
                 color = WarmAmberLight,
             )
             hasSpending -> Text(
-                "Get a short read on where this month's money went and what stands out.",
+                "Get a short read on where $possessive money went and what stands out.",
                 style = MaterialTheme.typography.bodyMedium,
             )
             else -> Text("Log a few expenses first; there's nothing to review yet.", style = MaterialTheme.typography.bodyMedium)

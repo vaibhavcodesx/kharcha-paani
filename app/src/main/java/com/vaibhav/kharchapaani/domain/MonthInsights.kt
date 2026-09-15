@@ -6,17 +6,16 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 
-/** Insights' view of the current month, on the same terms as LedgerRepository.monthlyAnalytics. */
+/** Insights' view of one month, on the same terms as [MonthAnalytics]. */
 object MonthInsights {
 
     /**
-     * The expenses behind one category's total this month, newest first: the ones I own or have a
+     * The expenses behind one category's total in [month], newest first: the ones I own or have a
      * share in. The old drill-down listed every transaction ever in the category under a chart of
      * this month, so "Food ₹2,400 this month" could list a dinner from March.
      */
-    fun categoryEntries(transactions: List<FullTransaction>, category: String, today: LocalDate, zone: ZoneId): List<FullTransaction> {
-        val month = YearMonth.from(today)
-        return transactions
+    fun categoryEntries(transactions: List<FullTransaction>, category: String, month: YearMonth, zone: ZoneId): List<FullTransaction> =
+        transactions
             .filter { ft ->
                 val tx = ft.transaction
                 tx.type.equals("expense", ignoreCase = true) &&
@@ -25,11 +24,13 @@ object MonthInsights {
                     (tx.isOwnedByMe || ft.shares.any { it.personId == ME })
             }
             .sortedByDescending { it.transaction.date }
-    }
 
-    /** Spend per day so far this month (today counts as a day). */
-    fun dailyAverage(monthSpend: Double, today: LocalDate): Double =
-        if (monthSpend <= 0) 0.0 else roundPaisa(monthSpend / today.dayOfMonth)
+    /** Spend per day: over the days so far this month (today counts), or the whole of a past month. */
+    fun dailyAverage(monthSpend: Double, month: YearMonth, today: LocalDate): Double {
+        if (monthSpend <= 0) return 0.0
+        val days = if (month == YearMonth.from(today)) today.dayOfMonth else month.lengthOfMonth()
+        return roundPaisa(monthSpend / days)
+    }
 
     private const val ME = -1L
 }
