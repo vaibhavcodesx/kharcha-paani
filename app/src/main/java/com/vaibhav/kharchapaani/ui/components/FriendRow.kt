@@ -66,14 +66,11 @@ fun FriendRow(
     var showMenu by remember { mutableStateOf(false) }
     val currentOnSettleUp by rememberUpdatedState(onSettleUp)
     val currentOnDelete by rememberUpdatedState(onDelete)
-    val status = listOfNotNull(
-        when {
-            owesMe -> "Owes you"
-            iOwe -> "You owe them"
-            else -> "All settled"
-        },
-        if (person.profileId != null) "On Kharcha Paani" else null,
-    ).joinToString(" · ")
+    val status = when {
+        owesMe -> "Owes you"
+        iOwe -> "You owe them"
+        else -> "All settled"
+    }
 
     Box(modifier.fillMaxWidth().clip(position.shape)) {
         Row(

@@ -38,6 +38,7 @@ import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.model.GroupWithDetails
 import com.vaibhav.kharchapaani.data.model.PersonBalance
 import com.vaibhav.kharchapaani.ui.components.AnimatedRollingNumber
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.components.DeleteFriendDialog
 import com.vaibhav.kharchapaani.ui.components.FriendRow
 import com.vaibhav.kharchapaani.ui.components.RowPosition
@@ -130,7 +131,7 @@ fun SplitsScreen(
         when (section) {
             SplitsSection.Friends -> {
                 item(key = "friends_header") {
-                    SectionHeader(title = "Friends") {
+                    SectionActions {
                         TextButton(onClick = onOpenAddFriend, modifier = Modifier.testTag("add_friend_button")) {
                             Text("Add a friend", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
                         }
@@ -157,7 +158,7 @@ fun SplitsScreen(
             }
             SplitsSection.Groups -> {
                 item(key = "groups_header") {
-                    SectionHeader(title = "Groups") {
+                    SectionActions {
                         TextButton(onClick = onJoinGroup, modifier = Modifier.testTag("join_group_button")) {
                             Text("Join", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
                         }
@@ -222,17 +223,23 @@ private fun BalanceSummary(
 private fun SummaryFigure(label: String, amount: Double, color: androidx.compose.ui.graphics.Color, modifier: Modifier) {
     Column(modifier.semantics(mergeDescendants = true) {}) {
         Text(label.uppercase(), style = EyebrowText)
-        AnimatedRollingNumber(targetValue = amount, style = MoneyText.large, color = color)
+        // Half the width holds about nine characters at the large size; lakh-scale totals step down.
+        AnimatedRollingNumber(
+            targetValue = amount,
+            style = if (Money.format(amount).length > 9) MoneyText.title else MoneyText.large,
+            color = color,
+        )
     }
 }
 
+/** A section's create actions, at the end. The Friends | Groups control above already names it. */
 @Composable
-private fun SectionHeader(title: String, actions: @Composable () -> Unit) {
+private fun SectionActions(actions: @Composable () -> Unit) {
     Row(
+        horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(top = Spacing.l, bottom = Spacing.xs),
+        modifier = Modifier.fillMaxWidth().padding(top = Spacing.s, bottom = Spacing.xs),
     ) {
-        Text(title, style = MaterialTheme.typography.titleSmall, color = OffWhiteText, modifier = Modifier.weight(1f).semantics { heading() })
         actions()
     }
 }

@@ -38,6 +38,14 @@ class MoneyTest {
     }
 
     @Test
+    fun `prefilled amounts show paisa to two places and whole rupees bare`() {
+        assertEquals("1250.50", Money.editable(1250.5))
+        assertEquals("1250", Money.editable(1250.0))
+        assertEquals("33.33", Money.editable(100.0 / 3))
+        assertEquals("0.05", Money.editable(0.05))
+    }
+
+    @Test
     fun `the device locale doesn't change the decimal separator`() {
         val previous = Locale.getDefault()
         try {

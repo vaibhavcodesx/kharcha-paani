@@ -182,13 +182,12 @@ private fun Figure(label: String, value: String) {
     }
 }
 
-/** Me first, then up to three members, overlapping; a "+n" for the rest. */
+/** Up to four members, overlapping, and a "+n" for the rest. "People" already counts you. */
 @Composable
 private fun MemberStack(details: GroupWithDetails) {
-    val shown = details.members.take(3)
+    val shown = details.members.take(4)
     val extra = details.members.size - shown.size
     Row(horizontalArrangement = Arrangement.spacedBy((-10).dp), verticalAlignment = Alignment.CenterVertically) {
-        PersonAvatar(name = "Me", colorHex = "#FF7A3D", size = 30.dp, ringColor = CharcoalCard)
         shown.forEach { PersonAvatar(name = it.name, colorHex = it.avatarColor, size = 30.dp, ringColor = CharcoalCard) }
         if (extra > 0) {
             Box(

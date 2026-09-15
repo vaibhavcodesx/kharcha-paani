@@ -51,7 +51,7 @@ fun SettleUpContent(
 ) {
     // suggestedAmount > 0: they owe me, so they're the one paying.
     var theyPaid by rememberSaveable(person.id) { mutableStateOf(suggestedAmount >= 0) }
-    var amount by rememberSaveable(person.id) { mutableStateOf(if (abs(suggestedAmount) > 0) Money.input(abs(suggestedAmount)) else "") }
+    var amount by rememberSaveable(person.id) { mutableStateOf(if (abs(suggestedAmount) > 0) Money.editable(abs(suggestedAmount)) else "") }
     var note by rememberSaveable(person.id) { mutableStateOf("") }
     var selectedGroupId by remember(person.id, groupOptions) { mutableStateOf(groupOptions.onlyGroup?.id) }
 
@@ -84,7 +84,8 @@ fun SettleUpContent(
         SegmentedControl(
             options = listOf(true, false),
             selected = theyPaid,
-            label = { if (it) "${person.name} paid you" else "You paid ${person.name}" },
+            // First names: two segments of "Rohan Mehta paid you" / "You paid Rohan Mehta" barely fit.
+            label = { if (it) "${firstName(person.name)} paid you" else "You paid ${firstName(person.name)}" },
             onSelect = { theyPaid = it },
             accentFor = { if (it) ChartreuseSecondary else WarmAmberPrimary },
             modifier = Modifier.fillMaxWidth(),
@@ -110,3 +111,5 @@ fun SettleUpContent(
 }
 
 private const val ME = -1L
+
+private fun firstName(name: String) = name.trim().substringBefore(' ').ifEmpty { name }

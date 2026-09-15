@@ -34,7 +34,8 @@ fun PersonAvatar(
         modifier = modifier
             .size(size)
             .clip(shape)
-            .then(if (ringColor != null) Modifier.border(2.dp, ringColor, shape) else Modifier)
+            // In an overlapping stack the tint must sit on something opaque, or initials show through.
+            .then(if (ringColor != null) Modifier.background(ringColor).border(2.dp, ringColor, shape) else Modifier)
             .background(color.copy(alpha = 0.2f))
             .clearAndSetSemantics {},
     ) {
