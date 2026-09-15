@@ -21,6 +21,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -194,8 +198,15 @@ private fun ShareRow(
     }
 }
 
+/**
+ * Keeps what's being typed: rebuilding the text from the parsed number turned "12." into "12" and
+ * swallowed the decimal point. It only resyncs when [value] means a different number (the split was
+ * recalculated elsewhere).
+ */
 @Composable
 private fun NumberBox(value: String, prefix: String, suffix: String, onValueChange: (String) -> Unit, description: String) {
+    var text by remember { mutableStateOf(value) }
+    if ((text.toDoubleOrNull() ?: 0.0) != (value.toDoubleOrNull() ?: 0.0)) text = value
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -208,8 +219,11 @@ private fun NumberBox(value: String, prefix: String, suffix: String, onValueChan
     ) {
         if (prefix.isNotEmpty()) Text(prefix, style = MoneyText.row, color = WarmAmberLight)
         BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
+            value = text,
+            onValueChange = {
+                text = it
+                onValueChange(it)
+            },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             textStyle = MoneyText.row.copy(color = OffWhiteText, textAlign = TextAlign.End),
