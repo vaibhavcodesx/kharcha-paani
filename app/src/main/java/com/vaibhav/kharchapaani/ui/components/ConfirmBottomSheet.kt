@@ -65,6 +65,8 @@ import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.model.ShareInput
 import com.vaibhav.kharchapaani.data.model.SplitMode
+import com.vaibhav.kharchapaani.domain.Categories
+import com.vaibhav.kharchapaani.domain.CategoryPrefs
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.theme.BrandGradient
@@ -130,6 +132,8 @@ fun ConfirmBottomSheet(
     onSave: () -> Unit,
     onDismiss: () -> Unit,
     hasUnsavedInput: () -> Boolean = { false },
+    categories: List<String> = Categories.categoriesFor(type, CategoryPrefs()),
+    paymentMethods: List<String> = Categories.paymentMethods(CategoryPrefs()),
 ) {
     if (!isOpen) return
     val focusManager = LocalFocusManager.current
@@ -150,6 +154,7 @@ fun ConfirmBottomSheet(
             onSplitModeChange = onSplitModeChange, onPaidByPersonIdChange = onPaidByPersonIdChange,
             onTogglePersonShare = onTogglePersonShare, onExactAmountChange = onExactAmountChange,
             onPercentageChange = onPercentageChange, onOpenAddFriend = onOpenAddFriend,
+            categories = categories, paymentMethods = paymentMethods,
             onSave = {
                 focusManager.clearFocus()
                 onSave()
@@ -204,7 +209,13 @@ fun ConfirmSheetContent(
     onOpenAddFriend: () -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
+    categories: List<String> = Categories.categoriesFor(type, CategoryPrefs()),
+    paymentMethods: List<String> = Categories.paymentMethods(CategoryPrefs()),
 ) {
+    // An entry keeps its own category or method even when it isn't a choice here (hidden since, or a
+    // groupmate's own category), so it's shown and stays selected.
+    val categoryChoices = if (category.isBlank() || category in categories) categories else listOf(category) + categories
+    val paymentChoices = if (paymentMethod.isBlank() || paymentMethod in paymentMethods) paymentMethods else listOf(paymentMethod) + paymentMethods
     val isIncome = type == "income"
     val accent = if (isIncome) ChartreuseSecondary else WarmAmberPrimary
     var open by rememberSaveable { mutableStateOf<Detail?>(null) }
@@ -291,7 +302,7 @@ fun ConfirmSheetContent(
                 position = RowPosition.Middle,
             ) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                    CategoryHelper.allCategories.forEach { cat ->
+                    categoryChoices.forEach { cat ->
                         ChoiceChip(
                             label = cat,
                             selected = cat == category,
@@ -314,7 +325,7 @@ fun ConfirmSheetContent(
                 position = RowPosition.Middle,
             ) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                    CategoryHelper.allPaymentMethods.forEach { method ->
+                    paymentChoices.forEach { method ->
                         ChoiceChip(label = method, selected = method == paymentMethod, onClick = {
                             onPaymentMethodChange(method)
                             open = null

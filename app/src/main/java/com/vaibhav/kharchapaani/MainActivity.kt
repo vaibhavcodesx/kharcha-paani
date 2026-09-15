@@ -24,6 +24,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import com.vaibhav.kharchapaani.ui.components.ExportSheet
 import com.vaibhav.kharchapaani.ui.components.UpiSheet
+import com.vaibhav.kharchapaani.ui.components.CategoriesSheet
+import com.vaibhav.kharchapaani.domain.Categories
 import com.vaibhav.kharchapaani.ui.shell.KpSnackbarHost
 import com.vaibhav.kharchapaani.ui.shell.snackbarClearance
 import androidx.compose.foundation.layout.padding
@@ -280,6 +282,8 @@ fun SplitFlowApp(
     var isAccountSheetOpen by rememberSaveable { mutableStateOf(false) }
     val askBeforeDiscarding by viewModel.askBeforeDiscarding.collectAsStateWithLifecycle()
     val upiPayee by viewModel.upiPayee.collectAsStateWithLifecycle()
+    val categoryPrefs by viewModel.categoryPrefs.collectAsStateWithLifecycle()
+    val isCategoriesOpen by viewModel.isCategoriesOpen.collectAsStateWithLifecycle()
     val isUpiOpen by viewModel.isUpiOpen.collectAsStateWithLifecycle()
     val currentTab by viewModel.currentTab.collectAsState()
     val rawTransactions by viewModel.rawTransactions.collectAsState()
@@ -484,6 +488,10 @@ fun SplitFlowApp(
                 isAccountSheetOpen = false
                 viewModel.openUpi()
             },
+            onOpenCategories = {
+                isAccountSheetOpen = false
+                viewModel.openCategories()
+            },
             onSaveProfile = onSaveProfile,
             onAskBeforeDiscardingChange = viewModel::setAskBeforeDiscarding,
             onOpenExport = {
@@ -538,6 +546,8 @@ fun SplitFlowApp(
         onSave = { viewModel.saveCurrentTransaction() },
         onDismiss = { viewModel.dismissConfirmSheet() },
         hasUnsavedInput = { askBeforeDiscarding && viewModel.hasUnsavedEntry() },
+        categories = Categories.categoriesFor(txType, categoryPrefs),
+        paymentMethods = Categories.paymentMethods(categoryPrefs),
     )
 
     val isExportOpen by viewModel.isExportOpen.collectAsState()
@@ -567,6 +577,13 @@ fun SplitFlowApp(
         },
         onDismiss = { viewModel.dismissSettleUp() },
         upiPayee = upiPayee,
+    )
+
+    CategoriesSheet(
+        isOpen = isCategoriesOpen,
+        prefs = categoryPrefs,
+        onChange = { viewModel.updateCategoryPrefs(it) },
+        onDismiss = { viewModel.closeCategories() },
     )
 
     UpiSheet(
@@ -693,7 +710,8 @@ fun SplitFlowApp(
             },
             onDismiss = {
                 viewModel.dismissStatementImportDialog()
-            }
+            },
+            prefs = categoryPrefs,
         )
     }
 }

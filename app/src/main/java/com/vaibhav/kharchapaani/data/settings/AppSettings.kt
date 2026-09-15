@@ -7,7 +7,9 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.vaibhav.kharchapaani.domain.CategoryPrefs
 import com.vaibhav.kharchapaani.domain.UpiPayee
+import kotlinx.serialization.json.Json
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -44,7 +46,21 @@ class AppSettings(context: Context) {
         }
     }
 
+    /** This account's categories and payment methods (backlog item 7). Per account, on this phone. */
+    fun categoryPrefs(userId: String): Flow<CategoryPrefs> = store.data.map { prefs ->
+        prefs[categoryPrefsKey(userId)]?.let { runCatching { json.decodeFromString(CategoryPrefs.serializer(), it) }.getOrNull() } ?: CategoryPrefs()
+    }
+
+    suspend fun updateCategoryPrefs(userId: String, change: (CategoryPrefs) -> CategoryPrefs) {
+        store.edit { prefs ->
+            val current = prefs[categoryPrefsKey(userId)]?.let { runCatching { json.decodeFromString(CategoryPrefs.serializer(), it) }.getOrNull() } ?: CategoryPrefs()
+            prefs[categoryPrefsKey(userId)] = json.encodeToString(CategoryPrefs.serializer(), change(current))
+        }
+    }
+
     private companion object {
+        val json = Json { ignoreUnknownKeys = true }
+        fun categoryPrefsKey(userId: String) = stringPreferencesKey("category_prefs_$userId")
         val ASK_BEFORE_DISCARDING = booleanPreferencesKey("ask_before_discarding")
         fun upiIdKey(userId: String) = stringPreferencesKey("upi_id_$userId")
         fun upiNameKey(userId: String) = stringPreferencesKey("upi_name_$userId")

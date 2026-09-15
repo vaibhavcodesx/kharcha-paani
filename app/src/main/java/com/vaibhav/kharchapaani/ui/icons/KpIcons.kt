@@ -147,6 +147,22 @@ object KpIcons {
         line("M9 11V7a3 3 0 0 1 6 0v4")
     }
 
+    /** A basket with handles. */
+    val Groceries = kpIcon("Groceries") {
+        tone("M4 10h16l-1.6 8.4a2 2 0 0 1-2 1.6H7.6a2 2 0 0 1-2-1.6z")
+        line("M4 10h16l-1.6 8.4a2 2 0 0 1-2 1.6H7.6a2 2 0 0 1-2-1.6z")
+        line("M8 10l3-6M16 10l-3-6")
+        line("M9.5 13.5v3M14.5 13.5v3")
+    }
+
+    /** A line climbing to the top right. */
+    val Investment = kpIcon("Investment") {
+        tone("M4 17l5-5 4 4 7-7v11H4z")
+        line("M4 17l5-5 4 4 7-7")
+        line("M15 9h5v5")
+        line("M4 20h16")
+    }
+
     /** Utilities: a bolt. */
     val Bills = kpIcon("Bills") {
         tone("M13.5 3L6 13.5h5.5L10.5 21 18 10.5h-5.5z")

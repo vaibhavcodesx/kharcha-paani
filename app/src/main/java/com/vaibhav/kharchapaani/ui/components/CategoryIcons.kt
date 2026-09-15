@@ -11,48 +11,29 @@ import com.vaibhav.kharchapaani.ui.theme.CatIncome
 import com.vaibhav.kharchapaani.ui.theme.CatOther
 import com.vaibhav.kharchapaani.ui.theme.CatRent
 import com.vaibhav.kharchapaani.ui.theme.CatShopping
+import com.vaibhav.kharchapaani.ui.theme.CatInvestment
+import com.vaibhav.kharchapaani.ui.theme.CatGroceries
 import com.vaibhav.kharchapaani.ui.theme.CatTeamPayment
 import com.vaibhav.kharchapaani.ui.theme.CatTransport
 
 object CategoryHelper {
 
-    val allCategories = listOf(
-        "Food",
-        "Transport",
-        "Shopping",
-        "Bills",
-        "Entertainment",
-        "Health",
-        "Rent",
-        "Team Payment",
-        "Income (Client)",
-        "Income (Other)",
-        "Other"
-    )
-
-    val allPaymentMethods = listOf(
-        "PopUPI",
-        "Debit Card",
-        "GPay",
-        "PhonePe",
-        "Paytm",
-        "Credit Card",
-        "Cash",
-        "Bank Transfer",
-        "Other"
-    )
+    // The choices themselves live in domain.Categories; this maps a name to how it looks. A name it
+    // doesn't know (your own category, or a groupmate's) gets Other's icon and colour.
 
     fun getCategoryIcon(category: String): ImageVector {
         return when (category) {
             "Food" -> KpIcons.Food
             "Transport" -> KpIcons.Transport
             "Shopping" -> KpIcons.Shopping
+            "Groceries" -> KpIcons.Groceries
+            "Investment" -> KpIcons.Investment
             "Bills" -> KpIcons.Bills
             "Entertainment" -> KpIcons.Entertainment
             "Health" -> KpIcons.Health
             "Rent" -> KpIcons.Rent
             "Team Payment" -> KpIcons.TeamPayment
-            "Income (Client)", "Income (Other)" -> KpIcons.Income
+            "Income (Salary)", "Income (Client)", "Income (Other)" -> KpIcons.Income
             else -> KpIcons.Other
         }
     }
@@ -62,12 +43,14 @@ object CategoryHelper {
             "Food" -> CatFood
             "Transport" -> CatTransport
             "Shopping" -> CatShopping
+            "Groceries" -> CatGroceries
+            "Investment" -> CatInvestment
             "Bills" -> CatBills
             "Entertainment" -> CatEntertainment
             "Health" -> CatHealth
             "Rent" -> CatRent
             "Team Payment" -> CatTeamPayment
-            "Income (Client)", "Income (Other)" -> CatIncome
+            "Income (Salary)", "Income (Client)", "Income (Other)" -> CatIncome
             else -> CatOther
         }
     }
