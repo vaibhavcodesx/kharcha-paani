@@ -1220,20 +1220,45 @@ sequenced after Part B's last batch.
   month switcher; analytics extracted to `MonthAnalytics.of(month)` and
   tested with entries across months (midnight edges, splits) in pure
   JVM, real Room and Compose UI tests.
-- 🔄 **3. CSV export by range** (PR #29). Root cause of "last 10-20":
+- ✅ **3. CSV export by range** (PR #29). Root cause of "last 10-20":
   the CSV was shared as text, which share targets truncate; now a .csv
   file. Also fixed: junk banner rows, `1.0E7` amounts, missing quoting,
   formula injection, no BOM. Month / dates / everything picker.
-- ⏳ **6. Profile screen**: display name is covered by the existing
-  `profiles_update_own` policy; photos need a new Storage bucket plus
-  `storage.objects` RLS (none exist yet), so that part is a review stop.
-- ⏳ **Group B (7–10)**: design proposals brought to the owner first.
-- ⏳ **Group C (11)**: payer edit/delete needs payer-aware versions of
-  the owner-keyed `transactions`, `splits` and `split_shares` policies;
-  review before live.
-- 🔎 **Audit:** `res/xml/file_paths.xml` exposes `external-path .` and
-  `files-path .`, broader than exports need; narrowing it is security
-  config, for a reviewed PR.
+- ✅ **6. Profile** (PR #32, 283 tests on CI).
+  - Display name editing.
+  - Emoji avatar instead of a photo (additive `profiles.avatar_emoji`,
+    applied to live 2026-09-15 as `20260915184031`); groupmates see it
+    via group sync (Room v5).
+  - Settings: "Ask before discarding an entry" (item 2) and export
+    (item 3).
+- ✅ **9. UPI ID and QR** (PR #33, 297 tests on CI). Local-only, per
+  account. Real `upi://pay` link; the QR is tested by decoding it back.
+  Settle up shows a code for the amount when a friend owes you.
+- 🔄 **7. Categories and payment methods** (PR #34). One list for the
+  pickers, AI prompts and statement importer (Groceries, Investment,
+  Income (Salary) are now ordinary defaults). Hide defaults, add your
+  own, per account on this phone; the category name travels on the
+  expense.
+- 🔍 **11. Payer edit/delete** (PR #31): **awaiting owner review, not
+  applied.**
+  - RLS via `private.can_edit_group_expense`, plus a trigger locking
+    `owner_id`.
+  - Local PGlite: payer 28/28, groups 100/100, leave 51/51, sync 10/10.
+  - App side included. **Bug found:** the soft delete filtered on
+    `owner_id`, which would have silently left a payer's delete on the
+    server.
+- 🔍 **Audit fix: FileProvider** (PR #30): narrowed to `cache/exports/`;
+  **awaiting owner review** (security config).
+- ⏳ **10. Group screen** (six approved parts) and **8.
+  Subscriptions**: next.
+- 🔎 **Audit (not changed):** the server doesn't bound `display_name`
+  length (the app caps it at 40). A check constraint would also need
+  `handle_new_user` to truncate long Google names, which is auth config,
+  so it's the owner's call.
+- 🔎 **Audit (not changed):** the security advisor lists five
+  SECURITY DEFINER RPCs callable by signed-in users. They are the
+  intended group functions from step 4. Leaked-password protection is
+  off, but sign-in is Google-only.
 
 ## PART C — Testing & Quality
 
