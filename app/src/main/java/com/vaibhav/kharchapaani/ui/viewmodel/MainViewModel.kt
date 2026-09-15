@@ -44,6 +44,7 @@ import com.vaibhav.kharchapaani.domain.CsvFile
 import com.vaibhav.kharchapaani.domain.DebtSimplifier
 import com.vaibhav.kharchapaani.domain.ExportRange
 import com.vaibhav.kharchapaani.domain.EntryDraft
+import com.vaibhav.kharchapaani.domain.UpiPayee
 import com.vaibhav.kharchapaani.domain.MonthAnalytics
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.SplitRounding
@@ -117,6 +118,28 @@ class MainViewModel(
 
     fun setAskBeforeDiscarding(ask: Boolean) {
         viewModelScope.launch { settings.setAskBeforeDiscarding(ask) }
+    }
+
+    val upiPayee: StateFlow<UpiPayee?> = settings.upiPayee(userId)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    private val _isUpiOpen = MutableStateFlow(false)
+    val isUpiOpen: StateFlow<Boolean> = _isUpiOpen.asStateFlow()
+
+    fun openUpi() {
+        _isUpiOpen.value = true
+    }
+
+    fun closeUpi() {
+        _isUpiOpen.value = false
+    }
+
+    fun saveUpi(payee: UpiPayee?) {
+        viewModelScope.launch {
+            settings.setUpiPayee(userId, payee)
+            _isUpiOpen.value = false
+            _statusMessage.value = if (payee == null) "UPI ID removed." else "UPI ID saved. It shows when a friend settles up with you."
+        }
     }
 
     // Navigation Tab (0: Home/Activity, 1: Splits & Groups, 2: Analytics)

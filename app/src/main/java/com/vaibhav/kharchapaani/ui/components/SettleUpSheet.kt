@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
+import com.vaibhav.kharchapaani.domain.UpiPayee
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.groups.RecordInGroupSection
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
@@ -29,10 +30,11 @@ fun SettleUpSheet(
     onCreateGroup: () -> Unit = {},
     onConfirm: (fromPersonId: Long, toPersonId: Long, amount: Double, note: String, groupId: Long?) -> Unit,
     onDismiss: () -> Unit,
+    upiPayee: UpiPayee? = null,
 ) {
     if (!isOpen || person == null) return
     KpModalSheet(onDismiss = onDismiss) {
-        SettleUpContent(person, suggestedAmount, groupOptions, onCreateGroup, onConfirm)
+        SettleUpContent(person, suggestedAmount, groupOptions, onCreateGroup, onConfirm, upiPayee = upiPayee)
     }
 }
 
@@ -48,6 +50,8 @@ fun SettleUpContent(
     onCreateGroup: () -> Unit,
     onConfirm: (fromPersonId: Long, toPersonId: Long, amount: Double, note: String, groupId: Long?) -> Unit,
     modifier: Modifier = Modifier,
+    // Set when this account has a UPI ID: shown as a QR for the amount when the friend is paying.
+    upiPayee: UpiPayee? = null,
 ) {
     // suggestedAmount > 0: they owe me, so they're the one paying.
     var theyPaid by rememberSaveable(person.id) { mutableStateOf(suggestedAmount >= 0) }
@@ -98,6 +102,14 @@ fun SettleUpContent(
         )
         SheetRow(label = "Note") {
             SheetTextInput(value = note, onValueChange = { note = it }, placeholder = "Optional, like “Goa hotel”")
+        }
+        if (theyPaid && upiPayee != null && value > 0) {
+            UpiPaymentCard(
+                payee = upiPayee,
+                amount = value,
+                note = note.ifBlank { "Kharcha Paani settle up" },
+                modifier = Modifier.padding(top = Spacing.m),
+            )
         }
         RecordInGroupSection(
             otherPersonName = person.name,
