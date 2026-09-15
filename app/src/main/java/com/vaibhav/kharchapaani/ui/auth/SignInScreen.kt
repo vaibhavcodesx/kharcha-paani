@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -56,6 +55,7 @@ import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
+import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
@@ -120,9 +120,9 @@ private fun SignInIntro(modifier: Modifier = Modifier) {
         Box(
             modifier = Modifier
                 .size(64.dp)
-                .clip(RoundedCornerShape(18.dp))
+                .clip(KpShapes.medium)
                 .background(CharcoalElevated)
-                .border(1.dp, WarmAmberPrimary.copy(alpha = 0.4f), RoundedCornerShape(18.dp)),
+                .border(1.dp, WarmAmberPrimary.copy(alpha = 0.4f), KpShapes.medium),
             contentAlignment = Alignment.Center,
         ) {
             Image(
@@ -168,7 +168,7 @@ private fun SignInActions(
         Button(
             onClick = onSignInWithGoogle,
             enabled = !isSigningIn,
-            shape = RoundedCornerShape(16.dp),
+            shape = KpShapes.medium,
             colors = ButtonDefaults.buttonColors(
                 containerColor = GoogleButtonFill,
                 contentColor = GoogleButtonText,
@@ -213,9 +213,9 @@ private fun SignInFailureNotice(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(KpShapes.medium)
             .background(CharcoalCard)
-            .border(1.dp, CharcoalBorder, RoundedCornerShape(14.dp))
+            .border(1.dp, CharcoalBorder, KpShapes.medium)
             .padding(start = 14.dp, top = 6.dp, bottom = 6.dp, end = 2.dp)
             .semantics { liveRegion = LiveRegionMode.Polite }
             .testTag("sign_in_failure"),

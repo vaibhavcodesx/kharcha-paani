@@ -8,54 +8,27 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Payments
-import androidx.compose.material.icons.filled.SelectAll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -65,466 +38,150 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.vaibhav.kharchapaani.data.model.StatementMonthGroup
+import androidx.compose.ui.window.Dialog
 import com.vaibhav.kharchapaani.data.model.StatementParseResult
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
 import com.vaibhav.kharchapaani.ui.format.Money
+import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
 import com.vaibhav.kharchapaani.ui.theme.CharcoalSurface
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
-import com.vaibhav.kharchapaani.ui.theme.ElectricIndigo
+import com.vaibhav.kharchapaani.ui.theme.EyebrowText
+import com.vaibhav.kharchapaani.ui.theme.KpShapes
+import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
-import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
+import com.vaibhav.kharchapaani.ui.theme.OutlineInteractive
+import com.vaibhav.kharchapaani.ui.theme.Spacing
+import com.vaibhav.kharchapaani.ui.theme.SquircleShape
+import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 
+// The statement parser's category set. It includes Groceries, Investment and Income (Salary), which
+// the rest of the app doesn't know; reconciling them is part of editable categories (backlog item 7).
 val STATEMENT_CATEGORIES = listOf(
-    "Food",
-    "Transport",
-    "Shopping",
-    "Bills",
-    "Groceries",
-    "Entertainment",
-    "Health",
-    "Rent",
-    "Investment",
-    "Income (Salary)",
-    "Income (Client)",
-    "Income (Other)",
-    "Other"
+    "Food", "Transport", "Shopping", "Bills", "Groceries", "Entertainment", "Health", "Rent",
+    "Investment", "Income (Salary)", "Income (Client)", "Income (Other)", "Other",
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatementImportDialog(
     parseResult: StatementParseResult,
     onConfirmImport: (List<StatementTransactionItem>) -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    KpModalSheet(onDismiss = onDismiss) { StatementImportContent(parseResult, onConfirmImport) }
+}
 
-    // Local mutable state for all items to allow toggling checkboxes & modifying category
-    var itemsList by remember(parseResult) {
-        mutableStateOf(parseResult.allItems)
+/**
+ * What was read from a bank or UPI statement, grouped by month, with everything ticked. Untick what
+ * shouldn't come in, fix a category, and import. Nothing is added until Import.
+ */
+@Composable
+fun StatementImportContent(
+    parseResult: StatementParseResult,
+    onConfirmImport: (List<StatementTransactionItem>) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var items by remember(parseResult) { mutableStateOf(parseResult.allItems) }
+    val expanded = remember(parseResult) {
+        mutableStateMapOf<String, Boolean>().apply { parseResult.monthGroups.forEachIndexed { i, g -> put(g.monthSortKey, i == 0) } }
     }
+    val selected = items.filter { it.isSelected }
+    val spent = selected.filter { it.type == "expense" }.sumOf { it.amount }
+    val cameIn = selected.filter { it.type == "income" }.sumOf { it.amount }
+    val byMonth = remember(items) { items.groupBy { it.monthSortKey } }
 
-    // Expanded state for month accordion cards
-    val monthExpandedState = remember(parseResult) {
-        mutableStateMapOf<String, Boolean>().apply {
-            parseResult.monthGroups.forEachIndexed { index, group ->
-                put(group.monthSortKey, index == 0) // First month expanded by default
+    SheetScaffold(
+        modifier = modifier,
+        actionBar = {
+            GlassActionBar(
+                label = if (selected.size == 1) "Import 1 entry" else "Import ${selected.size} entries",
+                disabledLabel = "Tick entries to import",
+                enabled = selected.isNotEmpty(),
+                onClick = { onConfirmImport(selected) },
+                summary = "${selected.size} of ${items.size}",
+                detail = "selected",
+                buttonTestTag = "confirm_import_statement_button",
+            )
+        },
+    ) {
+        SheetTitle(
+            eyebrow = "From your statement",
+            title = parseResult.bankOrApp,
+            supporting = parseResult.statementPeriod.takeIf { it.isNotBlank() }
+                ?: if (items.size == 1) "1 entry found" else "${items.size} entries found",
+        )
+
+        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+            val style = pairedFigureStyle(spent, cameIn)
+            Figure("Spent", Money.format(spent), OffWhiteText, style, Modifier.weight(1f))
+            Box(Modifier.padding(horizontal = Spacing.xl).width(1.dp).fillMaxHeight().background(CharcoalBorder))
+            Figure("Came in", Money.format(cameIn), ChartreuseSecondary, style, Modifier.weight(1f))
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = Spacing.xl)) {
+            Text("BY MONTH", style = EyebrowText, modifier = Modifier.weight(1f))
+            val allSelected = selected.size == items.size
+            TextButton(onClick = { items = items.map { it.copy(isSelected = !allSelected) } }, modifier = Modifier.offset(x = Spacing.m)) {
+                Text(if (allSelected) "Untick all" else "Tick all", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
             }
         }
-    }
 
-    val selectedCount = itemsList.count { it.isSelected }
-    val totalExpenseSelected = itemsList.filter { it.isSelected && it.type == "expense" }.sumOf { it.amount }
-    val totalIncomeSelected = itemsList.filter { it.isSelected && it.type == "income" }.sumOf { it.amount }
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
+            parseResult.monthGroups.forEach { group ->
+                val key = group.monthSortKey
+                val monthItems = byMonth[key].orEmpty()
+                if (monthItems.isEmpty()) return@forEach
+                val isOpen = expanded[key] == true
+                val allInMonth = monthItems.all { it.isSelected }
+                val monthSpent = monthItems.filter { it.isSelected && it.type == "expense" }.sumOf { it.amount }
 
-    // Group current items by month
-    val groupedItems = remember(itemsList) {
-        itemsList.groupBy { it.monthSortKey }
-    }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = CharcoalBg,
-        dragHandle = { SheetHandle() },
-        modifier = modifier.fillMaxHeight(0.92f)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp)
-        ) {
-            // Header Bar
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
+                Column(Modifier.fillMaxWidth().clip(KpShapes.large).background(CharcoalCard)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .size(38.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(WarmAmberPrimary.copy(alpha = 0.2f))
-                            .border(1.dp, WarmAmberPrimary, RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .heightIn(min = 64.dp)
+                            .clickable(onClickLabel = if (isOpen) "Collapse ${group.monthYearKey}" else "Expand ${group.monthYearKey}") { expanded[key] = !isOpen }
+                            .padding(start = Spacing.xs, end = Spacing.l),
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Description,
-                            contentDescription = null,
-                            tint = WarmAmberPrimary,
-                            modifier = Modifier.size(20.dp)
+                        TickBox(
+                            checked = allInMonth,
+                            description = "Import all of ${group.monthYearKey}",
+                            onToggle = { checked -> items = items.map { if (it.monthSortKey == key) it.copy(isSelected = checked) else it } },
                         )
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column {
-                        Text(
-                            text = parseResult.bankOrApp,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = OffWhiteText,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                        Text(
-                            text = if (parseResult.statementPeriod.isNotBlank())
-                                "Period: ${parseResult.statementPeriod}"
-                            else
-                                "${parseResult.totalTransactionsCount} transactions detected",
-                            style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray)
-                        )
-                    }
-                }
-
-                val closeInteraction = remember { MutableInteractionSource() }
-                IconButton(
-                    onClick = onDismiss,
-                    interactionSource = closeInteraction,
-                    modifier = Modifier.pressBounce(closeInteraction)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
-                        tint = MutedWarmGray
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Overview Summary Metrics Cards
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Total Items
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(CharcoalCard)
-                        .border(1.dp, CharcoalBorder, RoundedCornerShape(14.dp))
-                        .padding(10.dp)
-                ) {
-                    Column {
-                        Text(
-                            "SELECTED",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = MutedWarmGray,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            "$selectedCount / ${itemsList.size}",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = OffWhiteText,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
-                }
-
-                // Total Expense
-                Box(
-                    modifier = Modifier
-                        .weight(1.2f)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(CharcoalCard)
-                        .border(1.dp, CharcoalBorder, RoundedCornerShape(14.dp))
-                        .padding(10.dp)
-                ) {
-                    Column {
-                        Text(
-                            "TOTAL EXPENSES",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = MutedWarmGray,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            "-${Money.format(totalExpenseSelected)}",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = WarmAmberPrimary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
-                }
-
-                // Total Income
-                if (totalIncomeSelected > 0) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1.2f)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(CharcoalCard)
-                            .border(1.dp, CharcoalBorder, RoundedCornerShape(14.dp))
-                            .padding(10.dp)
-                    ) {
-                        Column {
+                        Column(Modifier.weight(1f)) {
+                            Text(group.monthYearKey, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
                             Text(
-                                "TOTAL INCOME",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = MutedWarmGray,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                "+${Money.format(totalIncomeSelected)}",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    color = ChartreuseSecondary,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                "${monthItems.count { it.isSelected }} of ${monthItems.size} · ${Money.format(monthSpent)} spent",
+                                style = MaterialTheme.typography.bodySmall,
                             )
                         }
+                        Icon(if (isOpen) KpIcons.Close else KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(18.dp))
                     }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Quick Batch Toggle Bar
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "EXPENSES BY MONTH",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = MutedWarmGray,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
-                )
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = if (selectedCount == itemsList.size) "Deselect All" else "Select All",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = WarmAmberPrimary,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .clickable {
-                                val selectAll = selectedCount != itemsList.size
-                                itemsList = itemsList.map { it.copy(isSelected = selectAll) }
-                            }
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Month-Wise Accordion List
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                parseResult.monthGroups.forEach { monthGroup ->
-                    val sortKey = monthGroup.monthSortKey
-                    val currentMonthItems = groupedItems[sortKey] ?: emptyList()
-                    val isExpanded = monthExpandedState[sortKey] == true
-                    val allInMonthSelected = currentMonthItems.isNotEmpty() && currentMonthItems.all { it.isSelected }
-                    val monthExpense = currentMonthItems.filter { it.isSelected && it.type == "expense" }.sumOf { it.amount }
-                    val monthIncome = currentMonthItems.filter { it.isSelected && it.type == "income" }.sumOf { it.amount }
-
-                    item(key = sortKey) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(CharcoalCard)
-                                .border(1.dp, CharcoalBorder, RoundedCornerShape(16.dp))
-                        ) {
-                            // Month Header Row (Click to expand/collapse)
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        monthExpandedState[sortKey] = !isExpanded
-                                    }
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Checkbox(
-                                        checked = allInMonthSelected,
-                                        onCheckedChange = { checked ->
-                                            itemsList = itemsList.map { item ->
-                                                if (item.monthSortKey == sortKey) {
-                                                    item.copy(isSelected = checked)
-                                                } else {
-                                                    item
-                                                }
-                                            }
-                                        },
-                                        colors = CheckboxDefaults.colors(
-                                            checkedColor = WarmAmberPrimary,
-                                            uncheckedColor = MutedWarmGray,
-                                            checkmarkColor = CharcoalBg
-                                        ),
-                                        modifier = Modifier.size(24.dp)
-                                    )
-
-                                    Spacer(modifier = Modifier.width(8.dp))
-
-                                    Column {
-                                        Text(
-                                            text = monthGroup.monthYearKey,
-                                            style = MaterialTheme.typography.titleMedium.copy(
-                                                color = OffWhiteText,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        )
-                                        Text(
-                                            text = "${currentMonthItems.count { it.isSelected }}/${currentMonthItems.size} items • ${Money.format(monthExpense)} spent",
-                                            style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray)
-                                        )
-                                    }
-                                }
-
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                        contentDescription = "Toggle Month",
-                                        tint = MutedWarmGray
-                                    )
-                                }
-                            }
-
-                            // Expanded Items List
-                            AnimatedVisibility(
-                                visible = isExpanded,
-                                enter = expandVertically() + fadeIn(),
-                                exit = shrinkVertically() + fadeOut()
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    currentMonthItems.forEach { item ->
-                                        StatementTransactionRow(
-                                            item = item,
-                                            onToggleSelected = { checked ->
-                                                itemsList = itemsList.map {
-                                                    if (it.id == item.id) it.copy(isSelected = checked) else it
-                                                }
-                                            },
-                                            onChangeCategory = { newCategory ->
-                                                itemsList = itemsList.map {
-                                                    if (it.id == item.id) it.copy(category = newCategory) else it
-                                                }
-                                            },
-                                            onDeleteItem = {
-                                                itemsList = itemsList.filter { it.id != item.id }
-                                            }
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                }
+                    AnimatedVisibility(visible = isOpen, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+                        Column(Modifier.padding(bottom = Spacing.s)) {
+                            monthItems.forEach { item ->
+                                StatementTransactionRow(
+                                    item = item,
+                                    onToggleSelected = { checked -> items = items.map { if (it.id == item.id) it.copy(isSelected = checked) else it } },
+                                    onChangeCategory = { category -> items = items.map { if (it.id == item.id) it.copy(category = category) else it } },
+                                )
                             }
                         }
                     }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Bottom Sticky Confirm Button
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                val cancelInteraction = remember { MutableInteractionSource() }
-                OutlinedButton(
-                    onClick = onDismiss,
-                    interactionSource = cancelInteraction,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp)
-                        .pressBounce(cancelInteraction),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MutedWarmGray),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, CharcoalBorder)
-                ) {
-                    Text(
-                        "Cancel",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            color = MutedWarmGray,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    )
-                }
-
-                Button(
-                    onClick = {
-                        val toImport = itemsList.filter { it.isSelected }
-                        onConfirmImport(toImport)
-                    },
-                    enabled = selectedCount > 0,
-                    modifier = Modifier
-                        .weight(2f)
-                        .height(52.dp)
-                        .bounceClick {
-                            val toImport = itemsList.filter { it.isSelected }
-                            onConfirmImport(toImport)
-                        }
-                        .testTag("confirm_import_statement_button"),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = WarmAmberPrimary,
-                        contentColor = CharcoalBg,
-                        disabledContainerColor = CharcoalElevated,
-                        disabledContentColor = MutedWarmGray
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Import $selectedCount Expenses",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
                 }
             }
         }
@@ -536,215 +193,103 @@ fun StatementTransactionRow(
     item: StatementTransactionItem,
     onToggleSelected: (Boolean) -> Unit,
     onChangeCategory: (String) -> Unit,
-    onDeleteItem: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    var isCategoryMenuOpen by remember { mutableStateOf(false) }
-
-    val categoryColor = CategoryHelper.getCategoryColor(item.category)
-    val categoryIcon = CategoryHelper.getCategoryIcon(item.category)
-
+    var categoryMenu by remember { mutableStateOf(false) }
+    val isIncome = item.type.equals("income", ignoreCase = true)
     Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(CharcoalElevated)
-            .border(1.dp, CharcoalBorder.copy(alpha = 0.7f), RoundedCornerShape(12.dp))
-            .padding(horizontal = 8.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .heightIn(min = 56.dp)
+            .padding(start = Spacing.xs, end = Spacing.l),
     ) {
-        // Selection Checkbox
-        Checkbox(
-            checked = item.isSelected,
-            onCheckedChange = onToggleSelected,
-            colors = CheckboxDefaults.colors(
-                checkedColor = WarmAmberPrimary,
-                uncheckedColor = MutedWarmGray,
-                checkmarkColor = CharcoalBg
-            ),
-            modifier = Modifier.size(22.dp)
-        )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        // Category Icon with tap-to-change Dropdown
+        TickBox(checked = item.isSelected, description = "Import ${item.merchant}", onToggle = onToggleSelected)
         Box {
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(categoryColor.copy(alpha = 0.15f))
-                    .clickable { isCategoryMenuOpen = true },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = categoryIcon,
-                    contentDescription = item.category,
-                    tint = categoryColor,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
-            DropdownMenu(
-                expanded = isCategoryMenuOpen,
-                onDismissRequest = { isCategoryMenuOpen = false },
-                modifier = Modifier.background(CharcoalSurface)
-            ) {
-                STATEMENT_CATEGORIES.forEach { cat ->
+            CategoryBadge(
+                category = item.category,
+                modifier = Modifier.clickable(onClickLabel = "Change category, now ${item.category}") { categoryMenu = true },
+            )
+            DropdownMenu(expanded = categoryMenu, onDismissRequest = { categoryMenu = false }, containerColor = CharcoalElevated, shape = KpShapes.medium) {
+                STATEMENT_CATEGORIES.forEach { category ->
                     DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = cat,
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = if (cat == item.category) WarmAmberPrimary else OffWhiteText
-                                )
-                            )
-                        },
+                        text = { Text(category, style = MaterialTheme.typography.bodyLarge, color = if (category == item.category) WarmAmberLight else OffWhiteText) },
                         onClick = {
-                            onChangeCategory(cat)
-                            isCategoryMenuOpen = false
-                        }
+                            onChangeCategory(category)
+                            categoryMenu = false
+                        },
                     )
                 }
             }
         }
-
-        Spacer(modifier = Modifier.width(10.dp))
-
-        // Merchant, Date & Payment Method
-        Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = item.merchant,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = OffWhiteText,
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-            }
-            Spacer(modifier = Modifier.height(2.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = item.dateFormatted,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = SubMutedWarmGray,
-                        fontSize = 11.sp
-                    )
-                )
-                Text(
-                    text = "•",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = SubMutedWarmGray,
-                        fontSize = 10.sp
-                    )
-                )
-                Text(
-                    text = item.category,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = categoryColor,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                )
-                if (item.paymentMethod.isNotBlank()) {
-                    Text(
-                        text = "(${item.paymentMethod})",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = SubMutedWarmGray,
-                            fontSize = 10.sp
-                        )
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        // Amount & Delete Icon
-        Column(horizontalAlignment = Alignment.End) {
-            val isIncome = item.type.equals("income", ignoreCase = true)
+        Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
+            Text(item.merchant, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
-                text = "${if (isIncome) "+" else "-"}${Money.format(item.amount)}",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = if (isIncome) ChartreuseSecondary else WarmAmberPrimary,
-                    fontWeight = FontWeight.Bold
-                )
+                listOfNotNull(item.dateFormatted, item.category, item.paymentMethod.takeIf { it.isNotBlank() }).joinToString(" · "),
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
+        Text(
+            text = if (isIncome) Money.format(item.amount, showPlus = true) else "-${Money.format(item.amount)}",
+            style = MoneyText.small,
+            color = if (isIncome) ChartreuseSecondary else OffWhiteText,
+        )
+    }
+}
 
-        Spacer(modifier = Modifier.width(4.dp))
-
-        IconButton(
-            onClick = onDeleteItem,
-            modifier = Modifier.size(28.dp)
+@Composable
+private fun TickBox(checked: Boolean, description: String, onToggle: (Boolean) -> Unit) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(48.dp)
+            .toggleable(value = checked, role = Role.Checkbox, onValueChange = onToggle)
+            .semantics { contentDescription = description },
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(22.dp)
+                .clip(TickShape)
+                .background(if (checked) WarmAmberPrimary else CharcoalCard)
+                .border(1.dp, if (checked) WarmAmberPrimary else OutlineInteractive, TickShape),
         ) {
-            Icon(
-                imageVector = Icons.Default.DeleteOutline,
-                contentDescription = "Exclude row",
-                tint = MutedWarmGray.copy(alpha = 0.6f),
-                modifier = Modifier.size(16.dp)
-            )
+            if (checked) Icon(KpIcons.Check, contentDescription = null, tint = CharcoalBg, modifier = Modifier.size(15.dp))
         }
     }
 }
 
 @Composable
-fun StatementParsingLoadingDialog(
-    onDismiss: () -> Unit
-) {
-    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
-        Box(
+private fun Figure(label: String, value: String, color: androidx.compose.ui.graphics.Color, style: androidx.compose.ui.text.TextStyle, modifier: Modifier) {
+    Column(modifier.semantics(mergeDescendants = true) {}) {
+        Text(label.uppercase(), style = EyebrowText)
+        Text(value, style = style, color = color, maxLines = 1)
+    }
+}
+
+/** Shown while the statement is being read; the sheet opens once there's something to check. */
+@Composable
+fun StatementParsingLoadingDialog(onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .clip(RoundedCornerShape(24.dp))
-                .background(CharcoalElevated)
-                .border(1.dp, CharcoalBorder, RoundedCornerShape(24.dp))
-                .padding(28.dp),
-            contentAlignment = Alignment.Center
+                .clip(KpShapes.large)
+                .background(CharcoalSurface)
+                .padding(Spacing.xl),
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .background(WarmAmberPrimary.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    androidx.compose.material3.CircularProgressIndicator(
-                        color = WarmAmberPrimary,
-                        strokeWidth = 3.dp,
-                        modifier = Modifier.size(40.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                Text(
-                    text = "Analyzing Bank / UPI Statement",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        color = OffWhiteText,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Reading your statement and sorting entries by month…",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = SubMutedWarmGray,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                )
-            }
+            CircularProgressIndicator(color = WarmAmberPrimary, strokeWidth = 3.dp, modifier = Modifier.size(36.dp))
+            Text("Reading your statement", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = Spacing.l))
+            Text(
+                "Sorting its entries by month. Nothing is added until you check them.",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = Spacing.xs),
+            )
         }
     }
 }
+
+private val TickShape = SquircleShape(7.dp)

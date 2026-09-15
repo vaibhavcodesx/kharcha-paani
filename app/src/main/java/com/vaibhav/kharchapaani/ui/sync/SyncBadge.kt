@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
@@ -87,6 +88,8 @@ private fun BoxScope.Dot(color: androidx.compose.ui.graphics.Color, size: Dp) {
     Box(
         Modifier
             .align(Alignment.TopEnd)
+            // The avatar is 40dp centred in 48dp: pull the dot in onto its top-right curve.
+            .offset(x = (-3).dp, y = 3.dp)
             .size(size)
             .clip(CircleShape)
             .background(color)

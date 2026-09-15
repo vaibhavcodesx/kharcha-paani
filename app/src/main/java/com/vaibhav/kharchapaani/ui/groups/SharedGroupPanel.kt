@@ -8,22 +8,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -34,23 +28,30 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
+import com.vaibhav.kharchapaani.ui.components.PersonAvatar
+import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
-import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
 import com.vaibhav.kharchapaani.ui.theme.CharcoalSurface
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
+import com.vaibhav.kharchapaani.ui.theme.EyebrowText
+import com.vaibhav.kharchapaani.ui.theme.KpShapes
+import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
+import com.vaibhav.kharchapaani.ui.theme.OutlineInteractive
+import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
+import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import java.text.DateFormat
 import java.util.Date
@@ -78,56 +79,54 @@ fun SharedGroupPanel(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(KpShapes.large)
             .background(CharcoalCard)
-            .border(1.dp, CharcoalBorder, RoundedCornerShape(16.dp))
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+            .padding(Spacing.l),
+        verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = "Shared group",
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, color = OffWhiteText),
+                style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.weight(1f).semantics { heading() },
             )
-            StatusChip(
+            Text(
                 text = when {
                     group.isArchived -> "Archived"
                     group.syncState == SyncState.SYNCED -> "Synced"
                     group.syncState == SyncState.FAILED -> "Not synced"
                     else -> "Syncing…"
                 },
+                style = MaterialTheme.typography.labelMedium,
                 color = when {
                     group.isArchived -> MutedWarmGray
                     group.syncState == SyncState.SYNCED -> ChartreuseSecondary
-                    group.syncState == SyncState.FAILED -> WarmAmberPrimary
+                    group.syncState == SyncState.FAILED -> WarmAmberLight
                     else -> MutedWarmGray
                 },
             )
         }
 
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            StatusChip("You", OffWhiteText)
-            members.forEach { StatusChip(it.name, OffWhiteText) }
+        Text("${members.size + 1} PEOPLE", style = EyebrowText)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+            MemberChip(name = "You", colorHex = "#FF7A3D")
+            members.forEach { MemberChip(name = it.name, colorHex = it.avatarColor) }
         }
 
         if (!group.isArchived) {
             InviteSection(invite, onCreateInvite, onShareInvite, onRevokeInvite)
         } else {
-            Text(
-                text = "Archived groups are read-only and can't take new members.",
-                style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray),
-            )
+            Text("Archived groups are read-only and can't take new members.", style = MaterialTheme.typography.bodyMedium)
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.offset(x = -Spacing.m)) {
             if (isCreator) {
                 TextButton(onClick = { onSetArchived(!group.isArchived) }) {
-                    Text(if (group.isArchived) "Restore group" else "Archive group", color = MutedWarmGray)
+                    Text(if (group.isArchived) "Restore group" else "Archive group", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
                 }
             }
             TextButton(onClick = { confirmingLeave = true }, enabled = !isLeaving) {
-                Text(if (isLeaving) "Leaving…" else "Leave group", color = WarmAmberPrimary)
+                Text(if (isLeaving) "Leaving…" else "Leave group", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
             }
         }
     }
@@ -136,10 +135,14 @@ fun SharedGroupPanel(
         AlertDialog(
             onDismissRequest = { confirmingLeave = false },
             containerColor = CharcoalSurface,
-            title = { Text("Leave ${group.name}?") },
+            shape = KpShapes.large,
+            title = { Text("Leave ${group.name}?", style = MaterialTheme.typography.headlineMedium, color = OffWhiteText) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Its expenses and settlements will be removed from this phone. Other members keep them, and you can rejoin with a new invite.")
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                    Text(
+                        "Its expenses and settlements will be removed from this phone. Other members keep them, and you can rejoin with a new invite.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                     if (unsyncedChanges > 0) {
                         // Leaving first would throw these away: the server refuses them from a non-member.
                         Text(
@@ -148,21 +151,26 @@ fun SharedGroupPanel(
                             } else {
                                 "$unsyncedChanges changes you made here haven't synced yet and would be lost. Sync first to keep them."
                             },
-                            color = WarmAmberPrimary,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = WarmAmberLight,
                         )
                     }
                 }
             },
             confirmButton = {
                 TextButton(onClick = { confirmingLeave = false; onLeave() }) {
-                    Text(if (unsyncedChanges > 0) "Leave anyway" else "Leave", color = WarmAmberPrimary)
+                    Text(if (unsyncedChanges > 0) "Leave anyway" else "Leave", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
                 }
             },
             dismissButton = {
                 if (unsyncedChanges > 0) {
-                    TextButton(onClick = { confirmingLeave = false; onSyncNow() }) { Text("Sync now", color = OffWhiteText) }
+                    TextButton(onClick = { confirmingLeave = false; onSyncNow() }) {
+                        Text("Sync now", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
+                    }
                 } else {
-                    TextButton(onClick = { confirmingLeave = false }) { Text("Cancel", color = MutedWarmGray) }
+                    TextButton(onClick = { confirmingLeave = false }) {
+                        Text("Cancel", style = MaterialTheme.typography.labelLarge, color = MutedWarmGray)
+                    }
                 }
             },
         )
@@ -178,65 +186,68 @@ private fun InviteSection(
 ) {
     val link = invite?.link
     when {
-        invite?.isLoading == true -> CircularProgressIndicator(color = WarmAmberPrimary, modifier = Modifier.size(24.dp))
-        link != null && invite.code != null -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(
-                modifier = Modifier
+        invite?.isLoading == true -> Box(Modifier.fillMaxWidth().heightIn(min = 48.dp), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = WarmAmberPrimary, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
+        }
+        link != null && invite.code != null -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+            Column(
+                Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(CharcoalElevated)
-                    .padding(12.dp),
+                    .clip(KpShapes.medium)
+                    .background(CharcoalBg)
+                    .padding(Spacing.l),
             ) {
-                Column {
+                Text("INVITE CODE", style = EyebrowText)
+                Text(invite.code.chunked(4).joinToString(" "), style = MoneyText.large, color = OffWhiteText)
+                invite.expiresAtMillis?.let {
                     Text(
-                        text = invite.code.chunked(4).joinToString(" "),
-                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold, color = OffWhiteText),
+                        text = "Anyone with this code can join until ${DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it))}.",
+                        style = MaterialTheme.typography.bodySmall,
                     )
-                    invite.expiresAtMillis?.let {
-                        Text(
-                            text = "Anyone with this code can join until ${DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it))}.",
-                            style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray),
-                        )
-                    }
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
-                    onClick = { onShareInvite(link) },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = WarmAmberPrimary, contentColor = CharcoalBg),
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Share link", fontWeight = FontWeight.Bold)
-                }
-                OutlinedButton(onClick = onRevokeInvite, shape = RoundedCornerShape(12.dp)) {
-                    Text("Turn off", color = MutedWarmGray)
-                }
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                PanelButton(label = "Share link", filled = true, onClick = { onShareInvite(link) }, modifier = Modifier.weight(1f))
+                PanelButton(label = "Turn off", filled = false, onClick = onRevokeInvite)
             }
         }
-        else -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            OutlinedButton(onClick = onCreateInvite, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-                Text("Invite people", color = OffWhiteText, fontWeight = FontWeight.Bold)
-            }
-            invite?.error?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall.copy(color = WarmAmberPrimary))
-            }
+        else -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+            PanelButton(label = "Invite people", filled = false, onClick = onCreateInvite, modifier = Modifier.fillMaxWidth())
+            invite?.error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = WarmAmberLight) }
         }
     }
 }
 
 @Composable
-private fun StatusChip(text: String, color: androidx.compose.ui.graphics.Color) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelMedium.copy(color = color, fontWeight = FontWeight.SemiBold),
+private fun PanelButton(label: String, filled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .heightIn(min = 48.dp)
+            .clip(KpShapes.small)
+            .background(if (filled) WarmAmberPrimary else CharcoalElevated)
+            .then(if (filled) Modifier else Modifier.border(1.dp, OutlineInteractive, KpShapes.small))
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = Spacing.l),
+    ) {
+        if (filled) Icon(KpIcons.Send, contentDescription = null, tint = CharcoalBg, modifier = Modifier.size(18.dp).padding(end = Spacing.xxs))
+        Text(label, style = MaterialTheme.typography.labelLarge, color = if (filled) CharcoalBg else OffWhiteText, modifier = Modifier.padding(start = if (filled) Spacing.s else 0.dp))
+    }
+}
+
+@Composable
+private fun MemberChip(name: String, colorHex: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(color.copy(alpha = 0.12f))
-            .padding(horizontal = 10.dp, vertical = 4.dp),
-    )
+            .clip(KpShapes.small)
+            .background(CharcoalElevated)
+            .padding(start = Spacing.xs, end = Spacing.m, top = Spacing.xs, bottom = Spacing.xs),
+    ) {
+        PersonAvatar(name = name, colorHex = colorHex, size = 26.dp)
+        Text(name, style = MaterialTheme.typography.labelLarge, color = OffWhiteText, modifier = Modifier.padding(start = Spacing.s))
+    }
 }
 
 @Preview

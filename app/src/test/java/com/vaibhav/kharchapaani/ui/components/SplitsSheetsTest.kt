@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.ui.components
 
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -126,5 +127,23 @@ class SplitsSheetsTest {
         composeTestRule.onNodeWithTag("save_group_button").assertIsEnabled().performClick()
 
         assertEquals(listOf("Flat", listOf(3L), false), saved)
+    }
+
+    @Test
+    fun `a groupmate can't be deleted from their row, since the ledger refuses it`() {
+        val groupmate = PersonEntity(id = 4, name = "Priya", avatarColor = "#fff", profileId = "priya")
+        composeTestRule.setContent {
+            SplitFlowTheme {
+                FriendRow(PersonBalance(groupmate, 0.0, 0.0, 0.0), onOpenHistory = {}, onSettleUp = {}, onDelete = {})
+            }
+        }
+
+        composeTestRule.onNodeWithText("All settled · In your groups").assertExists()
+        composeTestRule.onNodeWithTag("person_balance_card_4").assert(
+            androidx.compose.ui.test.SemanticsMatcher("has no delete action") { node ->
+                node.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsActions.CustomActions) { null }
+                    .orEmpty().none { it.label.startsWith("Delete") }
+            }
+        )
     }
 }

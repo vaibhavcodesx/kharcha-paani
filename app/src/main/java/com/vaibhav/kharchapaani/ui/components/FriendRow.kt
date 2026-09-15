@@ -66,11 +66,14 @@ fun FriendRow(
     var showMenu by remember { mutableStateOf(false) }
     val currentOnSettleUp by rememberUpdatedState(onSettleUp)
     val currentOnDelete by rememberUpdatedState(onDelete)
+    // A groupmate belongs to their groups' membership; the ledger won't delete them locally (it would
+    // corrupt shared expenses), so the row doesn't pretend it can. They go when they leave.
+    val canDelete = person.profileId == null
     val status = when {
         owesMe -> "Owes you"
         iOwe -> "You owe them"
         else -> "All settled"
-    }
+    } + if (canDelete) "" else " · In your groups"
 
     Box(modifier.fillMaxWidth().clip(position.shape)) {
         Row(
@@ -81,14 +84,14 @@ fun FriendRow(
                 .background(CharcoalCard)
                 .combinedClickable(
                     onClickLabel = "See history with ${person.name}",
-                    onLongClickLabel = "More options",
-                    onLongClick = { showMenu = true },
+                    onLongClickLabel = if (canDelete) "More options" else null,
+                    onLongClick = if (canDelete) ({ showMenu = true }) else null,
                     onClick = onOpenHistory,
                 )
                 .semantics {
-                    customActions = listOf(
+                    customActions = listOfNotNull(
                         CustomAccessibilityAction(if (owesMe || iOwe) "Settle up" else "Record a payment") { currentOnSettleUp(); true },
-                        CustomAccessibilityAction("Delete ${person.name}") { currentOnDelete(); true },
+                        if (canDelete) CustomAccessibilityAction("Delete ${person.name}") { currentOnDelete(); true } else null,
                     )
                 }
                 .padding(start = Spacing.l, end = Spacing.s, top = Spacing.m, bottom = Spacing.m)
