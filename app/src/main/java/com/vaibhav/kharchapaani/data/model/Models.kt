@@ -31,6 +31,14 @@ data class FullTransaction(
     val split: SplitEntity? = null,
     val shares: List<SplitShareEntity> = emptyList()
 ) {
+    /**
+     * Whether this account may change or delete it: it added it, or it's a group expense this account
+     * paid for (backlog item 11; the server's private.can_edit_group_expense). Only the adder can
+     * change who paid or move it out of its group.
+     */
+    val canEdit: Boolean
+        get() = transaction.isOwnedByMe || (transaction.groupId != null && split?.paidByPersonId == -1L)
+
     val myPersonalShare: Double
         get() {
             if (transaction.type.equals("income", ignoreCase = true)) return transaction.amount

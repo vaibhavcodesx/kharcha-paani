@@ -229,6 +229,12 @@ class MainViewModel(
     private val _editingTransactionId = MutableStateFlow<Long?>(null)
     val editingTransactionId: StateFlow<Long?> = _editingTransactionId.asStateFlow()
 
+    /** Who added the expense being edited, when it's a groupmate's that this account paid for. */
+    val editingAddedBy: StateFlow<String?> = combine(_editingTransactionId, rawTransactions, people) { id, transactions, people ->
+        val tx = id?.let { editing -> transactions.firstOrNull { it.transaction.id == editing } }?.transaction
+        tx?.takeUnless { it.isOwnedByMe }?.let { mine -> people.firstOrNull { it.profileId == mine.ownerProfileId }?.name ?: "a groupmate" }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     private val _type = MutableStateFlow("expense")
     val type: StateFlow<String> = _type.asStateFlow()
 
@@ -388,10 +394,15 @@ class MainViewModel(
 
     fun openEditTransaction(fullTx: FullTransaction) {
         val tx = fullTx.transaction
-        // Decision 2: only the person who added a group expense can change it.
-        if (!tx.isOwnedByMe) {
+        // Whoever added a group expense or paid for it can edit it (item 11).
+        if (!fullTx.canEdit) {
             val owner = people.value.firstOrNull { it.profileId == tx.ownerProfileId }?.name ?: "the member who added it"
-            _statusMessage.value = "Only $owner can edit this expense."
+            val payer = fullTx.split?.paidByPersonId?.let { id -> people.value.firstOrNull { it.id == id }?.name }
+            _statusMessage.value = if (payer != null && payer != owner) {
+                "Only $owner, who added it, or $payer, who paid, can edit this expense."
+            } else {
+                "Only $owner can edit this expense."
+            }
             return
         }
         rawGroups.value.firstOrNull { it.id == tx.groupId && it.isShared && it.isArchived }?.let { group ->

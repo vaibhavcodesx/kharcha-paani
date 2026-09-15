@@ -75,7 +75,9 @@ interface GroupSyncDao {
 
     @Query(
         "SELECT t.* FROM transactions t JOIN groups g ON g.id = t.groupId " +
-            "WHERE t.syncState = 'PENDING' AND t.ownerProfileId IS NULL AND g.syncState = 'SYNCED' " +
+            "WHERE t.syncState = 'PENDING' AND g.syncState = 'SYNCED' " +
+            // Mine, or a groupmate's that I paid for and edited (item 11).
+            "AND (t.ownerProfileId IS NULL OR EXISTS (SELECT 1 FROM splits s WHERE s.transactionId = t.id AND s.paidByPersonId = -1)) " +
             "ORDER BY t.updatedAt LIMIT :limit"
     )
     suspend fun pendingGroupExpenses(limit: Int): List<TransactionEntity>

@@ -18,6 +18,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.platform.testTag
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -69,6 +70,8 @@ fun SplitEditor(
     onPercentageChange: (Long, Double) -> Unit,
     onOpenAddFriend: () -> Unit,
     modifier: Modifier = Modifier,
+    // Who added the expense, when only they can change who paid.
+    payerLockedBy: String? = null,
 ) {
     Column(
         modifier = modifier
@@ -79,10 +82,18 @@ fun SplitEditor(
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
         Text("PAID BY", style = EyebrowText)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            ChoiceChip(label = "You", selected = paidByPersonId == ME, onClick = { onPaidByPersonIdChange(ME) })
-            shares.filter { it.personId != ME }.forEach { share ->
-                ChoiceChip(label = share.personName, selected = paidByPersonId == share.personId, onClick = { onPaidByPersonIdChange(share.personId) })
+        if (payerLockedBy != null) {
+            Text(
+                "You paid. Only $payerLockedBy, who added it, can change that.",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.testTag("payer_locked_note"),
+            )
+        } else {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                ChoiceChip(label = "You", selected = paidByPersonId == ME, onClick = { onPaidByPersonIdChange(ME) })
+                shares.filter { it.personId != ME }.forEach { share ->
+                    ChoiceChip(label = share.personName, selected = paidByPersonId == share.personId, onClick = { onPaidByPersonIdChange(share.personId) })
+                }
             }
         }
 

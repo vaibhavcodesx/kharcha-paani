@@ -52,13 +52,15 @@ class SupabaseTransactionRemote(
         // deleted_at is informational; the trigger's updated_at is what other devices pull on.
         try {
             supabase.from(TABLE).update(buildJsonObject { put("deleted_at", Clock.System.now().toString()) }) {
+                // No owner filter: the payer of a groupmate's expense deletes it too (item 11), and RLS
+                // already limits the update to rows this account may change. With the filter, a
+                // payer's delete matched nothing and silently stayed on the server.
                 filter {
-                    eq("owner_id", ownerId)
                     isIn("id", remoteIds)
                 }
             }
         } catch (e: RestException) {
-            // A soft delete matching our own row can only be refused by an RLS check (the row's group
+            // A soft delete of a row we may change can only be refused by an RLS check (the row's group
             // is archived or we left it), which retrying never fixes. Expired sessions are 401.
             if (e.statusCode == 401 || e.statusCode >= 500) throw e
             throw RowsRejectedException(e.statusCode, e.error)

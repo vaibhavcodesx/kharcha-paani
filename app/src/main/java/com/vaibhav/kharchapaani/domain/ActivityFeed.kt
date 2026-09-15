@@ -42,7 +42,7 @@ object ActivityFeed {
                 }
                 matchesQuery && matchesFilter
             }
-            .map { ActivityItem.Transaction(it, isReadOnly = !it.transaction.isOwnedByMe || it.transaction.groupId in archivedSharedGroups) }
+            .map { ActivityItem.Transaction(it, isReadOnly = !it.canEdit || it.transaction.groupId in archivedSharedGroups) }
 
         // Settlements and IOUs are money moving between people, so they belong with splits, not
         // with personal expenses or income.
