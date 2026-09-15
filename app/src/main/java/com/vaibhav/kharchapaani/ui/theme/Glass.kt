@@ -24,9 +24,10 @@ import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 
 /**
- * The screen content that floating glass samples. Provided once at the app shell with the content
- * marked `hazeSource`; null inside separate windows (dialogs, modal sheets), where glass falls back
- * to its tinted scrim.
+ * The screen content that floating glass samples (marked `hazeSource`). Provide it only around
+ * chrome drawn in the same window as that content: composition locals also reach dialogs and modal
+ * sheets, which are separate windows and can't sample it, and there glass must get null and fall
+ * back to its tinted scrim.
  */
 val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
 

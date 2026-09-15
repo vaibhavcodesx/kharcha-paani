@@ -860,6 +860,39 @@ transactions could be attached to any group.
     ran after the "left" message).
   - One CI run failed before building (the runner timed out downloading
     Gradle) and passed on re-run.
+- ✅ **Step 5 closed (2026-09-14):** no local data to migrate. The
+  "convert a local group to shared" feature was not added.
+- 🔄 **Part B UI/UX pass started (2026-09-14).**
+  - **Audit:** `docs/part-b-ui-audit.md`.
+  - **Owner decisions:**
+    - dark mode only;
+    - Liquid Glass via Haze;
+    - cut the Insights table (a "filter by category" feature is wanted
+      later);
+    - custom-drawn icons.
+  - ✅ **Foundations (PR #19, 165 tests on CI):**
+    - squircle shapes, spacing scale, type scale, contrast fix;
+    - glass material and brand gradient;
+    - `Money.format`: paisa shown, Indian grouping;
+    - odometer balance;
+    - read-only rows can't be swiped.
+    - Found by the new test: one swipe deleted the same expense twice
+      (`confirmValueChange` runs more than once), now fixed.
+  - ✅ **App shell (PR #20):**
+    - floating glass dock with a separate gradient add button (replaces
+      the NavigationBar and the FAB that covered the last row);
+    - custom duotone nav and category icons;
+    - directional tab motion;
+    - shared screen header.
+    - A Robolectric render capture saves `screens/dock.png` in the CI
+      test results for visual review.
+    - M3 audit of the shell:
+      - text contrast 6.3–14:1;
+      - tabs are `Role.Tab` in a selectable group with touch targets of
+        at least 50dp;
+      - the dock is capped at 560dp wide for tablets.
+    - Still open: content lists also stretch on wide screens (Part B
+      later).
 
 ### Web-Verified Notes (re-checked against current Supabase/Google docs)
 

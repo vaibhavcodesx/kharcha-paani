@@ -73,6 +73,7 @@ import com.vaibhav.kharchapaani.ui.components.SettlementItemCard
 import com.vaibhav.kharchapaani.ui.components.TransactionItemCard
 import com.vaibhav.kharchapaani.ui.components.bounceClick
 import com.vaibhav.kharchapaani.ui.components.pressBounce
+import com.vaibhav.kharchapaani.ui.shell.dockClearance
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -118,7 +119,7 @@ fun HomeScreen(
             .fillMaxSize()
             .background(CharcoalBg)
             .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(top = 12.dp, bottom = 96.dp),
+        contentPadding = PaddingValues(top = 12.dp, bottom = dockClearance()),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         // Top Bar: Custom Logo, App Name, Streak Flame & Quick IOU action

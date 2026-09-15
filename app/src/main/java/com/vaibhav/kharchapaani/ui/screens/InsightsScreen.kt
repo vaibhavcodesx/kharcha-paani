@@ -89,6 +89,8 @@ import com.vaibhav.kharchapaani.ui.components.CategoryHelper
 import com.vaibhav.kharchapaani.ui.components.bounceClick
 import com.vaibhav.kharchapaani.ui.components.shimmerLoading
 import com.vaibhav.kharchapaani.ui.format.Money
+import com.vaibhav.kharchapaani.ui.components.ScreenHeader
+import com.vaibhav.kharchapaani.ui.shell.dockClearance
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -144,29 +146,15 @@ fun InsightsScreen(
             .fillMaxSize()
             .background(CharcoalBg)
             .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(top = 12.dp, bottom = 96.dp),
+        contentPadding = PaddingValues(top = 12.dp, bottom = dockClearance()),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         // Top Header
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            ScreenHeader(
+                title = "Insights",
+                supporting = "Where your money went this month",
             ) {
-                Column {
-                    Text(
-                        text = "Data & Analytics",
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = OffWhiteText
-                        )
-                    )
-                    Text(
-                        text = "Multi-view expenses, charts & AI intelligence",
-                        style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray)
-                    )
-                }
 
                 Surface(
                     shape = RoundedCornerShape(10.dp),
