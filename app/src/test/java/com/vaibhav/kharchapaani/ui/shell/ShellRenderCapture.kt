@@ -1,6 +1,8 @@
 package com.vaibhav.kharchapaani.ui.shell
 
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.view.View
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,10 +13,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onRoot
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
@@ -37,7 +37,7 @@ import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
 /**
- * Renders the app shell over sample rows and saves a PNG next to the test report, so each PR's CI
+ * Renders the app shell over sample rows and saves a PNG with the test results, so each PR's CI
  * artifact shows what the change looks like. There's no emulator path past Google sign-in.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -64,7 +64,9 @@ class ShellRenderCapture {
 
     @Test
     fun `dock over the activity list`() {
+        lateinit var root: View
         composeTestRule.setContent {
+            root = LocalView.current
             SplitFlowTheme {
                 val hazeState = rememberHazeState()
                 Box(Modifier.fillMaxSize().background(CharcoalBg)) {
@@ -88,8 +90,11 @@ class ShellRenderCapture {
             }
         }
 
-        val image = composeTestRule.onRoot().captureToImage().asAndroidBitmap()
-        val out = File("build/reports/tests/testDebugUnitTest/screens/dock.png").apply { parentFile?.mkdirs() }
+        // captureToImage waits for a redraw that Robolectric's paused looper never delivers.
+        val image = composeTestRule.runOnIdle {
+            Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888).also { root.draw(Canvas(it)) }
+        }
+        val out = File("build/test-results/testDebugUnitTest/screens/dock.png").apply { parentFile?.mkdirs() }
         out.outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
         assertTrue(out.length() > 0)
     }
