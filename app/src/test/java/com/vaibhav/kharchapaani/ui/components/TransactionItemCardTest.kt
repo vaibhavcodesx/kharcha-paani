@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.swipeRight
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.data.model.FullTransaction
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
@@ -51,7 +52,7 @@ class TransactionItemCardTest {
     }
 
     @Test
-    fun `an editable row still deletes on swipe`() {
+    fun `swiping left deletes exactly once`() {
         var deletes = 0
         composeTestRule.setContent {
             SplitFlowTheme { TransactionItemCard(tx, onEdit = {}, onDelete = { deletes++ }) }
@@ -61,5 +62,21 @@ class TransactionItemCardTest {
         composeTestRule.waitForIdle()
 
         assertEquals(1, deletes)
+    }
+
+    @Test
+    fun `swiping right edits exactly once and the row comes back`() {
+        var edits = 0
+        var deletes = 0
+        composeTestRule.setContent {
+            SplitFlowTheme { TransactionItemCard(tx, onEdit = { edits++ }, onDelete = { deletes++ }) }
+        }
+
+        composeTestRule.onNodeWithTag("transaction_item_9").performTouchInput { swipeRight() }
+        composeTestRule.waitForIdle()
+
+        assertEquals(1, edits)
+        assertEquals(0, deletes)
+        composeTestRule.onNodeWithTag("transaction_item_9").assertIsDisplayed()
     }
 }

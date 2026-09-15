@@ -34,9 +34,11 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -92,23 +94,23 @@ fun TransactionItemCard(
         }
     }
 
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { dismissValue ->
-            when (dismissValue) {
-                // A row the ledger won't delete must not animate away as if it had been deleted.
-                SwipeToDismissBoxValue.EndToStart -> {
-                    if (!isReadOnly) onDelete()
-                    !isReadOnly
-                }
-                SwipeToDismissBoxValue.StartToEnd -> {
-                    onEdit()
-                    false
-                }
-                SwipeToDismissBoxValue.Settled -> false
+    val currentOnEdit by rememberUpdatedState(onEdit)
+    val currentOnDelete by rememberUpdatedState(onDelete)
+    val dismissState = rememberSwipeToDismissBoxState()
+    // Act once the row has settled: confirmValueChange can run more than once per swipe, which
+    // deleted the same expense twice.
+    LaunchedEffect(dismissState.currentValue) {
+        when (dismissState.currentValue) {
+            SwipeToDismissBoxValue.EndToStart -> currentOnDelete()
+            SwipeToDismissBoxValue.StartToEnd -> {
+                currentOnEdit()
+                dismissState.reset()
             }
+            SwipeToDismissBoxValue.Settled -> Unit
         }
-    )
+    }
 
+    // A row the ledger won't delete must not swipe away as if it had been deleted.
     SwipeToDismissBox(
         state = dismissState,
         enableDismissFromStartToEnd = !isReadOnly,
