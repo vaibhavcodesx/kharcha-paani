@@ -158,6 +158,17 @@ class ScreenRenderCapture {
     }
 
     @Test
+    fun `categories sheet`() = capture("categories_sheet") {
+        Column(Modifier.fillMaxSize().background(CharcoalSurface), horizontalAlignment = Alignment.CenterHorizontally) {
+            SheetHandle()
+            com.vaibhav.kharchapaani.ui.components.CategoriesContent(
+                prefs = com.vaibhav.kharchapaani.domain.CategoryPrefs(customExpense = listOf("Pets", "Kids school"), hiddenCategories = setOf("Team Payment")),
+                onChange = {},
+            )
+        }
+    }
+
+    @Test
     fun `home`() = capture("home") {
         Box(Modifier.fillMaxSize().background(CharcoalBg)) { Home(longFeed = false) }
     }

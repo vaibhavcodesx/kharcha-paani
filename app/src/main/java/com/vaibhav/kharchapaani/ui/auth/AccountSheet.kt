@@ -104,6 +104,7 @@ fun AccountSheet(
     onDismiss: () -> Unit,
     upiId: String? = null,
     onOpenUpi: () -> Unit = {},
+    onOpenCategories: () -> Unit = {},
 ) {
     KpModalSheet(onDismiss = onDismiss) {
         AccountSheetContent(
@@ -118,6 +119,7 @@ fun AccountSheet(
             onSignOut = onSignOut,
             upiId = upiId,
             onOpenUpi = onOpenUpi,
+            onOpenCategories = onOpenCategories,
         )
     }
 }
@@ -137,6 +139,7 @@ fun AccountSheetContent(
     modifier: Modifier = Modifier,
     upiId: String? = null,
     onOpenUpi: () -> Unit = {},
+    onOpenCategories: () -> Unit = {},
 ) {
     val saved = (state.profile as? ProfileState.Loaded)?.profile
     // Keyed on what's saved, so a successful save (or a reload) resets the fields to it.
@@ -264,6 +267,14 @@ fun AccountSheetContent(
                 detail = upiId ?: "Add yours so friends can scan to pay you",
                 position = RowPosition.First,
                 modifier = Modifier.clickable(onClickLabel = "Set up UPI", onClick = onOpenUpi).testTag("setting_upi"),
+            ) {
+                Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
+            }
+            SettingRow(
+                title = "Categories & payment methods",
+                detail = "Hide defaults, add your own",
+                position = RowPosition.Middle,
+                modifier = Modifier.clickable(onClickLabel = "Edit categories", onClick = onOpenCategories).testTag("setting_categories"),
             ) {
                 Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
             }
