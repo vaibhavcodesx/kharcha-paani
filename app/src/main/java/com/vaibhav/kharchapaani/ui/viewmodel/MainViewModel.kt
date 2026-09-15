@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.ui.viewmodel
 
 import android.app.Application
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -8,6 +9,7 @@ import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -37,7 +39,9 @@ import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.data.sync.SyncScheduler
 import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
 import com.vaibhav.kharchapaani.domain.ActivityFeed
+import com.vaibhav.kharchapaani.domain.CsvFile
 import com.vaibhav.kharchapaani.domain.DebtSimplifier
+import com.vaibhav.kharchapaani.domain.ExportRange
 import com.vaibhav.kharchapaani.domain.EntryDraft
 import com.vaibhav.kharchapaani.domain.MonthAnalytics
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
@@ -45,6 +49,7 @@ import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
+import java.io.File
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -65,6 +70,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Scoped to one signed-in account: [db] is that account's ledger file. A different account gets a
@@ -1142,19 +1148,50 @@ class MainViewModel(
         }
     }
 
-    fun exportCsv(context: Context) {
+    private val _isExportOpen = MutableStateFlow(false)
+    val isExportOpen: StateFlow<Boolean> = _isExportOpen.asStateFlow()
+
+    fun openExport() {
+        _isExportOpen.value = true
+    }
+
+    fun closeExport() {
+        _isExportOpen.value = false
+    }
+
+    /**
+     * Shares the range as a .csv file. It used to go as the share's text, which apps like WhatsApp and
+     * Gmail cut off after a screenful, so a whole ledger arrived as its last 10-20 rows.
+     */
+    fun exportCsv(context: Context, range: ExportRange) {
         viewModelScope.launch {
-            val csvContent = ledgerRepo.exportCsv()
-            val sendIntent = Intent().apply {
-                action = Intent.ACTION_SEND
-                putExtra(Intent.EXTRA_TEXT, csvContent)
-                putExtra(Intent.EXTRA_TITLE, "KharchaPaani_Statement.csv")
-                type = "text/csv"
+            val csv = ledgerRepo.exportCsv(range)
+            if (csv.rows == 0) {
+                _statusMessage.value = "Nothing logged in that range to export."
+                return@launch
             }
-            val shareIntent = Intent.createChooser(sendIntent, "Export Kharcha Paani Financial Statement")
-            shareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(shareIntent)
+            val uri = writeExport(csv)
+            val send = Intent(Intent.ACTION_SEND).apply {
+                type = "text/csv"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_SUBJECT, csv.fileName)
+                clipData = ClipData.newRawUri(csv.fileName, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            _isExportOpen.value = false
+            context.startActivity(Intent.createChooser(send, if (csv.rows == 1) "Export 1 entry" else "Export ${csv.rows} entries"))
         }
+    }
+
+    private suspend fun writeExport(csv: CsvFile): Uri = withContext(Dispatchers.IO) {
+        val app = getApplication<Application>()
+        // One export at a time in the cache: the last one is replaced, not piled up.
+        val dir = File(app.cacheDir, "exports").apply {
+            mkdirs()
+            listFiles()?.forEach { it.delete() }
+        }
+        val file = File(dir, csv.fileName).apply { writeText(csv.content, Charsets.UTF_8) }
+        FileProvider.getUriForFile(app, "${app.packageName}.fileprovider", file)
     }
 
     fun getPersonLedgerFlow(personId: Long): kotlinx.coroutines.flow.Flow<List<PersonLedgerItem>> {
