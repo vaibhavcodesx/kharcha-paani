@@ -914,6 +914,39 @@ transactions could be attached to any group.
       sheets.
     - **Checked on the CI renders** (`home.png`, `confirm_sheet.png`,
       `dock.png`). Real blur still needs a look on an Android 12+ phone.
+  - ✅ **Polish from render review (PR #22):**
+    - every sheet has a visible grab bar (3.3:1, was 1.3:1) with
+      Material's TalkBack label, in place of a close X (owner request);
+    - Home's month figures are no longer a card;
+    - settlement rows open their menu on tap, so amounts align;
+    - the quick-add header stops repeating "expense".
+  - ✅ **Splits & Trips (PR #23, 190 tests on CI):**
+    - **Splits screen:**
+      - "who owes whom" summary;
+      - Friends | Groups control;
+      - compact friend rows with one Settle button;
+      - trip-ticket group cards.
+    - **Settle up, IOU, add friend and new group are sheets** on shared
+      sheet components (`KpModalSheet`, `SheetScaffold`,
+      `GlassActionBar`), with disabled actions that say what's missing.
+    - **Bug fixed:** typing a decimal point in an exact split share
+      dropped it, so ₹12.50 was saved as ₹125. It was proven by a test
+      that failed on CI first (the field held "125"), then fixed.
+    - **IOU** no longer preselects the first friend when there's a choice.
+  - 🔎 **Deferred (triaged, no decision needed):**
+    - the group and person detail sheets aren't restyled;
+    - the delete-friend and simplify-debts dialogs aren't sheets yet;
+    - a field scrolled into view by TalkBack or the keyboard can stop
+      behind a floating action bar (states batch);
+    - content stretches on wide screens.
+  - 🔎 **Machine note (2026-09-15):** a local Gradle build exhausted RAM
+    and crashed the laptop mid-session; no work was lost.
+    `~/.gradle/gradle.properties` now caps the heap at 2 GB, uses 2
+    workers and runs no daemon, and every build is checked for leftover
+    Java processes.
+- 📌 **Backlog (owner, 2026-09-14): "filter by category".** The
+  Notion-style Insights table was cut in Part B, but the owner wants a
+  way to see entries for one category later. Not scheduled.
 
 ### Web-Verified Notes (re-checked against current Supabase/Google docs)
 
