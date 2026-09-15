@@ -1,62 +1,42 @@
 package com.vaibhav.kharchapaani.data.export
 
 import android.content.Context
-import androidx.core.content.FileProvider
+import android.content.res.XmlResourceParser
 import androidx.test.core.app.ApplicationProvider
+import com.vaibhav.kharchapaani.R
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import java.io.File
 
 /**
- * The app's FileProvider hands out read access to whatever its paths cover. Only CSV exports are ever
- * shared, so nothing else in the app's storage may be reachable through it.
+ * The FileProvider hands out read access to whatever file_paths.xml lists, to any app a share is
+ * granted to. Only CSV exports (cache/exports, see MainViewModel.exportCsv) are ever shared, so that's
+ * the only root it may list.
+ *
+ * This reads the configuration rather than calling FileProvider.getUriForFile: under Robolectric the
+ * provider resolves no roots at all, so every "can't be shared" check would pass for the wrong reason.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class FileProviderScopeTest {
 
     private val context = ApplicationProvider.getApplicationContext<Context>()
-    private val authority = "${context.packageName}.fileprovider"
 
-    private fun fileIn(dir: File, name: String) = File(dir, name).apply {
-        parentFile?.mkdirs()
-        writeText("x")
-    }
-
-    private fun assertNotShareable(file: File) {
-        assertThrows(IllegalArgumentException::class.java) { FileProvider.getUriForFile(context, authority, file) }
-    }
-
-    @Test
-    fun `an export can be shared`() {
-        val uri = FileProvider.getUriForFile(context, authority, fileIn(File(context.cacheDir, "exports"), "KharchaPaani_all.csv"))
-
-        assertEquals(authority, uri.authority)
-        assertEquals("KharchaPaani_all.csv", uri.lastPathSegment)
+    private fun roots(): List<Pair<String, String?>> {
+        val parser = context.resources.getXml(R.xml.file_paths)
+        val roots = mutableListOf<Pair<String, String?>>()
+        while (parser.next() != XmlResourceParser.END_DOCUMENT) {
+            if (parser.eventType == XmlResourceParser.START_TAG && parser.name != "paths") {
+                roots += parser.name to parser.getAttributeValue(null, "path")
+            }
+        }
+        return roots
     }
 
     @Test
-    fun `app files can't be shared`() {
-        assertNotShareable(fileIn(context.filesDir, "session.json"))
-    }
-
-    @Test
-    fun `other cache files can't be shared`() {
-        assertNotShareable(fileIn(context.cacheDir, "image_cache/receipt.jpg"))
-    }
-
-    @Test
-    fun `external storage can't be shared`() {
-        val external = context.getExternalFilesDir(null) ?: return
-        assertNotShareable(fileIn(external, "anything.txt"))
-    }
-
-    @Test
-    fun `the ledger database can't be shared`() {
-        assertNotShareable(fileIn(context.getDatabasePath("x").parentFile!!, "ledger.db"))
+    fun `only the exports folder in the cache can be shared`() {
+        assertEquals(listOf("cache-path" to "exports/"), roots())
     }
 }
