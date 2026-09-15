@@ -12,11 +12,7 @@ import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.data.db.LedgerDatabases
 import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
-import com.vaibhav.kharchapaani.ui.format.Money
 import io.github.jan.supabase.auth.auth
-import java.text.NumberFormat
-import java.util.Calendar
-import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -50,9 +46,7 @@ class SplitFlowWidgetProvider : AppWidgetProvider() {
                 if (userId == null) {
                     // Signed out: never show a previous account's numbers on the home screen.
                     val views = RemoteViews(context.packageName, R.layout.widget_splitflow).apply {
-                        setTextViewText(R.id.widget_month_spent, "—")
-                        setTextViewText(R.id.widget_month_income, "—")
-                        setTextViewText(R.id.widget_net_owed_badge, "Sign in")
+                        apply(WidgetSummary.signedOut())
                         bindClickIntents(context)
                     }
                     appWidgetManager.updateAppWidget(appWidgetId, views)
@@ -63,25 +57,11 @@ class SplitFlowWidgetProvider : AppWidgetProvider() {
                 // same code, instead of a second copy of the ledger math that could drift.
                 val repository = LedgerRepository(db)
                 val analytics = repository.monthlyAnalytics.first()
-                val monthlySpent = analytics.totalExpense
-                val monthlyIncome = analytics.totalIncome
                 val netOwedToMe = repository.personBalances.first().sumOf { it.netBalance }
-
-                val spentStr = Money.format(monthlySpent)
-                val incomeStr = Money.format(monthlyIncome)
-                val netBadgeStr = if (netOwedToMe > 0) {
-                    "${Money.format(netOwedToMe, showPlus = true)} owed"
-                } else if (netOwedToMe < 0) {
-                    "${Money.format(-netOwedToMe)} you owe"
-                } else {
-                    "Balanced"
-                }
+                val summary = WidgetSummary.of(analytics.totalExpense, analytics.totalIncome, netOwedToMe)
 
                 val views = RemoteViews(context.packageName, R.layout.widget_splitflow).apply {
-                    setTextViewText(R.id.widget_month_spent, spentStr)
-                    setTextViewText(R.id.widget_month_income, incomeStr)
-                    setTextViewText(R.id.widget_net_owed_badge, netBadgeStr)
-
+                    apply(summary)
                     bindClickIntents(context)
                 }
 
@@ -90,6 +70,13 @@ class SplitFlowWidgetProvider : AppWidgetProvider() {
                 e.printStackTrace()
             }
         }
+    }
+
+    private fun RemoteViews.apply(summary: WidgetSummary) {
+        setTextViewText(R.id.widget_month_spent, summary.spent)
+        setTextViewText(R.id.widget_month_income, summary.income)
+        setTextViewText(R.id.widget_net_owed_badge, summary.balance)
+        setTextColor(R.id.widget_net_owed_badge, summary.balanceColor)
     }
 
     private fun RemoteViews.bindClickIntents(context: Context) {
@@ -135,7 +122,6 @@ class SplitFlowWidgetProvider : AppWidgetProvider() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         setOnClickPendingIntent(R.id.widget_btn_splits, splitsPendingIntent)
-    
     }
 
     companion object {

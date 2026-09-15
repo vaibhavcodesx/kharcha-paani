@@ -2,125 +2,98 @@ package com.vaibhav.kharchapaani.ui.screens
 
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.PieChart
-import androidx.compose.material.icons.filled.ReceiptLong
-import androidx.compose.material.icons.filled.Savings
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Sort
-import androidx.compose.material.icons.filled.Store
-import androidx.compose.material.icons.filled.TableChart
-import androidx.compose.material.icons.filled.TrendingDown
-import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.model.CategorySummary
 import com.vaibhav.kharchapaani.data.model.FullTransaction
 import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
+import com.vaibhav.kharchapaani.domain.MonthInsights
 import com.vaibhav.kharchapaani.ui.components.AnimatedRollingNumber
+import com.vaibhav.kharchapaani.ui.components.CategoryBadge
 import com.vaibhav.kharchapaani.ui.components.CategoryHelper
-import com.vaibhav.kharchapaani.ui.components.bounceClick
+import com.vaibhav.kharchapaani.ui.components.RowPosition
+import com.vaibhav.kharchapaani.ui.components.ScreenHeader
+import com.vaibhav.kharchapaani.ui.components.pairedFigureStyle
 import com.vaibhav.kharchapaani.ui.components.shimmerLoading
 import com.vaibhav.kharchapaani.ui.format.Money
-import com.vaibhav.kharchapaani.ui.components.ScreenHeader
 import com.vaibhav.kharchapaani.ui.shell.dockClearance
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
-import com.vaibhav.kharchapaani.ui.theme.ElectricIndigo
+import com.vaibhav.kharchapaani.ui.theme.EyebrowText
+import com.vaibhav.kharchapaani.ui.theme.KpShapes
+import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
-import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
+import com.vaibhav.kharchapaani.ui.theme.OutlineInteractive
+import com.vaibhav.kharchapaani.ui.theme.Spacing
+import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import java.text.SimpleDateFormat
-import java.util.Calendar
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.TextStyle
 import java.util.Date
 import java.util.Locale
-import kotlin.math.cos
-import kotlin.math.sin
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
-enum class InsightsViewTab {
-    CHARTS,
-    NOTION_TABLE,
-    AI_INTEL
-}
-
-enum class TableSortField {
-    DATE_DESC,
-    DATE_ASC,
-    AMOUNT_DESC,
-    SHARE_DESC
-}
-
+/**
+ * One page for the month: what went out against what came in, where it went (ranked bars you can
+ * open), a couple of highlights, and an on-demand AI read. The Charts / Notion table / AI tabs are
+ * gone; the table repeated Home's feed (a "filter by category" view is on the backlog instead).
+ */
 @Composable
 fun InsightsScreen(
     analytics: MonthlyAnalytics,
@@ -131,1168 +104,128 @@ fun InsightsScreen(
     onGenerateAiSummary: () -> Unit,
     onExportCsv: (Context) -> Unit,
     onEditTransaction: ((FullTransaction) -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    today: LocalDate = LocalDate.now(),
 ) {
     val context = LocalContext.current
-    var currentViewTab by remember { mutableStateOf(InsightsViewTab.CHARTS) }
-    var selectedCategoryFilter by remember { mutableStateOf<String?>(null) }
-    var searchQuery by remember { mutableStateOf("") }
-    var sortOrder by remember { mutableStateOf(TableSortField.DATE_DESC) }
-
-    val peopleMap = remember(people) { people.associateBy { it.id } }
+    var selected by rememberSaveable { mutableStateOf<String?>(null) }
+    val monthName = remember(today) { today.month.getDisplayName(TextStyle.FULL, Locale.getDefault()) }
+    val selectedEntries = remember(transactions, selected, today) {
+        selected?.let { MonthInsights.categoryEntries(transactions, it, today, ZoneId.systemDefault()) }.orEmpty()
+    }
 
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(CharcoalBg)
-            .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(top = 12.dp, bottom = dockClearance()),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+            .background(CharcoalBg),
+        contentPadding = PaddingValues(start = Spacing.page, end = Spacing.page, top = Spacing.l, bottom = dockClearance()),
     ) {
-        // Top Header
-        item {
-            ScreenHeader(
-                title = "Insights",
-                supporting = "Where your money went this month",
-            ) {
-
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = CharcoalElevated,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, CharcoalBorder),
-                    modifier = Modifier
-                        .clickable { onExportCsv(context) }
-                        .testTag("export_csv_button")
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                            contentDescription = "Export CSV",
-                            tint = WarmAmberPrimary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Export",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = OffWhiteText,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        )
-                    }
+        item(key = "header") {
+            ScreenHeader(title = "Insights", supporting = "Where your money went in $monthName") {
+                TextButton(onClick = { onExportCsv(context) }, modifier = Modifier.testTag("export_csv_button")) {
+                    Text("Export", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
                 }
             }
         }
-
-        // Notion-Style Multi-View Switcher Tab Bar
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(CharcoalCard)
-                    .border(1.dp, CharcoalBorder, RoundedCornerShape(14.dp))
-                    .padding(4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                NotionViewTabButton(
-                    title = "Charts & Pie",
-                    icon = Icons.Default.PieChart,
-                    isSelected = currentViewTab == InsightsViewTab.CHARTS,
-                    onClick = { currentViewTab = InsightsViewTab.CHARTS },
-                    testTag = "tab_view_charts",
-                    modifier = Modifier.weight(1f)
-                )
-
-                NotionViewTabButton(
-                    title = "Notion Table",
-                    icon = Icons.Default.TableChart,
-                    isSelected = currentViewTab == InsightsViewTab.NOTION_TABLE,
-                    onClick = { currentViewTab = InsightsViewTab.NOTION_TABLE },
-                    testTag = "tab_view_table",
-                    modifier = Modifier.weight(1f)
-                )
-
-                NotionViewTabButton(
-                    title = "AI Intel",
-                    icon = Icons.Default.AutoAwesome,
-                    isSelected = currentViewTab == InsightsViewTab.AI_INTEL,
-                    onClick = { currentViewTab = InsightsViewTab.AI_INTEL },
-                    testTag = "tab_view_ai",
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-
-        when (currentViewTab) {
-            InsightsViewTab.CHARTS -> {
-                // Cash Flow Overview Card
-                item {
-                    CashFlowOverviewCard(analytics = analytics)
-                }
-
-                // Interactive Donut / Pie Chart Section
-                item {
-                    DonutPieChartSection(
-                        analytics = analytics,
-                        selectedCategory = selectedCategoryFilter,
-                        onSelectCategory = { selectedCategoryFilter = if (selectedCategoryFilter == it) null else it }
-                    )
-                }
-
-                // If a category is selected, show its contributing transactions
-                if (selectedCategoryFilter != null) {
-                    val filteredTxs = transactions.filter {
-                        it.transaction.category.equals(selectedCategoryFilter, ignoreCase = true)
-                    }
-                    item {
-                        CategoryDrilldownSection(
-                            category = selectedCategoryFilter!!,
-                            transactions = filteredTxs,
-                            peopleMap = peopleMap,
-                            onClear = { selectedCategoryFilter = null }
-                        )
-                    }
-                }
-
-                // Spend Velocity & Metrics
-                item {
-                    SpendMetricsSection(analytics = analytics, transactions = transactions)
-                }
-
-                // Full Category Breakdown Progress Bars
-                item {
-                    CategoryBreakdownList(
-                        summaries = analytics.categorySummaries,
-                        selectedCategory = selectedCategoryFilter,
-                        onSelectCategory = { selectedCategoryFilter = if (selectedCategoryFilter == it) null else it }
-                    )
-                }
-            }
-
-            InsightsViewTab.NOTION_TABLE -> {
-                // Notion-Style Table View Component
-                item {
-                    NotionTableView(
-                        transactions = transactions,
-                        peopleMap = peopleMap,
-                        searchQuery = searchQuery,
-                        onSearchChange = { searchQuery = it },
-                        selectedCategory = selectedCategoryFilter,
-                        onSelectCategory = { selectedCategoryFilter = it },
-                        sortOrder = sortOrder,
-                        onSortChange = { sortOrder = it },
-                        onEditTransaction = onEditTransaction
-                    )
-                }
-            }
-
-            InsightsViewTab.AI_INTEL -> {
-                // Gemini AI Intelligence View
-                item {
-                    GeminiAiIntelligenceCard(
-                        analytics = analytics,
-                        aiSummary = aiSummary,
-                        isGeneratingSummary = isGeneratingSummary,
-                        onGenerateAiSummary = onGenerateAiSummary
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun NotionViewTabButton(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    testTag: String,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(10.dp))
-            .background(if (isSelected) WarmAmberPrimary else Color.Transparent)
-            .clickable { onClick() }
-            .padding(vertical = 8.dp)
-            .testTag(testTag),
-        contentAlignment = Alignment.Center
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (isSelected) CharcoalBg else MutedWarmGray,
-                modifier = Modifier.size(15.dp)
+        item(key = "cashflow") { CashFlow(analytics, Modifier.padding(top = Spacing.l)) }
+        item(key = "categories") {
+            CategoryBreakdown(
+                summaries = analytics.categorySummaries,
+                selected = selected,
+                onSelect = { selected = if (selected == it) null else it },
+                entries = selectedEntries,
+                onEditTransaction = onEditTransaction,
+                modifier = Modifier.padding(top = Spacing.xxl),
             )
-            Spacer(modifier = Modifier.width(5.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelMedium.copy(
-                    color = if (isSelected) CharcoalBg else MutedWarmGray,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    fontSize = 12.sp
-                )
+        }
+        item(key = "highlights") {
+            Highlights(analytics, MonthInsights.dailyAverage(analytics.totalExpense, today), Modifier.padding(top = Spacing.xxl))
+        }
+        item(key = "review") {
+            MonthReview(
+                summary = aiSummary,
+                isGenerating = isGeneratingSummary,
+                hasSpending = analytics.totalExpense > 0,
+                onGenerate = onGenerateAiSummary,
+                modifier = Modifier.padding(top = Spacing.xxl),
             )
         }
     }
 }
 
+/** Out against in, and what's left, as numbers rather than a chart: three values are a table, not a plot. */
 @Composable
-fun CashFlowOverviewCard(analytics: MonthlyAnalytics) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(CharcoalCard)
-            .border(1.dp, CharcoalBorder, RoundedCornerShape(20.dp))
-            .padding(18.dp)
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "MONTHLY PERSONAL SPEND",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = MutedWarmGray,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
-                )
-                Text(
-                    text = "Splits Accounted",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = ChartreuseSecondary,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 10.sp
-                    )
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.TrendingDown,
-                            contentDescription = null,
-                            tint = WarmAmberPrimary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Your Share (Spent)",
-                            style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = Money.format(analytics.totalExpense),
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            color = WarmAmberPrimary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
-                }
-
-                Column(horizontalAlignment = Alignment.End) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.TrendingUp,
-                            contentDescription = null,
-                            tint = ChartreuseSecondary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Income",
-                            style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = Money.format(analytics.totalIncome),
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            color = ChartreuseSecondary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(CharcoalBorder)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Savings,
-                        contentDescription = null,
-                        tint = if (analytics.netCashflow >= 0) ChartreuseSecondary else WarmAmberPrimary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Net Cash Flow",
-                        style = MaterialTheme.typography.bodyMedium.copy(color = OffWhiteText)
-                    )
-                }
-
-                Text(
-                    text = Money.format(analytics.netCashflow, showPlus = true),
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        color = if (analytics.netCashflow >= 0) ChartreuseSecondary else WarmAmberPrimary,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-            }
+private fun CashFlow(analytics: MonthlyAnalytics, modifier: Modifier = Modifier) {
+    val left = analytics.netCashflow
+    Column(modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+            val style = pairedFigureStyle(analytics.totalExpense, analytics.totalIncome)
+            Figure("Spent", analytics.totalExpense, OffWhiteText, style, Modifier.weight(1f))
+            Box(Modifier.padding(horizontal = Spacing.xl).width(1.dp).fillMaxHeight().background(CharcoalBorder))
+            Figure("Came in", analytics.totalIncome, ChartreuseSecondary, style, Modifier.weight(1f))
         }
-    }
-}
-
-@Composable
-fun DonutPieChartSection(
-    analytics: MonthlyAnalytics,
-    selectedCategory: String?,
-    onSelectCategory: (String) -> Unit
-) {
-    val summaries = analytics.categorySummaries
-    val chartAnimation = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(0f) }
-
-    androidx.compose.runtime.LaunchedEffect(summaries) {
-        chartAnimation.snapTo(0f)
-        chartAnimation.animateTo(
-            targetValue = 1f,
-            animationSpec = androidx.compose.animation.core.tween(
-                durationMillis = 800,
-                easing = androidx.compose.animation.core.FastOutSlowInEasing
-            )
-        )
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(CharcoalCard)
-            .border(1.dp, CharcoalBorder, RoundedCornerShape(20.dp))
-            .padding(18.dp)
-            .testTag("pie_chart_section")
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "CATEGORY PIE BREAKDOWN",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = MutedWarmGray,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
-                )
-                if (selectedCategory != null) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = CharcoalElevated,
-                        modifier = Modifier
-                            .bounceClick { onSelectCategory(selectedCategory) }
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                        ) {
-                            Text("Reset", style = MaterialTheme.typography.labelSmall.copy(color = WarmAmberPrimary))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(Icons.Default.Close, contentDescription = null, tint = WarmAmberPrimary, modifier = Modifier.size(12.dp))
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (summaries.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No expense data recorded yet.", style = MaterialTheme.typography.bodyMedium.copy(color = MutedWarmGray))
-                }
-            } else {
-                // Interactive Donut Canvas with entry animation
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Canvas(
-                        modifier = Modifier
-                            .size(180.dp)
-                            .testTag("interactive_pie_chart_canvas")
-                    ) {
-                        val strokeWidth = 28.dp.toPx()
-                        val diameter = size.minDimension - strokeWidth
-                        val radius = diameter / 2f
-                        val centerOffset = Offset(size.width / 2f, size.height / 2f)
-
-                        var startAngle = -90f
-
-                        for (item in summaries) {
-                            val sweepAngle = (item.percentage / 100f) * 360f * chartAnimation.value
-                            val color = CategoryHelper.getCategoryColor(item.category)
-                            val isHighlighted = selectedCategory == null || selectedCategory == item.category
-
-                            drawArc(
-                                color = if (isHighlighted) color else color.copy(alpha = 0.25f),
-                                startAngle = startAngle + 1.5f,
-                                sweepAngle = (sweepAngle - 3f).coerceAtLeast(0.5f),
-                                useCenter = false,
-                                topLeft = Offset(centerOffset.x - radius, centerOffset.y - radius),
-                                size = Size(diameter, diameter),
-                                style = Stroke(
-                                    width = if (selectedCategory == item.category) strokeWidth + 6.dp.toPx() else strokeWidth,
-                                    cap = StrokeCap.Round
-                                )
-                            )
-                            startAngle += sweepAngle
-                        }
-                    }
-
-                    // Center Content Inside Donut
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(horizontal = 24.dp)
-                    ) {
-                        val highlightedItem = summaries.find { it.category == selectedCategory }
-                        Text(
-                            text = highlightedItem?.category ?: "Total Spent",
-                            style = MaterialTheme.typography.labelSmall.copy(color = MutedWarmGray, fontWeight = FontWeight.Bold),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = Money.format(highlightedItem?.amount ?: analytics.totalExpense),
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                color = if (highlightedItem != null) CategoryHelper.getCategoryColor(highlightedItem.category) else OffWhiteText,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                        )
-                        if (highlightedItem != null) {
-                            Text(
-                                text = "${String.format(Locale.US, "%.1f", highlightedItem.percentage)}%",
-                                style = MaterialTheme.typography.labelSmall.copy(color = SubMutedWarmGray)
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Interactive Legend Chips
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(summaries) { item ->
-                        val isSelected = selectedCategory == item.category
-                        val catColor = CategoryHelper.getCategoryColor(item.category)
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = if (isSelected) catColor.copy(alpha = 0.25f) else CharcoalElevated,
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                if (isSelected) catColor else CharcoalBorder
-                            ),
-                            modifier = Modifier
-                                .clickable { onSelectCategory(item.category) }
-                                .testTag("pie_legend_${item.category}")
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(10.dp)
-                                        .clip(CircleShape)
-                                        .background(catColor)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "${item.category} (${String.format(Locale.US, "%.0f", item.percentage)}%)",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        color = if (isSelected) catColor else OffWhiteText,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                    )
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun CategoryDrilldownSection(
-    category: String,
-    transactions: List<FullTransaction>,
-    peopleMap: Map<Long, PersonEntity>,
-    onClear: () -> Unit
-) {
-    val catColor = CategoryHelper.getCategoryColor(category)
-    val sdf = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(CharcoalElevated)
-            .border(1.dp, catColor.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
-            .padding(16.dp)
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .clip(CircleShape)
-                            .background(catColor)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Transactions in $category",
-                        style = MaterialTheme.typography.titleMedium.copy(color = OffWhiteText, fontWeight = FontWeight.Bold)
-                    )
-                }
-
-                IconButton(onClick = onClear, modifier = Modifier.size(24.dp)) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = MutedWarmGray, modifier = Modifier.size(16.dp))
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            if (transactions.isEmpty()) {
-                Text("No transactions found in this category.", style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray))
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    transactions.take(5).forEach { ft ->
-                        val tx = ft.transaction
-                        val myShare = ft.myPersonalShare
-                        val isSplit = ft.split != null
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(CharcoalCard)
-                                .padding(10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = tx.merchant.ifBlank { "Expense" },
-                                    style = MaterialTheme.typography.bodyMedium.copy(color = OffWhiteText, fontWeight = FontWeight.SemiBold),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    text = sdf.format(Date(tx.date)),
-                                    style = MaterialTheme.typography.bodySmall.copy(color = SubMutedWarmGray, fontSize = 11.sp)
-                                )
-                            }
-
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text(
-                                    text = Money.format(myShare),
-                                    style = MaterialTheme.typography.bodyMedium.copy(color = WarmAmberPrimary, fontWeight = FontWeight.Bold)
-                                )
-                                if (isSplit) {
-                                    Text(
-                                        text = "Split bill: ${Money.format(tx.amount)}",
-                                        style = MaterialTheme.typography.bodySmall.copy(color = ChartreuseSecondary, fontSize = 10.sp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SpendMetricsSection(
-    analytics: MonthlyAnalytics,
-    transactions: List<FullTransaction>
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        // Top Merchant Card
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(16.dp))
-                .background(CharcoalCard)
-                .border(1.dp, CharcoalBorder, RoundedCornerShape(16.dp))
-                .padding(14.dp)
-        ) {
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Store,
-                        contentDescription = null,
-                        tint = WarmAmberPrimary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Top Merchant",
-                        style = MaterialTheme.typography.labelSmall.copy(color = MutedWarmGray)
-                    )
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = analytics.topMerchant,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        color = OffWhiteText,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-
-        // Daily Streak Card
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(16.dp))
-                .background(CharcoalCard)
-                .border(1.dp, CharcoalBorder, RoundedCornerShape(16.dp))
-                .padding(14.dp)
-        ) {
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.LocalFireDepartment,
-                        contentDescription = null,
-                        tint = ChartreuseSecondary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Log Streak",
-                        style = MaterialTheme.typography.labelSmall.copy(color = MutedWarmGray)
-                    )
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "${analytics.dailyStreak} Days Active",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        color = ChartreuseSecondary,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun CategoryBreakdownList(
-    summaries: List<CategorySummary>,
-    selectedCategory: String?,
-    onSelectCategory: (String) -> Unit
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
         Text(
-            text = "Category Ranking",
-            style = MaterialTheme.typography.titleMedium.copy(color = OffWhiteText, fontWeight = FontWeight.Bold)
+            text = when {
+                analytics.totalIncome <= 0 && analytics.totalExpense <= 0 -> "Nothing logged this month yet."
+                left >= 0.005 -> "${Money.format(left)} more came in than went out."
+                left <= -0.005 -> "${Money.format(abs(left))} more went out than came in."
+                else -> "Exactly as much went out as came in."
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = Spacing.m),
         )
-
-        summaries.forEach { catSummary ->
-            val catColor = CategoryHelper.getCategoryColor(catSummary.category)
-            val catIcon = CategoryHelper.getCategoryIcon(catSummary.category)
-            val isSelected = selectedCategory == catSummary.category
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(CharcoalCard)
-                    .border(
-                        1.dp,
-                        if (isSelected) catColor else CharcoalBorder,
-                        RoundedCornerShape(14.dp)
-                    )
-                    .clickable { onSelectCategory(catSummary.category) }
-                    .padding(14.dp)
-            ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(catColor.copy(alpha = 0.2f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = catIcon,
-                                    contentDescription = null,
-                                    tint = catColor,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = catSummary.category,
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        color = OffWhiteText,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                )
-                                Text(
-                                    text = "${catSummary.count} transactions",
-                                    style = MaterialTheme.typography.bodySmall.copy(color = SubMutedWarmGray)
-                                )
-                            }
-                        }
-
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = Money.format(catSummary.amount),
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    color = OffWhiteText,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                            Text(
-                                text = "${String.format(Locale.US, "%.1f", catSummary.percentage)}%",
-                                style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    LinearProgressIndicator(
-                        progress = { (catSummary.percentage / 100f).coerceIn(0f, 1f) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(CircleShape),
-                        color = catColor,
-                        trackColor = CharcoalElevated
-                    )
-                }
-            }
-        }
     }
 }
 
-// ----------------------------------------------------
-// NOTION-STYLE DATABASE TABLE VIEW
-// ----------------------------------------------------
 @Composable
-fun NotionTableView(
-    transactions: List<FullTransaction>,
-    peopleMap: Map<Long, PersonEntity>,
-    searchQuery: String,
-    onSearchChange: (String) -> Unit,
-    selectedCategory: String?,
-    onSelectCategory: (String?) -> Unit,
-    sortOrder: TableSortField,
-    onSortChange: (TableSortField) -> Unit,
-    onEditTransaction: ((FullTransaction) -> Unit)?
-) {
-    val horizontalScrollState = rememberScrollState()
-    val sdf = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
-
-    // Filter & Sort
-    val filteredList = remember(transactions, searchQuery, selectedCategory, sortOrder) {
-        var list = transactions
-
-        if (searchQuery.isNotBlank()) {
-            val q = searchQuery.trim().lowercase()
-            list = list.filter {
-                it.transaction.merchant.lowercase().contains(q) ||
-                it.transaction.category.lowercase().contains(q) ||
-                it.transaction.note.lowercase().contains(q) ||
-                it.transaction.paymentMethod.lowercase().contains(q)
-            }
-        }
-
-        if (selectedCategory != null) {
-            list = list.filter { it.transaction.category.equals(selectedCategory, ignoreCase = true) }
-        }
-
-        when (sortOrder) {
-            TableSortField.DATE_DESC -> list.sortedByDescending { it.transaction.date }
-            TableSortField.DATE_ASC -> list.sortedBy { it.transaction.date }
-            TableSortField.AMOUNT_DESC -> list.sortedByDescending { it.transaction.amount }
-            TableSortField.SHARE_DESC -> list.sortedByDescending { it.myPersonalShare }
-        }
+private fun Figure(label: String, amount: Double, color: Color, style: androidx.compose.ui.text.TextStyle, modifier: Modifier) {
+    Column(modifier.semantics(mergeDescendants = true) {}) {
+        Text(label.uppercase(), style = EyebrowText)
+        AnimatedRollingNumber(targetValue = amount, style = style, color = color)
     }
+}
 
-    val totalBillSum = filteredList.sumOf { it.transaction.amount }
-    val totalYourShareSum = filteredList.sumOf { it.myPersonalShare }
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        // Table Controls Bar: Search & Category Chips & Sort Selector
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = onSearchChange,
-                placeholder = { Text("Filter items in database...", color = MutedWarmGray, fontSize = 12.sp) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(16.dp)) },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { onSearchChange("") }) {
-                            Icon(Icons.Default.Close, contentDescription = "Clear", tint = MutedWarmGray, modifier = Modifier.size(14.dp))
-                        }
-                    }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = WarmAmberPrimary,
-                    unfocusedBorderColor = CharcoalBorder,
-                    focusedTextColor = OffWhiteText,
-                    unfocusedTextColor = OffWhiteText,
-                    focusedContainerColor = CharcoalCard,
-                    unfocusedContainerColor = CharcoalCard
-                ),
-                modifier = Modifier
-                    .weight(1f)
-                    .height(48.dp)
-                    .testTag("notion_table_search")
+/**
+ * Where it went: one ranked bar per category, in one hue. Colour here would only repeat what the
+ * label says, and the old per-category pastels had nothing to do with the brand. Opening a category
+ * greys the other bars and lists what's behind its total.
+ */
+@Composable
+private fun CategoryBreakdown(
+    summaries: List<CategorySummary>,
+    selected: String?,
+    onSelect: (String) -> Unit,
+    entries: List<FullTransaction>,
+    onEditTransaction: ((FullTransaction) -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier.fillMaxWidth()) {
+        Text(
+            "By category",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.semantics { heading() }.padding(bottom = Spacing.m),
+        )
+        if (summaries.isEmpty()) {
+            Text(
+                "Once you log an expense this month, you'll see which categories it went to here.",
+                style = MaterialTheme.typography.bodyMedium,
             )
-
-            // Sort Toggle Button
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = CharcoalCard,
-                border = androidx.compose.foundation.BorderStroke(1.dp, CharcoalBorder),
-                modifier = Modifier
-                    .clickable {
-                        val next = when (sortOrder) {
-                            TableSortField.DATE_DESC -> TableSortField.AMOUNT_DESC
-                            TableSortField.AMOUNT_DESC -> TableSortField.SHARE_DESC
-                            TableSortField.SHARE_DESC -> TableSortField.DATE_ASC
-                            TableSortField.DATE_ASC -> TableSortField.DATE_DESC
-                        }
-                        onSortChange(next)
-                    }
-                    .height(48.dp)
-                    .testTag("notion_table_sort_button")
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 12.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Sort,
-                        contentDescription = null,
-                        tint = WarmAmberPrimary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = when (sortOrder) {
-                            TableSortField.DATE_DESC -> "Date ↓"
-                            TableSortField.DATE_ASC -> "Date ↑"
-                            TableSortField.AMOUNT_DESC -> "Total ↓"
-                            TableSortField.SHARE_DESC -> "Share ↓"
-                        },
-                        style = MaterialTheme.typography.labelSmall.copy(color = OffWhiteText, fontWeight = FontWeight.SemiBold)
-                    )
-                }
-            }
+            return@Column
         }
-
-        // Notion Table Container
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(CharcoalCard)
-                .border(1.dp, CharcoalBorder, RoundedCornerShape(16.dp))
-                .testTag("notion_database_table")
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                // Table Headers Row (Scrollable horizontally)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(CharcoalElevated)
-                        .horizontalScroll(horizontalScrollState)
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TableCellHeader(title = "Date", width = 90.dp)
-                    TableCellHeader(title = "Merchant / Title", width = 140.dp)
-                    TableCellHeader(title = "Type", width = 75.dp)
-                    TableCellHeader(title = "Category", width = 100.dp)
-                    TableCellHeader(title = "Payment", width = 85.dp)
-                    TableCellHeader(title = "Total Bill", width = 100.dp)
-                    TableCellHeader(title = "Your Share", width = 105.dp)
-                    TableCellHeader(title = "Split Type", width = 110.dp)
-                }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(CharcoalBorder)
+        val largest = summaries.maxOf { it.amount }.coerceAtLeast(0.01)
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            summaries.forEachIndexed { index, summary ->
+                val isSelected = summary.category == selected
+                CategoryBarRow(
+                    summary = summary,
+                    fraction = (summary.amount / largest).toFloat(),
+                    emphasis = selected == null || isSelected,
+                    isSelected = isSelected,
+                    position = RowPosition.of(index, summaries.size),
+                    onClick = { onSelect(summary.category) },
                 )
-
-                // Table Rows
-                if (filteredList.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("No matching transactions in database.", style = MaterialTheme.typography.bodyMedium.copy(color = MutedWarmGray))
-                    }
-                } else {
-                    filteredList.forEachIndexed { index, ft ->
-                        val isEven = index % 2 == 0
-                        val tx = ft.transaction
-                        val split = ft.split
-                        val shares = ft.shares
-                        val myShare = ft.myPersonalShare
-                        val isIncome = tx.type.equals("income", ignoreCase = true)
-                        val catColor = CategoryHelper.getCategoryColor(tx.category)
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(if (isEven) CharcoalCard else CharcoalElevated.copy(alpha = 0.4f))
-                                .horizontalScroll(horizontalScrollState)
-                                .clickable { onEditTransaction?.invoke(ft) }
-                                .padding(horizontal = 12.dp, vertical = 9.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Date
-                            Text(
-                                text = sdf.format(Date(tx.date)),
-                                style = MaterialTheme.typography.bodySmall.copy(color = SubMutedWarmGray, fontSize = 12.sp),
-                                modifier = Modifier.width(90.dp)
-                            )
-
-                            // Merchant / Title
-                            Text(
-                                text = tx.merchant.ifBlank { "Untitled Item" },
-                                style = MaterialTheme.typography.bodySmall.copy(color = OffWhiteText, fontWeight = FontWeight.SemiBold),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.width(140.dp)
-                            )
-
-                            // Type Tag
-                            Box(modifier = Modifier.width(75.dp)) {
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = if (isIncome) ChartreuseSecondary.copy(alpha = 0.2f) else WarmAmberPrimary.copy(alpha = 0.2f)
-                                ) {
-                                    Text(
-                                        text = if (isIncome) "Income" else "Expense",
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            color = if (isIncome) ChartreuseSecondary else WarmAmberPrimary,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 10.sp
-                                        ),
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-
-                            // Notion Category Tag
-                            Box(modifier = Modifier.width(100.dp)) {
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = catColor.copy(alpha = 0.2f),
-                                    border = androidx.compose.foundation.BorderStroke(0.5.dp, catColor.copy(alpha = 0.5f))
-                                ) {
-                                    Text(
-                                        text = tx.category,
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            color = catColor,
-                                            fontWeight = FontWeight.SemiBold,
-                                            fontSize = 10.sp
-                                        ),
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                        maxLines = 1
-                                    )
-                                }
-                            }
-
-                            // Payment Method Tag
-                            Box(modifier = Modifier.width(85.dp)) {
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = ElectricIndigo.copy(alpha = 0.2f)
-                                ) {
-                                    Text(
-                                        text = tx.paymentMethod.ifBlank { "UPI" },
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            color = ElectricIndigo,
-                                            fontWeight = FontWeight.Medium,
-                                            fontSize = 10.sp
-                                        ),
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                        maxLines = 1
-                                    )
-                                }
-                            }
-
-                            // Total Bill
-                            Text(
-                                text = Money.format(tx.amount),
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = if (isIncome) ChartreuseSecondary else OffWhiteText,
-                                    fontWeight = FontWeight.SemiBold
-                                ),
-                                modifier = Modifier.width(100.dp)
-                            )
-
-                            // Your Share (Highlighting split math)
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.width(105.dp)
-                            ) {
-                                Text(
-                                    text = Money.format(myShare),
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = if (split != null) ChartreuseSecondary else WarmAmberPrimary,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                )
-                                if (split != null) {
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Icon(
-                                        imageVector = Icons.Default.Group,
-                                        contentDescription = "Split",
-                                        tint = ChartreuseSecondary,
-                                        modifier = Modifier.size(12.dp)
-                                    )
-                                }
-                            }
-
-                            // Split Type / Participants Count
-                            Text(
-                                text = if (split != null) "${split.splitType.replaceFirstChar { it.uppercase() }} (${shares.size}p)" else "Solo",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = if (split != null) ChartreuseSecondary else SubMutedWarmGray,
-                                    fontSize = 11.sp
-                                ),
-                                modifier = Modifier.width(110.dp)
-                            )
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(0.5.dp)
-                                .background(CharcoalBorder.copy(alpha = 0.5f))
-                        )
-                    }
-
-                    // Table Summary Footer
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(CharcoalElevated)
-                            .horizontalScroll(horizontalScrollState)
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "${filteredList.size} items",
-                            style = MaterialTheme.typography.labelSmall.copy(color = MutedWarmGray, fontWeight = FontWeight.Bold),
-                            modifier = Modifier.width(90.dp)
-                        )
-                        Text(
-                            text = "SUM",
-                            style = MaterialTheme.typography.labelSmall.copy(color = MutedWarmGray, fontWeight = FontWeight.Bold),
-                            modifier = Modifier.width(400.dp)
-                        )
-                        Text(
-                            text = Money.format(totalBillSum),
-                            style = MaterialTheme.typography.bodySmall.copy(color = OffWhiteText, fontWeight = FontWeight.Bold),
-                            modifier = Modifier.width(100.dp)
-                        )
-                        Text(
-                            text = Money.format(totalYourShareSum),
-                            style = MaterialTheme.typography.bodySmall.copy(color = ChartreuseSecondary, fontWeight = FontWeight.Bold),
-                            modifier = Modifier.width(105.dp)
-                        )
-                        Spacer(modifier = Modifier.width(110.dp))
-                    }
+                AnimatedVisibility(visible = isSelected, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+                    CategoryEntries(entries, onEditTransaction)
                 }
             }
         }
@@ -1300,145 +233,166 @@ fun NotionTableView(
 }
 
 @Composable
-fun TableCellHeader(title: String, width: androidx.compose.ui.unit.Dp) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.labelSmall.copy(
-            color = MutedWarmGray,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.5.sp
-        ),
-        modifier = Modifier.width(width)
-    )
-}
-
-// ----------------------------------------------------
-// GEMINI AI FINANCIAL INTELLIGENCE CARD
-// ----------------------------------------------------
-@Composable
-fun GeminiAiIntelligenceCard(
-    analytics: MonthlyAnalytics,
-    aiSummary: String?,
-    isGeneratingSummary: Boolean,
-    onGenerateAiSummary: () -> Unit
+private fun CategoryBarRow(
+    summary: CategorySummary,
+    fraction: Float,
+    emphasis: Boolean,
+    isSelected: Boolean,
+    position: RowPosition,
+    onClick: () -> Unit,
 ) {
-    Box(
+    val grown by animateFloatAsState(fraction, animationSpec = tween(600), label = "bar_${summary.category}")
+    val barColor = if (emphasis) WarmAmberPrimary else OutlineInteractive
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(CharcoalCard)
-            .border(1.dp, WarmAmberPrimary.copy(alpha = 0.4f), RoundedCornerShape(20.dp))
-            .padding(18.dp)
-            .testTag("ai_summary_card")
+            .clip(position.shape)
+            .background(if (isSelected) CharcoalElevated else CharcoalCard)
+            .clickable(role = Role.Button, onClickLabel = if (isSelected) "Close ${summary.category}" else "Show ${summary.category} entries", onClick = onClick)
+            .semantics(mergeDescendants = true) {
+                this.selected = isSelected
+                stateDescription = "${summary.percentage.roundToInt()} percent of this month's spending"
+            }
+            .padding(horizontal = Spacing.l, vertical = Spacing.m)
+            .testTag("category_row_${summary.category}"),
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            CategoryBadge(summary.category)
+            Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
+                Text(summary.category, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    "${summary.count} ${if (summary.count == 1) "entry" else "entries"} · ${summary.percentage.roundToInt()}%",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            Text(Money.format(summary.amount), style = MoneyText.row, color = OffWhiteText)
+        }
+        // The bar: 8dp tall, rounded ends, on a recessive track; scaled to the largest category so the
+        // top one fills the row and the rest read against it.
+        Canvas(
+            Modifier
+                .padding(top = Spacing.s)
+                .fillMaxWidth()
+                .height(8.dp),
+        ) {
+            val radius = CornerRadius(size.height / 2)
+            drawRoundRect(color = CharcoalBg, cornerRadius = radius)
+            val width = (size.width * grown).coerceAtLeast(size.height)
+            drawRoundRect(color = barColor, size = Size(width, size.height), cornerRadius = radius)
+        }
+    }
+}
+
+/** What's behind the selected total, newest first; tap one to open it. */
+@Composable
+private fun CategoryEntries(entries: List<FullTransaction>, onEditTransaction: ((FullTransaction) -> Unit)?) {
+    val dateFormat = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(top = 2.dp)
+            .clip(KpShapes.medium)
+            .background(CharcoalElevated)
+            .padding(vertical = Spacing.xs),
+    ) {
+        if (entries.isEmpty()) {
+            Text("No entries to show.", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(Spacing.l))
+        }
+        entries.forEach { ft ->
+            val tx = ft.transaction
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(WarmAmberPrimary.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            tint = WarmAmberPrimary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = "Gemini AI Financial Intel",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = OffWhiteText,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                        Text(
-                            text = "Deep budget analysis & spending velocity",
-                            style = MaterialTheme.typography.bodySmall.copy(color = SubMutedWarmGray)
-                        )
-                    }
-                }
-
-                if (isGeneratingSummary) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        color = WarmAmberPrimary,
-                        strokeWidth = 2.dp
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            if (aiSummary != null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(CharcoalElevated)
-                        .padding(14.dp)
-                ) {
-                    Text(
-                        text = aiSummary,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = OffWhiteText,
-                            lineHeight = 22.sp
-                        )
-                    )
-                }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(CharcoalElevated)
-                        .shimmerLoading(enabled = isGeneratingSummary)
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = if (isGeneratingSummary) "Gemini is analyzing your spending records, categorized split overheads, and formulating budget optimization tips..." else "Tap below to get an instant AI audit of your monthly spending patterns, personal split overhead, and savings recommendations.",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = if (isGeneratingSummary) WarmAmberPrimary else MutedWarmGray,
-                            lineHeight = 18.sp
-                        )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onGenerateAiSummary,
-                enabled = !isGeneratingSummary,
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(46.dp)
-                    .bounceClick { if (!isGeneratingSummary) onGenerateAiSummary() }
-                    .testTag("generate_ai_summary_button"),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = WarmAmberPrimary,
-                    contentColor = CharcoalBg
-                )
+                    .heightIn(min = 48.dp)
+                    .then(if (onEditTransaction != null) Modifier.clickable(onClickLabel = "Open") { onEditTransaction(ft) } else Modifier)
+                    .padding(horizontal = Spacing.l, vertical = Spacing.s),
             ) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
+                Text(dateFormat.format(Date(tx.date)), style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(56.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(tx.merchant.ifBlank { tx.category }, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (ft.split != null) {
+                        Text("Your share of ${Money.format(tx.amount)}", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                Text(Money.format(ft.myPersonalShare), style = MoneyText.small, color = OffWhiteText)
+            }
+        }
+    }
+}
+
+/** Two single numbers, so two stat tiles rather than a chart. */
+@Composable
+private fun Highlights(analytics: MonthlyAnalytics, perDay: Double, modifier: Modifier = Modifier) {
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
+        StatTile(
+            label = "Spent most at",
+            value = analytics.topMerchant.takeIf { analytics.totalExpense > 0 && it != "None" } ?: "—",
+            modifier = Modifier.weight(1f),
+        )
+        StatTile(label = "Per day so far", value = Money.format(perDay), money = true, modifier = Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun StatTile(label: String, value: String, modifier: Modifier = Modifier, money: Boolean = false) {
+    Column(
+        modifier
+            .clip(KpShapes.large)
+            .background(CharcoalCard)
+            .semantics(mergeDescendants = true) {}
+            .padding(Spacing.l),
+    ) {
+        Text(label.uppercase(), style = EyebrowText)
+        Spacer(Modifier.height(Spacing.xs))
+        Text(
+            value,
+            style = if (money) MoneyText.title else MaterialTheme.typography.titleMedium,
+            color = OffWhiteText,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/** An on-demand read of the month from the AI, only once there's something to read. */
+@Composable
+private fun MonthReview(summary: String?, isGenerating: Boolean, hasSpending: Boolean, onGenerate: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier
+            .fillMaxWidth()
+            .clip(KpShapes.large)
+            .background(CharcoalCard)
+            .padding(Spacing.l)
+            .testTag("ai_summary_card"),
+    ) {
+        Text("Month in review", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+        Spacer(Modifier.height(Spacing.s))
+        when {
+            isGenerating -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                listOf(1f, 0.92f, 0.6f).forEach { width ->
+                    Box(Modifier.fillMaxWidth(width).height(14.dp).clip(KpShapes.small).background(CharcoalElevated).shimmerLoading())
+                }
+                Text("Reading this month's entries…", style = MaterialTheme.typography.bodyMedium)
+            }
+            summary != null -> Text(summary, style = MaterialTheme.typography.bodyLarge)
+            hasSpending -> Text(
+                "Get a short read on where this month's money went and what stands out.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            else -> Text("Log a few expenses first; there's nothing to review yet.", style = MaterialTheme.typography.bodyMedium)
+        }
+        if (hasSpending && !isGenerating) {
+            TextButton(
+                onClick = onGenerate,
+                modifier = Modifier.padding(top = Spacing.xs).testTag("generate_ai_summary_button"),
+            ) {
+                Icon(com.vaibhav.kharchapaani.ui.icons.KpIcons.Insights, contentDescription = null, tint = WarmAmberLight, modifier = Modifier.size(18.dp))
                 Text(
-                    text = if (aiSummary == null) "Generate AI Intelligence Audit" else "Refresh Financial Audit",
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                    if (summary == null) "Get a summary" else "Refresh summary",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = WarmAmberLight,
+                    modifier = Modifier.padding(start = Spacing.s),
                 )
             }
         }

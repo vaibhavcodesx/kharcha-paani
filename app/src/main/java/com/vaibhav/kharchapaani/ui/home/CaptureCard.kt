@@ -30,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -72,6 +73,9 @@ fun CaptureCard(
     onParsePdf: (ByteArray, String) -> Unit,
     onOpenIou: () -> Unit,
     modifier: Modifier = Modifier,
+    // The home-screen widget's Speak button: start listening straight away.
+    startVoiceCapture: Boolean = false,
+    onVoiceCaptureStarted: () -> Unit = {},
 ) {
     var input by rememberSaveable { mutableStateOf("") }
     val context = LocalContext.current
@@ -90,6 +94,21 @@ fun CaptureCard(
             if (!spoken.isNullOrBlank()) onParseText(spoken)
         }
     }
+    fun listen() {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            .putExtra(RecognizerIntent.EXTRA_PROMPT, "Say what you spent, like “coffee 150 card”")
+        // No speech recogniser installed: there's nothing to launch.
+        runCatching { speechLauncher.launch(intent) }
+    }
+    LaunchedEffect(startVoiceCapture) {
+        if (startVoiceCapture) {
+            onVoiceCaptureStarted()
+            listen()
+        }
+    }
+
     val pdfPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
             runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }
@@ -160,14 +179,7 @@ fun CaptureCard(
                     icon = KpIcons.Mic,
                     label = "Say it",
                     filled = false,
-                    onClick = {
-                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-                            .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                            .putExtra(RecognizerIntent.EXTRA_PROMPT, "Say what you spent, like “coffee 150 card”")
-                        // No speech recogniser installed: there's nothing to launch.
-                        runCatching { speechLauncher.launch(intent) }
-                    },
+                    onClick = ::listen,
                     modifier = Modifier.testTag("voice_mic_button"),
                 )
             }
