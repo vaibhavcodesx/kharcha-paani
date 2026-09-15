@@ -208,6 +208,6 @@ private fun RowScope.CaptureMode(icon: ImageVector, label: String, modifier: Mod
             .clickable(role = Role.Button, onClick = onClick),
     ) {
         Icon(icon, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp))
-        Text(label, style = MaterialTheme.typography.labelLarge, color = OffWhiteText, modifier = Modifier.padding(start = Spacing.s))
+        Text(label, style = MaterialTheme.typography.labelLarge, color = MutedWarmGray, modifier = Modifier.padding(start = Spacing.s))
     }
 }

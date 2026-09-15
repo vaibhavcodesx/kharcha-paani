@@ -1,8 +1,10 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasNoClickAction
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
@@ -38,7 +40,7 @@ class SettlementItemCardTest {
 
         composeTestRule.onNodeWithText("Bob paid you").assertIsDisplayed()
         composeTestRule.onNodeWithText("+₹250").assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription("More options for Bob paid you").performClick()
+        composeTestRule.onNodeWithText("Bob paid you").performClick()
         composeTestRule.onNodeWithText("Retract settlement").performClick()
         assertEquals(1, retracted)
     }
@@ -60,6 +62,6 @@ class SettlementItemCardTest {
         }
 
         composeTestRule.onNodeWithText("Bob paid Carol").assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription("More options for Bob paid Carol").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("settlement_item_5").assert(hasNoClickAction())
     }
 }

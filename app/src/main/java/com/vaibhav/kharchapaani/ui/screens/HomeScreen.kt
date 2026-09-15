@@ -115,7 +115,7 @@ fun HomeScreen(
                 onOpenSimplifyDebts = onOpenSimplifyDebts,
             )
         }
-        item(key = "month") { MonthStrip(monthlyAnalytics, Modifier.padding(top = Spacing.l)) }
+        item(key = "month") { MonthStrip(monthlyAnalytics, Modifier.padding(top = Spacing.s)) }
         item(key = "capture") {
             CaptureCard(
                 isParsing = isParsing,
@@ -123,7 +123,7 @@ fun HomeScreen(
                 onParseImage = onParseImage,
                 onParsePdf = onParsePdf,
                 onOpenIou = onOpenIouDialog,
-                modifier = Modifier.padding(top = Spacing.m),
+                modifier = Modifier.padding(top = Spacing.xl),
             )
         }
         item(key = "feed_header") {
