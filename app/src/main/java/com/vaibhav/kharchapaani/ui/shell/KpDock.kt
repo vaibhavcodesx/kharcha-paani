@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Icon
@@ -87,8 +88,10 @@ fun KpDock(
 ) {
     Row(
         modifier = modifier
-            .fillMaxWidth()
             .navigationBarsPadding()
+            // On tablets and unfolded phones a full-width dock puts tabs out of thumb reach.
+            .widthIn(max = 560.dp)
+            .fillMaxWidth()
             .padding(horizontal = Spacing.page, vertical = Spacing.m),
         horizontalArrangement = Arrangement.spacedBy(Spacing.m),
         verticalAlignment = Alignment.CenterVertically,
