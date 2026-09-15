@@ -38,11 +38,10 @@ import com.vaibhav.kharchapaani.data.sync.SyncScheduler
 import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
 import com.vaibhav.kharchapaani.domain.ActivityFeed
 import com.vaibhav.kharchapaani.domain.DebtSimplifier
-import com.vaibhav.kharchapaani.domain.LocalStatementParser
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
-import com.vaibhav.kharchapaani.util.NotificationHelper
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -245,6 +244,18 @@ class MainViewModel(
     private val _aiSummary = MutableStateFlow<String?>(null)
     val aiSummary: StateFlow<String?> = _aiSummary.asStateFlow()
 
+    /** The last summary request failed; the review card says so instead of inventing one. */
+    private val _aiSummaryFailed = MutableStateFlow(false)
+    val aiSummaryFailed: StateFlow<Boolean> = _aiSummaryFailed.asStateFlow()
+
+    /** Shown at the top of the quick-add sheet, e.g. when a bill couldn't be read. */
+    private val _parseNotice = MutableStateFlow<String?>(null)
+    val parseNotice: StateFlow<String?> = _parseNotice.asStateFlow()
+
+    fun showMessage(text: String) {
+        _statusMessage.value = text
+    }
+
     private val _isGeneratingSummary = MutableStateFlow(false)
     val isGeneratingSummary: StateFlow<Boolean> = _isGeneratingSummary.asStateFlow()
 
@@ -274,6 +285,7 @@ class MainViewModel(
     }
 
     fun openManualAdd(defaultType: String = "expense") {
+        _parseNotice.value = null
         _editingTransactionId.value = null
         _type.value = defaultType
         _amount.value = ""
@@ -390,6 +402,7 @@ class MainViewModel(
         if (rawText.isBlank()) return
         viewModelScope.launch {
             _isParsing.value = true
+            _parseNotice.value = null
             val friendNames = people.value.map { it.name }
             val parsed = geminiRepo.parseMessyText(rawText, friendNames)
             applyParsedResult(parsed)
@@ -405,6 +418,7 @@ class MainViewModel(
             val friendNames = people.value.map { it.name }
             val parsed = geminiRepo.parseReceiptOrScreenshot(bitmap, friendNames)
             applyParsedResult(parsed)
+            _parseNotice.value = if (parsed.readFailed) "Couldn't read that bill. Fill in the details, or try a clearer photo." else null
             _isParsing.value = false
         }
     }
@@ -426,6 +440,7 @@ class MainViewModel(
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            _statusMessage.value = "Couldn't open that image."
         }
     }
 
@@ -434,8 +449,13 @@ class MainViewModel(
             _isParsingStatement.value = true
             _isImportStatementOpen.value = true
             val result = geminiRepo.parseBankOrUpiStatementPdf(pdfBytes, fileName)
-            _statementParseResult.value = result
             _isParsingStatement.value = false
+            if (result == null) {
+                _isImportStatementOpen.value = false
+                _statusMessage.value = "Couldn't read that statement. Check your connection and try again; scanned or password-protected PDFs can't be read."
+            } else {
+                _statementParseResult.value = result
+            }
         }
     }
 
@@ -449,13 +469,8 @@ class MainViewModel(
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            _statusMessage.value = "Failed to open PDF statement: ${e.message}"
+            _statusMessage.value = "Couldn't open that PDF."
         }
-    }
-
-    fun loadSampleStatementForDemo() {
-        _statementParseResult.value = LocalStatementParser.generateSampleParsedStatement()
-        _isImportStatementOpen.value = true
     }
 
     fun dismissStatementImportDialog() {
@@ -490,7 +505,7 @@ class MainViewModel(
 
             ledgerRepo.batchInsertTransactions(entities)
             dismissStatementImportDialog()
-            _statusMessage.value = "Successfully added ${entities.size} transactions across respective months!"
+            _statusMessage.value = if (entities.size == 1) "Added 1 entry from the statement." else "Added ${entities.size} entries from the statement."
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
     }
@@ -498,9 +513,8 @@ class MainViewModel(
     private fun applyParsedResult(parsed: ParsedTransactionResult) {
         _editingTransactionId.value = null
         _type.value = parsed.type
-        _amount.value = if (parsed.amount > 0) {
-            if (parsed.amount % 1.0 == 0.0) parsed.amount.toLong().toString() else parsed.amount.toString()
-        } else ""
+        // Money.input, not Double.toString, which writes ₹1,00,00,000 as "1.0E7".
+        _amount.value = if (parsed.amount > 0) Money.input(parsed.amount) else ""
         _merchant.value = parsed.merchant
         _category.value = parsed.category
         _paymentMethod.value = parsed.paymentMethod
@@ -718,6 +732,7 @@ class MainViewModel(
 
     fun dismissConfirmSheet() {
         _isConfirmSheetOpen.value = false
+        _parseNotice.value = null
     }
 
     private val _splitGroupPrompt = MutableStateFlow<SharedRecordGroups.Options?>(null)
@@ -878,9 +893,9 @@ class MainViewModel(
             }
             dismissCreateGroup()
             _statusMessage.value = if (shared) {
-                "Group '$name' created. Open it to invite people."
+                "Created $name. Open it to invite people."
             } else {
-                "Group '$name' created successfully!"
+                "Created $name."
             }
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
@@ -1021,20 +1036,10 @@ class MainViewModel(
         viewModelScope.launch {
             _isGeneratingSummary.value = true
             val summary = geminiRepo.generateFinancialSummary(monthlyAnalytics.value)
-            _aiSummary.value = summary
+            if (summary != null) _aiSummary.value = summary
+            _aiSummaryFailed.value = summary == null
             _isGeneratingSummary.value = false
         }
-    }
-
-    fun triggerMonthlyNotification(context: Context) {
-        val analytics = monthlyAnalytics.value
-        NotificationHelper.showMonthlySpendingNotification(
-            context = context,
-            totalExpense = analytics.totalExpense,
-            topCategory = analytics.topCategory,
-            topCategoryAmount = analytics.topCategoryAmount
-        )
-        _statusMessage.value = "Monthly insight notification pushed to system tray!"
     }
 
     fun exportCsv(context: Context) {

@@ -16,7 +16,9 @@ data class ParsedTransactionResult(
     val date: Long = System.currentTimeMillis(),
     val note: String = "",
     val splitWithPersonNames: List<String> = emptyList(),
-    val confidence: Float = 1.0f
+    val confidence: Float = 1.0f,
+    /** The bill couldn't be read: nothing here came from it, and the person should be told. */
+    val readFailed: Boolean = false,
 )
 
 data class SplitWithShares(

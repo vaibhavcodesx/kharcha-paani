@@ -29,6 +29,7 @@ class ConfirmSheetContentTest {
 
     @Composable
     private fun Sheet(
+        notice: String? = null,
         amount: String = "370",
         category: String = "Food",
         onCategoryChange: (String) -> Unit = {},
@@ -37,7 +38,7 @@ class ConfirmSheetContentTest {
     ) {
         SplitFlowTheme {
             ConfirmSheetContent(
-                isParsing = false, isEditing = false, type = "expense", amount = amount, merchant = "McDonald's",
+                isParsing = false, isEditing = false, notice = notice, type = "expense", amount = amount, merchant = "McDonald's",
                 category = category, paymentMethod = "GPay", note = "", date = 0L, groupId = null,
                 availableGroups = emptyList(), isSplit = false, splitMode = SplitMode.EQUAL, paidByPersonId = -1L,
                 shares = emptyList(), onTypeChange = {}, onAmountChange = {}, onMerchantChange = {},
@@ -90,5 +91,13 @@ class ConfirmSheetContentTest {
         composeTestRule.onNodeWithTag("split_with_friends_button").performClick()
 
         assertEquals(true, split)
+    }
+
+    @Test
+    fun `a bill that couldn't be read says so above the empty fields`() {
+        composeTestRule.setContent { Sheet(notice = "Couldn't read that bill. Fill in the details, or try a clearer photo.", amount = "") }
+
+        composeTestRule.onNodeWithTag("confirm_notice").assertExists()
+        composeTestRule.onNodeWithText("Couldn't read that bill. Fill in the details, or try a clearer photo.").assertExists()
     }
 }

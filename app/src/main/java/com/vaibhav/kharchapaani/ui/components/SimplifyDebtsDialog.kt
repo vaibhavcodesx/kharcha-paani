@@ -134,7 +134,7 @@ fun SimplifyDebtsDialog(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                "All balances are settled!",
+                                "Nobody owes anybody right now.",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     color = OffWhiteText,
                                     fontWeight = FontWeight.Bold

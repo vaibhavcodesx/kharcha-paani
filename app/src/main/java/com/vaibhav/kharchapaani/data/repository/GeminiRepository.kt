@@ -150,14 +150,7 @@ class GeminiRepository {
     ): ParsedTransactionResult = withContext(Dispatchers.IO) {
         val apiKey = getApiKey()
         if (apiKey.isBlank()) {
-            return@withContext ParsedTransactionResult(
-                type = "expense",
-                amount = 0.0,
-                merchant = "Scanned Receipt",
-                category = "Food",
-                paymentMethod = "GPay",
-                note = "Configure Gemini API key for automated OCR parsing"
-            )
+            return@withContext unreadReceipt()
         }
 
         val base64Image = bitmapToBase64(bitmap)
@@ -243,20 +236,20 @@ class GeminiRepository {
             Log.e("GeminiRepository", "Error parsing receipt: ${e.message}", e)
         }
 
-        ParsedTransactionResult(
-            type = "expense",
-            amount = 0.0,
-            merchant = "Scanned Receipt",
-            category = "Other",
-            paymentMethod = "GPay",
-            note = "Could not parse receipt automatically. Please adjust manually."
-        )
+        unreadReceipt()
     }
 
-    suspend fun generateFinancialSummary(analytics: MonthlyAnalytics): String = withContext(Dispatchers.IO) {
+    /**
+     * An unread bill fills in nothing. The old fallback invented a merchant ("Scanned Receipt"), a
+     * payment method (GPay) and sometimes a category, and put developer text in the note.
+     */
+    private fun unreadReceipt() = ParsedTransactionResult(type = "expense", amount = 0.0, merchant = "", category = "Other", paymentMethod = "Other", note = "", readFailed = true)
+
+    /** A short read of the month, or null when it couldn't be generated (the screen says so). */
+    suspend fun generateFinancialSummary(analytics: MonthlyAnalytics): String? = withContext(Dispatchers.IO) {
         val apiKey = getApiKey()
         if (apiKey.isBlank()) {
-            return@withContext "You have spent ₹${String.format("%.0f", analytics.totalExpense)} this month with ₹${String.format("%.0f", analytics.totalIncome)} in income. Keep logging daily to build your financial habit!"
+            return@withContext null
         }
 
         val categoryBreakdown = analytics.categorySummaries.joinToString(", ") {
@@ -315,16 +308,18 @@ class GeminiRepository {
             Log.e("GeminiRepository", "Error generating summary: ${e.message}", e)
         }
 
-        "You've recorded ₹${String.format("%.0f", analytics.totalExpense)} in expenses and ₹${String.format("%.0f", analytics.totalIncome)} in earnings. Your ${analytics.dailyStreak}-day logging streak is going strong!"
+        null
     }
 
     suspend fun parseBankOrUpiStatementPdf(
         pdfBytes: ByteArray,
         fileName: String = "statement.pdf"
-    ): StatementParseResult = withContext(Dispatchers.IO) {
+    ): StatementParseResult? = withContext(Dispatchers.IO) {
         val apiKey = getApiKey()
+        // Null means "couldn't read it". This used to return a generated sample statement (two
+        // ₹75,000 salaries, Zomato, Netflix, some dated in the future) shown as the person's own.
         if (apiKey.isBlank() || pdfBytes.isEmpty()) {
-            return@withContext LocalStatementParser.generateSampleParsedStatement()
+            return@withContext null
         }
 
         val base64Pdf = Base64.encodeToString(pdfBytes, Base64.NO_WRAP)
@@ -444,7 +439,7 @@ class GeminiRepository {
             Log.e("GeminiRepository", "Error parsing statement PDF: ${e.message}", e)
         }
 
-        LocalStatementParser.generateSampleParsedStatement()
+        null
     }
 
 

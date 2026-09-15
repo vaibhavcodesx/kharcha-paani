@@ -29,11 +29,4 @@ class ExampleRobolectricTest {
     assertEquals("Food", result.category)
     assertEquals("GPay", result.paymentMethod)
   }
-
-  @Test
-  fun `test sample statement generator`() {
-    val result = com.vaibhav.kharchapaani.domain.LocalStatementParser.generateSampleParsedStatement()
-    assertTrue(result.allItems.isNotEmpty())
-    assertTrue(result.monthGroups.isNotEmpty())
-  }
 }

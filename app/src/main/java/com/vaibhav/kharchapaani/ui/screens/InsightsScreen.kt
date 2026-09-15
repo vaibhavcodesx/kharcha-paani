@@ -106,6 +106,7 @@ fun InsightsScreen(
     onEditTransaction: ((FullTransaction) -> Unit)? = null,
     modifier: Modifier = Modifier,
     today: LocalDate = LocalDate.now(),
+    aiSummaryFailed: Boolean = false,
 ) {
     val context = LocalContext.current
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
@@ -145,6 +146,7 @@ fun InsightsScreen(
             MonthReview(
                 summary = aiSummary,
                 isGenerating = isGeneratingSummary,
+                failed = aiSummaryFailed,
                 hasSpending = analytics.totalExpense > 0,
                 onGenerate = onGenerateAiSummary,
                 modifier = Modifier.padding(top = Spacing.xxl),
@@ -357,7 +359,7 @@ private fun StatTile(label: String, value: String, modifier: Modifier = Modifier
 
 /** An on-demand read of the month from the AI, only once there's something to read. */
 @Composable
-private fun MonthReview(summary: String?, isGenerating: Boolean, hasSpending: Boolean, onGenerate: () -> Unit, modifier: Modifier = Modifier) {
+private fun MonthReview(summary: String?, isGenerating: Boolean, failed: Boolean, hasSpending: Boolean, onGenerate: () -> Unit, modifier: Modifier = Modifier) {
     Column(
         modifier
             .fillMaxWidth()
@@ -375,7 +377,15 @@ private fun MonthReview(summary: String?, isGenerating: Boolean, hasSpending: Bo
                 }
                 Text("Reading this month's entries…", style = MaterialTheme.typography.bodyMedium)
             }
-            summary != null -> Text(summary, style = MaterialTheme.typography.bodyLarge)
+            summary != null -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                Text(summary, style = MaterialTheme.typography.bodyLarge)
+                if (failed) Text("Couldn't refresh it just now. Check your connection and try again.", style = MaterialTheme.typography.bodyMedium, color = WarmAmberLight)
+            }
+            failed -> Text(
+                "Couldn't get a summary just now. Check your connection and try again.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = WarmAmberLight,
+            )
             hasSpending -> Text(
                 "Get a short read on where this month's money went and what stands out.",
                 style = MaterialTheme.typography.bodyMedium,
