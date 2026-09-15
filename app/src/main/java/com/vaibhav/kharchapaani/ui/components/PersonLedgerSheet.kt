@@ -1,65 +1,43 @@
 package com.vaibhav.kharchapaani.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Payment
-import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.model.PersonLedgerItem
 import com.vaibhav.kharchapaani.ui.format.Money
-import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
-import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
+import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
-import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
-import com.vaibhav.kharchapaani.ui.theme.CharcoalSurface
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
+import com.vaibhav.kharchapaani.ui.theme.KpShapes
+import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
-import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
-import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
+import com.vaibhav.kharchapaani.ui.theme.Spacing
+import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PersonLedgerSheet(
     person: PersonEntity?,
@@ -68,209 +46,91 @@ fun PersonLedgerSheet(
     onDismiss: () -> Unit
 ) {
     if (person == null) return
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
-    val sdf = remember { SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) }
+    KpModalSheet(onDismiss = onDismiss) { PersonLedgerContent(person, ledgerItems, onSettleUp) }
+}
 
-    val avatarColor = try {
-        Color(android.graphics.Color.parseColor(person.avatarColor))
-    } catch (e: Exception) {
-        WarmAmberPrimary
-    }
+/** Everything between you and one friend: where it stands now, then every split and settlement. */
+@Composable
+fun PersonLedgerContent(
+    person: PersonEntity,
+    ledgerItems: List<PersonLedgerItem>,
+    onSettleUp: (PersonEntity) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val dateFormat = remember { SimpleDateFormat("d MMM yyyy", Locale.getDefault()) }
+    val net = ledgerItems.sumOf { it.netChange }
 
-    val totalNet = ledgerItems.sumOf { it.netChange }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = CharcoalSurface,
-        contentColor = OffWhiteText,
-        dragHandle = { SheetHandle() }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .navigationBarsPadding()
-        ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(avatarColor.copy(alpha = 0.2f))
-                            .border(1.5.dp, avatarColor, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = person.name.take(2).uppercase(),
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = avatarColor,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column {
-                        Text(
-                            text = person.name,
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                color = OffWhiteText,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                        Text(
-                            text = when {
-                                totalNet > 0.01 -> "Owes you ${Money.format(totalNet)}"
-                                totalNet < -0.01 -> "You owe ${Money.format(abs(totalNet))}"
-                                else -> "Settled up"
-                            },
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = when {
-                                    totalNet > 0.01 -> ChartreuseSecondary
-                                    totalNet < -0.01 -> WarmAmberPrimary
-                                    else -> MutedWarmGray
-                                },
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
-                }
-
-                IconButton(onClick = onDismiss) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
-                        tint = MutedWarmGray
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Action: Settle Up
-            Button(
+    SheetScaffold(
+        modifier = modifier,
+        actionBar = {
+            GlassActionBar(
+                label = if (abs(net) >= 0.005) "Settle up" else "Record a payment",
+                enabled = true,
                 onClick = { onSettleUp(person) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(46.dp)
-                    .testTag("ledger_settle_up_button"),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = WarmAmberPrimary,
-                    contentColor = CharcoalBg
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Payment,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+                summary = if (abs(net) >= 0.005) Money.format(abs(net)) else "All settled",
+                detail = when {
+                    net >= 0.005 -> "${person.name} owes you"
+                    net <= -0.005 -> "You owe ${person.name}"
+                    else -> null
+                },
+                buttonTestTag = "ledger_settle_up_button",
+            )
+        },
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.xl)) {
+            PersonAvatar(name = person.name, colorHex = person.avatarColor, size = 52.dp)
+            Column(Modifier.weight(1f).padding(start = Spacing.m)) {
+                Text(person.name, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
                 Text(
-                    "Settle Up / Record Payment",
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                    text = when {
+                        net >= 0.005 -> "Owes you ${Money.format(net)}"
+                        net <= -0.005 -> "You owe ${Money.format(abs(net))}"
+                        else -> "All settled"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (net >= 0.005) ChartreuseSecondary else MutedWarmGray,
                 )
             }
+        }
 
-            Spacer(modifier = Modifier.height(18.dp))
-
-            Text(
-                "Ledger History",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    color = OffWhiteText,
-                    fontWeight = FontWeight.Bold
-                )
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            if (ledgerItems.isEmpty()) {
-                Box(
+        Text("History · ${ledgerItems.size}", style = MaterialTheme.typography.titleSmall, color = OffWhiteText, modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() })
+        if (ledgerItems.isEmpty()) {
+            Text("No splits or settlements with ${person.name} yet.", style = MaterialTheme.typography.bodyMedium)
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            ledgerItems.forEachIndexed { index, item ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(140.dp),
-                    contentAlignment = Alignment.Center
+                        .heightIn(min = 64.dp)
+                        .clip(RowPosition.of(index, ledgerItems.size).shape)
+                        .background(CharcoalCard)
+                        .semantics(mergeDescendants = true) {}
+                        .padding(horizontal = Spacing.l, vertical = Spacing.m),
                 ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.size(40.dp).clip(KpShapes.small).background((if (item.isSettlement) ChartreuseSecondary else WarmAmberLight).copy(alpha = 0.14f)),
+                    ) {
+                        Icon(
+                            imageVector = if (item.isSettlement) KpIcons.Settle else KpIcons.Splits,
+                            contentDescription = null,
+                            tint = if (item.isSettlement) ChartreuseSecondary else WarmAmberLight,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                    Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
+                        Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("${dateFormat.format(Date(item.date))} · ${item.subtitle}", style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
                     Text(
-                        "No shared split transactions or settlements yet.",
-                        style = MaterialTheme.typography.bodyMedium.copy(color = MutedWarmGray)
+                        text = Money.format(item.netChange, showPlus = true),
+                        style = MoneyText.row,
+                        color = if (item.netChange > 0) ChartreuseSecondary else OffWhiteText,
                     )
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 350.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(ledgerItems, key = { it.id }) { item ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(CharcoalElevated)
-                                .border(1.dp, CharcoalBorder, RoundedCornerShape(12.dp))
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(34.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(if (item.isSettlement) ChartreuseSecondary.copy(alpha = 0.15f) else WarmAmberPrimary.copy(alpha = 0.15f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = if (item.isSettlement) Icons.Default.Payment else Icons.Default.Receipt,
-                                        contentDescription = null,
-                                        tint = if (item.isSettlement) ChartreuseSecondary else WarmAmberPrimary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.width(10.dp))
-
-                                Column {
-                                    Text(
-                                        text = item.title,
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            color = OffWhiteText,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    )
-                                    Text(
-                                        text = "${sdf.format(Date(item.date))} • ${item.subtitle}",
-                                        style = MaterialTheme.typography.bodySmall.copy(color = SubMutedWarmGray)
-                                    )
-                                }
-                            }
-
-                            Text(
-                                text = Money.format(item.netChange, showPlus = true),
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    color = if (item.netChange > 0) ChartreuseSecondary else WarmAmberPrimary,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                        }
-                    }
-                }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

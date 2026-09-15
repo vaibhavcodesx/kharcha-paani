@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.CloudDone
@@ -151,8 +150,9 @@ private fun AccountSheetContent(
         Spacer(Modifier.height(12.dp))
 
         Text(
-            text = "Personal expenses sync to your account. Splits and group expenses stay on this phone " +
-                "until shared groups arrive. Signing out keeps everything already here.",
+            // The old copy said group expenses stayed on this phone "until shared groups arrive"; they have.
+            text = "Your expenses back up to your account and keep working offline. Shared groups sync with " +
+                "everyone in them. Signing out keeps everything already on this phone.",
             style = MaterialTheme.typography.bodyMedium,
         )
 
@@ -160,7 +160,7 @@ private fun AccountSheetContent(
 
         OutlinedButton(
             onClick = onSignOut,
-            shape = RoundedCornerShape(14.dp),
+            shape = KpShapes.medium,
             // SubMutedWarmGray, not CharcoalBorder: the boundary needs 3:1 against the sheet (3.17 vs 1.28).
             border = BorderStroke(1.dp, SubMutedWarmGray),
             modifier = Modifier
@@ -186,7 +186,7 @@ private fun CloudStatusRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(KpShapes.medium)
             .background(CharcoalCard)
             .padding(start = 14.dp, end = 4.dp)
             .heightIn(min = 52.dp)
@@ -239,7 +239,7 @@ private fun SyncStatusRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(KpShapes.medium)
             .background(CharcoalCard)
             .padding(start = 14.dp, end = 4.dp)
             .heightIn(min = 52.dp)

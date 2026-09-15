@@ -1,54 +1,50 @@
 package com.vaibhav.kharchapaani.ui.groups
 
 import androidx.compose.foundation.background
-import com.vaibhav.kharchapaani.ui.theme.KpShapes
-import com.vaibhav.kharchapaani.ui.components.SheetHandle
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.vaibhav.kharchapaani.data.sync.InvitePreview
+import com.vaibhav.kharchapaani.ui.components.GlassActionBar
+import com.vaibhav.kharchapaani.ui.components.KpModalSheet
+import com.vaibhav.kharchapaani.ui.components.SheetScaffold
+import com.vaibhav.kharchapaani.ui.components.SheetTitle
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
-import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalSurface
-import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
+import com.vaibhav.kharchapaani.ui.theme.KpShapes
+import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
+import com.vaibhav.kharchapaani.ui.theme.OutlineInteractive
+import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
+import com.vaibhav.kharchapaani.ui.theme.SquircleShape
+import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
+import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
+import androidx.compose.foundation.border
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JoinGroupSheet(
     state: JoinGroupState?,
@@ -57,19 +53,10 @@ fun JoinGroupSheet(
     onDismiss: () -> Unit,
 ) {
     if (state == null) return
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = CharcoalSurface,
-        shape = KpShapes.sheet,
-        dragHandle = { SheetHandle() },
-        contentColor = OffWhiteText,
-        modifier = Modifier.imePadding(),
-    ) {
-        JoinGroupContent(state, onInputChange, onJoin)
-    }
+    KpModalSheet(onDismiss = onDismiss) { JoinGroupContent(state, onInputChange, onJoin) }
 }
 
+/** Paste a link or type a code; the group previews before anything is joined. */
 @Composable
 fun JoinGroupContent(
     state: JoinGroupState,
@@ -77,92 +64,80 @@ fun JoinGroupContent(
     onJoin: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-            .padding(bottom = 16.dp)
-            .navigationBarsPadding()
+    SheetScaffold(
+        modifier = modifier,
+        actionBar = {
+            GlassActionBar(
+                label = state.preview?.let { "Join ${it.groupName}" } ?: "Join group",
+                disabledLabel = if (state.isJoining) "Joining…" else state.preview?.let { "Join ${it.groupName}" } ?: "Join group",
+                enabled = state.canJoin,
+                onClick = onJoin,
+            )
+        },
     ) {
-        Text(
-            text = "Join a group",
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = OffWhiteText),
-        )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = "Paste the invite link or type the 8-character code someone shared with you.",
-            style = MaterialTheme.typography.bodyMedium.copy(color = MutedWarmGray),
-        )
-        Spacer(Modifier.height(16.dp))
+        SheetTitle(title = "Join a group", supporting = "Paste the invite link, or type the 8-character code someone shared with you.")
 
-        OutlinedTextField(
-            value = state.input,
-            onValueChange = onInputChange,
-            label = { Text("Invite link or code") },
-            singleLine = true,
-            isError = state.error != null,
-            supportingText = state.error?.let { { Text(it) } },
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, imeAction = ImeAction.Done),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = WarmAmberPrimary,
-                unfocusedBorderColor = CharcoalBorder,
-                focusedLabelColor = WarmAmberPrimary,
-                cursorColor = WarmAmberPrimary,
-            ),
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        Spacer(Modifier.height(12.dp))
-        when {
-            state.isLoadingPreview -> Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = WarmAmberPrimary, modifier = Modifier.size(28.dp))
-            }
-            state.preview != null -> InvitePreviewCard(state.preview)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 64.dp)
+                .clip(KpShapes.medium)
+                .background(CharcoalCard)
+                .border(1.dp, if (state.error != null) WarmAmberLight else OutlineInteractive, KpShapes.medium)
+                .padding(horizontal = Spacing.l),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            if (state.input.isEmpty()) Text("Link or code", style = MaterialTheme.typography.bodyLarge, color = SubMutedWarmGray)
+            BasicTextField(
+                value = state.input,
+                onValueChange = onInputChange,
+                singleLine = true,
+                textStyle = MoneyText.row.copy(color = OffWhiteText),
+                cursorBrush = SolidColor(WarmAmberPrimary),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, imeAction = ImeAction.Done),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        state.error?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.bodyMedium,
+                color = WarmAmberLight,
+                modifier = Modifier.padding(top = Spacing.s).semantics { liveRegion = LiveRegionMode.Polite },
+            )
         }
 
-        Spacer(Modifier.height(16.dp))
-        Button(
-            onClick = onJoin,
-            enabled = state.canJoin,
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = WarmAmberPrimary, contentColor = CharcoalBg),
-            modifier = Modifier.fillMaxWidth().height(48.dp),
-        ) {
-            if (state.isJoining) {
-                CircularProgressIndicator(color = CharcoalBg, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
-            } else {
-                Text(state.preview?.let { "Join ${it.groupName}" } ?: "Join group", fontWeight = FontWeight.Bold)
+        when {
+            state.isLoadingPreview -> Box(Modifier.fillMaxWidth().padding(Spacing.xl), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = WarmAmberPrimary, strokeWidth = 2.dp, modifier = Modifier.size(24.dp))
             }
+            state.preview != null -> InvitePreviewCard(state.preview, Modifier.padding(top = Spacing.l))
         }
     }
 }
 
 @Composable
-private fun InvitePreviewCard(preview: InvitePreview) {
+private fun InvitePreviewCard(preview: InvitePreview, modifier: Modifier = Modifier) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(KpShapes.large)
             .background(CharcoalCard)
-            .border(1.dp, CharcoalBorder, RoundedCornerShape(16.dp))
-            .padding(14.dp),
+            .semantics(mergeDescendants = true) {}
+            .padding(Spacing.l),
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(46.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(WarmAmberPrimary.copy(alpha = 0.15f)),
+            modifier = Modifier.size(48.dp).clip(SquircleShape(15.dp)).background(WarmAmberPrimary.copy(alpha = 0.16f)),
         ) {
-            Text(preview.groupEmoji ?: "👥", fontSize = 22.sp)
+            Text(preview.groupEmoji ?: "👥", style = MaterialTheme.typography.headlineMedium)
         }
-        Spacer(Modifier.width(12.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(preview.groupName, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = OffWhiteText))
+        Column(Modifier.padding(start = Spacing.m)) {
+            Text(preview.groupName, style = MaterialTheme.typography.titleMedium)
             val members = if (preview.memberCount == 1) "1 member" else "${preview.memberCount} members"
             val inviter = preview.inviterName?.let { "Invited by $it • " }.orEmpty()
-            Text("$inviter$members", style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray))
+            Text("$inviter$members", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -173,10 +148,7 @@ private fun JoinGroupContentPreview() {
     SplitFlowTheme {
         Box(Modifier.background(CharcoalSurface)) {
             JoinGroupContent(
-                state = JoinGroupState(
-                    input = "AB2CD3EF",
-                    preview = InvitePreview("g", "Goa trip", "🏖️", "Bob", 3),
-                ),
+                state = JoinGroupState(input = "AB2CD3EF", preview = InvitePreview("g", "Goa trip", "🏖️", "Bob", 3)),
                 onInputChange = {},
                 onJoin = {},
             )
