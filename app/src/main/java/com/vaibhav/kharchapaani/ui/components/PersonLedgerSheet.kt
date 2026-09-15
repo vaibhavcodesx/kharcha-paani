@@ -78,7 +78,7 @@ fun PersonLedgerContent(
         },
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.xl)) {
-            PersonAvatar(name = person.name, colorHex = person.avatarColor, size = 52.dp)
+            PersonAvatar(name = person.name, colorHex = person.avatarColor, size = 52.dp, emoji = person.avatarEmoji)
             Column(Modifier.weight(1f).padding(start = Spacing.m)) {
                 Text(person.name, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
                 Text(

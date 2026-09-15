@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.vaibhav.kharchapaani.domain.ProfileEdit
 import java.io.IOException
 
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
@@ -75,6 +76,31 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     fun retryProfileLoad() {
         loadProfile((_uiState.value.authState as? AuthState.SignedIn)?.userId)
+    }
+
+    /** Saves a new name and emoji. Needs the cloud profile: names are what groupmates see. */
+    fun saveProfile(name: String, emoji: String?) {
+        val userId = (_uiState.value.authState as? AuthState.SignedIn)?.userId ?: return
+        val cleanName = ProfileEdit.cleanName(name) ?: return
+        if (_uiState.value.isSavingProfile) return
+        _uiState.update { it.copy(isSavingProfile = true, profileSaveFailed = false) }
+        viewModelScope.launch {
+            val saved = try {
+                repository.updateProfile(userId, cleanName, ProfileEdit.cleanEmoji(emoji))
+            } catch (e: IOException) {
+                null
+            } catch (e: RestException) {
+                Log.w(TAG, "Profile update rejected: ${e.error}")
+                null
+            }
+            _uiState.update {
+                it.copy(
+                    isSavingProfile = false,
+                    profileSaveFailed = saved == null,
+                    profile = saved?.let(ProfileState::Loaded) ?: it.profile,
+                )
+            }
+        }
     }
 
     fun signOut(context: Context) {

@@ -206,6 +206,7 @@ class MainActivity : ComponentActivity() {
                     selfProfileId = session.userId,
                     authUiState = authUiState,
                     onRetryProfile = authViewModel::retryProfileLoad,
+                    onSaveProfile = authViewModel::saveProfile,
                     onSignOut = { authViewModel.signOut(this@MainActivity) },
                 )
             }
@@ -272,9 +273,11 @@ fun SplitFlowApp(
     selfProfileId: String,
     authUiState: AuthUiState,
     onRetryProfile: () -> Unit,
+    onSaveProfile: (name: String, emoji: String?) -> Unit,
     onSignOut: () -> Unit,
 ) {
     var isAccountSheetOpen by rememberSaveable { mutableStateOf(false) }
+    val askBeforeDiscarding by viewModel.askBeforeDiscarding.collectAsStateWithLifecycle()
     val currentTab by viewModel.currentTab.collectAsState()
     val rawTransactions by viewModel.rawTransactions.collectAsState()
     val activityFeed by viewModel.activityFeed.collectAsState()
@@ -413,7 +416,7 @@ fun SplitFlowApp(
                         onRetractSettlement = { viewModel.retractSettlement(it) },
                         onOpenIouDialog = { viewModel.openIouDialog() },
                         onOpenSimplifyDebts = { viewModel.openSimplifyDebts() },
-                        accountInitial = authUiState.accountInitial,
+                        accountAvatar = authUiState.accountAvatar,
                         startVoiceCapture = voiceCaptureRequested,
                         syncStatus = syncStatus,
                         onShowMessage = viewModel::showMessage,
@@ -472,6 +475,13 @@ fun SplitFlowApp(
         AccountSheet(
             state = authUiState,
             syncStatus = syncStatus,
+            askBeforeDiscarding = askBeforeDiscarding,
+            onSaveProfile = onSaveProfile,
+            onAskBeforeDiscardingChange = viewModel::setAskBeforeDiscarding,
+            onOpenExport = {
+                isAccountSheetOpen = false
+                viewModel.openExport()
+            },
             onRetryFailedSync = viewModel::retryFailedSync,
             onRetryProfile = onRetryProfile,
             onSignOut = {
@@ -519,7 +529,7 @@ fun SplitFlowApp(
         onOpenAddFriend = { viewModel.openAddFriend() },
         onSave = { viewModel.saveCurrentTransaction() },
         onDismiss = { viewModel.dismissConfirmSheet() },
-        hasUnsavedInput = { viewModel.hasUnsavedEntry() },
+        hasUnsavedInput = { askBeforeDiscarding && viewModel.hasUnsavedEntry() },
     )
 
     val isExportOpen by viewModel.isExportOpen.collectAsState()

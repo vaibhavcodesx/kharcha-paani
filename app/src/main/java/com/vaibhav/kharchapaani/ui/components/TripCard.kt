@@ -189,7 +189,7 @@ private fun MemberStack(details: GroupWithDetails) {
     val extra = details.members.size - shown.size
     Row(horizontalArrangement = Arrangement.spacedBy((-10).dp), verticalAlignment = Alignment.CenterVertically) {
         // One initial each: at 30dp, overlapped, a second letter ("RM") is half hidden by the next avatar.
-        shown.forEach { PersonAvatar(name = it.name.trim().substringBefore(' '), colorHex = it.avatarColor, size = 30.dp, ringColor = CharcoalCard) }
+        shown.forEach { PersonAvatar(name = it.name.trim().substringBefore(' '), colorHex = it.avatarColor, emoji = it.avatarEmoji, size = 30.dp, ringColor = CharcoalCard) }
         if (extra > 0) {
             Box(
                 contentAlignment = Alignment.Center,

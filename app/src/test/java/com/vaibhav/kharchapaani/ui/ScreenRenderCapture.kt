@@ -141,6 +141,23 @@ class ScreenRenderCapture {
     }
 
     @Test
+    fun `profile sheet`() = capture("profile_sheet") {
+        Column(Modifier.fillMaxSize().background(CharcoalSurface), horizontalAlignment = Alignment.CenterHorizontally) {
+            SheetHandle()
+            com.vaibhav.kharchapaani.ui.auth.AccountSheetContent(
+                state = com.vaibhav.kharchapaani.ui.auth.AuthUiState(
+                    authState = com.vaibhav.kharchapaani.data.auth.AuthState.SignedIn(userId = "u1", email = "vaibhav@example.com", isRefreshPending = false),
+                    profile = com.vaibhav.kharchapaani.ui.auth.ProfileState.Loaded(com.vaibhav.kharchapaani.data.auth.Profile(id = "u1", displayName = "Vaibhav", avatarEmoji = "🦊")),
+                ),
+                syncStatus = com.vaibhav.kharchapaani.ui.sync.SyncStatus(lastSyncedAt = System.currentTimeMillis() - 5 * 60_000L),
+                askBeforeDiscarding = true,
+                onSaveProfile = { _, _ -> }, onAskBeforeDiscardingChange = {}, onOpenExport = {},
+                onRetryFailedSync = {}, onRetryProfile = {}, onSignOut = {},
+            )
+        }
+    }
+
+    @Test
     fun `home`() = capture("home") {
         Box(Modifier.fillMaxSize().background(CharcoalBg)) { Home(longFeed = false) }
     }
@@ -297,7 +314,7 @@ class ScreenRenderCapture {
             isParsing = false, searchQuery = "", selectedFilter = "All",
             onSearchChange = {}, onFilterChange = {}, onParseText = {}, onParseImage = {}, onParsePdf = { _, _ -> },
             onEditTransaction = {}, onDeleteTransaction = {}, onRetractSettlement = {}, onOpenIouDialog = {},
-            onOpenSimplifyDebts = {}, accountInitial = "V", onOpenAccount = {}, today = today,
+            onOpenSimplifyDebts = {}, accountAvatar = "V", onOpenAccount = {}, today = today,
             syncStatus = com.vaibhav.kharchapaani.ui.sync.SyncStatus(failedChanges = 1),
         )
     }

@@ -15,10 +15,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.vaibhav.kharchapaani.ui.theme.SquircleShape
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 
-/** A person's initials on their colour. Decorative: the name always appears next to it. */
+/**
+ * A person's emoji if they picked one, else their initials, on their colour. Decorative: the name
+ * always appears next to it.
+ */
 @Composable
 fun PersonAvatar(
     name: String,
@@ -26,6 +30,7 @@ fun PersonAvatar(
     modifier: Modifier = Modifier,
     size: Dp = 40.dp,
     ringColor: Color? = null,
+    emoji: String? = null,
 ) {
     val color = remember(colorHex) { parseColor(colorHex) }
     val shape = SquircleShape(size * 0.32f)
@@ -39,11 +44,15 @@ fun PersonAvatar(
             .background(color.copy(alpha = 0.2f))
             .clearAndSetSemantics {},
     ) {
-        Text(
-            text = initials(name),
-            style = if (size >= 48.dp) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleSmall,
-            color = color,
-        )
+        if (emoji != null) {
+            Text(text = emoji, fontSize = (size.value * 0.5f).sp, lineHeight = (size.value * 0.6f).sp)
+        } else {
+            Text(
+                text = initials(name),
+                style = if (size >= 48.dp) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleSmall,
+                color = color,
+            )
+        }
     }
 }
 

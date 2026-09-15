@@ -1148,10 +1148,13 @@ sequenced after Part B's last batch.
      job), or compute projected entries on the fly?
    - What happens to past months when one is added retroactively or
      cancelled?
-   - Owner's note: this is not the earlier "no recurring payments"
-     decision, which was about irregular payments to teammates.
-   - *No such decision is written in this PRD or in `docs/` (searched
-     2026-09-15). It is recorded here as the owner describes it.*
+   - **Scope note (owner, 2026-09-15):** the earlier "no recurring
+     payments" decision was scoped to **irregular person-to-person
+     payments between teammates** (settlements, IOUs, splits). It does
+     **not** cover **fixed-schedule subscriptions** (a fixed amount on a
+     fixed cadence, e.g. Netflix monthly). They are a different concept,
+     so there is no conflict: person-to-person payments stay one-off;
+     subscriptions are allowed.
 9. **UPI ID and QR code in settings**, so a friend settling up can scan
    or copy it.
    - Use the real deep-link format
@@ -1171,6 +1174,33 @@ sequenced after Part B's last batch.
       added a group expense can edit or delete it").
     - Write the RLS change, test it locally, and bring the PR for review
       before applying to live, as with every RLS change.
+
+### Owner decisions (2026-09-15)
+
+- **6. Profile:** display name editing now (fast-track). No profile
+  photo: an emoji avatar instead, which needs no Storage bucket or
+  `storage.objects` policies.
+- **7. Categories and payment methods:** approved as proposed. The
+  category name is stored on the expense itself; lists are not synced
+  per person. The statement importer's mismatched categories
+  (Groceries, Investment, Income (Salary)) are fixed in the same change.
+- **8. Subscriptions:** approved as proposed.
+  - Real entries are created by a background job or on app open, never
+    future-dated.
+  - Backdating asks first.
+  - Cancelling stops future entries and keeps past ones.
+  - See the scope note above: no conflict with "no recurring payments".
+- **9. UPI ID and QR:** approved, local-only, no sync.
+- **10. Group screen:** all six approved:
+  - donut of member shares;
+  - who owes whom;
+  - category spending;
+  - group CSV export;
+  - per-row settle-up;
+  - archived banner.
+- **11. Payer edit/delete:** go ahead; RLS PR for review before live.
+- **Audit (FileProvider paths):** narrow to what exports need, in its
+  own small PR.
 
 ### Backlog status
 

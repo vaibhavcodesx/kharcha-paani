@@ -110,7 +110,7 @@ fun SharedGroupPanel(
         Text("${members.size + 1} PEOPLE", style = EyebrowText)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             MemberChip(name = "You", colorHex = "#FF7A3D")
-            members.forEach { MemberChip(name = it.name, colorHex = it.avatarColor) }
+            members.forEach { MemberChip(name = it.name, colorHex = it.avatarColor, emoji = it.avatarEmoji) }
         }
 
         if (!group.isArchived) {
@@ -237,7 +237,7 @@ private fun PanelButton(label: String, filled: Boolean, onClick: () -> Unit, mod
 }
 
 @Composable
-private fun MemberChip(name: String, colorHex: String) {
+private fun MemberChip(name: String, colorHex: String, emoji: String? = null) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -245,7 +245,7 @@ private fun MemberChip(name: String, colorHex: String) {
             .background(CharcoalElevated)
             .padding(start = Spacing.xs, end = Spacing.m, top = Spacing.xs, bottom = Spacing.xs),
     ) {
-        PersonAvatar(name = name, colorHex = colorHex, size = 26.dp)
+        PersonAvatar(name = name, colorHex = colorHex, size = 26.dp, emoji = emoji)
         Text(name, style = MaterialTheme.typography.labelLarge, color = OffWhiteText, modifier = Modifier.padding(start = Spacing.s))
     }
 }

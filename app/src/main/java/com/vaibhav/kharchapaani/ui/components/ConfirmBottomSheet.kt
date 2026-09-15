@@ -389,8 +389,9 @@ fun ConfirmSheetContent(
     }
 }
 
+/** A sheet row showing one value that opens its choices in place. */
 @Composable
-private fun ExpandableDetail(
+internal fun ExpandableDetail(
     label: String,
     value: String,
     expanded: Boolean,
