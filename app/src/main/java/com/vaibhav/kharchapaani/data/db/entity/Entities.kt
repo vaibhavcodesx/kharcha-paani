@@ -23,6 +23,8 @@ data class PersonEntity(
      */
     val profileId: String? = null,
     val avatarUrl: String? = null,
+    /** A groupmate's chosen emoji, shown instead of initials (backlog item 6). */
+    val avatarEmoji: String? = null,
 )
 
 @Entity(

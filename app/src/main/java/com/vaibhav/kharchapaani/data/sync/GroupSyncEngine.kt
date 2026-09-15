@@ -453,12 +453,14 @@ class GroupSyncEngine(
                     avatarColor = AVATAR_COLORS[abs(profileId.hashCode() % AVATAR_COLORS.size)],
                     profileId = profileId,
                     avatarUrl = profile?.avatarUrl,
+                    avatarEmoji = profile?.avatarEmoji,
                 )
             )
         }
         // A hidden profile (null) keeps the name we already know rather than blanking it.
-        if (name != null && (name != existing.name || profile?.avatarUrl != existing.avatarUrl)) {
-            dao.updatePersonProfile(existing.id, name, profile?.avatarUrl)
+        val changed = name != existing.name || profile?.avatarUrl != existing.avatarUrl || profile?.avatarEmoji != existing.avatarEmoji
+        if (name != null && changed) {
+            dao.updatePersonProfile(existing.id, name, profile?.avatarUrl, profile?.avatarEmoji)
         }
         return existing.id
     }

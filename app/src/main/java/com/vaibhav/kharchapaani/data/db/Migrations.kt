@@ -77,3 +77,10 @@ internal val MIGRATION_3_4 = object : Migration(3, 4) {
         db.execSQL("ALTER TABLE `pending_remote_deletes` ADD COLUMN `entityType` TEXT NOT NULL DEFAULT 'transaction'")
     }
 }
+
+/** v5: groupmates' emoji avatars (backlog item 6). Purely additive; everyone starts on initials. */
+internal val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `people` ADD COLUMN `avatarEmoji` TEXT")
+    }
+}

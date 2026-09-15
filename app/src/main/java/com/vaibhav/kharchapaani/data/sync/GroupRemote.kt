@@ -42,7 +42,7 @@ class SupabaseGroupRemote(private val supabase: SupabaseClient) : GroupRemote {
 
     override suspend fun visibleGroups(): List<RemoteGroup> =
         supabase.from("groups").select(
-            Columns.raw("*, group_members(profile_id, profiles(id, display_name, avatar_url))")
+            Columns.raw("*, group_members(profile_id, profiles(id, display_name, avatar_url, avatar_emoji))")
         ).decodeList()
 
     override suspend fun createGroup(id: String, name: String, emoji: String?) = rejectingContent {

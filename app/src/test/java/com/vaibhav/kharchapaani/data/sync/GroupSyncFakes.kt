@@ -167,8 +167,8 @@ class FakeGroupRemote(private val self: String) : GroupRemote {
 
     // ---- Changes made by other people ----
 
-    fun profile(id: String, name: String?) {
-        profiles[id] = RemoteProfile(id, name)
+    fun profile(id: String, name: String?, emoji: String? = null) {
+        profiles[id] = RemoteProfile(id, name, avatarEmoji = emoji)
     }
 
     fun groupCreatedBy(creator: String, id: String, name: String, vararg members: String) {
