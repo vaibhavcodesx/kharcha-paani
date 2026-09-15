@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.model.FullTransaction
 import com.vaibhav.kharchapaani.domain.CsvExport
 import com.vaibhav.kharchapaani.domain.ExportRange
-import com.vaibhav.kharchapaani.ui.format.MonthNames
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
@@ -100,11 +99,6 @@ fun ExportContent(
         ExportScope.Everything -> ExportRange.Everything
     }
     val count = remember(transactions, range) { CsvExport.entriesIn(transactions, range, ZoneId.systemDefault()).size }
-    val what = when (scope) {
-        ExportScope.Month -> MonthNames.title(month)
-        ExportScope.Dates -> "${DayFormat.format(from)} – ${DayFormat.format(to)}"
-        ExportScope.Everything -> "Everything logged"
-    }
 
     SheetScaffold(
         modifier = modifier,
@@ -114,8 +108,8 @@ fun ExportContent(
                 disabledLabel = "Nothing to export",
                 enabled = count > 0,
                 onClick = { onExport(range) },
+                // Just the count: the range is on show right above the bar.
                 summary = if (count == 1) "1 entry" else "$count entries",
-                detail = what,
                 buttonTestTag = "export_button",
             )
         },
