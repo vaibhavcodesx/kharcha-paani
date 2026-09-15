@@ -59,7 +59,7 @@ class InsightsMonthPickerTest {
                     aiSummary = null,
                     isGeneratingSummary = false,
                     onGenerateAiSummary = {},
-                    onExportCsv = {},
+                    onExport = {},
                     today = today,
                     month = month,
                     earliestMonth = MonthAnalytics.earliestMonth(entries, today, zone),
@@ -136,7 +136,7 @@ class InsightsMonthPickerTest {
                 InsightsScreen(
                     analytics = MonthAnalytics.of(all, emptyList(), emptyList(), month, today, zone),
                     transactions = all.map { FullTransaction(it) },
-                    aiSummary = null, isGeneratingSummary = false, onGenerateAiSummary = {}, onExportCsv = {},
+                    aiSummary = null, isGeneratingSummary = false, onGenerateAiSummary = {}, onExport = {},
                     today = today, month = month, earliestMonth = YearMonth.of(2026, 7), onMonthChange = { month = it },
                 )
             }

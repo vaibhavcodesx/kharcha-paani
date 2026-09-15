@@ -22,6 +22,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
+import com.vaibhav.kharchapaani.ui.components.ExportSheet
 import com.vaibhav.kharchapaani.ui.shell.KpSnackbarHost
 import com.vaibhav.kharchapaani.ui.shell.snackbarClearance
 import androidx.compose.foundation.layout.padding
@@ -442,7 +443,7 @@ fun SplitFlowApp(
                         aiSummary = aiSummary,
                         isGeneratingSummary = isGeneratingSummary,
                         onGenerateAiSummary = { viewModel.generateAiFinancialSummary() },
-                        onExportCsv = { viewModel.exportCsv(it) },
+                        onExport = { viewModel.openExport() },
                         onEditTransaction = { viewModel.openEditTransaction(it) },
                         aiSummaryFailed = aiSummaryFailed,
                         month = insightsMonth,
@@ -519,6 +520,16 @@ fun SplitFlowApp(
         onSave = { viewModel.saveCurrentTransaction() },
         onDismiss = { viewModel.dismissConfirmSheet() },
         hasUnsavedInput = { viewModel.hasUnsavedEntry() },
+    )
+
+    val isExportOpen by viewModel.isExportOpen.collectAsState()
+    ExportSheet(
+        isOpen = isExportOpen,
+        transactions = rawTransactions,
+        initialMonth = insightsMonth,
+        earliestMonth = earliestInsightsMonth,
+        onExport = { viewModel.exportCsv(context, it) },
+        onDismiss = { viewModel.closeExport() },
     )
 
     // Settle up

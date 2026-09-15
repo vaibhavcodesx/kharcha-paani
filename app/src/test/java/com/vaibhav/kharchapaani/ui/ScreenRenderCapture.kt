@@ -40,6 +40,8 @@ import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
 import com.vaibhav.kharchapaani.data.model.ShareInput
 import com.vaibhav.kharchapaani.data.model.SplitMode
 import com.vaibhav.kharchapaani.ui.components.ConfirmSheetContent
+import com.vaibhav.kharchapaani.ui.components.ExportContent
+import com.vaibhav.kharchapaani.ui.components.ExportScope
 import com.vaibhav.kharchapaani.ui.components.SheetHandle
 import com.vaibhav.kharchapaani.ui.screens.HomeScreen
 import com.vaibhav.kharchapaani.ui.screens.InsightsScreen
@@ -122,6 +124,19 @@ class ScreenRenderCapture {
                 KpSnackbarHost(snackbars, Modifier.align(Alignment.BottomCenter).padding(bottom = snackbarClearance()))
                 KpDock(currentTab = AppTab.Activity, onSelectTab = {}, onAdd = {}, modifier = Modifier.align(Alignment.BottomCenter))
             }
+        }
+    }
+
+    @Test
+    fun `export sheet`() = capture("export_sheet") {
+        Column(Modifier.fillMaxSize().background(CharcoalSurface), horizontalAlignment = Alignment.CenterHorizontally) {
+            SheetHandle()
+            ExportContent(
+                transactions = activity.filterIsInstance<ActivityItem.Transaction>().map { it.fullTransaction },
+                scope = ExportScope.Month, month = java.time.YearMonth.from(today),
+                from = today.withDayOfMonth(1), to = today, earliestMonth = java.time.YearMonth.of(2026, 3), today = today,
+                onScopeChange = {}, onMonthChange = {}, onDatesChange = { _, _ -> }, onExport = {},
+            )
         }
     }
 
@@ -211,7 +226,7 @@ class ScreenRenderCapture {
                 topMerchant = "Swiggy", dailyStreak = 6,
             ),
             transactions = food, aiSummary = null, isGeneratingSummary = false,
-            onGenerateAiSummary = {}, onExportCsv = {}, today = today,
+            onGenerateAiSummary = {}, onExport = {}, today = today,
         )
     }
 

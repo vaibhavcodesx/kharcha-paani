@@ -1,7 +1,6 @@
 package com.vaibhav.kharchapaani.data.repository
 
 import android.content.Context
-import androidx.core.content.FileProvider
 import androidx.room.withTransaction
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
@@ -18,14 +17,13 @@ import com.vaibhav.kharchapaani.data.model.GroupWithDetails
 import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
 import com.vaibhav.kharchapaani.data.model.PersonBalance
 import com.vaibhav.kharchapaani.data.model.PersonLedgerItem
+import com.vaibhav.kharchapaani.domain.CsvExport
+import com.vaibhav.kharchapaani.domain.CsvFile
+import com.vaibhav.kharchapaani.domain.ExportRange
 import com.vaibhav.kharchapaani.domain.GroupBalances
 import com.vaibhav.kharchapaani.domain.MonthAnalytics
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.domain.roundPaisa
-import java.io.File
-import java.io.FileWriter
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import java.time.LocalDate
@@ -695,81 +693,15 @@ class LedgerRepository(
         return shares.map { it.copy(shareAmount = rounded.getValue(it.personId)) }
     }
 
-    /**
-     * Professional, statement-like CSV generation for analysis, spreadsheets, and taxation.
-     */
-    suspend fun exportCsv(): String = withContext(Dispatchers.IO) {
-        val transactions = db.transactionDao().getAllTransactionsDirect()
+    /** Everything in [range] as a spreadsheet; see [CsvExport]. */
+    suspend fun exportCsv(range: ExportRange, zone: ZoneId = ZoneId.systemDefault()): CsvFile = withContext(Dispatchers.IO) {
         val splits = db.splitDao().getAllSplitsDirect().associateBy { it.transactionId }
         val shares = db.splitDao().getAllSplitSharesDirect().groupBy { it.splitId }
-        val people = db.personDao().getAllPeopleDirect().associateBy { it.id }
-        val groups = db.groupDao().getAllGroupsDirect().associateBy { it.id }
-
-        val sdfDate = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        val sdfTime = SimpleDateFormat("HH:mm:ss", Locale.US)
-        val exportTimestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
-
-        val totalRecords = transactions.size
-        val totalExpenses = transactions.filter { it.type.equals("expense", ignoreCase = true) }.sumOf { it.amount }
-        val totalIncome = transactions.filter { it.type.equals("income", ignoreCase = true) }.sumOf { it.amount }
-
-        val sb = StringBuilder()
-        sb.append("# ==========================================================================\n")
-        sb.append("# KHARCHA PAANI - COMPREHENSIVE FINANCIAL & EXPENSE STATEMENT\n")
-        sb.append("# Generated On: $exportTimestamp\n")
-        sb.append("# Total Transactions: $totalRecords | Total Expenses: INR $totalExpenses | Total Income: INR $totalIncome\n")
-        sb.append("# ==========================================================================\n\n")
-
-        sb.append("Transaction ID,Date,Time,Type,Amount (INR),Your Share (INR),Category,Merchant/Payee,Payment Method,Trip / Group,Split Status,Paid By,Participants Breakdown,Note/Reference\n")
-
-        for (tx in transactions) {
-            val date = Date(tx.date)
-            val dateStr = sdfDate.format(date)
-            val timeStr = sdfTime.format(date)
+        val transactions = db.transactionDao().getAllTransactionsDirect().map { tx ->
             val split = splits[tx.id]
-            val splitShares = split?.let { shares[it.id] } ?: emptyList()
-            val fullTx = FullTransaction(tx, split, splitShares)
-            val yourShare = fullTx.myPersonalShare
-            val groupName = tx.groupId?.let { groups[it]?.name } ?: "General"
-
-            val paidByName = if (split == null || split.paidByPersonId == -1L) "You" else (people[split.paidByPersonId]?.name ?: "Friend")
-            val splitStatus = if (split != null) "Split (${split.splitType})" else "Personal"
-
-            val splitDesc = if (split != null) {
-                splitShares.joinToString("; ") { share ->
-                    val name = if (share.personId == -1L) "You" else people[share.personId]?.name ?: "Friend"
-                    "$name: INR ${share.shareAmount}"
-                }
-            } else "N/A"
-
-            sb.append("\"KP-${tx.id}\",")
-            sb.append("\"$dateStr\",")
-            sb.append("\"$timeStr\",")
-            sb.append("\"${tx.type.uppercase(Locale.US)}\",")
-            sb.append("${tx.amount},")
-            sb.append("$yourShare,")
-            sb.append("\"${tx.category}\",")
-            sb.append("\"${tx.merchant.replace("\"", "\"\"")}\",")
-            sb.append("\"${tx.paymentMethod}\",")
-            sb.append("\"${groupName.replace("\"", "\"\"")}\",")
-            sb.append("\"$splitStatus\",")
-            sb.append("\"$paidByName\",")
-            sb.append("\"${splitDesc.replace("\"", "\"\"")}\",")
-            sb.append("\"${tx.note.replace("\"", "\"\"")}\"\n")
+            FullTransaction(tx, split, split?.let { shares[it.id] }.orEmpty())
         }
-
-        sb.append("\n# ==========================================================================\n")
-        sb.append("# EXPENSE CATEGORY SUMMARY\n")
-        sb.append("# ==========================================================================\n")
-        sb.append("Category,Total Spent (INR),Transaction Count\n")
-
-        val catMap = transactions.filter { it.type.equals("expense", true) }.groupBy { it.category }
-        for ((cat, txList) in catMap.entries.sortedByDescending { it.value.sumOf { tx -> tx.amount } }) {
-            val sum = txList.sumOf { it.amount }
-            sb.append("\"$cat\",$sum,${txList.size}\n")
-        }
-
-        sb.toString()
+        CsvExport.build(transactions, db.personDao().getAllPeopleDirect(), db.groupDao().getAllGroupsDirect(), range, zone)
     }
 }
 

@@ -961,6 +961,18 @@ transactions could be attached to any group.
       keep working (same provider class).
     - Figures shown side by side now step down in size together (on
       Insights and Splits).
+  - ✅ **States, messages and remaining sheets (PRs #25–#26, 212 tests
+    on CI). Part B is complete.**
+    - **Bug fixed:** a statement that failed to parse showed 8 fake
+      sample transactions; it now says it couldn't read the file.
+    - Toasts replaced by glass snackbars above the dock; the avatar
+      carries a sync badge (failed / syncing / waiting).
+    - Group detail, person history, join group, statement import,
+      delete friend and simplify debts rebuilt on the shared sheets.
+    - **Bug fixed:** deleting a groupmate was a silent no-op; the row
+      no longer offers it.
+    - Fields scrolled into view stop clear of a sheet's action bar; tab
+      content caps at a readable width on wide screens.
 - 📌 **Backlog (owner, 2026-09-14): "filter by category".** The
   Notion-style Insights table was cut in Part B, but the owner wants a
   way to see entries for one category later. Not scheduled.
@@ -1162,7 +1174,36 @@ sequenced after Part B's last batch.
 
 ### Backlog status
 
-- ⏳ Not started. Part B batch 6 (states and voice) runs first.
+- ✅ **5. Who added vs who paid** (PR #26): "Added by Priya · Paid by
+  Rohan" on group expenses when they differ.
+- ✅ **1. Swipe-to-delete while scrolling** (PR #27, 232 tests on CI).
+  Root cause: M3's swipe commits after 56dp *or any flick over
+  125dp/s*; a row now needs ~45% of its width. Undo snackbar instead of
+  a confirm dialog (frequent, reversible action); the ledger delete
+  waits for the snackbar to go. **Bug found and fixed:** a row brought
+  back by Undo was deleted a second time (saved swipe state); both
+  proven by tests red on CI first.
+- ✅ **2. Quick-add sheet discard prompt** (PR #27): swipe, tap outside
+  or Back with unsaved input asks Discard / Keep editing.
+- ✅ **4. Insights by month** (PR #28, 251 tests on CI). There was no
+  month picker; figures were hard-wired to the current month. Added a
+  month switcher; analytics extracted to `MonthAnalytics.of(month)` and
+  tested with entries across months (midnight edges, splits) in pure
+  JVM, real Room and Compose UI tests.
+- 🔄 **3. CSV export by range** (PR #29). Root cause of "last 10-20":
+  the CSV was shared as text, which share targets truncate; now a .csv
+  file. Also fixed: junk banner rows, `1.0E7` amounts, missing quoting,
+  formula injection, no BOM. Month / dates / everything picker.
+- ⏳ **6. Profile screen**: display name is covered by the existing
+  `profiles_update_own` policy; photos need a new Storage bucket plus
+  `storage.objects` RLS (none exist yet), so that part is a review stop.
+- ⏳ **Group B (7–10)**: design proposals brought to the owner first.
+- ⏳ **Group C (11)**: payer edit/delete needs payer-aware versions of
+  the owner-keyed `transactions`, `splits` and `split_shares` policies;
+  review before live.
+- 🔎 **Audit:** `res/xml/file_paths.xml` exposes `external-path .` and
+  `files-path .`, broader than exports need; narrowing it is security
+  config, for a reviewed PR.
 
 ## PART C — Testing & Quality
 

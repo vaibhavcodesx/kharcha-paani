@@ -1,6 +1,5 @@
 package com.vaibhav.kharchapaani.ui.screens
 
-import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -43,7 +42,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -105,7 +103,7 @@ fun InsightsScreen(
     aiSummary: String?,
     isGeneratingSummary: Boolean,
     onGenerateAiSummary: () -> Unit,
-    onExportCsv: (Context) -> Unit,
+    onExport: () -> Unit,
     onEditTransaction: ((FullTransaction) -> Unit)? = null,
     modifier: Modifier = Modifier,
     today: LocalDate = LocalDate.now(),
@@ -114,7 +112,6 @@ fun InsightsScreen(
     earliestMonth: YearMonth = month,
     onMonthChange: (YearMonth) -> Unit = {},
 ) {
-    val context = LocalContext.current
     val isThisMonth = month == YearMonth.from(today)
     // A category opened in one month closes when the month changes.
     var selected by rememberSaveable(month) { mutableStateOf<String?>(null) }
@@ -131,7 +128,7 @@ fun InsightsScreen(
     ) {
         item(key = "header") {
             ScreenHeader(title = "Insights", supporting = "Where your money went, month by month") {
-                TextButton(onClick = { onExportCsv(context) }, modifier = Modifier.testTag("export_csv_button")) {
+                TextButton(onClick = onExport, modifier = Modifier.testTag("export_csv_button")) {
                     Text("Export", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
                 }
             }
