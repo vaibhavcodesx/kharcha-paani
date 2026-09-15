@@ -23,6 +23,8 @@ import kotlinx.coroutines.launch
 import com.vaibhav.kharchapaani.ui.shell.KpSnackbarHost
 import com.vaibhav.kharchapaani.ui.shell.snackbarClearance
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -73,7 +75,7 @@ import com.vaibhav.kharchapaani.ui.groups.SharedGroupsViewModel
 import com.vaibhav.kharchapaani.ui.components.IouSheet
 import com.vaibhav.kharchapaani.ui.components.PersonLedgerSheet
 import com.vaibhav.kharchapaani.ui.components.SettleUpSheet
-import com.vaibhav.kharchapaani.ui.components.SimplifyDebtsDialog
+import com.vaibhav.kharchapaani.ui.components.SimplifyDebtsSheet
 import com.vaibhav.kharchapaani.ui.components.StatementImportDialog
 import com.vaibhav.kharchapaani.ui.components.StatementParsingLoadingDialog
 import com.vaibhav.kharchapaani.ui.screens.HomeScreen
@@ -360,7 +362,9 @@ fun SplitFlowApp(
                 .hazeSource(hazeState)
                 .statusBarsPadding()
         ) {
+            // On tablets and unfolded phones, full-width rows and figures are hard to read.
             AnimatedContent(
+                modifier = Modifier.align(Alignment.TopCenter).widthIn(max = 640.dp),
                 targetState = currentTab,
                 transitionSpec = { KpMotion.tabTransition(forward = targetState > initialState) },
                 label = "MainTabs"
@@ -519,7 +523,7 @@ fun SplitFlowApp(
     )
 
     // Simplify Debts Dialog
-    SimplifyDebtsDialog(
+    SimplifyDebtsSheet(
         isOpen = isSimplifyDebtsOpen,
         simplifiedDebts = simplifiedDebts,
         onDismiss = { viewModel.dismissSimplifyDebts() }
