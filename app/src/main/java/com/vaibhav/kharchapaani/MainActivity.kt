@@ -6,7 +6,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Parcelable
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -17,7 +16,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import com.vaibhav.kharchapaani.ui.shell.KpSnackbarHost
+import com.vaibhav.kharchapaani.ui.shell.snackbarClearance
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -323,18 +328,25 @@ fun SplitFlowApp(
     val sharedGroupsState by sharedGroups.state.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val messageScope = rememberCoroutineScope()
+    // Shown from a separate scope: clearing the message changes these keys, which would cancel a
+    // snackbar shown from inside the effect the moment it appeared.
     LaunchedEffect(statusMessage) {
         statusMessage?.let {
-            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            messageScope.launch { snackbarHostState.showSnackbar(it) }
             viewModel.clearStatusMessage()
         }
     }
     LaunchedEffect(sharedGroupsState.message) {
         sharedGroupsState.message?.let {
-            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            messageScope.launch { snackbarHostState.showSnackbar(it) }
             sharedGroups.clearMessage()
         }
     }
+    val syncStatus by viewModel.syncStatus.collectAsStateWithLifecycle()
+    val aiSummaryFailed by viewModel.aiSummaryFailed.collectAsState()
+    val parseNotice by viewModel.parseNotice.collectAsState()
 
     val hazeState = rememberHazeState()
     Box(
@@ -373,6 +385,8 @@ fun SplitFlowApp(
                         onOpenSimplifyDebts = { viewModel.openSimplifyDebts() },
                         accountInitial = authUiState.accountInitial,
                         startVoiceCapture = voiceCaptureRequested,
+                        syncStatus = syncStatus,
+                        onShowMessage = viewModel::showMessage,
                         onVoiceCaptureStarted = viewModel::onVoiceCaptureStarted,
                         onOpenAccount = { isAccountSheetOpen = true }
                     )
@@ -400,13 +414,18 @@ fun SplitFlowApp(
                         isGeneratingSummary = isGeneratingSummary,
                         onGenerateAiSummary = { viewModel.generateAiFinancialSummary() },
                         onExportCsv = { viewModel.exportCsv(it) },
-                        onEditTransaction = { viewModel.openEditTransaction(it) }
+                        onEditTransaction = { viewModel.openEditTransaction(it) },
+                        aiSummaryFailed = aiSummaryFailed,
                     )
                 }
             }
         }
         // Only the dock samples the content: sheets and dialogs are other windows (see LocalHazeState).
         CompositionLocalProvider(LocalHazeState provides hazeState) {
+            KpSnackbarHost(
+                state = snackbarHostState,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = snackbarClearance()),
+            )
             KpDock(
                 currentTab = AppTab.entries[currentTab],
                 onSelectTab = { viewModel.setTab(it.ordinal) },
@@ -417,7 +436,6 @@ fun SplitFlowApp(
     }
 
     if (isAccountSheetOpen) {
-        val syncStatus by viewModel.syncStatus.collectAsStateWithLifecycle()
         AccountSheet(
             state = authUiState,
             syncStatus = syncStatus,
@@ -435,6 +453,7 @@ fun SplitFlowApp(
     ConfirmBottomSheet(
         isOpen = isConfirmSheetOpen,
         isParsing = isParsing,
+        notice = parseNotice,
         type = txType,
         amount = txAmount,
         merchant = txMerchant,

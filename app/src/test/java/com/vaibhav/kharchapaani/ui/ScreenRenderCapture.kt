@@ -239,6 +239,7 @@ class ScreenRenderCapture {
             onSearchChange = {}, onFilterChange = {}, onParseText = {}, onParseImage = {}, onParsePdf = { _, _ -> },
             onEditTransaction = {}, onDeleteTransaction = {}, onRetractSettlement = {}, onOpenIouDialog = {},
             onOpenSimplifyDebts = {}, accountInitial = "V", onOpenAccount = {}, today = today,
+            syncStatus = com.vaibhav.kharchapaani.ui.sync.SyncStatus(failedChanges = 1),
         )
     }
 

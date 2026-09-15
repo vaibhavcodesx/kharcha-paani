@@ -69,6 +69,11 @@ private val DockHeight = DockCoreHeight + DockBezel * 2
 private val DockOuterShape = SquircleShape(30.dp)
 private val DockCoreShape = SquircleShape(25.dp)
 
+/** Where floating messages sit: just above the dock and the system bar. */
+@Composable
+fun snackbarClearance(): Dp =
+    DockHeight + Spacing.m * 2 + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
 /** How much bottom padding scrolling content needs to clear the dock and the system bar. */
 @Composable
 fun dockClearance(): Dp =
