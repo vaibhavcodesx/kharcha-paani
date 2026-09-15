@@ -893,6 +893,27 @@ transactions could be attached to any group.
       - the dock is capped at 560dp wide for tablets.
     - Still open: content lists also stretch on wide screens (Part B
       later).
+  - ✅ **Home and quick-add (PR #21, 180 tests on CI):**
+    - **Home header:** the balance is the header, in the brand gradient,
+      replacing the title row, tagline, streak badge and IOU icon.
+    - **Month strip:** this month's spend and income.
+    - **Capture:** one input (type or mic) with Scan bill / Statement /
+      IOU underneath. The demo preset chips are gone.
+    - **Day timeline:**
+      - sticky day headers with each day's spend (my share);
+      - rows joined into one panel per day;
+      - the ⋮ menu that duplicated swipe is replaced by TalkBack
+        Edit/Delete actions.
+    - **Quick-add sheet:**
+      - amount first;
+      - details as rows that open their choices in place;
+      - a floating Liquid Glass save bar that says "Add an amount" when
+        disabled;
+      - loading rows instead of a spinner.
+    - `ChoiceChip` and `SegmentedControl` are shared for the remaining
+      sheets.
+    - **Checked on the CI renders** (`home.png`, `confirm_sheet.png`,
+      `dock.png`). Real blur still needs a look on an Android 12+ phone.
 
 ### Web-Verified Notes (re-checked against current Supabase/Google docs)
 

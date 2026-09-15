@@ -364,7 +364,6 @@ fun SplitFlowApp(
                         onParseText = { viewModel.parseInputText(it) },
                         onParseImage = { viewModel.parseReceiptImage(it) },
                         onParsePdf = { bytes, name -> viewModel.parseBankOrUpiStatement(bytes, name) },
-                        onManualAdd = { viewModel.openManualAdd(it) },
                         onEditTransaction = { viewModel.openEditTransaction(it) },
                         onDeleteTransaction = { viewModel.deleteTransaction(it) },
                         onRetractSettlement = { viewModel.retractSettlement(it) },
