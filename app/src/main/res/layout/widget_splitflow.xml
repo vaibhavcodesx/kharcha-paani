@@ -1,50 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Kharcha Paani's home-screen widget. Colours and type follow the app's tokens (CharcoalSurface,
+  OffWhiteText, the warm greys, amber and lime); no emoji. Text is 12sp or larger, amounts use
+  tabular figures, and every button is at least 48dp tall.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="14dp">
 
-    <!-- Top Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_kharcha_logo" />
+
         <TextView
             android:id="@+id/widget_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
             android:layout_weight="1"
-            android:text="⚡ SplitFlow"
-            android:textColor="#FF7A3D"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:fontFamily="sans-serif-medium"
+            android:maxLines="1"
+            android:text="Kharcha Paani"
+            android:textColor="#A09A8F"
+            android:textSize="13sp" />
 
         <TextView
             android:id="@+id/widget_net_owed_badge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/widget_btn_surface"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="3dp"
-            android:text="Net: ₹0"
-            android:textColor="#C6F24C"
-            android:textSize="11sp"
-            android:textStyle="bold" />
+            android:background="@drawable/widget_chip"
+            android:fontFamily="sans-serif-medium"
+            android:fontFeatureSettings="tnum"
+            android:maxLines="1"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp"
+            android:text="All square"
+            android:textColor="#A09A8F"
+            android:textSize="12sp" />
     </LinearLayout>
 
-    <!-- Center Spending Balance -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingVertical="6dp">
+        android:orientation="horizontal">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -55,18 +68,22 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="This Month's Spend"
-                android:textColor="#8C8881"
-                android:textSize="11sp" />
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.1"
+                android:text="SPENT THIS MONTH"
+                android:textColor="#8D887E"
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/widget_month_spent"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:fontFeatureSettings="tnum"
+                android:maxLines="1"
                 android:text="₹0"
-                android:textColor="#F5F3EE"
-                android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textColor="#F4F0E8"
+                android:textSize="26sp" />
         </LinearLayout>
 
         <LinearLayout
@@ -78,90 +95,89 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Monthly Income"
-                android:textColor="#8C8881"
-                android:textSize="11sp" />
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.1"
+                android:text="CAME IN"
+                android:textColor="#8D887E"
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/widget_month_income"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:fontFeatureSettings="tnum"
+                android:maxLines="1"
                 android:text="₹0"
-                android:textColor="#4ADE80"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:textColor="#C6F24C"
+                android:textSize="18sp" />
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Quick Action Buttons -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <!-- Add Expense Button -->
         <LinearLayout
             android:id="@+id/widget_btn_add"
             android:layout_width="0dp"
-            android:layout_height="36dp"
-            android:layout_marginEnd="6dp"
-            android:layout_weight="1.2"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
             android:background="@drawable/widget_btn_amber"
+            android:contentDescription="Log an expense"
             android:gravity="center"
-            android:orientation="horizontal"
-            android:paddingHorizontal="10dp">
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_widget_add" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="+ Log Expense"
+                android:layout_marginStart="6dp"
+                android:fontFamily="sans-serif-medium"
+                android:importantForAccessibility="no"
+                android:text="Log expense"
                 android:textColor="#0E0D0C"
-                android:textSize="12sp"
-                android:textStyle="bold" />
+                android:textSize="14sp" />
         </LinearLayout>
 
-        <!-- Voice Capture Button -->
-        <LinearLayout
+        <FrameLayout
             android:id="@+id/widget_btn_voice"
-            android:layout_width="0dp"
-            android:layout_height="36dp"
-            android:layout_marginEnd="6dp"
-            android:layout_weight="0.9"
+            android:layout_width="48dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="8dp"
             android:background="@drawable/widget_btn_surface"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:paddingHorizontal="6dp">
+            android:contentDescription="Say an expense">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🎙️ Speak"
-                android:textColor="#F5F3EE"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-        </LinearLayout>
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_widget_mic" />
+        </FrameLayout>
 
-        <!-- Splits Tab Button -->
-        <LinearLayout
+        <FrameLayout
             android:id="@+id/widget_btn_splits"
-            android:layout_width="0dp"
-            android:layout_height="36dp"
-            android:layout_weight="0.9"
+            android:layout_width="48dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="8dp"
             android:background="@drawable/widget_btn_surface"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:paddingHorizontal="6dp">
+            android:contentDescription="Open splits">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="👥 Splits"
-                android:textColor="#F5F3EE"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_widget_splits" />
+        </FrameLayout>
     </LinearLayout>
 
 </LinearLayout>
