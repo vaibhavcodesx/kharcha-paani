@@ -39,11 +39,15 @@ import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
 import com.vaibhav.kharchapaani.domain.ActivityFeed
 import com.vaibhav.kharchapaani.domain.DebtSimplifier
 import com.vaibhav.kharchapaani.domain.EntryDraft
+import com.vaibhav.kharchapaani.domain.MonthAnalytics
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.ZoneId
 import java.util.Locale
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
@@ -52,6 +56,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -136,6 +143,33 @@ class MainViewModel(
     private val _undoPrompt = MutableStateFlow<UndoPrompt?>(null)
     /** A delete that just happened and can still be undone, for the snackbar. */
     val undoPrompt: StateFlow<UndoPrompt?> = _undoPrompt.asStateFlow()
+
+    private val _insightsMonth = MutableStateFlow(YearMonth.now())
+    /** The month Insights shows; this month until another is picked. */
+    val insightsMonth: StateFlow<YearMonth> = _insightsMonth.asStateFlow()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val insightsAnalytics: StateFlow<MonthlyAnalytics> = _insightsMonth
+        .flatMapLatest { ledgerRepo.monthlyAnalyticsFor(it) }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            MonthlyAnalytics(0.0, 0.0, 0.0, emptyList(), "None", 0, "Food", 0.0)
+        )
+
+    /** The first month with anything logged, as far back as the month picker goes. */
+    val earliestInsightsMonth: StateFlow<YearMonth> = ledgerRepo.allTransactions
+        .map { MonthAnalytics.earliestMonth(it, LocalDate.now(), ZoneId.systemDefault()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), YearMonth.now())
+
+    fun setInsightsMonth(month: YearMonth) {
+        val picked = month.coerceAtMost(YearMonth.now())
+        if (picked == _insightsMonth.value) return
+        _insightsMonth.value = picked
+        // A review of one month doesn't belong under another.
+        _aiSummary.value = null
+        _aiSummaryFailed.value = false
+    }
 
     /** Recent Activity: transactions plus settlements and IOUs, filtered and searched together. */
     val activityFeed: StateFlow<List<ActivityItem>> = combine(
@@ -1097,9 +1131,13 @@ class MainViewModel(
     fun generateAiFinancialSummary() {
         viewModelScope.launch {
             _isGeneratingSummary.value = true
-            val summary = geminiRepo.generateFinancialSummary(monthlyAnalytics.value)
-            if (summary != null) _aiSummary.value = summary
-            _aiSummaryFailed.value = summary == null
+            val month = _insightsMonth.value
+            val summary = geminiRepo.generateFinancialSummary(insightsAnalytics.value)
+            // Dropped if another month was picked while it was being written.
+            if (month == _insightsMonth.value) {
+                if (summary != null) _aiSummary.value = summary
+                _aiSummaryFailed.value = summary == null
+            }
             _isGeneratingSummary.value = false
         }
     }

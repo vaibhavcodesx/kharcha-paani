@@ -7,6 +7,7 @@ import com.vaibhav.kharchapaani.data.model.FullTransaction
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 
 class MonthInsightsTest {
@@ -36,7 +37,7 @@ class MonthInsightsTest {
                 tx(6, today.minusDays(2), type = "income"),
             ),
             category = "Food",
-            today = today,
+            month = YearMonth.from(today),
             zone = zone,
         )
 
@@ -52,15 +53,22 @@ class MonthInsightsTest {
         )
         val notMine = tx(8, today, ownedByMe = false)
 
-        val entries = MonthInsights.categoryEntries(listOf(mine, notMine), "Food", today, zone)
+        val entries = MonthInsights.categoryEntries(listOf(mine, notMine), "Food", YearMonth.from(today), zone)
 
         assertEquals(listOf(7L), entries.map { it.transaction.id })
     }
 
     @Test
-    fun `the daily average divides by the days so far, not the whole month`() {
-        assertEquals(1000.0, MonthInsights.dailyAverage(15000.0, today), 0.0)
-        assertEquals(0.0, MonthInsights.dailyAverage(0.0, today), 0.0)
-        assertEquals(33.33, MonthInsights.dailyAverage(100.0, LocalDate.of(2026, 9, 3)), 0.0)
+    fun `this month's daily average divides by the days so far, not the whole month`() {
+        val september = YearMonth.from(today)
+        assertEquals(1000.0, MonthInsights.dailyAverage(15000.0, september, today), 0.0)
+        assertEquals(0.0, MonthInsights.dailyAverage(0.0, september, today), 0.0)
+        assertEquals(33.33, MonthInsights.dailyAverage(100.0, september, LocalDate.of(2026, 9, 3)), 0.0)
+    }
+
+    @Test
+    fun `a past month's daily average divides by all its days`() {
+        assertEquals(100.0, MonthInsights.dailyAverage(3100.0, YearMonth.of(2026, 8), today), 0.0)
+        assertEquals(100.0, MonthInsights.dailyAverage(2800.0, YearMonth.of(2026, 2), today), 0.0)
     }
 }
