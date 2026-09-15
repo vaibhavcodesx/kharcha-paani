@@ -12,7 +12,7 @@ import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
-import com.vaibhav.kharchapaani.ui.components.SettleUpDialog
+import com.vaibhav.kharchapaani.ui.components.SettleUpContent
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -38,14 +38,12 @@ class RecordInGroupUiTest {
         val recorded = mutableListOf<Recorded>()
         composeTestRule.setContent {
             SplitFlowTheme {
-                SettleUpDialog(
-                    isOpen = true,
+                SettleUpContent(
                     person = bob,
                     suggestedAmount = 120.0,
                     groupOptions = options,
                     onCreateGroup = onCreateGroup,
                     onConfirm = { from, to, amount, _, groupId -> recorded += Recorded(from, to, amount, groupId) },
-                    onDismiss = {},
                 )
             }
         }
@@ -56,7 +54,7 @@ class RecordInGroupUiTest {
     fun `settling with a groupmate in one shared group records it in that group`() {
         val recorded = settleUp(SharedRecordGroups.Options(listOf(goa), emptyList(), involvesGroupmates = true))
 
-        composeTestRule.onNodeWithTag("confirm_settle_button").performScrollTo().performClick()
+        composeTestRule.onNodeWithTag("confirm_settle_button").performClick()
 
         assertEquals(listOf(Recorded(from = 2, to = -1, amount = 120.0, groupId = 10)), recorded)
     }
@@ -65,9 +63,10 @@ class RecordInGroupUiTest {
     fun `with several shared groups a group must be chosen before recording`() {
         val recorded = settleUp(SharedRecordGroups.Options(listOf(goa, flat), emptyList(), involvesGroupmates = true))
 
-        composeTestRule.onNodeWithTag("confirm_settle_button").performScrollTo().assertIsNotEnabled()
+        composeTestRule.onNodeWithTag("confirm_settle_button").assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Choose a group").assertExists()
         composeTestRule.onNodeWithText("🏠 Flat").performScrollTo().performClick()
-        composeTestRule.onNodeWithTag("confirm_settle_button").performScrollTo().assertIsEnabled().performClick()
+        composeTestRule.onNodeWithTag("confirm_settle_button").assertIsEnabled().performClick()
 
         assertEquals(11L, recorded.single().groupId)
     }
@@ -79,7 +78,7 @@ class RecordInGroupUiTest {
 
         composeTestRule.onNodeWithText("Create a shared group").performScrollTo().performClick()
         assertEquals(1, creates)
-        composeTestRule.onNodeWithText("Save on this phone only").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Save on this phone only").performClick()
         assertEquals(null, recorded.single().groupId)
     }
 
@@ -89,7 +88,7 @@ class RecordInGroupUiTest {
 
         composeTestRule.onNodeWithText("Record in group").assertDoesNotExist()
         composeTestRule.onNodeWithTag("settle_amount_input").performTextReplacement("50")
-        composeTestRule.onNodeWithText("Record Settlement").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Record settlement").performClick()
         assertEquals(Recorded(from = 2, to = -1, amount = 50.0, groupId = null), recorded.single())
     }
 

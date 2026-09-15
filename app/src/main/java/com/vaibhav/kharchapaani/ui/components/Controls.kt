@@ -49,6 +49,8 @@ fun ChoiceChip(
     icon: ImageVector? = null,
     iconTint: Color = MutedWarmGray,
     accent: Color = WarmAmberPrimary,
+    // RadioButton for one-of-many; Checkbox where several can be picked (group members).
+    role: Role = Role.RadioButton,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -58,7 +60,7 @@ fun ChoiceChip(
             .clip(KpShapes.small)
             .background(if (selected) accent.copy(alpha = 0.16f) else Color.Transparent)
             .border(BorderStroke(1.dp, if (selected) accent else OutlineInteractive), KpShapes.small)
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .selectable(selected = selected, role = role, onClick = onClick)
             .heightIn(min = 36.dp)
             .padding(horizontal = Spacing.m),
     ) {

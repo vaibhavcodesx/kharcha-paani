@@ -52,9 +52,9 @@ import com.vaibhav.kharchapaani.ui.auth.AccountSheet
 import com.vaibhav.kharchapaani.ui.auth.AuthUiState
 import com.vaibhav.kharchapaani.ui.auth.AuthViewModel
 import com.vaibhav.kharchapaani.ui.auth.SignInScreen
-import com.vaibhav.kharchapaani.ui.components.AddFriendDialog
+import com.vaibhav.kharchapaani.ui.components.AddFriendSheet
 import com.vaibhav.kharchapaani.ui.components.ConfirmBottomSheet
-import com.vaibhav.kharchapaani.ui.components.CreateGroupDialog
+import com.vaibhav.kharchapaani.ui.components.CreateGroupSheet
 import com.vaibhav.kharchapaani.ui.components.GroupDetailSheet
 import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
 import com.vaibhav.kharchapaani.data.sync.SupabaseLedgerChanges
@@ -65,9 +65,9 @@ import com.vaibhav.kharchapaani.ui.groups.ShareSplitPrompt
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupPanel
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupsController
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupsViewModel
-import com.vaibhav.kharchapaani.ui.components.IouDialog
+import com.vaibhav.kharchapaani.ui.components.IouSheet
 import com.vaibhav.kharchapaani.ui.components.PersonLedgerSheet
-import com.vaibhav.kharchapaani.ui.components.SettleUpDialog
+import com.vaibhav.kharchapaani.ui.components.SettleUpSheet
 import com.vaibhav.kharchapaani.ui.components.SimplifyDebtsDialog
 import com.vaibhav.kharchapaani.ui.components.StatementImportDialog
 import com.vaibhav.kharchapaani.ui.components.StatementParsingLoadingDialog
@@ -465,11 +465,11 @@ fun SplitFlowApp(
         onDismiss = { viewModel.dismissConfirmSheet() }
     )
 
-    // Settle Up Dialog
+    // Settle up
     val currentPersonBalance = settleUpPerson?.let { p ->
         personBalances.find { it.person.id == p.id }
     }
-    SettleUpDialog(
+    SettleUpSheet(
         isOpen = isSettleUpOpen,
         person = settleUpPerson,
         suggestedAmount = currentPersonBalance?.netBalance ?: 0.0,
@@ -483,8 +483,8 @@ fun SplitFlowApp(
         onDismiss = { viewModel.dismissSettleUp() }
     )
 
-    // Direct IOU Dialog
-    IouDialog(
+    // IOU
+    IouSheet(
         isOpen = isIouOpen,
         people = people,
         groupOptionsFor = remember(people, groups) { { personId -> viewModel.groupOptionsFor(listOf(personId)) } },
@@ -502,8 +502,8 @@ fun SplitFlowApp(
         onDismiss = { viewModel.dismissSimplifyDebts() }
     )
 
-    // Create Group Dialog
-    CreateGroupDialog(
+    // New group
+    CreateGroupSheet(
         isOpen = isCreateGroupOpen,
         allPeople = people,
         initialShared = createGroupShared,
@@ -573,8 +573,8 @@ fun SplitFlowApp(
         )
     }
 
-    // Add Friend Dialog
-    AddFriendDialog(
+    // Add friend
+    AddFriendSheet(
         isOpen = isAddFriendOpen,
         onAdd = { name, colorHex ->
             viewModel.addNewFriend(name, colorHex)

@@ -1,0 +1,112 @@
+package com.vaibhav.kharchapaani.ui.components
+
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
+import com.vaibhav.kharchapaani.domain.SharedRecordGroups
+import com.vaibhav.kharchapaani.ui.format.Money
+import com.vaibhav.kharchapaani.ui.groups.RecordInGroupSection
+import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
+import com.vaibhav.kharchapaani.ui.theme.Spacing
+import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
+import kotlin.math.abs
+
+private val NoGroups = SharedRecordGroups.Options(groups = emptyList(), withoutAccount = emptyList(), involvesGroupmates = false)
+
+@Composable
+fun SettleUpSheet(
+    isOpen: Boolean,
+    person: PersonEntity?,
+    suggestedAmount: Double = 0.0,
+    groupOptions: SharedRecordGroups.Options = NoGroups,
+    onCreateGroup: () -> Unit = {},
+    onConfirm: (fromPersonId: Long, toPersonId: Long, amount: Double, note: String, groupId: Long?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    if (!isOpen || person == null) return
+    KpModalSheet(onDismiss = onDismiss) {
+        SettleUpContent(person, suggestedAmount, groupOptions, onCreateGroup, onConfirm)
+    }
+}
+
+/**
+ * Recording that money changed hands with one friend. It opens on what's owed right now, pointing the
+ * way the balance runs, so the common case is one tap.
+ */
+@Composable
+fun SettleUpContent(
+    person: PersonEntity,
+    suggestedAmount: Double,
+    groupOptions: SharedRecordGroups.Options,
+    onCreateGroup: () -> Unit,
+    onConfirm: (fromPersonId: Long, toPersonId: Long, amount: Double, note: String, groupId: Long?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // suggestedAmount > 0: they owe me, so they're the one paying.
+    var theyPaid by rememberSaveable(person.id) { mutableStateOf(suggestedAmount >= 0) }
+    var amount by rememberSaveable(person.id) { mutableStateOf(if (abs(suggestedAmount) > 0) Money.input(abs(suggestedAmount)) else "") }
+    var note by rememberSaveable(person.id) { mutableStateOf("") }
+    var selectedGroupId by remember(person.id, groupOptions) { mutableStateOf(groupOptions.onlyGroup?.id) }
+
+    val value = amount.toDoubleOrNull() ?: 0.0
+    val needsGroup = groupOptions.canSync && selectedGroupId == null
+
+    SheetScaffold(
+        modifier = modifier,
+        actionBar = {
+            GlassActionBar(
+                label = if (groupOptions.involvesGroupmates && !groupOptions.canSync) "Save on this phone only" else "Record settlement",
+                disabledLabel = if (value <= 0) "Add an amount" else "Choose a group",
+                enabled = value > 0 && !needsGroup,
+                onClick = {
+                    val groupId = selectedGroupId.takeIf { groupOptions.canSync }
+                    if (theyPaid) onConfirm(person.id, ME, value, note, groupId) else onConfirm(ME, person.id, value, note, groupId)
+                },
+                buttonTestTag = "confirm_settle_button",
+            )
+        },
+    ) {
+        SheetTitle(
+            title = "Settle up with ${person.name}",
+            supporting = when {
+                suggestedAmount >= 0.005 -> "${person.name} owes you ${Money.format(suggestedAmount)}."
+                suggestedAmount <= -0.005 -> "You owe ${person.name} ${Money.format(-suggestedAmount)}."
+                else -> "You're even right now. Record a payment anyway if one happened."
+            },
+        )
+        SegmentedControl(
+            options = listOf(true, false),
+            selected = theyPaid,
+            label = { if (it) "${person.name} paid you" else "You paid ${person.name}" },
+            onSelect = { theyPaid = it },
+            accentFor = { if (it) ChartreuseSecondary else WarmAmberPrimary },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        BigAmountField(
+            amount = amount,
+            onAmountChange = { amount = it },
+            accent = if (theyPaid) ChartreuseSecondary else WarmAmberPrimary,
+            testTag = "settle_amount_input",
+        )
+        SheetRow(label = "Note") {
+            SheetTextInput(value = note, onValueChange = { note = it }, placeholder = "Optional, like “Goa hotel”")
+        }
+        RecordInGroupSection(
+            otherPersonName = person.name,
+            options = groupOptions,
+            selectedGroupId = selectedGroupId,
+            onSelectGroup = { selectedGroupId = it },
+            onCreateGroup = onCreateGroup,
+            modifier = Modifier.padding(top = Spacing.m),
+        )
+    }
+}
+
+private const val ME = -1L

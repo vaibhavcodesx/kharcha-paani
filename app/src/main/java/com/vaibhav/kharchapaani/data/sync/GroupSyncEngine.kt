@@ -477,7 +477,7 @@ class GroupSyncEngine(
         private val CURSOR_OVERLAP = 5.seconds
         private const val DEFAULT_EMOJI = "👥"
         private const val FALLBACK_NAME = "Group member"
-        // The same palette AddFriendDialog offers, so synced members look like local friends.
+        // The same palette AddFriendSheet offers, so synced members look like local friends.
         private val AVATAR_COLORS = listOf("#70C1FF", "#FFB3BA", "#C6F24C", "#FF9E79", "#BAE1FF", "#B5EAD7", "#E2F0CB", "#D7BDE2")
         private const val TAG = "GroupSync"
     }
