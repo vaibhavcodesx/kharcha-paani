@@ -1,6 +1,14 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.BringIntoViewSpec
+import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -90,6 +98,7 @@ fun KpModalSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> U
  * both live in the sheet's own window; the body leaves room at the end so its last row can scroll
  * clear of the bar. With no bar, the body just scrolls.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SheetScaffold(
     modifier: Modifier = Modifier,
@@ -97,16 +106,23 @@ fun SheetScaffold(
     body: @Composable ColumnScope.() -> Unit,
 ) {
     val hazeState = rememberHazeState()
+    val density = LocalDensity.current
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val clearOfBar = remember(density, navBarBottom, actionBar != null) {
+        ClearOfBarSpec(if (actionBar != null) with(density) { (ActionBarClearance + navBarBottom).toPx() } else 0f)
+    }
     Box(modifier.fillMaxWidth().imePadding()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .hazeSource(hazeState)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.page),
-        ) {
-            body()
-            Spacer(Modifier.navigationBarsPadding().height(if (actionBar != null) ActionBarClearance else Spacing.xl))
+        CompositionLocalProvider(LocalBringIntoViewSpec provides clearOfBar) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .hazeSource(hazeState)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = Spacing.page),
+            ) {
+                body()
+                Spacer(Modifier.navigationBarsPadding().height(if (actionBar != null) ActionBarClearance else Spacing.xl))
+            }
         }
         if (actionBar != null) {
             CompositionLocalProvider(LocalHazeState provides hazeState) {
@@ -259,6 +275,23 @@ fun RowScope.SheetTextInput(
                 .fillMaxWidth()
                 .then(if (fieldTestTag != null) Modifier.testTag(fieldTestTag) else Modifier),
         )
+    }
+}
+
+/**
+ * Scrolls a requested item into the part of the sheet not covered by the floating action bar. The
+ * default treats the whole viewport as visible, so a focused field could stop right behind the bar.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+internal class ClearOfBarSpec(private val barHeightPx: Float) : BringIntoViewSpec {
+    override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
+        val visible = (containerSize - barHeightPx).coerceAtLeast(0f)
+        val end = offset + size
+        return when {
+            offset >= 0f && end <= visible -> 0f
+            offset < 0f || size > visible -> offset
+            else -> end - visible
+        }
     }
 }
 
