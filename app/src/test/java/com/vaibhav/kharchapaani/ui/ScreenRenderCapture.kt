@@ -6,6 +6,10 @@ import android.view.View
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
@@ -41,6 +45,8 @@ import com.vaibhav.kharchapaani.ui.screens.HomeScreen
 import com.vaibhav.kharchapaani.ui.screens.InsightsScreen
 import com.vaibhav.kharchapaani.ui.shell.AppTab
 import com.vaibhav.kharchapaani.ui.shell.KpDock
+import com.vaibhav.kharchapaani.ui.shell.KpSnackbarHost
+import com.vaibhav.kharchapaani.ui.shell.snackbarClearance
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalSurface
 import com.vaibhav.kharchapaani.ui.theme.LocalHazeState
@@ -100,6 +106,20 @@ class ScreenRenderCapture {
         Box(Modifier.fillMaxSize().background(CharcoalBg)) {
             Box(Modifier.fillMaxSize().hazeSource(hazeState)) { Home(longFeed = true) }
             CompositionLocalProvider(LocalHazeState provides hazeState) {
+                KpDock(currentTab = AppTab.Activity, onSelectTab = {}, onAdd = {}, modifier = Modifier.align(Alignment.BottomCenter))
+            }
+        }
+    }
+
+    @Test
+    fun `undo snackbar after a delete`() = capture("undo_snackbar") {
+        val hazeState = rememberHazeState()
+        val snackbars = remember { SnackbarHostState() }
+        LaunchedEffect(Unit) { snackbars.showSnackbar("Deleted Chai Point", actionLabel = "Undo", duration = SnackbarDuration.Indefinite) }
+        Box(Modifier.fillMaxSize().background(CharcoalBg)) {
+            Box(Modifier.fillMaxSize().hazeSource(hazeState)) { Home(longFeed = true) }
+            CompositionLocalProvider(LocalHazeState provides hazeState) {
+                KpSnackbarHost(snackbars, Modifier.align(Alignment.BottomCenter).padding(bottom = snackbarClearance()))
                 KpDock(currentTab = AppTab.Activity, onSelectTab = {}, onAdd = {}, modifier = Modifier.align(Alignment.BottomCenter))
             }
         }

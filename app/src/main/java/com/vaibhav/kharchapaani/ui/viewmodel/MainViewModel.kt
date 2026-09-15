@@ -38,6 +38,7 @@ import com.vaibhav.kharchapaani.data.sync.SyncScheduler
 import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
 import com.vaibhav.kharchapaani.domain.ActivityFeed
 import com.vaibhav.kharchapaani.domain.DebtSimplifier
+import com.vaibhav.kharchapaani.domain.EntryDraft
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
@@ -45,7 +46,12 @@ import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 import java.util.Locale
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -123,9 +129,19 @@ class MainViewModel(
             MonthlyAnalytics(0.0, 0.0, 0.0, emptyList(), "None", 0, "Food", 0.0)
         )
 
+    // Outlives the screen so a delete still waiting on its Undo is committed when the app closes.
+    private val deleteScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val pendingDeletes = PendingDeletes(deleteScope, ::commitTransactionDelete)
+
+    private val _undoPrompt = MutableStateFlow<UndoPrompt?>(null)
+    /** A delete that just happened and can still be undone, for the snackbar. */
+    val undoPrompt: StateFlow<UndoPrompt?> = _undoPrompt.asStateFlow()
+
     /** Recent Activity: transactions plus settlements and IOUs, filtered and searched together. */
     val activityFeed: StateFlow<List<ActivityItem>> = combine(
-        rawTransactions,
+        combine(rawTransactions, pendingDeletes.ids) { transactions, hidden ->
+            if (hidden.isEmpty()) transactions else transactions.filterNot { it.transaction.id in hidden }
+        },
         ledgerRepo.allSettlements,
         combine(people, rawGroups) { people, groups -> people to groups },
         searchQuery,
@@ -395,8 +411,31 @@ class MainViewModel(
             initSharesForCurrentPeople()
         }
 
+        editBaseline = currentDraft()
         _isConfirmSheetOpen.value = true
     }
+
+    // The expense as it was when its edit opened, to tell whether closing the sheet loses changes.
+    private var editBaseline: EntryDraft? = null
+
+    private fun currentDraft() = EntryDraft(
+        type = _type.value,
+        amount = _amount.value,
+        merchant = _merchant.value,
+        category = _category.value,
+        paymentMethod = _paymentMethod.value,
+        note = _note.value,
+        date = _date.value,
+        groupId = _groupId.value,
+        isSplit = _isSplit.value,
+        splitMode = _splitMode.value,
+        paidByPersonId = _paidByPersonId.value,
+        shares = _shares.value,
+    )
+
+    /** Whether closing the quick-add sheet now would lose what's in it. */
+    fun hasUnsavedEntry(): Boolean =
+        EntryDraft.isUnsaved(currentDraft(), original = editBaseline.takeIf { _editingTransactionId.value != null })
 
     fun parseInputText(rawText: String) {
         if (rawText.isBlank()) return
@@ -843,16 +882,39 @@ class MainViewModel(
     private fun archivedMessage(e: ArchivedGroupException) =
         "${e.groupName} is archived, so its expenses and settlements are read-only."
 
+    /** Takes the row away now; the ledger delete waits for the Undo snackbar to go. */
     fun deleteTransaction(txId: Long) {
-        viewModelScope.launch {
-            try {
-                ledgerRepo.deleteTransaction(txId)
-            } catch (e: ArchivedGroupException) {
-                _statusMessage.value = archivedMessage(e)
-                return@launch
-            }
-            SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
+        val tx = rawTransactions.value.firstOrNull { it.transaction.id == txId }?.transaction
+        pendingDeletes.hide(txId)
+        _undoPrompt.value = UndoPrompt(
+            txId = txId,
+            message = tx?.let { "Deleted ${it.merchant.ifBlank { it.category }}" } ?: "Expense deleted",
+        )
+    }
+
+    fun clearUndoPrompt() {
+        _undoPrompt.value = null
+    }
+
+    fun undoDelete(txId: Long) = pendingDeletes.undo(txId)
+
+    fun commitDelete(txId: Long) = pendingDeletes.commit(txId)
+
+    private suspend fun commitTransactionDelete(txId: Long) {
+        try {
+            ledgerRepo.deleteTransaction(txId)
+        } catch (e: ArchivedGroupException) {
+            _statusMessage.value = archivedMessage(e)
+            return
         }
+        // Keep the row hidden until the feed has caught up, so it doesn't blink back in between.
+        withTimeoutOrNull(2_000) { ledgerRepo.fullTransactions.first { list -> list.none { it.transaction.id == txId } } }
+        SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
+    }
+
+    override fun onCleared() {
+        pendingDeletes.commitAll()
+        super.onCleared()
     }
 
     // Groups Management

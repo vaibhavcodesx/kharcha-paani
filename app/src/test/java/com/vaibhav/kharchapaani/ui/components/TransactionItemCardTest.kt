@@ -1,5 +1,9 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
@@ -11,6 +15,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
@@ -67,6 +72,47 @@ class TransactionItemCardTest {
         composeTestRule.waitForIdle()
 
         assertEquals(1, deletes)
+    }
+
+    @Test
+    fun `a short flick while scrolling doesn't delete`() {
+        var deletes = 0
+        composeTestRule.setContent {
+            SplitFlowTheme { TransactionItemCard(tx, onEdit = {}, onDelete = { deletes++ }) }
+        }
+
+        // A quarter of the row, fast: the kind of sideways twitch a vertical scroll picks up.
+        composeTestRule.onNodeWithTag("transaction_item_9").performTouchInput {
+            swipe(start = center, end = center.copy(x = center.x - width * 0.25f), durationMillis = 60)
+        }
+        composeTestRule.waitForIdle()
+
+        assertEquals(0, deletes)
+        composeTestRule.onNodeWithTag("transaction_item_9").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a row brought back by Undo is in place and isn't deleted again`() {
+        var deletes = 0
+        var shown by mutableStateOf(true)
+        composeTestRule.setContent {
+            SplitFlowTheme {
+                LazyColumn {
+                    if (shown) {
+                        item(key = "tx_9") { TransactionItemCard(tx, onEdit = {}, onDelete = { deletes++; shown = false }) }
+                    }
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithTag("transaction_item_9").performTouchInput { swipeLeft() }
+        composeTestRule.waitForIdle()
+        composeTestRule.runOnIdle { shown = true }
+        composeTestRule.waitForIdle()
+
+        assertEquals(1, deletes)
+        composeTestRule.onNodeWithTag("transaction_item_9").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Idli").assertIsDisplayed()
     }
 
     @Test
