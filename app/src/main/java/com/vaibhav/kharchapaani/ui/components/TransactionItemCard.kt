@@ -39,6 +39,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.model.FullTransaction
+import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
@@ -69,16 +70,22 @@ fun TransactionItemCard(
     modifier: Modifier = Modifier,
     isReadOnly: Boolean = false,
     position: RowPosition = RowPosition.Single,
+    people: List<PersonEntity> = emptyList(),
+    visits: Int = 0,
 ) {
     val tx = fullTx.transaction
     val isIncome = tx.type == "income"
     val isSplit = fullTx.split != null
     val time = remember(tx.date) { SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(tx.date)) }
+    // "Split between 3" told you a count and nothing else; the faces say who, at a glance, which
+    // is what anyone actually wants from a shared expense in a list (backlog §5, Image 13).
     val detail = listOfNotNull(
         time,
         tx.paymentMethod.takeIf { it.isNotBlank() },
-        if (isSplit) "Split between ${fullTx.shares.size}" else null,
     ).joinToString(" · ")
+    val sharers = remember(fullTx, people) {
+        if (!isSplit) emptyList() else fullTx.shares.mapNotNull { share -> people.firstOrNull { it.id == share.personId } }
+    }
 
     val currentOnEdit by rememberUpdatedState(onEdit)
     val currentOnDelete by rememberUpdatedState(onDelete)
@@ -147,13 +154,26 @@ fun TransactionItemCard(
         ) {
             CategoryBadge(tx.category)
             Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
-                Text(
-                    text = tx.merchant.ifBlank { tx.category },
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(text = detail, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = tx.merchant.ifBlank { tx.category },
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    if (visits >= 2) VisitChip(visits)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = detail, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (isSplit) {
+                        SharerFaces(
+                            sharers = sharers,
+                            count = fullTx.shares.size,
+                            modifier = Modifier.padding(start = Spacing.s),
+                        )
+                    }
+                }
             }
             Column(horizontalAlignment = Alignment.End) {
                 val shown = if (isSplit) fullTx.myPersonalShare else tx.amount

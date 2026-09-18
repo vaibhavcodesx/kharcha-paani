@@ -412,6 +412,7 @@ fun SplitFlowApp(
                 when (targetTab) {
                     0 -> HomeScreen(
                         activity = activityFeed,
+                        people = people,
                         totalNetOwed = totalNetOwed,
                         monthlyAnalytics = monthlyAnalytics,
                         isParsing = isParsing,
