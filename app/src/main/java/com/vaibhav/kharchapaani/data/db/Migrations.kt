@@ -84,3 +84,17 @@ internal val MIGRATION_4_5 = object : Migration(4, 5) {
         db.execSQL("ALTER TABLE `people` ADD COLUMN `avatarEmoji` TEXT")
     }
 }
+
+/** v6: subscriptions (backlog item 8). A new table only; nothing existing is touched. */
+internal val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `subscriptions` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`name` TEXT NOT NULL, `amount` REAL NOT NULL, `category` TEXT NOT NULL, " +
+                "`paymentMethod` TEXT NOT NULL, `cycle` TEXT NOT NULL, `startDate` INTEGER NOT NULL, " +
+                "`chargedThrough` INTEGER, `cancelledAt` INTEGER, `createdAt` INTEGER NOT NULL)"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_subscriptions_cancelledAt` ON `subscriptions` (`cancelledAt`)")
+    }
+}

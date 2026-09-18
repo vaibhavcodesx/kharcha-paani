@@ -204,3 +204,24 @@ data class SettlementEntity(
     /** PENDING/SYNCED only inside shared groups; everything else stays LOCAL_ONLY (decision 1). */
     @ColumnInfo(defaultValue = "LOCAL_ONLY") val syncState: SyncState = SyncState.LOCAL_ONLY,
 )
+
+/**
+ * A fixed charge on a fixed rhythm (backlog item 8). It's a rule, not money: the ledger only gets a
+ * real transaction once a due date has arrived, created by LedgerRepository.runDueSubscriptions.
+ */
+@Entity(tableName = "subscriptions", indices = [Index(value = ["cancelledAt"])])
+data class SubscriptionEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val amount: Double,
+    val category: String,
+    val paymentMethod: String,
+    /** WEEKLY, MONTHLY or YEARLY (domain.SubscriptionCycle). */
+    val cycle: String,
+    /** The first charge, as a local date at midnight. */
+    val startDate: Long,
+    /** The last due date already in the ledger, so a charge is never created twice. */
+    val chargedThrough: Long? = null,
+    val cancelledAt: Long? = null,
+    val createdAt: Long = System.currentTimeMillis(),
+)

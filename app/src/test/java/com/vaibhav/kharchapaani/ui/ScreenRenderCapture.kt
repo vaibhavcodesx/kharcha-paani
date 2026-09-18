@@ -169,6 +169,28 @@ class ScreenRenderCapture {
     }
 
     @Test
+    fun `subscriptions sheet`() = capture("subscriptions_sheet") {
+        Column(Modifier.fillMaxSize().background(CharcoalSurface), horizontalAlignment = Alignment.CenterHorizontally) {
+            SheetHandle()
+            com.vaibhav.kharchapaani.ui.components.SubscriptionsContent(
+                subscriptions = listOf(
+                    com.vaibhav.kharchapaani.data.db.entity.SubscriptionEntity(
+                        id = 1, name = "Netflix", amount = 649.0, category = "Entertainment", paymentMethod = "Credit Card",
+                        cycle = "MONTHLY", startDate = at(today.minusMonths(3).withDayOfMonth(15), 9),
+                    ),
+                    com.vaibhav.kharchapaani.data.db.entity.SubscriptionEntity(
+                        id = 2, name = "Gym", amount = 1200.0, category = "Health", paymentMethod = "GPay",
+                        cycle = "MONTHLY", startDate = at(today.minusMonths(6).withDayOfMonth(2), 9),
+                        cancelledAt = at(today.minusMonths(1), 9),
+                    ),
+                ),
+                prefs = com.vaibhav.kharchapaani.domain.CategoryPrefs(),
+                onAdd = { _, _ -> }, onCancel = {}, onDelete = {}, today = today,
+            )
+        }
+    }
+
+    @Test
     fun `home`() = capture("home") {
         Box(Modifier.fillMaxSize().background(CharcoalBg)) { Home(longFeed = false) }
     }
