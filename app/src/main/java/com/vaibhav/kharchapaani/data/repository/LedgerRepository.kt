@@ -185,6 +185,7 @@ class LedgerRepository(
                 netBalanceForMe = roundPaisa(netBalance),
                 transactionsCount = groupTxs.size,
                 transactions = groupTxs,
+                settlements = settlements.filter { it.groupId == group.id },
                 unsyncedChanges = if (!group.isShared) 0 else {
                     val unsynced = setOf(SyncState.PENDING, SyncState.FAILED)
                     groupTxs.count { it.transaction.syncState in unsynced } +
@@ -698,14 +699,22 @@ class LedgerRepository(
     }
 
     /** Everything in [range] as a spreadsheet; see [CsvExport]. */
-    suspend fun exportCsv(range: ExportRange, zone: ZoneId = ZoneId.systemDefault()): CsvFile = withContext(Dispatchers.IO) {
+    suspend fun exportCsv(range: ExportRange, zone: ZoneId = ZoneId.systemDefault(), groupId: Long? = null): CsvFile = withContext(Dispatchers.IO) {
         val splits = db.splitDao().getAllSplitsDirect().associateBy { it.transactionId }
         val shares = db.splitDao().getAllSplitSharesDirect().groupBy { it.splitId }
         val transactions = db.transactionDao().getAllTransactionsDirect().map { tx ->
             val split = splits[tx.id]
             FullTransaction(tx, split, split?.let { shares[it.id] }.orEmpty())
         }
-        CsvExport.build(transactions, db.personDao().getAllPeopleDirect(), db.groupDao().getAllGroupsDirect(), range, zone)
+        val group = groupId?.let { db.groupDao().getAllGroupsDirect().firstOrNull { g -> g.id == it } }
+        CsvExport.build(
+            transactions.filter { groupId == null || it.transaction.groupId == groupId },
+            db.personDao().getAllPeopleDirect(),
+            db.groupDao().getAllGroupsDirect(),
+            range,
+            zone,
+            fileNameSuffix = group?.name,
+        )
     }
 }
 

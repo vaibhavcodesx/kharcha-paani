@@ -342,16 +342,28 @@ class ScreenRenderCapture {
         val priya = PersonEntity(id = 6, name = "Priya", avatarColor = "#FFB3BA", profileId = "priya")
         val goa = trips[0].copy(
             members = listOf(rohan, priya),
+            // The figures match the two expenses below, as they would in the app.
+            totalExpenses = 6000.0,
+            myShare = 2000.0,
+            netBalanceForMe = -1200.0,
             transactions = listOf(
                 FullTransaction(
                     TransactionEntity(id = 21, type = "expense", amount = 4800.0, category = "Food", merchant = "Thalassa dinner", paymentMethod = "Card", date = at(today, 21), isSplit = true, ownerProfileId = "priya"),
                     split = SplitEntity(id = 11, transactionId = 21, totalAmount = 4800.0, paidByPersonId = 2),
-                    shares = listOf(SplitShareEntity(splitId = 11, personId = -1, shareAmount = 1600.0)),
+                    shares = listOf(
+                        SplitShareEntity(splitId = 11, personId = -1, shareAmount = 1600.0),
+                        SplitShareEntity(splitId = 11, personId = 2, shareAmount = 1600.0),
+                        SplitShareEntity(splitId = 11, personId = 6, shareAmount = 1600.0),
+                    ),
                 ),
                 FullTransaction(
                     TransactionEntity(id = 22, type = "expense", amount = 1200.0, category = "Transport", merchant = "Scooter rental", paymentMethod = "UPI", date = at(today.minusDays(1), 10), isSplit = true),
                     split = SplitEntity(id = 12, transactionId = 22, totalAmount = 1200.0, paidByPersonId = -1),
-                    shares = listOf(SplitShareEntity(splitId = 12, personId = -1, shareAmount = 400.0)),
+                    shares = listOf(
+                        SplitShareEntity(splitId = 12, personId = -1, shareAmount = 400.0),
+                        SplitShareEntity(splitId = 12, personId = 2, shareAmount = 400.0),
+                        SplitShareEntity(splitId = 12, personId = 6, shareAmount = 400.0),
+                    ),
                 ),
             ),
         )

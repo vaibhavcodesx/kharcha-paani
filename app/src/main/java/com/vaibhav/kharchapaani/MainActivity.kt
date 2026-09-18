@@ -634,6 +634,13 @@ fun SplitFlowApp(
             viewModel.openManualAddForGroup(groupId)
         },
         onEditTransaction = { viewModel.openEditTransaction(it) },
+        onSettleUpWith = { personId ->
+            people.firstOrNull { it.id == personId }?.let { person ->
+                viewModel.dismissGroupDetail()
+                viewModel.openSettleUp(person)
+            }
+        },
+        onExportGroup = { groupId -> viewModel.exportGroupCsv(context, groupId) },
         onDismiss = {
             sharedGroups.dismissInvite()
             viewModel.dismissGroupDetail()

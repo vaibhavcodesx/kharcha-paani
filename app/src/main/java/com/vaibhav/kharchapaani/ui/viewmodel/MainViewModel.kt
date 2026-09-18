@@ -1235,11 +1235,16 @@ class MainViewModel(
      * Shares the range as a .csv file. It used to go as the share's text, which apps like WhatsApp and
      * Gmail cut off after a screenful, so a whole ledger arrived as its last 10-20 rows.
      */
-    fun exportCsv(context: Context, range: ExportRange) {
+    /** One group's whole history as a spreadsheet, from its own screen. */
+    fun exportGroupCsv(context: Context, groupId: Long) {
+        exportCsv(context, ExportRange.Everything, groupId)
+    }
+
+    fun exportCsv(context: Context, range: ExportRange, groupId: Long? = null) {
         viewModelScope.launch {
-            val csv = ledgerRepo.exportCsv(range)
+            val csv = ledgerRepo.exportCsv(range, groupId = groupId)
             if (csv.rows == 0) {
-                _statusMessage.value = "Nothing logged in that range to export."
+                _statusMessage.value = if (groupId != null) "Nothing logged in that group to export." else "Nothing logged in that range to export."
                 return@launch
             }
             val uri = writeExport(csv)

@@ -80,6 +80,8 @@ data class GroupWithDetails(
     val netBalanceForMe: Double, // > 0: group members owe me; < 0: I owe group
     val transactionsCount: Int,
     val transactions: List<FullTransaction> = emptyList(),
+    /** This group's settlements, for who-owes-whom inside it. */
+    val settlements: List<SettlementEntity> = emptyList(),
     /** Expenses, settlements and group edits here that haven't reached the server yet. */
     val unsyncedChanges: Int = 0,
 )
