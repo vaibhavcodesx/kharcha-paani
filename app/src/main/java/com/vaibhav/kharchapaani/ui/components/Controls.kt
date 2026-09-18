@@ -33,6 +33,7 @@ import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.OutlineInteractive
 import com.vaibhav.kharchapaani.ui.theme.Spacing
+import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.SquircleShape
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 
@@ -51,6 +52,7 @@ fun ChoiceChip(
     accent: Color = WarmAmberPrimary,
     // RadioButton for one-of-many; Checkbox where several can be picked (group members).
     role: Role = Role.RadioButton,
+    enabled: Boolean = true,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -60,12 +62,20 @@ fun ChoiceChip(
             .clip(KpShapes.small)
             .background(if (selected) accent.copy(alpha = 0.16f) else Color.Transparent)
             .border(BorderStroke(1.dp, if (selected) accent else OutlineInteractive), KpShapes.small)
-            .selectable(selected = selected, role = role, onClick = onClick)
+            .selectable(selected = selected, enabled = enabled, role = role, onClick = onClick)
             .heightIn(min = 36.dp)
             .padding(horizontal = Spacing.m),
     ) {
         if (icon != null) Icon(icon, contentDescription = null, tint = if (selected) accent else iconTint, modifier = Modifier.size(16.dp))
-        Text(label, style = MaterialTheme.typography.labelLarge, color = if (selected) OffWhiteText else MutedWarmGray)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = when {
+                !enabled -> SubMutedWarmGray
+                selected -> OffWhiteText
+                else -> MutedWarmGray
+            },
+        )
     }
 }
 

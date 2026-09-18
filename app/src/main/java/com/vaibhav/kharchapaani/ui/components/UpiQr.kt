@@ -11,6 +11,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,7 +82,17 @@ fun QrCode(text: String, contentDescription: String, modifier: Modifier = Modifi
 /** What a friend scans to pay this account, with the ID to copy for anyone who'd rather type it. */
 @Composable
 fun UpiPaymentCard(payee: UpiPayee, modifier: Modifier = Modifier, amount: Double? = null, note: String? = null) {
-    val link = remember(payee, amount, note) { UpiLink.build(payee.upiId, payee.name, amount, note) }
+    // Two codes, because both get used: the exact one settles the debt in a tap, and the open one
+    // is what you want when the amount on screen isn't the amount being handed over — a part
+    // payment, or a round number. Scanning the wrong one silently pays the wrong amount, so the
+    // choice is explicit rather than a long-press.
+    var exact by rememberSaveable(amount) { mutableStateOf(amount != null && amount > 0) }
+    val shownAmount = amount?.takeIf { exact && it > 0 }
+    val link = remember(payee, shownAmount, note) {
+        // Never built from an unvalidated handle: for a groupmate this string arrived from their
+        // phone, and it is about to become a payment link.
+        UpiLink.buildOrNull(payee.upiId, payee.name, shownAmount, note)
+    } ?: return
     val clipboard = LocalClipboardManager.current
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -90,7 +104,7 @@ fun UpiPaymentCard(payee: UpiPayee, modifier: Modifier = Modifier, amount: Doubl
             .testTag("upi_payment_card"),
     ) {
         Text(
-            text = if (amount != null && amount > 0) "Scan to pay ${Money.format(amount)}" else "Scan to pay ${payee.name}",
+            text = if (shownAmount != null) "Scan to pay ${Money.format(shownAmount)}" else "Scan to pay ${payee.name}",
             style = MaterialTheme.typography.titleMedium,
             color = OffWhiteText,
             textAlign = TextAlign.Center,
@@ -100,9 +114,19 @@ fun UpiPaymentCard(payee: UpiPayee, modifier: Modifier = Modifier, amount: Doubl
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(bottom = Spacing.m),
         )
+        if (amount != null && amount > 0) {
+            SegmentedControl(
+                options = listOf(true, false),
+                selected = exact,
+                label = { if (it) Money.format(amount) else "Any amount" },
+                onSelect = { exact = it },
+                testTagFor = { if (it) "upi_qr_exact" else "upi_qr_open" },
+                modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.m),
+            )
+        }
         QrCode(
             text = link,
-            contentDescription = "UPI QR code to pay ${payee.name}" + (amount?.takeIf { it > 0 }?.let { " ${Money.format(it)}" } ?: ""),
+            contentDescription = "UPI QR code to pay ${payee.name}" + (shownAmount?.let { " ${Money.format(it)}" } ?: ", any amount"),
         )
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = Spacing.s)) {
             Text(payee.upiId, style = MoneyText.small, color = OffWhiteText, modifier = Modifier.testTag("upi_id_text"))

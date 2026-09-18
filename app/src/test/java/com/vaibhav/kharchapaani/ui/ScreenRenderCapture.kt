@@ -321,7 +321,7 @@ class ScreenRenderCapture {
                 topMerchant = "Swiggy", dailyStreak = 6,
             ),
             transactions = food, aiSummary = null, isGeneratingSummary = false,
-            onGenerateAiSummary = {}, onExport = {}, today = today,
+            onAsk = {}, onExport = {}, today = today,
         )
     }
 

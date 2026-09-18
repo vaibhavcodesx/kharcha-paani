@@ -175,6 +175,21 @@ class AuthRepository(
             }
             .decodeSingle<Profile>()
 
+    /**
+     * Publishes this account's UPI handle so groupmates settling up can see where to pay.
+     *
+     * [upiId] must already be through `UpiLink.cleanId`; the server's `profiles_upi_id_format`
+     * check constraint will reject anything else anyway, which is the point of having both.
+     * Null clears it, which is how "remove my UPI ID" reaches everyone else.
+     */
+    suspend fun updateUpiId(userId: String, upiId: String?): Profile =
+        supabase.from("profiles")
+            .update(buildJsonObject { put("upi_id", upiId) }) {
+                select()
+                filter { eq("id", userId) }
+            }
+            .decodeSingle<Profile>()
+
     private sealed interface GoogleTokenResult {
         data class Token(val idToken: String) : GoogleTokenResult
         data class Done(val result: GoogleSignInResult) : GoogleTokenResult

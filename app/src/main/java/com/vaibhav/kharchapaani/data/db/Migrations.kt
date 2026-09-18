@@ -98,3 +98,15 @@ internal val MIGRATION_5_6 = object : Migration(5, 6) {
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_subscriptions_cancelledAt` ON `subscriptions` (`cancelledAt`)")
     }
 }
+
+/**
+ * A groupmate's UPI handle, so settling up with someone can show where to pay them.
+ *
+ * Additive and nullable: nobody's rows change, and a person whose groupmate has not set one keeps
+ * exactly the behaviour they had.
+ */
+internal val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `people` ADD COLUMN `upiId` TEXT")
+    }
+}

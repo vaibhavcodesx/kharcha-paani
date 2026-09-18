@@ -25,6 +25,14 @@ data class PersonEntity(
     val avatarUrl: String? = null,
     /** A groupmate's chosen emoji, shown instead of initials (backlog item 6). */
     val avatarEmoji: String? = null,
+    /**
+     * A groupmate's UPI handle, so settling up with them can show where to pay.
+     *
+     * Never trusted as stored: it is interpolated into a upi://pay deep link, so every read goes
+     * back through [com.vaibhav.kharchapaani.domain.UpiLink.cleanId] first. The server has a
+     * matching check constraint; neither layer is relied on alone.
+     */
+    val upiId: String? = null,
 )
 
 @Entity(

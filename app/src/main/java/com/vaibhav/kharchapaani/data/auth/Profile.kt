@@ -11,4 +11,10 @@ data class Profile(
     @SerialName("avatar_url") val avatarUrl: String? = null,
     /** Shown instead of initials; groupmates see it too. Null means initials. */
     @SerialName("avatar_emoji") val avatarEmoji: String? = null,
+    /**
+     * Where groupmates can pay this account. Readable only by this account and people who share a
+     * group with it (profiles_select_self_or_groupmate), which is exactly the audience for a
+     * payment handle — a UPI ID is not secret, but it is not public either.
+     */
+    @SerialName("upi_id") val upiId: String? = null,
 )

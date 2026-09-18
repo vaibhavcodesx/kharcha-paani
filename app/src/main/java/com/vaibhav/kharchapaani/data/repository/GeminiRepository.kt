@@ -12,6 +12,9 @@ import com.vaibhav.kharchapaani.domain.LocalHeuristicParser
 import com.vaibhav.kharchapaani.domain.Categories
 import com.vaibhav.kharchapaani.domain.CategoryPrefs
 import com.vaibhav.kharchapaani.domain.LocalStatementParser
+import com.vaibhav.kharchapaani.domain.AI_VOICE
+import com.vaibhav.kharchapaani.domain.AiPrompt
+import com.vaibhav.kharchapaani.domain.instruction
 import com.vaibhav.kharchapaani.domain.StatementPdf
 import com.vaibhav.kharchapaani.domain.StatementReadFailure
 import com.vaibhav.kharchapaani.domain.StatementReadResult
@@ -43,6 +46,9 @@ class GeminiRepository(
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
     private fun getApiKey(): String = apiKey()
+
+    /** Whether this build can ask anything at all. A button that can never work is worse than none. */
+    fun hasApiKey(): Boolean = getApiKey().isNotBlank()
 
     suspend fun parseMessyText(
         rawText: String,
@@ -244,6 +250,58 @@ class GeminiRepository(
      * payment method (GPay) and sometimes a category, and put developer text in the note.
      */
     private fun unreadReceipt() = ParsedTransactionResult(type = "expense", amount = 0.0, merchant = "", category = "Other", paymentMethod = "Other", note = "", readFailed = true)
+
+    /**
+     * Asks one of the [AiPrompt]s and returns the answer, or null when it couldn't be generated.
+     *
+     * One method for all four rather than four near-identical ones: what differs between them is
+     * the instruction and the data block, and both are built in the domain layer where they can be
+     * tested without a network. These are short calls, so they keep the default timeout — unlike a
+     * statement, which is why that one has its own.
+     */
+    suspend fun ask(prompt: AiPrompt, possessive: String, data: String): String? = withContext(Dispatchers.IO) {
+        val apiKey = getApiKey()
+        if (apiKey.isBlank()) return@withContext null
+
+        val body = """
+            ${AI_VOICE.trim()}
+
+            ${prompt.instruction(possessive)}
+
+            The data, and the only figures you may use:
+            $data
+        """.trimIndent()
+
+        try {
+            val requestJson = JSONObject().apply {
+                put("contents", JSONArray().apply {
+                    put(JSONObject().put("parts", JSONArray().apply { put(JSONObject().put("text", body)) }))
+                })
+                put("generationConfig", JSONObject().apply {
+                    // Low, not zero: these are sentences, and zero makes them read like a form letter.
+                    put("temperature", 0.35)
+                    put("maxOutputTokens", 2048)
+                })
+            }
+            val request = Request.Builder()
+                .url("${endpoint(MODEL)}?key=$apiKey")
+                .post(requestJson.toString().toRequestBody(jsonMediaType))
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                val responseBody = response.body?.string().orEmpty()
+                if (!response.isSuccessful) {
+                    Log.e(TAG, "Gemini HTTP ${response.code}: ${responseBody.take(400)}")
+                    return@withContext null
+                }
+                val candidate = JSONObject(responseBody).optJSONArray("candidates")?.optJSONObject(0)
+                candidate?.let(::answerText)?.takeIf { it.isNotBlank() }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error asking ${prompt.name}: ${e.message}", e)
+            null
+        }
+    }
 
     /** A short read of the month, or null when it couldn't be generated (the screen says so). */
     suspend fun generateFinancialSummary(analytics: MonthlyAnalytics): String? = withContext(Dispatchers.IO) {

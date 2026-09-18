@@ -41,6 +41,17 @@ import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.data.settings.AppSettings
 import com.vaibhav.kharchapaani.data.sync.SyncScheduler
 import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
+import com.vaibhav.kharchapaani.BuildConfig
+import com.vaibhav.kharchapaani.data.auth.AuthRepository
+import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
+import com.vaibhav.kharchapaani.domain.AI_DAILY_CAP
+import com.vaibhav.kharchapaani.domain.AiContext
+import com.vaibhav.kharchapaani.domain.AiPrompt
+import com.vaibhav.kharchapaani.domain.DailySpend
+import com.vaibhav.kharchapaani.domain.GroupInsights
+import com.vaibhav.kharchapaani.ui.format.MonthNames
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.first
 import com.vaibhav.kharchapaani.domain.StatementReadFailure
 import com.vaibhav.kharchapaani.domain.StatementReadResult
 import com.vaibhav.kharchapaani.domain.ActivityFeed
@@ -92,6 +103,15 @@ class MainViewModel(
 ) : AndroidViewModel(application) {
 
     private val ledgerRepo = LedgerRepository(db, onLocalTransactionChange = ::requestSync, selfProfileId = userId)
+
+    init {
+        publishUpiIfMissing()
+    }
+
+    private val authRepo = AuthRepository(
+        supabase = SupabaseClientProvider.get(application),
+        googleWebClientId = BuildConfig.GOOGLE_WEB_CLIENT_ID,
+    )
 
     val syncStatus: StateFlow<SyncStatus> = combine(
         db.syncDao().observeUnsyncedChangeCount(),
@@ -220,7 +240,28 @@ class MainViewModel(
         viewModelScope.launch {
             settings.setUpiPayee(userId, payee)
             _isUpiOpen.value = false
-            _statusMessage.value = if (payee == null) "UPI ID removed." else "UPI ID saved. It shows when a friend settles up with you."
+            // Kept on this phone *and* published to the profile. Local-only was the original
+            // decision, and it meant the one person who needed the ID — the groupmate about to pay
+            // — was the only one who could not see it. Only groupmates can read it
+            // (profiles_select_self_or_groupmate); it is not public.
+            val published = runCatching { authRepo.updateUpiId(userId, payee?.upiId) }.isSuccess
+            _statusMessage.value = when {
+                payee == null && published -> "UPI ID removed."
+                payee == null -> "Removed here. It'll clear for your groups next time you're online."
+                published -> "UPI ID saved. Groupmates settling up with you will see it."
+                else -> "Saved on this phone. It'll reach your groups next time you're online."
+            }
+        }
+    }
+
+    /** Sends this account's UPI ID up if the profile doesn't have it yet (first run after update). */
+    private fun publishUpiIfMissing() {
+        viewModelScope.launch {
+            val mine = settings.upiPayee(userId).first() ?: return@launch
+            runCatching {
+                val profile = authRepo.fetchProfile(userId)
+                if (profile?.upiId != mine.upiId) authRepo.updateUpiId(userId, mine.upiId)
+            }
         }
     }
 
@@ -290,6 +331,7 @@ class MainViewModel(
         // A review of one month doesn't belong under another.
         _aiSummary.value = null
         _aiSummaryFailed.value = false
+        _askedPrompt.value = null
     }
 
     /** Recent Activity: transactions plus settlements and IOUs, filtered and searched together. */
@@ -1283,17 +1325,126 @@ class MainViewModel(
         }
     }
 
-    fun generateAiFinancialSummary() {
-        viewModelScope.launch {
-            _isGeneratingSummary.value = true
+    /** Which question the answer on screen belongs to, so the chip that asked it stays selected. */
+    private val _askedPrompt = MutableStateFlow<AiPrompt?>(null)
+    val askedPrompt: StateFlow<AiPrompt?> = _askedPrompt.asStateFlow()
+
+    /** How many answers are left today (backlog item 16, cap of [AI_DAILY_CAP]). */
+    val aiAsksLeft: StateFlow<Int> = settings.aiUsage
+        .map { it.remaining(LocalDate.now()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AI_DAILY_CAP)
+
+    /** Whether asking is possible at all: no key in the build means the section isn't shown. */
+    val aiAvailable: Boolean = geminiRepo.hasApiKey()
+
+    private var askJob: Job? = null
+
+    /**
+     * Runs one of Insights' prompts. Tapping a second one cancels the first — no queue, because a
+     * queued answer arrives under a chip that is no longer selected.
+     */
+    fun askInsights(prompt: AiPrompt) {
+        askJob?.cancel()
+        askJob = viewModelScope.launch {
             val month = _insightsMonth.value
-            val summary = geminiRepo.generateFinancialSummary(insightsAnalytics.value)
+            if (!settings.aiUsage.first().canAsk(LocalDate.now())) {
+                _aiSummaryFailed.value = true
+                return@launch
+            }
+            _isGeneratingSummary.value = true
+            _askedPrompt.value = prompt
+            _aiSummaryFailed.value = false
+
+            val zone = ZoneId.systemDefault()
+            val today = LocalDate.now()
+            val analytics = insightsAnalytics.value
+            val transactions = rawTransactions.value
+            val data = when (prompt) {
+                AiPrompt.MonthInReview -> AiContext.monthInReview(
+                    analytics = analytics,
+                    days = DailySpend.of(transactions, month, today, zone),
+                    month = month,
+                )
+                AiPrompt.Overspending -> trailingComparison(month, transactions, today, zone)
+                AiPrompt.WhatToChange -> AiContext.whatToChange(
+                    comparison = trailingComparison(month, transactions, today, zone),
+                    subscriptions = subscriptions.value,
+                    transactions = transactions,
+                    month = month,
+                    zone = zone,
+                )
+                // Not offered on Insights; it needs a group (owner decision, 2026-09-19).
+                AiPrompt.TripReview -> ""
+            }
+
+            val answer = geminiRepo.ask(prompt, MonthNames.possessive(month, today), data)
+            settings.recordAiAsk(today)
             // Dropped if another month was picked while it was being written.
             if (month == _insightsMonth.value) {
-                if (summary != null) _aiSummary.value = summary
-                _aiSummaryFailed.value = summary == null
+                if (answer != null) _aiSummary.value = answer
+                _aiSummaryFailed.value = answer == null
             }
             _isGeneratingSummary.value = false
+        }
+    }
+
+    /** This month's categories against each of the previous three, for the two history prompts. */
+    private suspend fun trailingComparison(
+        month: YearMonth,
+        transactions: List<FullTransaction>,
+        today: LocalDate,
+        zone: ZoneId,
+    ): String {
+        val earliest = earliestInsightsMonth.value
+        val previous = AiContext.trailingMonths(month, earliest).associateWith { past ->
+            ledgerRepo.monthlyAnalyticsFor(past).first().categorySummaries
+        }
+        return AiContext.trailingComparison(insightsAnalytics.value.categorySummaries, previous, month)
+    }
+
+    private val _tripReview = MutableStateFlow<String?>(null)
+    /** The trip read for the open group sheet, or null when none has been asked for. */
+    val tripReview: StateFlow<String?> = _tripReview.asStateFlow()
+
+    private val _isReviewingTrip = MutableStateFlow(false)
+    val isReviewingTrip: StateFlow<Boolean> = _isReviewingTrip.asStateFlow()
+
+    private val _tripReviewFailed = MutableStateFlow(false)
+    val tripReviewFailed: StateFlow<Boolean> = _tripReviewFailed.asStateFlow()
+
+    /** Clears a trip read so the next group opened doesn't show the last one's. */
+    fun clearTripReview() {
+        _tripReview.value = null
+        _tripReviewFailed.value = false
+    }
+
+    /** Reads one group, start to finish. Group sheet only — it is about a group. */
+    fun askTripReview(groupId: Long) {
+        askJob?.cancel()
+        askJob = viewModelScope.launch {
+            val details = groups.value.firstOrNull { it.group.id == groupId } ?: return@launch
+            if (!settings.aiUsage.first().canAsk(LocalDate.now())) {
+                _tripReviewFailed.value = true
+                return@launch
+            }
+            _isReviewingTrip.value = true
+            _tripReviewFailed.value = false
+
+            val zone = ZoneId.systemDefault()
+            val data = AiContext.tripReview(
+                details = details,
+                shares = GroupInsights.memberShares(details.transactions, details.members),
+                debts = GroupInsights.owesWhom(details.transactions, details.settlements, details.members),
+                categories = GroupInsights.categoryTotals(details.transactions),
+                settlements = details.settlements,
+                members = details.members,
+                zone = zone,
+            )
+            val answer = geminiRepo.ask(AiPrompt.TripReview, "this group's", data)
+            settings.recordAiAsk(LocalDate.now())
+            _tripReview.value = answer
+            _tripReviewFailed.value = answer == null
+            _isReviewingTrip.value = false
         }
     }
 

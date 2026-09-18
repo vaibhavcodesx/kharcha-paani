@@ -156,7 +156,7 @@ fun SplitsScreen(
                     item(key = "friends_empty") {
                         EmptySection(
                             title = "No friends yet",
-                            body = "Add the people you split with. They don't need the app; to split across phones, share a group with them.",
+                            body = "Add anyone you split with — a name and a colour is all it takes, and they don't need the app. Splits, IOUs and settling up all work the same. Share a group only when you want them to see it on their own phone.",
                         )
                     }
                 }
