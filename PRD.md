@@ -1093,6 +1093,10 @@ just confirm the theme file looks correct.
    quick version of this audit after Part A's new screens (sign-in,
    invite flow) are built, since those are the newest, least-polished
    surfaces by definition.
+4. From 2026-09-18 this workstream's live queue is
+   `design-and-feature-backlog.md` (see "Design & Feature Backlog
+   (owner, 2026-09-18) — companion doc" below), with the audit claims in
+   its §3 verified against code and the running app first.
 
 ---
 
@@ -1203,6 +1207,9 @@ sequenced after Part B's last batch.
   - per-row settle-up;
   - archived banner.
 - **11. Payer edit/delete:** go ahead; RLS PR for review before live.
+- **Superseded 2026-09-18:** the Home hero metric decision from batch 3
+  (net debt balance in the header) is reversed — see decision 12 in
+  "Design & Feature Backlog (owner, 2026-09-18)" below.
 - **Audit (FileProvider paths):** narrow to what exports need, in its
   own small PR.
 
@@ -1269,6 +1276,59 @@ sequenced after Part B's last batch.
   intended group functions from step 4. Leaked-password protection is
   off, but sign-in is Google-only.
 
+---
+
+## Design & Feature Backlog (owner, 2026-09-18) — companion doc
+
+A second owner document now sits alongside this PRD:
+**`design-and-feature-backlog.md`** in the project root. It is a
+**companion to this PRD, not a replacement** — this PRD stays the
+governing brief; the backlog is the current working queue for the
+design/feature work that follows Part B.
+
+It combines three sources: an external screen-by-screen design audit
+(8 app screenshots), the owner's own feedback after real device use,
+and six competitor screenshots with specific features to borrow. It
+marks each item ✅ DECIDED / 🐛 BUG / 💡 SUGGESTION, and its §6 carries
+the merged priority order. Read it in full before starting any item in
+it. Its reference images are committed at `docs/design-reference/`.
+
+**Standing caveat, restated by the owner:** §3 of that document (the
+design audit) was written from screenshots alone. Every claim in it is
+to be cross-checked against the actual code and the running app before
+anything is built on it. The results of that cross-check are recorded
+in `docs/design-audit-verification.md`; where verification contradicts
+the audit, **verification wins** and the backlog item is re-scoped
+rather than built as written.
+
+### Owner decisions (2026-09-18)
+
+These two are decided, not proposals. They come before the rest of the
+design work in that document.
+
+- **12. Home hero metric is "Spent this month", not "You owe".**
+  This **reverses the batch-3 decision** that made the net debt balance
+  the Home header metric. Rationale: spending is relevant daily; debt is
+  occasional and already has a dedicated home in Splits. Owed / owed-to-
+  you demotes to the secondary stat row, where "Came in" currently sits.
+  Applies to `ui/home/BalanceHeader.kt` (`BalanceHeader` + `MonthStrip`).
+
+- **13. The bottom dock's glass needs re-examination, not polish.**
+  On the real device the owner's words were "looks ugly". This is
+  **not filed as a polish item**: the current implementation is to be
+  treated as a suspected regression and re-derived, not tweaked. What
+  actually renders is a hairline edge-light stroke that runs white at the
+  top into amber at the bottom of a 5dp bezel, which on charcoal reads as
+  a dashed rust-coloured outline rather than as glass — and the same
+  treatment is on the sheet action bars and the snackbar, so the fix is
+  to `liquidGlass`/`GlassPanel` in `ui/theme/Glass.kt`, not to the dock
+  alone. Re-check it against the Liquid Glass principles already stated
+  in Part B (real depth hierarchy, tint that adapts to content, a
+  restrained specular highlight) and against how it looked in batch 2, to
+  isolate when and why it changed. The ticket-stub perforation motif is
+  to be extended to other receipt-like surfaces but **explicitly never to
+  the dock**.
+
 ## PART C — Testing & Quality
 
 - **Unit tests for `DebtSimplifier.kt`** — verify convergence to zero
@@ -1329,7 +1389,11 @@ sequenced after Part B's last batch.
    screens stabilize, but give it real, dedicated attention rather than
    treating it as a quick pass at the end; it's explicitly one of this
    PRD's three named goals, not an afterthought.
-5. **Documentation** (Part D) — last, once there's something finished to
+5. **Design & feature backlog** (`design-and-feature-backlog.md`) — the
+   2026-09-15 backlog is complete; its 2026-09-18 successor runs in that
+   document's §6 order, bugs first, then the two owner decisions, then
+   the audit quick wins, then the Insights makeover.
+6. **Documentation** (Part D) — last, once there's something finished to
    screenshot and explain.
 
 ## Skills Installed (current, verified via `/plugin list --enabled`)

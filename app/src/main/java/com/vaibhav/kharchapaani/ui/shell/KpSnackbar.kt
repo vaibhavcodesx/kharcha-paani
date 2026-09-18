@@ -37,8 +37,6 @@ fun KpSnackbarHost(state: SnackbarHostState, modifier: Modifier = Modifier) {
 private fun KpSnackbar(data: SnackbarData) {
     GlassPanel(
         shape = SquircleShape(24.dp),
-        coreShape = SquircleShape(19.dp),
-        bezel = 5.dp,
         modifier = Modifier
             .padding(horizontal = Spacing.page)
             .widthIn(max = 560.dp)

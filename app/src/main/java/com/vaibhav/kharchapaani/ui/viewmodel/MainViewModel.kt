@@ -41,6 +41,8 @@ import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.data.settings.AppSettings
 import com.vaibhav.kharchapaani.data.sync.SyncScheduler
 import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
+import com.vaibhav.kharchapaani.domain.StatementReadFailure
+import com.vaibhav.kharchapaani.domain.StatementReadResult
 import com.vaibhav.kharchapaani.domain.ActivityFeed
 import com.vaibhav.kharchapaani.domain.CsvFile
 import com.vaibhav.kharchapaani.domain.DebtSimplifier
@@ -651,15 +653,33 @@ class MainViewModel(
         viewModelScope.launch {
             _isParsingStatement.value = true
             _isImportStatementOpen.value = true
-            val result = geminiRepo.parseBankOrUpiStatementPdf(pdfBytes, fileName, parseChoices())
+            val result = geminiRepo.readStatementPdf(pdfBytes, fileName, parseChoices())
             _isParsingStatement.value = false
-            if (result == null) {
-                _isImportStatementOpen.value = false
-                _statusMessage.value = "Couldn't read that statement. Check your connection and try again; scanned or password-protected PDFs can't be read."
-            } else {
-                _statementParseResult.value = result
+            when (result) {
+                is StatementReadResult.Success -> _statementParseResult.value = result.statement
+                is StatementReadResult.Failed -> {
+                    _isImportStatementOpen.value = false
+                    _statusMessage.value = statementFailureMessage(result.reason)
+                }
             }
         }
+    }
+
+    /**
+     * One message per reason. The old single line ("check your connection") was wrong for most of
+     * them and left the person with nothing to act on.
+     */
+    private fun statementFailureMessage(reason: StatementReadFailure): String = when (reason) {
+        StatementReadFailure.NoKey -> "Statement reading isn't set up in this build."
+        StatementReadFailure.NotAPdf -> "That file isn't a PDF. Export your statement as a PDF and try again."
+        StatementReadFailure.PasswordProtected -> "That statement is password-protected. Open it, save an unlocked copy, and pick that one."
+        StatementReadFailure.TooLarge -> "That statement is too big to read in one go. Export a shorter date range and try again."
+        StatementReadFailure.Timeout -> "That statement took too long to read. A shorter date range usually goes through."
+        StatementReadFailure.Offline -> "Couldn't reach the internet. Try again once you're back online."
+        StatementReadFailure.Rejected -> "Couldn't read that statement right now. Try again in a minute."
+        StatementReadFailure.Truncated -> "That statement has more rows than fit in one read. Export a shorter date range and try again."
+        StatementReadFailure.NothingFound -> "No transactions found in that PDF. Scanned or image-only statements can't be read."
+        StatementReadFailure.Unreadable -> "Couldn't read that statement. Try again, or export it again from your bank or UPI app."
     }
 
     fun handleSharedPdfUri(context: Context, uri: Uri) {

@@ -1,10 +1,70 @@
 package com.vaibhav.kharchapaani.data.repository
 
+import com.vaibhav.kharchapaani.domain.StatementPdf
+import com.vaibhav.kharchapaani.domain.StatementReadFailure
+import com.vaibhav.kharchapaani.domain.StatementReadResult
 import kotlinx.coroutines.test.runTest
+import okhttp3.Interceptor
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import java.net.SocketTimeoutException
 
+/**
+ * Statement import was reported as "does not scan or import anything". The wiring was fine; the
+ * call failed and every cause came back as the same null. These pin each cause to its own answer,
+ * without a network: the client's interceptor is the server.
+ */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36])
 class GeminiStatementFailureTest {
+
+    private val pdf = "%PDF-1.7\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF"
+        .toByteArray(Charsets.US_ASCII)
+
+    private fun repo(respond: (Interceptor.Chain) -> Response) = GeminiRepository(
+        client = OkHttpClient.Builder().addInterceptor { chain -> respond(chain) }.build(),
+        endpoint = { model -> "https://example.invalid/v1beta/models/$model:generateContent" },
+        apiKey = { "test-key" },
+    )
+
+    private fun ok(body: String): (Interceptor.Chain) -> Response = { chain ->
+        Response.Builder()
+            .request(chain.request())
+            .protocol(Protocol.HTTP_1_1)
+            .code(200)
+            .message("OK")
+            .body(body.toResponseBody("application/json".toMediaType()))
+            .build()
+    }
+
+    private fun answer(text: String, finishReason: String = "STOP", thoughtFirst: Boolean = false): String {
+        val parts = buildString {
+            append("[")
+            if (thoughtFirst) append("""{"text":"weighing the rows","thought":true},""")
+            append("""{"text":${org.json.JSONObject.quote(text)}}""")
+            append("]")
+        }
+        return """{"candidates":[{"finishReason":"$finishReason","content":{"parts":$parts}}]}"""
+    }
+
+    private val oneRow = """
+        {"bankOrApp":"PhonePe UPI Statement","statementPeriod":"Aug 2024","transactions":[
+          {"date":"2024-08-14T12:30:00","type":"expense","amount":250.0,"merchant":"Swiggy",
+           "category":"Food","paymentMethod":"UPI","note":"UPI/4123541/swiggy@icici"}]}
+    """.trimIndent()
+
+    private fun failureOf(result: StatementReadResult): StatementReadFailure =
+        (result as StatementReadResult.Failed).reason
 
     @Test
     fun `a statement that can't be read yields no result, never sample transactions`() = runTest {
@@ -13,5 +73,105 @@ class GeminiStatementFailureTest {
         val result = GeminiRepository().parseBankOrUpiStatementPdf(ByteArray(0), "statement.pdf")
 
         assertNull(result)
+    }
+
+    @Test
+    fun `a timeout reads as a timeout, not as a broken statement`() = runTest {
+        // The real bug: the 30s read timeout was shared with the one-line text parse, so this was
+        // the only AI call that could not finish, and every failure looked identical.
+        val result = repo { throw SocketTimeoutException("timeout") }.readStatementPdf(pdf)
+
+        assertEquals(StatementReadFailure.Timeout, failureOf(result))
+    }
+
+    @Test
+    fun `the statement call gets far longer than the thirty seconds the other calls get`() {
+        assertTrue(GeminiRepository.STATEMENT_TIMEOUT_SECONDS >= 120L)
+    }
+
+    @Test
+    fun `an API error carries its status and body into the log, not silence`() = runTest {
+        val result = repo { chain ->
+            Response.Builder()
+                .request(chain.request())
+                .protocol(Protocol.HTTP_1_1)
+                .code(429)
+                .message("Too Many Requests")
+                .body("""{"error":{"message":"Quota exceeded"}}""".toResponseBody("application/json".toMediaType()))
+                .build()
+        }.readStatementPdf(pdf)
+
+        val failure = result as StatementReadResult.Failed
+        assertEquals(StatementReadFailure.Rejected, failure.reason)
+        assertTrue(failure.detail.orEmpty().contains("429"))
+        assertTrue(failure.detail.orEmpty().contains("Quota exceeded"))
+    }
+
+    @Test
+    fun `an answer cut off mid-array reads as truncated, not unreadable`() = runTest {
+        val cutOff = """{"bankOrApp":"HDFC","transactions":[{"date":"2024-08-14","amount":25"""
+        val result = repo(ok(answer(cutOff, finishReason = "MAX_TOKENS"))).readStatementPdf(pdf)
+
+        assertEquals(StatementReadFailure.Truncated, failureOf(result))
+    }
+
+    @Test
+    fun `a thinking model's thought part doesn't hide the answer behind it`() = runTest {
+        // Reading parts[0].text only meant a leading thought part threw the whole statement away.
+        val result = repo(ok(answer(oneRow, thoughtFirst = true))).readStatementPdf(pdf)
+
+        val statement = (result as StatementReadResult.Success).statement
+        assertEquals(1, statement.allItems.size)
+        assertEquals("Swiggy", statement.allItems.first().merchant)
+    }
+
+    @Test
+    fun `a document with no transactions in it says so`() = runTest {
+        val result = repo(ok(answer("""{"bankOrApp":"HDFC","transactions":[]}"""))).readStatementPdf(pdf)
+
+        assertEquals(StatementReadFailure.NothingFound, failureOf(result))
+    }
+
+    @Test
+    fun `a password-protected statement is named as one before the round trip is spent`() = runTest {
+        val locked = (String(pdf, Charsets.US_ASCII) + "\n<< /Encrypt 5 0 R >>").toByteArray(Charsets.US_ASCII)
+        val result = repo { error("the network must not be touched") }.readStatementPdf(locked)
+
+        assertEquals(StatementReadFailure.PasswordProtected, failureOf(result))
+    }
+
+    @Test
+    fun `a file that isn't a PDF is named as one before the round trip is spent`() = runTest {
+        val result = repo { error("the network must not be touched") }
+            .readStatementPdf("just some text".toByteArray())
+
+        assertEquals(StatementReadFailure.NotAPdf, failureOf(result))
+    }
+
+    @Test
+    fun `a statement too big to send inline is named as one before the round trip is spent`() = runTest {
+        val huge = ByteArray(StatementPdf.MAX_BYTES + 1)
+        "%PDF-1.7".toByteArray(Charsets.US_ASCII).copyInto(huge)
+        val result = repo { error("the network must not be touched") }.readStatementPdf(huge)
+
+        assertEquals(StatementReadFailure.TooLarge, failureOf(result))
+    }
+
+    @Test
+    fun `a build with no key says so instead of blaming the statement`() = runTest {
+        val result = GeminiRepository(apiKey = { "" }).readStatementPdf(pdf)
+
+        assertEquals(StatementReadFailure.NoKey, failureOf(result))
+    }
+
+    @Test
+    fun `a statement that reads cleanly comes back grouped`() = runTest {
+        val result = repo(ok(answer(oneRow))).readStatementPdf(pdf)
+
+        val statement = (result as StatementReadResult.Success).statement
+        assertEquals("PhonePe UPI Statement", statement.bankOrApp)
+        assertEquals(1, statement.totalTransactionsCount)
+        assertEquals(250.0, statement.totalExpenseSum, 0.001)
+        assertEquals(1, statement.monthGroups.size)
     }
 }

@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -15,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -32,21 +34,30 @@ import dev.chrisbanes.haze.hazeEffect
 val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
 
 /**
- * Liquid Glass, translated to Compose. Only for surfaces that float above content (dock, floating
- * actions, sheet chrome); content cards stay solid.
+ * Liquid Glass, translated to Compose. Only for surfaces that float above content (the dock, sheet
+ * chrome, floating messages); content cards stay solid.
  *
  * Layers, bottom to top:
- * 1. real backdrop blur of what's behind (Android 12+), or a dense tinted scrim below that;
- * 2. an accent tint, so the glass reads as this app's amber/lime rather than generic frost;
- * 3. a specular sheen: light catching the top edge, fading down;
- * 4. an edge light: a hairline that is bright at the top and picks up the accent at the bottom.
- * Text never sits on this directly: put it on [GlassPanel]'s solid core, or a solid chip.
+ * 1. a real backdrop blur of what's behind (Android 12+), or a dense scrim below that;
+ * 2. a neutral tint that lifts the pane just clear of the background and keeps text on it legible;
+ * 3. a soft sheen under the content, and a hairline along the top edge where light would catch it.
+ *
+ * **The pane is the glass.** Twice now this was drawn as a rim around an opaque core — 5dp, then
+ * 12dp — and both read as a border rather than a material, because that is what a ring of one
+ * colour around a solid centre is. Widening it only made the border thicker. Real glass is the
+ * whole surface with the content sitting on it, so that is what this is now: one pane, text
+ * directly on it, no core and no rim.
+ *
+ * **The tint is neutral on purpose.** It used to carry the brand amber at 7%. Over a `#0E0D0C`
+ * background with almost nothing bright behind the dock, a blur of near-black is near-black, so
+ * the amber was not tinting a visible material — it *was* the material, and it composited to rust
+ * brown. The accent belongs on the things that are meant to be amber (the active tab, the add
+ * button), not smeared across the pane behind them.
  */
 fun Modifier.liquidGlass(
     shape: Shape,
     hazeState: HazeState?,
-    accent: Color = WarmAmberPrimary,
-    blurRadius: Dp = 28.dp,
+    blurRadius: Dp = 32.dp,
 ): Modifier = this
     .clip(shape)
     .then(
@@ -56,69 +67,74 @@ fun Modifier.liquidGlass(
                 style = HazeStyle(
                     backgroundColor = CharcoalBg,
                     tints = listOf(
-                        HazeTint(CharcoalBg.copy(alpha = 0.42f)),
-                        HazeTint(accent.copy(alpha = 0.09f)),
+                        // Enough of the background to keep text readable over anything that
+                        // scrolls under the pane...
+                        HazeTint(CharcoalBg.copy(alpha = 0.68f)),
+                        // ...and a neutral lift, so the pane still sits clearly above it.
+                        HazeTint(Color.White.copy(alpha = 0.06f)),
                     ),
                     blurRadius = blurRadius,
-                    noiseFactor = 0.05f,
+                    noiseFactor = 0.04f,
                     fallbackTint = HazeTint(CharcoalSurface.copy(alpha = 0.94f)),
                 ),
             )
         } else {
-            // No backdrop to sample (another window): the same tint over an opaque-enough base.
+            // No backdrop to sample (another window): the same look over an opaque base.
             Modifier
                 .background(CharcoalSurface.copy(alpha = 0.96f))
-                .background(accent.copy(alpha = 0.07f))
+                .background(Color.White.copy(alpha = 0.04f))
         }
     )
-    .drawWithContent {
-        drawContent()
-        // Specular sheen: a soft band of light across the top, as if lit from above.
+    // Under the content, not over it: a sheen drawn on top would wash across the labels sitting
+    // on the pane and lighten their tops.
+    .drawBehind {
         drawRect(
             brush = Brush.verticalGradient(
-                0f to Color.White.copy(alpha = 0.10f),
-                0.35f to Color.White.copy(alpha = 0.02f),
-                1f to Color.Transparent,
+                0f to Color.White.copy(alpha = 0.06f),
+                0.45f to Color.Transparent,
             ),
-        )
-        // Edge light: bright where light hits, tinted where it reflects the accent.
-        val outline = shape.createOutline(size, layoutDirection, this)
-        drawOutline(
-            outline = outline,
-            brush = Brush.linearGradient(
-                0f to Color.White.copy(alpha = 0.30f),
-                0.45f to Color.White.copy(alpha = 0.06f),
-                1f to accent.copy(alpha = 0.22f),
-                start = Offset.Zero,
-                end = Offset(0f, size.height),
-            ),
-            style = Stroke(width = 1.dp.toPx()),
         )
     }
+    .drawWithContent {
+        drawContent()
+        // A hairline along the top edge only, fading out before the shape's shoulders, the way
+        // light catches the lip of a real piece of glass. Never a ring around the whole shape.
+        val outline = shape.createOutline(size, layoutDirection, this)
+        clipRect(bottom = size.height * TOP_HIGHLIGHT_FRACTION) {
+            drawOutline(
+                outline = outline,
+                brush = Brush.horizontalGradient(
+                    0f to Color.Transparent,
+                    0.25f to Color.White.copy(alpha = 0.22f),
+                    0.75f to Color.White.copy(alpha = 0.22f),
+                    1f to Color.Transparent,
+                ),
+                style = Stroke(width = 1.dp.toPx()),
+            )
+        }
+    }
+
+/** How far down the shape the top highlight is allowed to reach before it is clipped away. */
+private const val TOP_HIGHLIGHT_FRACTION = 0.20f
 
 /**
- * A glass bezel around a solid core: the glass shows as a rim of [bezel] around opaque content, so
- * everything readable sits on a solid layer while the surface still reads as floating glass.
+ * A pane of [liquidGlass] with its content laid directly on it.
+ *
+ * This used to be a glass rim around an opaque core, with [content] on the core so text never
+ * touched the blur. That is what made the dock read as a bordered box; the tint now carries enough
+ * of the background for labels to sit on the pane itself.
  */
 @Composable
 fun GlassPanel(
     shape: Shape,
-    coreShape: Shape,
     modifier: Modifier = Modifier,
-    accent: Color = WarmAmberPrimary,
-    bezel: Dp = 6.dp,
-    coreColor: Color = CharcoalSurface,
+    contentPadding: Dp = 0.dp,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    Box(modifier.liquidGlass(shape, LocalHazeState.current, accent)) {
-        Box(
-            modifier = Modifier
-                .padding(bezel)
-                .clip(coreShape)
-                .background(coreColor),
-            content = content,
-        )
-    }
+    Box(
+        modifier = modifier.liquidGlass(shape, LocalHazeState.current).padding(contentPadding),
+        content = content,
+    )
 }
 
 /** The app's one gradient: amber through warm gold to lime. See [BrandGold]. */

@@ -230,14 +230,13 @@ fun GlassActionBar(
 ) {
     GlassPanel(
         shape = SquircleShape(28.dp),
-        coreShape = SquircleShape(23.dp),
-        bezel = 5.dp,
+        contentPadding = Spacing.xs,
         modifier = modifier
             .navigationBarsPadding()
             .padding(Spacing.m)
             .fillMaxWidth(),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(Spacing.s)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             if (summary != null) {
                 Column(Modifier.weight(1f).padding(horizontal = Spacing.s)) {
                     Text(summary, style = MoneyText.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
