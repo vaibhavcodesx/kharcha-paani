@@ -94,7 +94,10 @@ fun SubscriptionsContent(
     val zone = ZoneId.systemDefault()
     var name by rememberSaveable { mutableStateOf("") }
     var amount by rememberSaveable { mutableStateOf("") }
-    var category by rememberSaveable { mutableStateOf(Categories.expenseCategories(prefs).firstOrNull() ?: Categories.OTHER) }
+    // Most subscriptions are bills; whoever hid that category gets the first one they kept.
+    var category by rememberSaveable {
+        mutableStateOf(Categories.expenseCategories(prefs).firstOrNull { it == "Bills" } ?: Categories.expenseCategories(prefs).firstOrNull() ?: Categories.OTHER)
+    }
     var method by rememberSaveable { mutableStateOf(Categories.paymentMethods(prefs).firstOrNull() ?: Categories.OTHER) }
     var cycle by rememberSaveable { mutableStateOf(SubscriptionCycle.MONTHLY) }
     var start by rememberSaveable { mutableStateOf(today) }
