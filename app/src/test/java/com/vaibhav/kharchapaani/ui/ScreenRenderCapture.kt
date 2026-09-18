@@ -364,6 +364,10 @@ class ScreenRenderCapture {
         val priya = PersonEntity(id = 6, name = "Priya", avatarColor = "#FFB3BA", profileId = "priya")
         val goa = trips[0].copy(
             members = listOf(rohan, priya),
+            // The figures match the two expenses below, as they would in the app.
+            totalExpenses = 6000.0,
+            myShare = 2000.0,
+            netBalanceForMe = -1200.0,
             transactions = listOf(
                 FullTransaction(
                     TransactionEntity(id = 21, type = "expense", amount = 4800.0, category = "Food", merchant = "Thalassa dinner", paymentMethod = "Card", date = at(today, 21), isSplit = true, ownerProfileId = "priya"),
