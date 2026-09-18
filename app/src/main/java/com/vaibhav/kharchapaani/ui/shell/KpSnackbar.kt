@@ -17,6 +17,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.vaibhav.kharchapaani.ui.theme.GlassBezel
 import com.vaibhav.kharchapaani.ui.theme.GlassPanel
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
@@ -36,9 +37,9 @@ fun KpSnackbarHost(state: SnackbarHostState, modifier: Modifier = Modifier) {
 @Composable
 private fun KpSnackbar(data: SnackbarData) {
     GlassPanel(
-        shape = SquircleShape(24.dp),
-        coreShape = SquircleShape(19.dp),
-        bezel = 5.dp,
+        shape = SquircleShape(26.dp),
+        coreShape = SquircleShape(14.dp),
+        bezel = GlassBezel,
         modifier = Modifier
             .padding(horizontal = Spacing.page)
             .widthIn(max = 560.dp)

@@ -50,6 +50,7 @@ import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.theme.BrandGradient
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
+import com.vaibhav.kharchapaani.ui.theme.GlassBezel
 import com.vaibhav.kharchapaani.ui.theme.GlassPanel
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
@@ -63,11 +64,15 @@ enum class AppTab(val label: String, val icon: ImageVector, val testTag: String)
     Insights("Insights", KpIcons.Insights, "tab_insights"),
 }
 
-private val DockBezel = 5.dp
-private val DockCoreHeight = 58.dp
+// The rim is the glass. At 5dp there was too little of it to show any blur, so the edge stroke was
+// doing the whole job and reading as a dashed outline; the core loses what the rim gains, so the
+// dock is only 8dp taller than it was.
+private val DockBezel = GlassBezel
+private val DockCoreHeight = 52.dp
 private val DockHeight = DockCoreHeight + DockBezel * 2
 private val DockOuterShape = SquircleShape(30.dp)
-private val DockCoreShape = SquircleShape(25.dp)
+// Concentric with the outer shape: the core's radius is the outer radius less the rim it sits in.
+private val DockCoreShape = SquircleShape(18.dp)
 
 /** Where floating messages sit: just above the dock and the system bar. */
 @Composable
@@ -133,7 +138,7 @@ private fun RowScope.DockItem(tab: AppTab, selected: Boolean, onClick: () -> Uni
         modifier = Modifier
             .weight(1f)
             .fillMaxHeight()
-            .clip(SquircleShape(21.dp))
+            .clip(SquircleShape(14.dp))
             .background(CharcoalElevated.copy(alpha = wellAlpha))
             .selectable(
                 selected = selected,
