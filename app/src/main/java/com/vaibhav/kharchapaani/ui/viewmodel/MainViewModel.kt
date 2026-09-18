@@ -20,6 +20,7 @@ import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
+import com.vaibhav.kharchapaani.data.db.entity.SubscriptionEntity
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.data.model.ActivityItem
 import com.vaibhav.kharchapaani.data.model.FullTransaction
@@ -51,6 +52,7 @@ import com.vaibhav.kharchapaani.domain.UpiPayee
 import com.vaibhav.kharchapaani.domain.MonthAnalytics
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.SplitRounding
+import com.vaibhav.kharchapaani.ui.components.NewSubscription
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
@@ -116,6 +118,13 @@ class MainViewModel(
 
     private val settings = AppSettings(application)
 
+    init {
+        // A subscription is a rule; its charges become real entries when their date has arrived.
+        viewModelScope.launch {
+            if (ledgerRepo.runDueSubscriptions() > 0) SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
+        }
+    }
+
     val askBeforeDiscarding: StateFlow<Boolean> = settings.askBeforeDiscarding
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
@@ -128,6 +137,54 @@ class MainViewModel(
 
     fun updateCategoryPrefs(change: (CategoryPrefs) -> CategoryPrefs) {
         viewModelScope.launch { settings.updateCategoryPrefs(userId, change) }
+    }
+
+    val subscriptions: StateFlow<List<SubscriptionEntity>> = ledgerRepo.subscriptions
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _isSubscriptionsOpen = MutableStateFlow(false)
+    val isSubscriptionsOpen: StateFlow<Boolean> = _isSubscriptionsOpen.asStateFlow()
+
+    fun openSubscriptions() {
+        _isSubscriptionsOpen.value = true
+    }
+
+    fun closeSubscriptions() {
+        _isSubscriptionsOpen.value = false
+    }
+
+    fun addSubscription(new: NewSubscription, chargeFromStart: Boolean) {
+        viewModelScope.launch {
+            ledgerRepo.saveSubscription(
+                SubscriptionEntity(
+                    name = new.name,
+                    amount = new.amount,
+                    category = new.category,
+                    paymentMethod = new.paymentMethod,
+                    cycle = new.cycle.name,
+                    startDate = new.start.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                ),
+                chargeFromStart = chargeFromStart,
+            )
+            val added = ledgerRepo.runDueSubscriptions()
+            _statusMessage.value = when {
+                added == 1 -> "${new.name} added, with its charge so far."
+                added > 1 -> "${new.name} added, with $added charges so far."
+                else -> "${new.name} added. Its first charge lands when it's due."
+            }
+            SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
+        }
+    }
+
+    fun cancelSubscription(id: Long) {
+        viewModelScope.launch {
+            ledgerRepo.cancelSubscription(id)
+            _statusMessage.value = "Cancelled. Charges already logged stay."
+        }
+    }
+
+    fun deleteSubscription(id: Long) {
+        viewModelScope.launch { ledgerRepo.deleteSubscription(id) }
     }
 
     private val _isCategoriesOpen = MutableStateFlow(false)

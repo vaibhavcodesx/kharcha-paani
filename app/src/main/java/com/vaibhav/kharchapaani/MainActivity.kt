@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 import com.vaibhav.kharchapaani.ui.components.ExportSheet
 import com.vaibhav.kharchapaani.ui.components.UpiSheet
 import com.vaibhav.kharchapaani.ui.components.CategoriesSheet
+import com.vaibhav.kharchapaani.ui.components.SubscriptionsSheet
 import com.vaibhav.kharchapaani.domain.Categories
 import com.vaibhav.kharchapaani.ui.shell.KpSnackbarHost
 import com.vaibhav.kharchapaani.ui.shell.snackbarClearance
@@ -284,6 +285,8 @@ fun SplitFlowApp(
     val upiPayee by viewModel.upiPayee.collectAsStateWithLifecycle()
     val categoryPrefs by viewModel.categoryPrefs.collectAsStateWithLifecycle()
     val isCategoriesOpen by viewModel.isCategoriesOpen.collectAsStateWithLifecycle()
+    val isSubscriptionsOpen by viewModel.isSubscriptionsOpen.collectAsStateWithLifecycle()
+    val subscriptions by viewModel.subscriptions.collectAsStateWithLifecycle()
     val isUpiOpen by viewModel.isUpiOpen.collectAsStateWithLifecycle()
     val currentTab by viewModel.currentTab.collectAsState()
     val rawTransactions by viewModel.rawTransactions.collectAsState()
@@ -493,6 +496,10 @@ fun SplitFlowApp(
                 isAccountSheetOpen = false
                 viewModel.openCategories()
             },
+            onOpenSubscriptions = {
+                isAccountSheetOpen = false
+                viewModel.openSubscriptions()
+            },
             onSaveProfile = onSaveProfile,
             onAskBeforeDiscardingChange = viewModel::setAskBeforeDiscarding,
             onOpenExport = {
@@ -579,6 +586,16 @@ fun SplitFlowApp(
         },
         onDismiss = { viewModel.dismissSettleUp() },
         upiPayee = upiPayee,
+    )
+
+    SubscriptionsSheet(
+        isOpen = isSubscriptionsOpen,
+        subscriptions = subscriptions,
+        prefs = categoryPrefs,
+        onAdd = { new, chargeFromStart -> viewModel.addSubscription(new, chargeFromStart) },
+        onCancel = { viewModel.cancelSubscription(it) },
+        onDelete = { viewModel.deleteSubscription(it) },
+        onDismiss = { viewModel.closeSubscriptions() },
     )
 
     CategoriesSheet(
