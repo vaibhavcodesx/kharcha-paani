@@ -2,6 +2,7 @@ package com.vaibhav.kharchapaani.ui.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,11 +37,11 @@ import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
 import com.vaibhav.kharchapaani.ui.components.AnimatedRollingNumber
 import com.vaibhav.kharchapaani.ui.components.bounceClick
+import com.vaibhav.kharchapaani.ui.components.pressBounce
 import com.vaibhav.kharchapaani.ui.theme.BrandGradient
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
 import com.vaibhav.kharchapaani.ui.theme.EyebrowText
-import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
@@ -174,15 +176,26 @@ private fun MonthFigure(
     modifier: Modifier,
     onClick: (() -> Unit)? = null,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
     Column(
         modifier
             .then(
                 if (onClick == null) {
                     Modifier
                 } else {
+                    // No clip and no bounded ripple: the label sits hard against this column's top
+                    // left, so a rounded clip bites the first glyph of both lines ("YOU OWE" lost
+                    // its Y, "Simplify" its S). A press bounce gives the feedback instead, the way
+                    // the account avatar above it already does.
                     Modifier
-                        .clip(KpShapes.small)
-                        .clickable(role = Role.Button, onClickLabel = "Simplify who pays whom", onClick = onClick)
+                        .pressBounce(interactionSource)
+                        .clickable(
+                            interactionSource = interactionSource,
+                            indication = null,
+                            role = Role.Button,
+                            onClickLabel = "Simplify who pays whom",
+                            onClick = onClick,
+                        )
                         .testTag("home_simplify_button")
                 }
             )
