@@ -1251,8 +1251,16 @@ sequenced after Part B's last batch.
   - **Bug found:** the soft delete filtered on `owner_id`, which would
     have silently left a payer's delete on the server.
 - ✅ **Audit fix: FileProvider** (PR #30): narrowed to `cache/exports/`.
-- ⏳ **10. Group screen** (six approved parts) and **8. Subscriptions**:
-  not started; next when work resumes.
+- ✅ **10. Group screen** (PR #37, 329 tests on CI). All six approved
+  parts: a donut of member shares (colour per person), who owes whom
+  after the group's settlements, Settle up on any row that includes you,
+  the group's spending by category, export this group, and an archived
+  banner.
+- ✅ **8. Subscriptions** (PR #38, 346 tests on CI). A subscription is a
+  rule, stored in Room v6; each charge becomes a real expense when its
+  date arrives (on app open), never future-dated, and never twice.
+  Backdating asks first; cancelling stops future charges and keeps past
+  ones. Monthly on the 31st clamps to short months.
 - 🔎 **Audit (not changed):** the server doesn't bound `display_name`
   length (the app caps it at 40). A check constraint would also need
   `handle_new_user` to truncate long Google names, which is auth config.
