@@ -38,6 +38,8 @@ import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
+import com.vaibhav.kharchapaani.ui.theme.MoneyIn
+import com.vaibhav.kharchapaani.ui.theme.MoneyOut
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
@@ -106,7 +108,7 @@ fun FriendRow(
                 Text(
                     text = Money.format(abs(balance.netBalance)),
                     style = MoneyText.row,
-                    color = if (owesMe) ChartreuseSecondary else OffWhiteText,
+                    color = if (owesMe) MoneyIn else MoneyOut,
                 )
             }
             // Every row has the button, so amounts line up whether or not there's anything to settle.

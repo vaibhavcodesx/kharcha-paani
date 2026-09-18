@@ -33,9 +33,16 @@ import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.SquircleShape
 
-private val FriendColours = listOf(
-    "#70C1FF" to "Sky", "#FFB3BA" to "Rose", "#C6F24C" to "Lime", "#FF9E79" to "Coral",
-    "#BAE1FF" to "Ice", "#B5EAD7" to "Mint", "#E2F0CB" to "Pistachio", "#D7BDE2" to "Lilac",
+/**
+ * Eight hues spread right around the wheel, so no two people can draw near-neighbours. The old set
+ * had Sky next to Ice and Lime next to Pistachio, and Rose next to Coral, which is how a group of
+ * three ended up with three avatars and a donut that all read as the same brown.
+ *
+ * None of them sits near the brand amber, which is reserved for "You".
+ */
+val FriendColours = listOf(
+    "#F2D06B" to "Sand", "#C6F24C" to "Lime", "#86E37F" to "Green", "#5BD6B0" to "Mint",
+    "#70C1FF" to "Sky", "#A79BF5" to "Violet", "#E092E8" to "Orchid", "#FF8FB0" to "Rose",
 )
 
 @Composable

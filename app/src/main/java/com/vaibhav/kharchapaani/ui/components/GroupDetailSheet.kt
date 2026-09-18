@@ -3,6 +3,7 @@ package com.vaibhav.kharchapaani.ui.components
 import androidx.compose.foundation.background
 import kotlin.math.roundToInt
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
+import com.vaibhav.kharchapaani.ui.theme.BarTrack
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
@@ -56,6 +57,8 @@ import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
+import com.vaibhav.kharchapaani.ui.theme.MoneyIn
+import com.vaibhav.kharchapaani.ui.theme.MoneyOut
 import com.vaibhav.kharchapaani.ui.theme.EyebrowText
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
@@ -167,7 +170,7 @@ fun GroupDetailContent(
                     else -> "Settled"
                 },
                 value = Money.format(abs(net)),
-                color = if (net >= 0.005) ChartreuseSecondary else if (net <= -0.005) OffWhiteText else MutedWarmGray,
+                color = if (net >= 0.005) MoneyIn else if (net <= -0.005) MoneyOut else MutedWarmGray,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -422,8 +425,12 @@ private fun GroupCategoryRow(summary: CategorySummary, fraction: Float) {
         // One hue for a ranked list: the bars compare sizes, the badge already says which category.
         Canvas(Modifier.padding(top = Spacing.s).fillMaxWidth().height(6.dp)) {
             val radius = CornerRadius(size.height / 2)
-            drawRoundRect(color = CharcoalBg, cornerRadius = radius)
-            drawRoundRect(color = WarmAmberPrimary, size = Size((size.width * fraction).coerceAtLeast(size.height), size.height), cornerRadius = radius)
+            drawRoundRect(color = BarTrack, cornerRadius = radius)
+            drawRoundRect(
+                color = CategoryHelper.getCategoryColor(summary.category),
+                size = Size((size.width * fraction).coerceAtLeast(size.height), size.height),
+                cornerRadius = radius,
+            )
         }
     }
 }

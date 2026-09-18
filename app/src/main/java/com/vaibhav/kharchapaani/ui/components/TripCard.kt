@@ -39,6 +39,8 @@ import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
+import com.vaibhav.kharchapaani.ui.theme.MoneyIn
+import com.vaibhav.kharchapaani.ui.theme.MoneyOut
 import com.vaibhav.kharchapaani.ui.theme.EyebrowText
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
@@ -136,8 +138,8 @@ fun TripCard(
                         text = Money.format(abs(details.netBalanceForMe)),
                         style = MoneyText.row,
                         color = when {
-                            owed -> ChartreuseSecondary
-                            owe -> OffWhiteText
+                            owed -> MoneyIn
+                            owe -> MoneyOut
                             else -> MutedWarmGray
                         },
                     )

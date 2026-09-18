@@ -13,6 +13,13 @@ val CharcoalCard = Color(0xFF1E1C1A)
 // requires for UI components. CharcoalBorder stays for purely decorative dividers.
 val OutlineInteractive = Color(0xFF726D65)
 
+/**
+ * The unfilled part of a progress bar. A neutral lift off the card, not the page background:
+ * CharcoalBg on a CharcoalCard row measured 1.2:1, so the empty part of a bar was not there at all
+ * and a small share read as a short line floating in space rather than as a small share.
+ */
+val BarTrack = Color(0xFF423E37)
+
 // Functional Accent Colors
 val WarmAmberPrimary = Color(0xFFFF7A3D) // Expenses, primary CTAs, streak flame
 val WarmAmberLight = Color(0xFFFF9B6A)
@@ -22,6 +29,16 @@ val WarmAmberContainer = Color(0x33FF7A3D)
 val ChartreuseSecondary = Color(0xFFC6F24C) // Income, owed to you, positive balance
 val ChartreuseDark = Color(0xFF88B312)
 val ChartreuseContainer = Color(0x33C6F24C)
+
+// Which way the money goes. One pair, used on every screen that shows a direction, so "green means
+// it is coming to you" is learned once. Half-applied before this: green appeared on exactly one
+// group card, and "you owe" was plain white everywhere, which is the same colour as a neutral
+// figure and so carried no meaning at all.
+//
+// MoneyOut is deliberately not WarmAmberPrimary: amber is the brand and the call to action, and a
+// debt is neither. A red-shifted coral reads as a direction without reading as an error.
+val MoneyIn = ChartreuseSecondary
+val MoneyOut = Color(0xFFFF6F61)
 
 // Typography & Neutrals
 val OffWhiteText = Color(0xFFF4F0E8)

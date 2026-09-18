@@ -20,7 +20,12 @@ data class MemberShare(
 object GroupInsights {
 
     const val ME = -1L
-    private const val MY_COLOR = "#FF7A3D"
+
+    /**
+     * You are the brand amber, and no colour in the friend palette sits near it, so "You" can never
+     * collide with a member on the donut or in an avatar stack.
+     */
+    const val MY_COLOR = "#FF7A3D"
 
     /**
      * Each member's share of the group's spending, largest first. A member's share is what the

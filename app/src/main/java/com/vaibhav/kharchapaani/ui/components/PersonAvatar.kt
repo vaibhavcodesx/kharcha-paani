@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vaibhav.kharchapaani.ui.theme.SquircleShape
+import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 
 /**
@@ -41,7 +42,10 @@ fun PersonAvatar(
             .clip(shape)
             // In an overlapping stack the tint must sit on something opaque, or initials show through.
             .then(if (ringColor != null) Modifier.background(ringColor).border(2.dp, ringColor, shape) else Modifier)
-            .background(color.copy(alpha = 0.2f))
+            // Solid, not a 20% wash. At 20% over charcoal every hue in the palette resolved to
+            // within a few points of the same brown, so a deliberate per-person colour system was
+            // being thrown away in its last line before it reached the screen.
+            .background(color)
             .clearAndSetSemantics {},
     ) {
         if (emoji != null) {
@@ -50,7 +54,8 @@ fun PersonAvatar(
             Text(
                 text = initials(name),
                 style = if (size >= 48.dp) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleSmall,
-                color = color,
+                // The palette is light by design, so the initials go dark rather than white.
+                color = CharcoalBg,
             )
         }
     }

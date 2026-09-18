@@ -47,10 +47,14 @@ import com.vaibhav.kharchapaani.ui.components.pairedFigureStyle
 import com.vaibhav.kharchapaani.ui.components.SegmentedControl
 import com.vaibhav.kharchapaani.ui.components.TripCard
 import com.vaibhav.kharchapaani.ui.shell.dockClearance
+import com.vaibhav.kharchapaani.ui.components.AccountAvatar
+import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
+import com.vaibhav.kharchapaani.ui.theme.MoneyIn
+import com.vaibhav.kharchapaani.ui.theme.MoneyOut
 import com.vaibhav.kharchapaani.ui.theme.EyebrowText
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
@@ -64,6 +68,9 @@ private enum class SplitsSection { Friends, Groups }
 
 @Composable
 fun SplitsScreen(
+    accountAvatar: String = "?",
+    onOpenAccount: () -> Unit = {},
+    syncStatus: SyncStatus = SyncStatus(),
     personBalances: List<PersonBalance>,
     groups: List<GroupWithDetails>,
     onOpenAddFriend: () -> Unit,
@@ -102,7 +109,9 @@ fun SplitsScreen(
         contentPadding = PaddingValues(start = Spacing.page, end = Spacing.page, top = Spacing.l, bottom = dockClearance()),
     ) {
         item(key = "header") {
-            ScreenHeader(title = "Splits", supporting = "Who owes whom, with friends and on trips")
+            ScreenHeader(title = "Splits", supporting = "Who owes whom, with friends and on trips") {
+                AccountAvatar(avatar = accountAvatar, syncStatus = syncStatus, onClick = onOpenAccount)
+            }
         }
         item(key = "summary") {
             BalanceSummary(
@@ -204,9 +213,9 @@ private fun BalanceSummary(
     Column(modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
             val style = pairedFigureStyle(owedToMe, iOwe)
-            SummaryFigure("Owed to you", owedToMe, ChartreuseSecondary, style, Modifier.weight(1f))
+            SummaryFigure("Owed to you", owedToMe, MoneyIn, style, Modifier.weight(1f))
             Box(Modifier.padding(horizontal = Spacing.xl).width(1.dp).fillMaxHeight().background(CharcoalBorder))
-            SummaryFigure("You owe", iOwe, OffWhiteText, style, Modifier.weight(1f))
+            SummaryFigure("You owe", iOwe, MoneyOut, style, Modifier.weight(1f))
         }
         Row(Modifier.padding(top = Spacing.s).offset(x = -Spacing.m)) {
             if (owedToMe >= 0.005 || iOwe >= 0.005) {

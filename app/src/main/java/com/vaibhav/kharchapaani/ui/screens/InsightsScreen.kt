@@ -66,6 +66,8 @@ import com.vaibhav.kharchapaani.ui.components.shimmerLoading
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.format.MonthNames
 import com.vaibhav.kharchapaani.ui.shell.dockClearance
+import com.vaibhav.kharchapaani.ui.components.AccountAvatar
+import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -80,6 +82,7 @@ import com.vaibhav.kharchapaani.ui.theme.OutlineInteractive
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
+import com.vaibhav.kharchapaani.ui.theme.BarTrack
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.YearMonth
@@ -97,6 +100,9 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun InsightsScreen(
+    accountAvatar: String = "?",
+    onOpenAccount: () -> Unit = {},
+    syncStatus: SyncStatus = SyncStatus(),
     analytics: MonthlyAnalytics,
     transactions: List<FullTransaction> = emptyList(),
     people: List<PersonEntity> = emptyList(),
@@ -131,6 +137,7 @@ fun InsightsScreen(
                 TextButton(onClick = onExport, modifier = Modifier.testTag("export_csv_button")) {
                     Text("Export", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
                 }
+                AccountAvatar(avatar = accountAvatar, syncStatus = syncStatus, onClick = onOpenAccount)
             }
         }
         item(key = "month") {
@@ -277,7 +284,10 @@ private fun CategoryBarRow(
     onClick: () -> Unit,
 ) {
     val grown by animateFloatAsState(fraction, animationSpec = tween(600), label = "bar_${summary.category}")
-    val barColor = if (emphasis) WarmAmberPrimary else OutlineInteractive
+    // Each category's own colour, the same one its badge two inches to the left is already using.
+    // One amber for all of them meant the badge carried the category and the bar carried nothing.
+    val categoryColor = CategoryHelper.getCategoryColor(summary.category)
+    val barColor = if (emphasis) categoryColor else categoryColor.copy(alpha = 0.35f)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -311,7 +321,9 @@ private fun CategoryBarRow(
                 .height(8.dp),
         ) {
             val radius = CornerRadius(size.height / 2)
-            drawRoundRect(color = CharcoalBg, cornerRadius = radius)
+            // CharcoalBg on a CharcoalCard row measured 1.2:1 — the empty part of the bar was
+            // invisible, so a short bar read as a short line rather than as a small share.
+            drawRoundRect(color = BarTrack, cornerRadius = radius)
             val width = (size.width * grown).coerceAtLeast(size.height)
             drawRoundRect(color = barColor, size = Size(width, size.height), cornerRadius = radius)
         }
