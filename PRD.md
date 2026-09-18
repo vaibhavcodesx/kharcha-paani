@@ -1301,6 +1301,10 @@ in `docs/design-audit-verification.md`; where verification contradicts
 the audit, **verification wins** and the backlog item is re-scoped
 rather than built as written.
 
+Two further documents came out of this batch:
+`docs/ai-prompt-set-design.md` (the §4.3 design, and the decisions taken
+on it) and `docs/splitting-with-people-not-on-the-app.md`.
+
 ### Owner decisions (2026-09-18)
 
 These two are decided, not proposals. They come before the rest of the
@@ -1328,6 +1332,97 @@ design work in that document.
   isolate when and why it changed. The ticket-stub perforation motif is
   to be extended to other receipt-like surfaces but **explicitly never to
   the dock**.
+
+### Batch 5 status (2026-09-18 / 19)
+
+The design backlog is complete. Everything in
+`design-and-feature-backlog.md` is built, closed as not-real, or
+re-scoped; the verification results are in
+`docs/design-audit-verification.md`.
+
+- ✅ **§1.1 Statement scanning** (PR #40). Root cause: one 30-second read
+  timeout shared by all four Gemini calls. Reading every row of every
+  page of a statement from a thinking model does not fit in it, so this
+  was the only AI path that could not finish — and it could not finish
+  every time. It has 180 seconds of its own. Four more defects in the
+  same path made it undiagnosable: non-2xx responses discarded unread,
+  `parts[0].text` only (a Gemini 3.x thought part threw the answer away),
+  no `maxOutputTokens`/`finishReason` check, one message for every cause.
+- ✅ **§2.1 Home hero metric** (PR #40). "Spent this month" leads; the
+  debt moves beside "Came in" and keeps its action.
+- ✅ **§2.2 The dock's glass** (PR #40). **Not a regression** — the diff
+  between the two glass commits is a doc comment. Two attempts: widening
+  the rim made it worse, because the amber tint at 7% over `#0E0D0C` *is*
+  rust, and a rim around a solid core reads as a border at any width. It
+  is one pane now, content directly on the glass, neutral tint, top-only
+  hairline. **Parked for a device screenshot.**
+- ✅ **Bundled fonts** (PR #40). Not in the backlog; the real bug behind
+  the audit's "everything uses the OS default sans". All three families
+  were fetched at runtime from the Play Services provider, so the same
+  build rendered in Roboto on some devices and its own type on others.
+  Caveat: variable-font weight axes apply from API 26 and `minSdk` is 24,
+  so Android 7.x renders one weight. Raising `minSdk` would close it.
+- ✅ **§6 items 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 17, 19, 21** (PR #41).
+  Colour that means something, four button tiers, Insights' first real
+  charts, and the backlog tail.
+- ✅ **§4.3 / item 16 — the AI prompt set** (PR #42). Designed in
+  `docs/ai-prompt-set-design.md`, approved with three answers: keep the
+  diagnosis and the advice as separate prompts, cap at 20 a day, trip
+  reads on the group sheet only.
+- ✅ **Items 4, 7, 18 closed**, not built: already correct, already
+  enabled, already fixed.
+
+### Owner decisions (2026-09-19)
+
+- **14. UPI ID is shared with groupmates, reversing item 9's
+  "local-only, no sync".** The bug: "I added my UPI ID, the other person
+  settling can't see it." Correct — local-only meant the one person who
+  needed it was the only one who could not see it, and settle-up showed a
+  QR only when *they* paid *me*.
+
+  The handle rides on `profiles`. **Visibility is inherited, not new:**
+  `profiles_select_self_or_groupmate` already limits a profile to its
+  owner and to people who share a group with them, which is exactly the
+  audience for a payment handle, so no policy was added.
+
+  Two QR codes: the exact amount, and "Any amount" for a part payment or
+  a round number. Scanning the wrong one silently pays the wrong sum, so
+  the choice is explicit.
+
+  **Security.** A handle now arrives from someone else's phone and is
+  interpolated into a `upi://pay` link a payment app acts on — the only
+  synced string in this app that could move money. Checked twice:
+  `profiles_upi_id_format` server-side, `UpiLink.cleanId` on every read,
+  and `buildOrNull` refuses to build from an unvalidated string. The
+  payee name and note are percent-encoded, being free text.
+
+  **Applied to live:** `add_upi_id_to_profiles`,
+  `fix_upi_id_format_constraint` (the first mirrored the app's
+  `{2,256}`, which Postgres rejects — its regex caps repetition at 255;
+  both sides are 64 now). Room v7 adds the handle to `people`.
+
+- **15. AI cap: 20 answers a day.** A backstop against a loop or a stuck
+  retry rather than a budget; the key is free at this volume.
+
+- **16. Splitting with people who aren't on the app** —
+  `docs/splitting-with-people-not-on-the-app.md`. The model was already
+  right and was never explained. A local friend needs no account and
+  supports splits, IOUs, settling up and local groups; only a *shared*
+  group requires every member to have an account, which the app already
+  enforces rather than failing halfway. The one real gap — merging a
+  local friend into their account once they join — is deliberately not
+  built, because it means rewriting every share and settlement naming
+  either of them, and getting that wrong silently corrupts a ledger.
+
+### Still open
+
+- **The dock's glass**, awaiting a device screenshot: `liquidGlass`'s
+  tint alpha and blur radius are the two knobs.
+- **Merging a local friend into a joined account** — its own design pass,
+  migration and balance-equality tests.
+- **`minSdk` 24 → 26**, which would give Android 7.x the bundled fonts'
+  weight axis. A product call.
+
 
 ## PART C — Testing & Quality
 
