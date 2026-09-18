@@ -114,14 +114,21 @@ fun HomeScreen(
     ) {
         item(key = "balance") {
             BalanceHeader(
-                netBalance = totalNetOwed,
+                monthlyExpense = monthlyAnalytics.totalExpense,
+                dailyStreak = monthlyAnalytics.dailyStreak,
                 accountAvatar = accountAvatar,
                 onOpenAccount = onOpenAccount,
-                onOpenSimplifyDebts = onOpenSimplifyDebts,
                 syncStatus = syncStatus,
             )
         }
-        item(key = "month") { MonthStrip(monthlyAnalytics, Modifier.padding(top = Spacing.s)) }
+        item(key = "month") {
+            MonthStrip(
+                analytics = monthlyAnalytics,
+                netBalance = totalNetOwed,
+                onOpenSimplifyDebts = onOpenSimplifyDebts,
+                modifier = Modifier.padding(top = Spacing.l),
+            )
+        }
         item(key = "capture") {
             CaptureCard(
                 isParsing = isParsing,
