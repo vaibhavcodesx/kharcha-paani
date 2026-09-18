@@ -1238,27 +1238,24 @@ sequenced after Part B's last batch.
 - ✅ **9. UPI ID and QR** (PR #33, 297 tests on CI). Local-only, per
   account. Real `upi://pay` link; the QR is tested by decoding it back.
   Settle up shows a code for the amount when a friend owes you.
-- 🔄 **7. Categories and payment methods** (PR #34). One list for the
-  pickers, AI prompts and statement importer (Groceries, Investment,
-  Income (Salary) are now ordinary defaults). Hide defaults, add your
-  own, per account on this phone; the category name travels on the
-  expense.
-- 🔍 **11. Payer edit/delete** (PR #31): **awaiting owner review, not
-  applied.**
+- ✅ **7. Categories and payment methods** (PRs #34, #35). One list for
+  the pickers, AI prompts and statement importer (Groceries, Investment,
+  Income (Salary) are now ordinary defaults, with icons). Hide defaults,
+  add your own, per account on this phone; the category name travels on
+  the expense, so groupmates see it.
+- ✅ **11. Payer edit/delete** (PR #31, 319 tests on CI). Owner approved
+  2026-09-18; migration applied to live as `20260918073251`.
   - RLS via `private.can_edit_group_expense`, plus a trigger locking
-    `owner_id`.
+    `owner_id`. The payer can't name a different payer.
   - Local PGlite: payer 28/28, groups 100/100, leave 51/51, sync 10/10.
-  - App side included. **Bug found:** the soft delete filtered on
-    `owner_id`, which would have silently left a payer's delete on the
-    server.
-- 🔍 **Audit fix: FileProvider** (PR #30): narrowed to `cache/exports/`;
-  **awaiting owner review** (security config).
-- ⏳ **10. Group screen** (six approved parts) and **8.
-  Subscriptions**: next.
+  - **Bug found:** the soft delete filtered on `owner_id`, which would
+    have silently left a payer's delete on the server.
+- ✅ **Audit fix: FileProvider** (PR #30): narrowed to `cache/exports/`.
+- ⏳ **10. Group screen** (six approved parts) and **8. Subscriptions**:
+  not started; next when work resumes.
 - 🔎 **Audit (not changed):** the server doesn't bound `display_name`
   length (the app caps it at 40). A check constraint would also need
-  `handle_new_user` to truncate long Google names, which is auth config,
-  so it's the owner's call.
+  `handle_new_user` to truncate long Google names, which is auth config.
 - 🔎 **Audit (not changed):** the security advisor lists five
   SECURITY DEFINER RPCs callable by signed-in users. They are the
   intended group functions from step 4. Leaked-password protection is
