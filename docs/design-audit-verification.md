@@ -290,16 +290,33 @@ gradient stroke with a subtle top-only specular highlight, since that is
 where light would actually hit. Applied to the material itself, so the
 dock, the snackbar and every sheet action bar change together:
 
-- The rim went from 5dp to a shared `GlassBezel` of 12dp, wide enough
-  that the backdrop blur behind it is legible as a material. The dock's
-  core lost 6dp so the dock itself is only 8dp taller than before, and
-  the core shapes were re-cut concentric with the outer shapes.
-- The edge stroke is no longer a ring. It is a hairline clipped to the
-  top 22% of the shape, fading out before the shoulders, at a flat 34%
-  white — no amber, so nothing can read as rust.
-- The tint dropped from 42% charcoal + 9% amber to 30% + 7%: with a
-  visible rim the blur carries the surface, so the tint only has to keep
-  it legible over bright content rather than stand in for it.
+First attempt widened the rim from 5dp to 12dp and kept the opaque core.
+On the device that was **worse**, and the owner said so. Two reasons,
+both of which the wider rim amplified rather than caused:
+
+- **The amber tint was the brown.** `accent` at 7% over a `#0E0D0C`
+  background, with almost nothing bright behind the dock, composites to
+  roughly `#1E1109` — rust. A blur of near-black is near-black, so the
+  amber was not tinting a visible material, it *was* the material.
+- **A rim around a solid core can only read as a border.** That is what
+  a ring of one colour around a filled centre is, at any width. 5dp gave
+  a hairline border, 12dp a thick one; neither is glass. Real Liquid
+  Glass is the whole surface with the content on it.
+
+**What it is now.** One pane. `liquidGlass` applies to the whole shape,
+content sits directly on it, there is no core and no rim:
+
+- The tint is neutral — 68% of the background for legibility, plus a 6%
+  white lift so the pane sits above it. No accent anywhere in the
+  material; the amber belongs on the active tab and the add button,
+  which are meant to be amber, not smeared across the pane behind them.
+- The edge stroke is a hairline clipped to the top 20% of the shape,
+  fading out before the shoulders, at 22% white. Never a ring.
+- The sheen moved under the content (`drawBehind`), since drawn on top
+  it washed across the labels now sitting on the pane.
+- The add button lost its glass frame entirely. It was a gradient square
+  inside a rim, which put a thick tinted border round it and shrank the
+  gradient; the whole button is the gradient now.
 
 **Not a regression, for the record.** §2.2 asked when and why this
 changed. It never did: `git diff` between the two glass commits

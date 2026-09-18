@@ -66,7 +66,6 @@ import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
 import com.vaibhav.kharchapaani.ui.theme.CharcoalSurface
 import com.vaibhav.kharchapaani.ui.theme.EyebrowText
-import com.vaibhav.kharchapaani.ui.theme.GlassBezel
 import com.vaibhav.kharchapaani.ui.theme.GlassPanel
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.LocalHazeState
@@ -230,15 +229,14 @@ fun GlassActionBar(
     buttonTestTag: String? = null,
 ) {
     GlassPanel(
-        shape = SquircleShape(30.dp),
-        coreShape = SquircleShape(18.dp),
-        bezel = GlassBezel,
+        shape = SquircleShape(28.dp),
+        contentPadding = Spacing.xs,
         modifier = modifier
             .navigationBarsPadding()
             .padding(Spacing.m)
             .fillMaxWidth(),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(Spacing.xxs)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             if (summary != null) {
                 Column(Modifier.weight(1f).padding(horizontal = Spacing.s)) {
                     Text(summary, style = MoneyText.title, maxLines = 1, overflow = TextOverflow.Ellipsis)

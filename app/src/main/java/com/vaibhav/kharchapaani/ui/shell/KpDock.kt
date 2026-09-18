@@ -38,6 +38,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -49,8 +50,6 @@ import com.vaibhav.kharchapaani.ui.components.pressBounce
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.theme.BrandGradient
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
-import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
-import com.vaibhav.kharchapaani.ui.theme.GlassBezel
 import com.vaibhav.kharchapaani.ui.theme.GlassPanel
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
@@ -64,15 +63,11 @@ enum class AppTab(val label: String, val icon: ImageVector, val testTag: String)
     Insights("Insights", KpIcons.Insights, "tab_insights"),
 }
 
-// The rim is the glass. At 5dp there was too little of it to show any blur, so the edge stroke was
-// doing the whole job and reading as a dashed outline; the core loses what the rim gains, so the
-// dock is only 8dp taller than it was.
-private val DockBezel = GlassBezel
-private val DockCoreHeight = 52.dp
-private val DockHeight = DockCoreHeight + DockBezel * 2
-private val DockOuterShape = SquircleShape(30.dp)
-// Concentric with the outer shape: the core's radius is the outer radius less the rim it sits in.
-private val DockCoreShape = SquircleShape(18.dp)
+private val DockHeight = 68.dp
+private val DockShape = SquircleShape(26.dp)
+/** The tab wells inset from the pane's edge; concentric with [DockShape]. */
+private val DockPadding = 6.dp
+private val DockItemShape = SquircleShape(20.dp)
 
 /** Where floating messages sit: just above the dock and the system bar. */
 @Composable
@@ -107,18 +102,11 @@ fun KpDock(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         GlassPanel(
-            shape = DockOuterShape,
-            coreShape = DockCoreShape,
-            bezel = DockBezel,
-            modifier = Modifier.weight(1f),
+            shape = DockShape,
+            contentPadding = DockPadding,
+            modifier = Modifier.weight(1f).height(DockHeight),
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(DockCoreHeight)
-                    .padding(Spacing.xs)
-                    .selectableGroup(),
-            ) {
+            Row(Modifier.fillMaxSize().selectableGroup()) {
                 AppTab.entries.forEach { tab ->
                     DockItem(tab = tab, selected = tab == currentTab, onClick = { onSelectTab(tab) })
                 }
@@ -138,8 +126,10 @@ private fun RowScope.DockItem(tab: AppTab, selected: Boolean, onClick: () -> Uni
         modifier = Modifier
             .weight(1f)
             .fillMaxHeight()
-            .clip(SquircleShape(14.dp))
-            .background(CharcoalElevated.copy(alpha = wellAlpha))
+            .clip(DockItemShape)
+            // A lift out of the pane, not a hole cut into it: a dark fill read as a gap in the
+            // glass, now that the pane is the glass rather than a frame around one.
+            .background(Color.White.copy(alpha = 0.10f * wellAlpha))
             .selectable(
                 selected = selected,
                 onClick = onClick,
@@ -176,27 +166,25 @@ private fun Modifier.gradientTint(): Modifier = this
         drawRect(brush = BrandGradient.diagonal(), blendMode = BlendMode.SrcIn)
     }
 
+/**
+ * The add action is the brand, not a piece of glass. It used to be a gradient square inside a glass
+ * rim, which put a thick tinted frame around it and shrank the gradient to a fraction of the
+ * button; the whole button is the gradient now, matched to the dock's height beside it.
+ */
 @Composable
 private fun AddButton(onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
-    GlassPanel(
-        shape = SquircleShape(30.dp),
-        coreShape = KpShapes.action,
-        bezel = DockBezel,
+    Box(
         modifier = Modifier
             .size(DockHeight)
-            .pressBounce(interactionSource),
+            .pressBounce(interactionSource)
+            .clip(KpShapes.action)
+            .background(BrandGradient.diagonal())
+            .clickable(interactionSource = interactionSource, indication = ripple(color = CharcoalBg), onClick = onClick)
+            .semantics { contentDescription = "Add expense" }
+            .testTag("dock_add"),
+        contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(BrandGradient.diagonal())
-                .clickable(interactionSource = interactionSource, indication = ripple(color = CharcoalBg), onClick = onClick)
-                .semantics { contentDescription = "Add expense" }
-                .testTag("dock_add"),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(imageVector = KpIcons.Add, contentDescription = null, tint = CharcoalBg, modifier = Modifier.size(26.dp))
-        }
+        Icon(imageVector = KpIcons.Add, contentDescription = null, tint = CharcoalBg, modifier = Modifier.size(26.dp))
     }
 }
