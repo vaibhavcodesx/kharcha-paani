@@ -64,6 +64,8 @@ import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
+import com.vaibhav.kharchapaani.ui.components.KpButton
+import com.vaibhav.kharchapaani.ui.components.KpButtonTier
 import com.vaibhav.kharchapaani.ui.theme.SquircleShape
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -392,9 +394,15 @@ private fun DebtRow(debt: SimplifiedDebt, position: RowPosition, onSettleUp: (()
         )
         Text(Money.format(debt.amount), style = MoneyText.row, color = OffWhiteText)
         if (onSettleUp != null) {
-            TextButton(onClick = onSettleUp, modifier = Modifier.testTag("settle_${debt.fromPersonId}_${debt.toPersonId}")) {
-                Text("Settle up", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
-            }
+            // The most consequential thing on this screen — a real debt between two named people,
+            // in an exact amount — and it used to look the same as an inline link.
+            KpButton(
+                label = "Settle up",
+                onClick = onSettleUp,
+                tier = KpButtonTier.Outline,
+                testTag = "settle_${debt.fromPersonId}_${debt.toPersonId}",
+                modifier = Modifier.padding(start = Spacing.s),
+            )
         }
     }
 }

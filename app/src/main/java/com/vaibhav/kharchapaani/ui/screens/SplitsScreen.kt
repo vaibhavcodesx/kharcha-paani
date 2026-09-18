@@ -48,6 +48,8 @@ import com.vaibhav.kharchapaani.ui.components.SegmentedControl
 import com.vaibhav.kharchapaani.ui.components.TripCard
 import com.vaibhav.kharchapaani.ui.shell.dockClearance
 import com.vaibhav.kharchapaani.ui.components.AccountAvatar
+import com.vaibhav.kharchapaani.ui.components.KpButton
+import com.vaibhav.kharchapaani.ui.components.KpButtonTier
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
@@ -142,9 +144,12 @@ fun SplitsScreen(
             SplitsSection.Friends -> {
                 item(key = "friends_header") {
                     SectionActions {
-                        TextButton(onClick = onOpenAddFriend, modifier = Modifier.testTag("add_friend_button")) {
-                            Text("Add a friend", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
-                        }
+                        KpButton(
+                            label = "Add a friend",
+                            onClick = onOpenAddFriend,
+                            tier = KpButtonTier.Outline,
+                            testTag = "add_friend_button",
+                        )
                     }
                 }
                 if (friends.isEmpty()) {
@@ -169,12 +174,19 @@ fun SplitsScreen(
             SplitsSection.Groups -> {
                 item(key = "groups_header") {
                     SectionActions {
-                        TextButton(onClick = onJoinGroup, modifier = Modifier.testTag("join_group_button")) {
-                            Text("Join", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
-                        }
-                        TextButton(onClick = onOpenCreateGroup, modifier = Modifier.testTag("create_group_button")) {
-                            Text("New group", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
-                        }
+                        KpButton(
+                            label = "Join",
+                            onClick = onJoinGroup,
+                            tier = KpButtonTier.Ghost,
+                            testTag = "join_group_button",
+                            modifier = Modifier.padding(end = Spacing.s),
+                        )
+                        KpButton(
+                            label = "New group",
+                            onClick = onOpenCreateGroup,
+                            tier = KpButtonTier.Outline,
+                            testTag = "create_group_button",
+                        )
                     }
                 }
                 if (groups.isEmpty()) {
@@ -219,13 +231,19 @@ private fun BalanceSummary(
         }
         Row(Modifier.padding(top = Spacing.s).offset(x = -Spacing.m)) {
             if (owedToMe >= 0.005 || iOwe >= 0.005) {
-                TextButton(onClick = onOpenSimplifyDebts, modifier = Modifier.testTag("simplify_debts_button")) {
-                    Text("See who pays whom", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
-                }
+                KpButton(
+                    label = "See who pays whom",
+                    onClick = onOpenSimplifyDebts,
+                    tier = KpButtonTier.Link,
+                    testTag = "simplify_debts_button",
+                )
             }
-            TextButton(onClick = onOpenIou, modifier = Modifier.testTag("record_iou_button")) {
-                Text("Log an IOU", style = MaterialTheme.typography.labelLarge, color = MutedWarmGray)
-            }
+            KpButton(
+                label = "Log an IOU",
+                onClick = onOpenIou,
+                tier = KpButtonTier.Link,
+                testTag = "record_iou_button",
+            )
         }
     }
 }

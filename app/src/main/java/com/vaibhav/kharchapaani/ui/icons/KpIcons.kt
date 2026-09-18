@@ -123,6 +123,34 @@ object KpIcons {
         line("M6 9.5l6 6 6-6")
     }
 
+    // Entry-form rows. Every row in the quick-add sheet carries one, so two-of-five no longer
+    // reads as an oversight.
+
+    /** A shopfront with an awning: who or what you paid. */
+    val Merchant = kpIcon("Merchant") {
+        tone("M4 9.5h16V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z")
+        line("M4 9.5h16V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z")
+        line("M3 9.5l1.6-4.2A1.5 1.5 0 0 1 6 4.5h12a1.5 1.5 0 0 1 1.4 0.8L21 9.5")
+        line("M9.5 20.5v-5h5v5")
+    }
+
+    /** A payment card with a stripe. */
+    val Card = kpIcon("Card") {
+        tone("M3.5 6.5h17a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-17a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z")
+        line("M3.5 6.5h17a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-17a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z")
+        solid("M2.5 9.5h19v2.5h-19z")
+        line("M6 15h3.5")
+    }
+
+    /** Two people: which group this belongs to. */
+    val Group = kpIcon("Group") {
+        tone("M9.5 4a3.2 3.2 0 1 1 0 6.4a3.2 3.2 0 0 1 0-6.4z")
+        line("M9.5 4a3.2 3.2 0 1 1 0 6.4a3.2 3.2 0 0 1 0-6.4z")
+        line("M2.8 20a6.7 6.7 0 0 1 13.4 0")
+        line("M16 4.6a3.2 3.2 0 0 1 0 6.2")
+        line("M18 13.8a6.7 6.7 0 0 1 3.2 6.2")
+    }
+
     // Categories
 
     val Food = kpIcon("Food") {

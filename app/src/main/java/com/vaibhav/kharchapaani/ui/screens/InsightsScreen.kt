@@ -67,6 +67,8 @@ import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.format.MonthNames
 import com.vaibhav.kharchapaani.ui.shell.dockClearance
 import com.vaibhav.kharchapaani.ui.components.AccountAvatar
+import com.vaibhav.kharchapaani.ui.components.KpButton
+import com.vaibhav.kharchapaani.ui.components.KpButtonTier
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
@@ -134,9 +136,12 @@ fun InsightsScreen(
     ) {
         item(key = "header") {
             ScreenHeader(title = "Insights", supporting = "Where your money went, month by month") {
-                TextButton(onClick = onExport, modifier = Modifier.testTag("export_csv_button")) {
-                    Text("Export", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
-                }
+                KpButton(
+                    label = "Export",
+                    onClick = onExport,
+                    tier = KpButtonTier.Ghost,
+                    testTag = "export_csv_button",
+                )
                 AccountAvatar(avatar = accountAvatar, syncStatus = syncStatus, onClick = onOpenAccount)
             }
         }

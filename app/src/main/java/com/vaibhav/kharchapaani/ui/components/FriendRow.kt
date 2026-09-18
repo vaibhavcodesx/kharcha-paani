@@ -44,6 +44,8 @@ import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
+import com.vaibhav.kharchapaani.ui.components.KpButton
+import com.vaibhav.kharchapaani.ui.components.KpButtonTier
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import kotlin.math.abs
 
@@ -111,21 +113,17 @@ fun FriendRow(
                     color = if (owesMe) MoneyIn else MoneyOut,
                 )
             }
-            // Every row has the button, so amounts line up whether or not there's anything to settle.
-            Text(
-                text = if (owesMe || iOwe) "Settle" else "Record",
-                style = MaterialTheme.typography.labelLarge,
-                color = WarmAmberLight,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .padding(start = Spacing.s)
-                    .minimumInteractiveComponentSize()
-                    .clip(KpShapes.small)
-                    .background(CharcoalElevated)
-                    .clickable(role = Role.Button, onClickLabel = if (owesMe || iOwe) "Settle up with ${person.name}" else "Record a payment with ${person.name}", onClick = onSettleUp)
-                    .widthIn(min = 76.dp)
-                    .padding(horizontal = Spacing.m, vertical = Spacing.s)
-                    .testTag("settle_person_${person.id}"),
+            // Every row has the button, so amounts line up whether or not there's anything to
+            // settle — but settling a real debt and logging an IOU with someone already square are
+            // not the same action, so they no longer carry the same weight.
+            val settling = owesMe || iOwe
+            KpButton(
+                label = if (settling) "Settle" else "Record",
+                onClick = onSettleUp,
+                tier = if (settling) KpButtonTier.Outline else KpButtonTier.Ghost,
+                onClickLabel = if (settling) "Settle up with ${person.name}" else "Record a payment with ${person.name}",
+                testTag = "settle_person_${person.id}",
+                modifier = Modifier.padding(start = Spacing.s).widthIn(min = 84.dp),
             )
         }
         DropdownMenu(
