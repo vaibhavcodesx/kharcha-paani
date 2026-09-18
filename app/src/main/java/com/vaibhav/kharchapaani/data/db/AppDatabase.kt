@@ -34,7 +34,7 @@ import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
         PendingRemoteDeleteEntity::class,
         SyncMetaEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -52,7 +52,7 @@ abstract class AppDatabase : RoomDatabase() {
          * app/schemas and a MigrationTestHelper test. There is deliberately no destructive
          * fallback: a missing migration crashes on open instead of silently wiping the ledger.
          */
-        internal val ALL_MIGRATIONS = arrayOf<Migration>(MIGRATION_2_3, MIGRATION_3_4)
+        internal val ALL_MIGRATIONS = arrayOf<Migration>(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
 
         /** Open databases through [LedgerDatabases], which scopes the file to the signed-in account. */
         internal fun builder(context: Context, name: String): Builder<AppDatabase> =

@@ -1152,10 +1152,13 @@ sequenced after Part B's last batch.
      job), or compute projected entries on the fly?
    - What happens to past months when one is added retroactively or
      cancelled?
-   - Owner's note: this is not the earlier "no recurring payments"
-     decision, which was about irregular payments to teammates.
-   - *No such decision is written in this PRD or in `docs/` (searched
-     2026-09-15). It is recorded here as the owner describes it.*
+   - **Scope note (owner, 2026-09-15):** the earlier "no recurring
+     payments" decision was scoped to **irregular person-to-person
+     payments between teammates** (settlements, IOUs, splits). It does
+     **not** cover **fixed-schedule subscriptions** (a fixed amount on a
+     fixed cadence, e.g. Netflix monthly). They are a different concept,
+     so there is no conflict: person-to-person payments stay one-off;
+     subscriptions are allowed.
 9. **UPI ID and QR code in settings**, so a friend settling up can scan
    or copy it.
    - Use the real deep-link format
@@ -1176,6 +1179,33 @@ sequenced after Part B's last batch.
     - Write the RLS change, test it locally, and bring the PR for review
       before applying to live, as with every RLS change.
 
+### Owner decisions (2026-09-15)
+
+- **6. Profile:** display name editing now (fast-track). No profile
+  photo: an emoji avatar instead, which needs no Storage bucket or
+  `storage.objects` policies.
+- **7. Categories and payment methods:** approved as proposed. The
+  category name is stored on the expense itself; lists are not synced
+  per person. The statement importer's mismatched categories
+  (Groceries, Investment, Income (Salary)) are fixed in the same change.
+- **8. Subscriptions:** approved as proposed.
+  - Real entries are created by a background job or on app open, never
+    future-dated.
+  - Backdating asks first.
+  - Cancelling stops future entries and keeps past ones.
+  - See the scope note above: no conflict with "no recurring payments".
+- **9. UPI ID and QR:** approved, local-only, no sync.
+- **10. Group screen:** all six approved:
+  - donut of member shares;
+  - who owes whom;
+  - category spending;
+  - group CSV export;
+  - per-row settle-up;
+  - archived banner.
+- **11. Payer edit/delete:** go ahead; RLS PR for review before live.
+- **Audit (FileProvider paths):** narrow to what exports need, in its
+  own small PR.
+
 ### Backlog status
 
 - ✅ **5. Who added vs who paid** (PR #26): "Added by Priya · Paid by
@@ -1194,20 +1224,45 @@ sequenced after Part B's last batch.
   month switcher; analytics extracted to `MonthAnalytics.of(month)` and
   tested with entries across months (midnight edges, splits) in pure
   JVM, real Room and Compose UI tests.
-- 🔄 **3. CSV export by range** (PR #29). Root cause of "last 10-20":
+- ✅ **3. CSV export by range** (PR #29). Root cause of "last 10-20":
   the CSV was shared as text, which share targets truncate; now a .csv
   file. Also fixed: junk banner rows, `1.0E7` amounts, missing quoting,
   formula injection, no BOM. Month / dates / everything picker.
-- ⏳ **6. Profile screen**: display name is covered by the existing
-  `profiles_update_own` policy; photos need a new Storage bucket plus
-  `storage.objects` RLS (none exist yet), so that part is a review stop.
-- ⏳ **Group B (7–10)**: design proposals brought to the owner first.
-- ⏳ **Group C (11)**: payer edit/delete needs payer-aware versions of
-  the owner-keyed `transactions`, `splits` and `split_shares` policies;
-  review before live.
-- 🔎 **Audit:** `res/xml/file_paths.xml` exposes `external-path .` and
-  `files-path .`, broader than exports need; narrowing it is security
-  config, for a reviewed PR.
+- ✅ **6. Profile** (PR #32, 283 tests on CI).
+  - Display name editing.
+  - Emoji avatar instead of a photo (additive `profiles.avatar_emoji`,
+    applied to live 2026-09-15 as `20260915184031`); groupmates see it
+    via group sync (Room v5).
+  - Settings: "Ask before discarding an entry" (item 2) and export
+    (item 3).
+- ✅ **9. UPI ID and QR** (PR #33, 297 tests on CI). Local-only, per
+  account. Real `upi://pay` link; the QR is tested by decoding it back.
+  Settle up shows a code for the amount when a friend owes you.
+- 🔄 **7. Categories and payment methods** (PR #34). One list for the
+  pickers, AI prompts and statement importer (Groceries, Investment,
+  Income (Salary) are now ordinary defaults). Hide defaults, add your
+  own, per account on this phone; the category name travels on the
+  expense.
+- 🔍 **11. Payer edit/delete** (PR #31): **awaiting owner review, not
+  applied.**
+  - RLS via `private.can_edit_group_expense`, plus a trigger locking
+    `owner_id`.
+  - Local PGlite: payer 28/28, groups 100/100, leave 51/51, sync 10/10.
+  - App side included. **Bug found:** the soft delete filtered on
+    `owner_id`, which would have silently left a payer's delete on the
+    server.
+- 🔍 **Audit fix: FileProvider** (PR #30): narrowed to `cache/exports/`;
+  **awaiting owner review** (security config).
+- ⏳ **10. Group screen** (six approved parts) and **8.
+  Subscriptions**: next.
+- 🔎 **Audit (not changed):** the server doesn't bound `display_name`
+  length (the app caps it at 40). A check constraint would also need
+  `handle_new_user` to truncate long Google names, which is auth config,
+  so it's the owner's call.
+- 🔎 **Audit (not changed):** the security advisor lists five
+  SECURITY DEFINER RPCs callable by signed-in users. They are the
+  intended group functions from step 4. Leaked-password protection is
+  off, but sign-in is Google-only.
 
 ## PART C — Testing & Quality
 

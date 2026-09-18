@@ -23,6 +23,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import com.vaibhav.kharchapaani.ui.components.ExportSheet
+import com.vaibhav.kharchapaani.ui.components.UpiSheet
+import com.vaibhav.kharchapaani.ui.components.CategoriesSheet
+import com.vaibhav.kharchapaani.domain.Categories
 import com.vaibhav.kharchapaani.ui.shell.KpSnackbarHost
 import com.vaibhav.kharchapaani.ui.shell.snackbarClearance
 import androidx.compose.foundation.layout.padding
@@ -206,6 +209,7 @@ class MainActivity : ComponentActivity() {
                     selfProfileId = session.userId,
                     authUiState = authUiState,
                     onRetryProfile = authViewModel::retryProfileLoad,
+                    onSaveProfile = authViewModel::saveProfile,
                     onSignOut = { authViewModel.signOut(this@MainActivity) },
                 )
             }
@@ -272,9 +276,15 @@ fun SplitFlowApp(
     selfProfileId: String,
     authUiState: AuthUiState,
     onRetryProfile: () -> Unit,
+    onSaveProfile: (name: String, emoji: String?) -> Unit,
     onSignOut: () -> Unit,
 ) {
     var isAccountSheetOpen by rememberSaveable { mutableStateOf(false) }
+    val askBeforeDiscarding by viewModel.askBeforeDiscarding.collectAsStateWithLifecycle()
+    val upiPayee by viewModel.upiPayee.collectAsStateWithLifecycle()
+    val categoryPrefs by viewModel.categoryPrefs.collectAsStateWithLifecycle()
+    val isCategoriesOpen by viewModel.isCategoriesOpen.collectAsStateWithLifecycle()
+    val isUpiOpen by viewModel.isUpiOpen.collectAsStateWithLifecycle()
     val currentTab by viewModel.currentTab.collectAsState()
     val rawTransactions by viewModel.rawTransactions.collectAsState()
     val activityFeed by viewModel.activityFeed.collectAsState()
@@ -414,7 +424,7 @@ fun SplitFlowApp(
                         onRetractSettlement = { viewModel.retractSettlement(it) },
                         onOpenIouDialog = { viewModel.openIouDialog() },
                         onOpenSimplifyDebts = { viewModel.openSimplifyDebts() },
-                        accountInitial = authUiState.accountInitial,
+                        accountAvatar = authUiState.accountAvatar,
                         startVoiceCapture = voiceCaptureRequested,
                         syncStatus = syncStatus,
                         onShowMessage = viewModel::showMessage,
@@ -473,6 +483,22 @@ fun SplitFlowApp(
         AccountSheet(
             state = authUiState,
             syncStatus = syncStatus,
+            askBeforeDiscarding = askBeforeDiscarding,
+            upiId = upiPayee?.upiId,
+            onOpenUpi = {
+                isAccountSheetOpen = false
+                viewModel.openUpi()
+            },
+            onOpenCategories = {
+                isAccountSheetOpen = false
+                viewModel.openCategories()
+            },
+            onSaveProfile = onSaveProfile,
+            onAskBeforeDiscardingChange = viewModel::setAskBeforeDiscarding,
+            onOpenExport = {
+                isAccountSheetOpen = false
+                viewModel.openExport()
+            },
             onRetryFailedSync = viewModel::retryFailedSync,
             onRetryProfile = onRetryProfile,
             onSignOut = {
@@ -521,7 +547,9 @@ fun SplitFlowApp(
         onOpenAddFriend = { viewModel.openAddFriend() },
         onSave = { viewModel.saveCurrentTransaction() },
         onDismiss = { viewModel.dismissConfirmSheet() },
-        hasUnsavedInput = { viewModel.hasUnsavedEntry() },
+        hasUnsavedInput = { askBeforeDiscarding && viewModel.hasUnsavedEntry() },
+        categories = Categories.categoriesFor(txType, categoryPrefs),
+        paymentMethods = Categories.paymentMethods(categoryPrefs),
     )
 
     val isExportOpen by viewModel.isExportOpen.collectAsState()
@@ -549,7 +577,24 @@ fun SplitFlowApp(
         onConfirm = { fromId, toId, amt, note, groupId ->
             viewModel.recordSettlementPayment(fromId, toId, amt, note, groupId)
         },
-        onDismiss = { viewModel.dismissSettleUp() }
+        onDismiss = { viewModel.dismissSettleUp() },
+        upiPayee = upiPayee,
+    )
+
+    CategoriesSheet(
+        isOpen = isCategoriesOpen,
+        prefs = categoryPrefs,
+        onChange = { viewModel.updateCategoryPrefs(it) },
+        onDismiss = { viewModel.closeCategories() },
+    )
+
+    UpiSheet(
+        isOpen = isUpiOpen,
+        saved = upiPayee,
+        defaultName = authUiState.displayName.orEmpty(),
+        onSave = { viewModel.saveUpi(it) },
+        onRemove = { viewModel.saveUpi(null) },
+        onDismiss = { viewModel.closeUpi() },
     )
 
     // IOU
@@ -667,7 +712,8 @@ fun SplitFlowApp(
             },
             onDismiss = {
                 viewModel.dismissStatementImportDialog()
-            }
+            },
+            prefs = categoryPrefs,
         )
     }
 }

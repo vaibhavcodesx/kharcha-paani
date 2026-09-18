@@ -42,7 +42,8 @@ class FakeGroupRemote(private val self: String) : GroupRemote {
         // RLS: members (and the creator) see the group; members are only listed to members.
         return groups.values
             .filter { isMember(it.id, self) || it.createdBy == self }
-            .map { group -> if (isMember(group.id, self)) group else group.copy(members = emptyList()) }
+            // Profiles are embedded by a join, so they're read as they are now, not as they were at joining.
+            .map { group -> if (isMember(group.id, self)) group.copy(members = group.members.map { it.copy(profiles = profiles[it.profileId]) }) else group.copy(members = emptyList()) }
     }
 
     override suspend fun createGroup(id: String, name: String, emoji: String?) {
@@ -169,8 +170,8 @@ class FakeGroupRemote(private val self: String) : GroupRemote {
 
     // ---- Changes made by other people ----
 
-    fun profile(id: String, name: String?) {
-        profiles[id] = RemoteProfile(id, name)
+    fun profile(id: String, name: String?, emoji: String? = null) {
+        profiles[id] = RemoteProfile(id, name, avatarEmoji = emoji)
     }
 
     fun groupCreatedBy(creator: String, id: String, name: String, vararg members: String) {

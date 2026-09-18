@@ -13,7 +13,7 @@ class AuthUiStateTest {
     fun `account initial prefers the profile display name`() {
         val state = AuthUiState(authState = signedIn, profile = ProfileState.Loaded(Profile(id = "u1", displayName = "rahul")))
 
-        assertEquals("R", state.accountInitial)
+        assertEquals("R", state.accountAvatar)
     }
 
     @Test
@@ -21,11 +21,18 @@ class AuthUiStateTest {
         val state = AuthUiState(authState = signedIn, profile = ProfileState.Loaded(Profile(id = "u1", displayName = " ")))
 
         assertEquals(null, state.displayName)
-        assertEquals("V", state.accountInitial)
+        assertEquals("V", state.accountAvatar)
+    }
+
+    @Test
+    fun `a chosen emoji replaces the initial`() {
+        val state = AuthUiState(authState = signedIn, profile = ProfileState.Loaded(Profile(id = "u1", displayName = "Rahul", avatarEmoji = "🦊")))
+
+        assertEquals("🦊", state.accountAvatar)
     }
 
     @Test
     fun `no name or email yet shows a placeholder initial`() {
-        assertEquals("?", AuthUiState().accountInitial)
+        assertEquals("?", AuthUiState().accountAvatar)
     }
 }

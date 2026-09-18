@@ -141,6 +141,34 @@ class ScreenRenderCapture {
     }
 
     @Test
+    fun `profile sheet`() = capture("profile_sheet") {
+        Column(Modifier.fillMaxSize().background(CharcoalSurface), horizontalAlignment = Alignment.CenterHorizontally) {
+            SheetHandle()
+            com.vaibhav.kharchapaani.ui.auth.AccountSheetContent(
+                state = com.vaibhav.kharchapaani.ui.auth.AuthUiState(
+                    authState = com.vaibhav.kharchapaani.data.auth.AuthState.SignedIn(userId = "u1", email = "vaibhav@example.com", isRefreshPending = false),
+                    profile = com.vaibhav.kharchapaani.ui.auth.ProfileState.Loaded(com.vaibhav.kharchapaani.data.auth.Profile(id = "u1", displayName = "Vaibhav", avatarEmoji = "🦊")),
+                ),
+                syncStatus = com.vaibhav.kharchapaani.ui.sync.SyncStatus(lastSyncedAt = System.currentTimeMillis() - 5 * 60_000L),
+                askBeforeDiscarding = true,
+                onSaveProfile = { _, _ -> }, onAskBeforeDiscardingChange = {}, onOpenExport = {},
+                onRetryFailedSync = {}, onRetryProfile = {}, onSignOut = {},
+            )
+        }
+    }
+
+    @Test
+    fun `categories sheet`() = capture("categories_sheet") {
+        Column(Modifier.fillMaxSize().background(CharcoalSurface), horizontalAlignment = Alignment.CenterHorizontally) {
+            SheetHandle()
+            com.vaibhav.kharchapaani.ui.components.CategoriesContent(
+                prefs = com.vaibhav.kharchapaani.domain.CategoryPrefs(customExpense = listOf("Pets", "Kids school"), hiddenCategories = setOf("Team Payment")),
+                onChange = {},
+            )
+        }
+    }
+
+    @Test
     fun `home`() = capture("home") {
         Box(Modifier.fillMaxSize().background(CharcoalBg)) { Home(longFeed = false) }
     }
@@ -225,6 +253,32 @@ class ScreenRenderCapture {
                 groupOptions = SharedRecordGroups.Options(listOf(trips[0].group, GroupEntity(id = 11, name = "Flat 402", emoji = "🏠", syncState = SyncState.SYNCED)), emptyList(), involvesGroupmates = true),
                 onCreateGroup = {},
                 onConfirm = { _, _, _, _, _ -> },
+            )
+        }
+    }
+
+    @Test
+    fun `settle up with a UPI code`() = capture("settle_up_upi") {
+        Column(Modifier.fillMaxSize().background(CharcoalSurface), horizontalAlignment = Alignment.CenterHorizontally) {
+            SheetHandle()
+            SettleUpContent(
+                person = rohan,
+                suggestedAmount = 1250.5,
+                groupOptions = SharedRecordGroups.Options(emptyList(), emptyList(), involvesGroupmates = false),
+                onCreateGroup = {},
+                onConfirm = { _, _, _, _, _ -> },
+                upiPayee = com.vaibhav.kharchapaani.domain.UpiPayee("vaibhav@okaxis", "Vaibhav"),
+            )
+        }
+    }
+
+    @Test
+    fun `upi sheet`() = capture("upi_sheet") {
+        Column(Modifier.fillMaxSize().background(CharcoalSurface), horizontalAlignment = Alignment.CenterHorizontally) {
+            SheetHandle()
+            com.vaibhav.kharchapaani.ui.components.UpiContent(
+                saved = com.vaibhav.kharchapaani.domain.UpiPayee("vaibhav@okaxis", "Vaibhav Chauhan"),
+                defaultName = "Vaibhav", onSave = {}, onRemove = {},
             )
         }
     }
@@ -316,7 +370,7 @@ class ScreenRenderCapture {
             isParsing = false, searchQuery = "", selectedFilter = "All",
             onSearchChange = {}, onFilterChange = {}, onParseText = {}, onParseImage = {}, onParsePdf = { _, _ -> },
             onEditTransaction = {}, onDeleteTransaction = {}, onRetractSettlement = {}, onOpenIouDialog = {},
-            onOpenSimplifyDebts = {}, accountInitial = "V", onOpenAccount = {}, today = today,
+            onOpenSimplifyDebts = {}, accountAvatar = "V", onOpenAccount = {}, today = today,
             syncStatus = com.vaibhav.kharchapaani.ui.sync.SyncStatus(failedChanges = 1),
         )
     }

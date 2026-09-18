@@ -24,6 +24,8 @@ import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.io.IOException
 
 class AuthRepository(
@@ -158,6 +160,20 @@ class AuthRepository(
         supabase.from("profiles")
             .select { filter { eq("id", userId) } }
             .decodeSingleOrNull<Profile>()
+
+    /** Saves this account's name and emoji (profiles_update_own) and returns the stored row. */
+    suspend fun updateProfile(userId: String, displayName: String, avatarEmoji: String?): Profile =
+        supabase.from("profiles")
+            .update(
+                buildJsonObject {
+                    put("display_name", displayName)
+                    put("avatar_emoji", avatarEmoji)
+                }
+            ) {
+                select()
+                filter { eq("id", userId) }
+            }
+            .decodeSingle<Profile>()
 
     private sealed interface GoogleTokenResult {
         data class Token(val idToken: String) : GoogleTokenResult

@@ -97,7 +97,7 @@ fun FriendRow(
                 .padding(start = Spacing.l, end = Spacing.s, top = Spacing.m, bottom = Spacing.m)
                 .testTag("person_balance_card_${person.id}"),
         ) {
-            PersonAvatar(name = person.name, colorHex = person.avatarColor)
+            PersonAvatar(name = person.name, colorHex = person.avatarColor, emoji = person.avatarEmoji)
             Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
                 Text(person.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(status, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)

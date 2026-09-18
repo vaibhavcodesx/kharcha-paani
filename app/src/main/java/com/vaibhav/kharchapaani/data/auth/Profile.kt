@@ -9,4 +9,6 @@ data class Profile(
     val id: String,
     @SerialName("display_name") val displayName: String? = null,
     @SerialName("avatar_url") val avatarUrl: String? = null,
+    /** Shown instead of initials; groupmates see it too. Null means initials. */
+    @SerialName("avatar_emoji") val avatarEmoji: String? = null,
 )

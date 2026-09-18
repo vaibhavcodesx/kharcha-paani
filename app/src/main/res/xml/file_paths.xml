@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <cache-path name="export_cache" path="." />
-    <files-path name="export_files" path="." />
-    <external-path name="export_external" path="." />
+<!-- Only CSV exports are shared (MainViewModel.exportCsv writes them to cache/exports). Anything
+     listed here is reachable by an app the share is granted to, so nothing else is. -->
+<paths>
+    <cache-path name="exports" path="exports/" />
 </paths>

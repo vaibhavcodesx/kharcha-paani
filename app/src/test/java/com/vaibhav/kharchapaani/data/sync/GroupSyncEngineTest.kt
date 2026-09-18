@@ -143,6 +143,22 @@ class GroupSyncEngineTest {
     }
 
     @Test
+    fun `a groupmate's emoji avatar arrives, changes and clears with their profile`() = runBlocking {
+        remote.profile(bob, "Bob", emoji = "🦊")
+        joinGoaWithBobAndCarol()
+        assertEquals("🦊", person(bob).avatarEmoji)
+        assertEquals(null, person(carol).avatarEmoji)
+
+        remote.profile(bob, "Bobby", emoji = "🐼")
+        engine.sync()
+        assertEquals(listOf("Bobby", "🐼"), person(bob).let { listOf(it.name, it.avatarEmoji) })
+
+        remote.profile(bob, "Bobby", emoji = null)
+        engine.sync()
+        assertEquals(null, person(bob).avatarEmoji)
+    }
+
+    @Test
     fun `a groupmate's expense arrives read-only with their split mapped to local people`() = runBlocking {
         joinGoaWithBobAndCarol()
         remote.expenseBy(

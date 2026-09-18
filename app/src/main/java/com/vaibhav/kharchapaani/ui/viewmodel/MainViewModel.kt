@@ -35,14 +35,19 @@ import com.vaibhav.kharchapaani.data.model.StatementParseResult
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
 import com.vaibhav.kharchapaani.data.repository.ArchivedGroupException
 import com.vaibhav.kharchapaani.data.repository.GeminiRepository
+import com.vaibhav.kharchapaani.data.repository.ParseChoices
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
+import com.vaibhav.kharchapaani.data.settings.AppSettings
 import com.vaibhav.kharchapaani.data.sync.SyncScheduler
 import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
 import com.vaibhav.kharchapaani.domain.ActivityFeed
 import com.vaibhav.kharchapaani.domain.CsvFile
 import com.vaibhav.kharchapaani.domain.DebtSimplifier
 import com.vaibhav.kharchapaani.domain.ExportRange
+import com.vaibhav.kharchapaani.domain.Categories
+import com.vaibhav.kharchapaani.domain.CategoryPrefs
 import com.vaibhav.kharchapaani.domain.EntryDraft
+import com.vaibhav.kharchapaani.domain.UpiPayee
 import com.vaibhav.kharchapaani.domain.MonthAnalytics
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.SplitRounding
@@ -108,6 +113,57 @@ class MainViewModel(
         }
     }
     private val geminiRepo = GeminiRepository()
+
+    private val settings = AppSettings(application)
+
+    val askBeforeDiscarding: StateFlow<Boolean> = settings.askBeforeDiscarding
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    fun setAskBeforeDiscarding(ask: Boolean) {
+        viewModelScope.launch { settings.setAskBeforeDiscarding(ask) }
+    }
+
+    val categoryPrefs: StateFlow<CategoryPrefs> = settings.categoryPrefs(userId)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, CategoryPrefs())
+
+    fun updateCategoryPrefs(change: (CategoryPrefs) -> CategoryPrefs) {
+        viewModelScope.launch { settings.updateCategoryPrefs(userId, change) }
+    }
+
+    private val _isCategoriesOpen = MutableStateFlow(false)
+    val isCategoriesOpen: StateFlow<Boolean> = _isCategoriesOpen.asStateFlow()
+
+    fun openCategories() {
+        _isCategoriesOpen.value = true
+    }
+
+    fun closeCategories() {
+        _isCategoriesOpen.value = false
+    }
+
+    private fun parseChoices() = ParseChoices.of(categoryPrefs.value)
+
+    val upiPayee: StateFlow<UpiPayee?> = settings.upiPayee(userId)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    private val _isUpiOpen = MutableStateFlow(false)
+    val isUpiOpen: StateFlow<Boolean> = _isUpiOpen.asStateFlow()
+
+    fun openUpi() {
+        _isUpiOpen.value = true
+    }
+
+    fun closeUpi() {
+        _isUpiOpen.value = false
+    }
+
+    fun saveUpi(payee: UpiPayee?) {
+        viewModelScope.launch {
+            settings.setUpiPayee(userId, payee)
+            _isUpiOpen.value = false
+            _statusMessage.value = if (payee == null) "UPI ID removed." else "UPI ID saved. It shows when a friend settles up with you."
+        }
+    }
 
     // Navigation Tab (0: Home/Activity, 1: Splits & Groups, 2: Analytics)
     private val _currentTab = MutableStateFlow(0)
@@ -494,7 +550,7 @@ class MainViewModel(
             _isParsing.value = true
             _parseNotice.value = null
             val friendNames = people.value.map { it.name }
-            val parsed = geminiRepo.parseMessyText(rawText, friendNames)
+            val parsed = geminiRepo.parseMessyText(rawText, friendNames, parseChoices())
             applyParsedResult(parsed)
             _isParsing.value = false
             _isConfirmSheetOpen.value = true
@@ -506,7 +562,7 @@ class MainViewModel(
             _isParsing.value = true
             _isConfirmSheetOpen.value = true
             val friendNames = people.value.map { it.name }
-            val parsed = geminiRepo.parseReceiptOrScreenshot(bitmap, friendNames)
+            val parsed = geminiRepo.parseReceiptOrScreenshot(bitmap, friendNames, parseChoices())
             applyParsedResult(parsed)
             _parseNotice.value = if (parsed.readFailed) "Couldn't read that bill. Fill in the details, or try a clearer photo." else null
             _isParsing.value = false
@@ -538,7 +594,7 @@ class MainViewModel(
         viewModelScope.launch {
             _isParsingStatement.value = true
             _isImportStatementOpen.value = true
-            val result = geminiRepo.parseBankOrUpiStatementPdf(pdfBytes, fileName)
+            val result = geminiRepo.parseBankOrUpiStatementPdf(pdfBytes, fileName, parseChoices())
             _isParsingStatement.value = false
             if (result == null) {
                 _isImportStatementOpen.value = false
@@ -606,8 +662,11 @@ class MainViewModel(
         // Money.input, not Double.toString, which writes ₹1,00,00,000 as "1.0E7".
         _amount.value = if (parsed.amount > 0) Money.input(parsed.amount) else ""
         _merchant.value = parsed.merchant
-        _category.value = parsed.category
-        _paymentMethod.value = parsed.paymentMethod
+        // Whatever the parser said, as one of this account's choices (the offline parser and older
+        // prompts don't know custom categories).
+        val choices = parseChoices()
+        _category.value = choices.categoryFor(parsed.type, parsed.category)
+        _paymentMethod.value = choices.paymentFor(parsed.paymentMethod)
         _note.value = parsed.note
         _date.value = parsed.date
         _groupId.value = null
@@ -669,10 +728,12 @@ class MainViewModel(
 
     fun updateType(newType: String) {
         _type.value = newType
-        if (newType == "income" && _category.value == "Food") {
-            _category.value = "Income (Client)"
-        } else if (newType == "expense" && _category.value.startsWith("Income")) {
-            _category.value = "Food"
+        val prefs = categoryPrefs.value
+        val isIncomeCategory = Categories.isIncomeCategory(_category.value, prefs)
+        if (newType == "income" && !isIncomeCategory) {
+            _category.value = Categories.incomeCategories(prefs).first()
+        } else if (newType == "expense" && isIncomeCategory) {
+            _category.value = Categories.expenseCategories(prefs).first()
         }
     }
 

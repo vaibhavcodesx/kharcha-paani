@@ -94,7 +94,7 @@ fun HomeScreen(
     onRetractSettlement: (Long) -> Unit,
     onOpenIouDialog: () -> Unit,
     onOpenSimplifyDebts: () -> Unit,
-    accountInitial: String,
+    accountAvatar: String,
     onOpenAccount: () -> Unit,
     modifier: Modifier = Modifier,
     today: LocalDate = LocalDate.now(),
@@ -115,7 +115,7 @@ fun HomeScreen(
         item(key = "balance") {
             BalanceHeader(
                 netBalance = totalNetOwed,
-                accountInitial = accountInitial,
+                accountAvatar = accountAvatar,
                 onOpenAccount = onOpenAccount,
                 onOpenSimplifyDebts = onOpenSimplifyDebts,
                 syncStatus = syncStatus,
