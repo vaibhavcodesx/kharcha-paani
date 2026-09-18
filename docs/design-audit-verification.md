@@ -9,6 +9,54 @@ committed at `docs/design-reference/`.
 **Verdict key:** ✅ confirmed · ❌ not true · ⚠️ true but the cause or the
 fix differs from what the audit assumed · ✔️ already done.
 
+### Closed on this pass (owner-confirmed 2026-09-18)
+
+These backlog items are **not applicable** and are not to be built. They
+were verified against the code, and the owner has signed off on closing
+them:
+
+| Backlog item | Status |
+|---|---|
+| §6.4 — bottom safe-area padding on every scrollable list | **Closed, not applicable.** Already correct on all three screens and in `SheetScaffold`. |
+| §6.12 — deterministic per-person avatar colours | **Re-scoped.** The colour system already exists; see the re-scope below. |
+| §3.5 / §3.7 — "Simplify who pays whom" is a static tagline | **Closed, not a defect.** It is a real button and always was. |
+| §3.6 — the dock renders behind an open Group Detail sheet | **Closed, not reproducible.** Sheets are separate windows. |
+| §1.2 / §6.18 — two-letter avatar initials overlap | **Closed, already fixed** at `TripCard.kt:190`. |
+| §6.7 — enable Space Grotesk's tabular figures | **Closed, already enabled** on every `MoneyText` step. |
+
+### Re-scope of §6.12 — it is a rendering bug, not a missing system
+
+The item was written as "give each person a deterministic, distinct
+colour (hash their profile ID into a fixed palette of 6-8 hues), reused
+for avatars *and* any donut/chart". **All of that already exists** —
+`GroupSyncEngine:453` hashes the profile ID into an eight-colour
+palette, `AddFriendSheet` offers the same eight locally, and
+`GroupDetailSheet:313` already draws the donut from `person.avatarColor`
+rather than a chart-local ramp. Building it again would be rework on top
+of working code.
+
+What is actually broken is one line. **`PersonAvatar.kt:43` draws the
+person's colour at `alpha = 0.2f`** over charcoal. At 20% on `#1E1C1A`,
+sky blue, rose, coral and lilac all resolve to within a few points of
+the same brown — which is why You, Lal and Shubham read as three
+identical avatars in the screenshots despite genuinely holding three
+different colours. The palette is distinct; the tint destroys the
+distinction before it reaches the screen.
+
+Two smaller faults sit behind it, both real:
+
+- **The palette is warm-heavy.** Rose `#FFB3BA`, Coral `#FF9E79` and the
+  amber sit close enough that three people can legitimately draw three
+  near-neighbours, which is what makes the Group Detail donut read as
+  three shades of one orange even at full opacity.
+- **"You" is hardcoded `#FF7A3D`** (`GroupInsights.MY_COLOR`), outside
+  the palette, so the current user can collide with a member who drew
+  Coral.
+
+**The item is therefore: raise the avatar tint so the palette survives
+contact with the screen, spread the palette's hues, and pull "You" into
+the palette.** Not: build a colour system.
+
 **What was not verified here:** nothing needed a live interactive
 session except the Add Expense focus behaviour and the modal layering,
 and both were settled from source (noted per item). No emulator was
@@ -22,7 +70,7 @@ what crashed it on 2026-09-15.
 | # | Claim | Verdict |
 |---|---|---|
 | 1.1 | Statement scanning does not work | ✅ **confirmed, root cause found** — see below |
-| 1.2 | Two-letter avatar initials overlap in the member stack | ✔️ **already fixed** |
+| 1.2 | Two-letter avatar initials overlap in the member stack | ✔️ **already fixed — closed** |
 
 **1.1 — Statement scanning.** The wiring is all intact: `CaptureCard`'s
 Statement button → `GetContent("application/pdf")` → `MainViewModel.
@@ -79,7 +127,7 @@ hidden by the next avatar at 30dp. Closes backlog §6 item 18.
 | Everything uses the OS default sans | ❌ **not true** |
 | Section labels are in the same default sans as body | ❌ **not true** |
 | Amounts use a proportional font, digits shift row to row | ❌ **not true** |
-| Space Grotesk's tabular figures may not be enabled | ❌ **they are enabled** |
+| Space Grotesk's tabular figures may not be enabled | ❌ **they are enabled — closed** |
 | The ₹ renders lighter than the digits beside it | ⚠️ **true, different cause** |
 
 `Type.kt` carries a complete three-family system: Outfit for display and
@@ -95,13 +143,25 @@ glyph is weighted lighter than its digits, so it reads thin next to them
 wherever `MoneyText` renders a prefixed amount. That is a glyph problem
 to solve with optical sizing at the call site, not a font-stack problem.
 
-**Risk worth recording anyway:** there is no `res/font` directory. All
-three families come from the GMS downloadable-font provider at runtime,
-so on a device without Play Services fonts, or on a cold first launch
-offline, every one of them silently falls back to the system default —
-which would produce exactly the screen the audit described. It is not
-what is happening on this device, but it is an unguarded failure mode and
-belongs in the backlog on its own merits.
+**The real bug behind the audit's claim — since fixed.** There was no
+`res/font` directory. All three families were fetched at runtime from
+the GMS downloadable-font provider, so on a device without Play Services
+fonts, or on a cold first launch offline, every one of them fell back to
+the system sans without a word — producing exactly the screen the audit
+described, on some devices and not others, from the same build. The
+owner called this correctly on 2026-09-18: a device-inconsistency bug,
+not a style question.
+
+All three now ship inside the APK as `res/font` resources (the variable
+font per family, which is how Google Fonts publishes all three; Space
+Grotesk has no static SemiBold at all), the
+`androidx.compose.ui:ui-text-google-fonts` dependency and the
+`font_certs.xml` provider certificates are gone, and the licences are at
+`docs/licenses/`. **One caveat:** Android applies a variable font's
+weight axis from API 26, and this app's `minSdk` is 24. On Android 7.0
+and 7.1 only, every weight renders at the file's default instance —
+still the correct typeface, just one weight. Raising `minSdk` to 26
+would remove even that, and is the owner's call.
 
 ---
 
@@ -114,8 +174,8 @@ belongs in the backlog on its own merits.
 | Insights bars are all amber regardless of the category icon's colour | ✅ confirmed |
 | The unfilled bar track is very low contrast | ✅ confirmed |
 | The Group Detail donut is three shades of one orange | ⚠️ true, different cause |
-| Avatar colours are inconsistent/accidental, not a system | ❌ **a system already exists** |
-| Fix: hash profile ID into a palette of 6-8 hues | ✔️ **already built** |
+| Avatar colours are inconsistent/accidental, not a system | ❌ **a system already exists — item re-scoped** |
+| Fix: hash profile ID into a palette of 6-8 hues | ✔️ **already built — closed** |
 
 The deterministic per-person colour the audit recommends **already
 exists**: `GroupSyncEngine:453` hashes the profile ID into an eight-colour
@@ -152,7 +212,7 @@ category's own colour — confirmed, and a one-line fix. The track is
 | No Outline or Ghost component exists | ✅ confirmed — `Controls.kt` has only `ChoiceChip` and `SegmentedControl` |
 | "Invite people" and "Sign out" are the same ad-hoc outline style | ✅ confirmed |
 | "Record" has the same weight as "Settle" | ⚠️ true, and deliberate |
-| "Simplify who pays whom" is a static tagline styled like a link | ❌ **not true** |
+| "Simplify who pays whom" is a static tagline styled like a link | ❌ **not true — closed** |
 
 "Simplify who pays whom" is a real `TextButton` that opens the debt
 simplification sheet (`BalanceHeader.kt:87-94`). There is nothing to fix.
@@ -168,9 +228,9 @@ tier has to keep that alignment or it trades one defect for another.
 
 | Claim | Verdict |
 |---|---|
-| The dock renders behind an open Group Detail sheet | ❌ **not true** |
+| The dock renders behind an open Group Detail sheet | ❌ **not true — closed** |
 | Add Expense's big ₹0 may not be where you enter the amount | ⚠️ **true, sharper than stated** |
-| Home / Insights / Group Detail clip their last rows | ❌ **not true** |
+| Home / Insights / Group Detail clip their last rows | ❌ **not true — closed** |
 | Splits and Insights are missing Home's header avatar | ✅ confirmed |
 | "Sanitizer" is filed under Food | ✅ confirmed — sample data, not a rule |
 | Month browsing exists only on Insights | ✅ confirmed |
@@ -222,7 +282,34 @@ Two structural reasons it cannot currently read as glass:
   action bar use identical tint, blur radius and stroke, so nothing reads
   as nearer or further than anything else.
 
-This supports the owner's §2.2 call: re-derive it, do not polish it.
+This supported the owner's §2.2 call: re-derive it, do not polish it.
+
+**Owner decision, 2026-09-18, and what was done.** Keep Liquid Glass —
+make the blur do the visible work, and replace the all-the-way-around
+gradient stroke with a subtle top-only specular highlight, since that is
+where light would actually hit. Applied to the material itself, so the
+dock, the snackbar and every sheet action bar change together:
+
+- The rim went from 5dp to a shared `GlassBezel` of 12dp, wide enough
+  that the backdrop blur behind it is legible as a material. The dock's
+  core lost 6dp so the dock itself is only 8dp taller than before, and
+  the core shapes were re-cut concentric with the outer shapes.
+- The edge stroke is no longer a ring. It is a hairline clipped to the
+  top 22% of the shape, fading out before the shoulders, at a flat 34%
+  white — no amber, so nothing can read as rust.
+- The tint dropped from 42% charcoal + 9% amber to 30% + 7%: with a
+  visible rim the blur carries the surface, so the tint only has to keep
+  it legible over bright content rather than stand in for it.
+
+**Not a regression, for the record.** §2.2 asked when and why this
+changed. It never did: `git diff` between the two glass commits
+(`0eed37b`, `5a6f27e`) shows the only change to `Glass.kt` is a doc
+comment. The material has been byte-for-byte the same since it was
+written. What changed in `5a6f27e` is that it was put on a 5dp-bezel
+dock spanning the bottom of every screen, where the edge light became
+the dominant read. The Sept 14 screenshots in `Screenshots/` are the
+pre-Claude-Code AI Studio app, so there is no earlier good version of
+this glass to return to.
 
 ---
 
@@ -241,17 +328,33 @@ No correction needed. §4 stands as written.
 
 ## What this changes in the backlog's §6 priority order
 
-- **Item 4 (bottom safe-area padding) — drop it.** Already correct on all
-  three screens and in `SheetScaffold`.
-- **Item 12 (deterministic per-person colours) — re-scope, don't build.**
-  The hash and the palette exist. Fix `PersonAvatar`'s 0.2 alpha, spread
-  the palette's hues, and pull "You" into the palette.
-- **Item 18 (two-letter initials) — close it.** Done.
-- **Item 7 (tabular numerals) — re-scope.** Already enabled everywhere;
-  what is left is the ₹ glyph weight, plus the unguarded downloadable-
-  font dependency, which is the larger risk and is not in the backlog.
-- **Item 11 (re-verify amount entry and modal layering) — resolved here.**
-  Layering is fine; the amount field needs a real touch target and
-  autofocus.
-- **New, not in the backlog:** no bundled font fallback; a non-2xx Gemini
-  response is silently discarded across all four AI paths.
+**Closed — do not build (see the table at the top):** items 4, 7 and 18,
+plus the "Simplify who pays whom" and dock-behind-sheet findings.
+
+**Re-scoped:**
+
+- **Item 12** — fix `PersonAvatar`'s 0.2 alpha, spread the palette's
+  hues, pull "You" into the palette. The hash and the palette exist.
+- **Item 11** — resolved here. Layering is fine; what the amount field
+  needs is a real touch target and autofocus, not an investigation.
+
+**Done on this pass:**
+
+- **Item 1** (statement scanning) — fixed; root cause was a 30-second
+  read timeout shared with the one-line text parse.
+- **Item 2** (Home hero metric) — done.
+- **Item 3** (the dock's glass) — reworked, per the owner's decision
+  above.
+- **Bundled fonts** — not in the backlog; the real bug behind §3.3.
+
+**Still open, unchanged by verification:** items 5, 6, 8, 9, 10, 13, and
+the whole of §4's Insights makeover (14, 15, 16), whose claims all stood.
+
+**New, and not in the backlog:**
+
+- A non-2xx Gemini response was silently discarded across all four AI
+  paths. Fixed alongside item 1.
+- The Add Expense amount field's touch target is the width of one "0"
+  when empty, with no autofocus on open (folded into item 11).
+- `minSdk 24` costs the bundled fonts their weight axis on Android 7.x.
+  Raising it to 26 is an owner call.
