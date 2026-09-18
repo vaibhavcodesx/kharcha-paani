@@ -67,7 +67,9 @@ import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.format.MonthNames
 import com.vaibhav.kharchapaani.ui.shell.dockClearance
 import com.vaibhav.kharchapaani.ui.components.AccountAvatar
+import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.ui.components.AskSection
+import com.vaibhav.kharchapaani.ui.components.EmptyState
 import com.vaibhav.kharchapaani.domain.AiPrompt
 import com.vaibhav.kharchapaani.domain.AI_DAILY_CAP
 import com.vaibhav.kharchapaani.ui.components.CategoryRing
@@ -205,7 +207,7 @@ fun InsightsScreen(
                 onEditTransaction = onEditTransaction,
                 possessive = possessive,
                 emptyText = if (isThisMonth) {
-                    "Once you log an expense this month, you'll see which categories it went to here."
+                    "Log an expense and this fills in: where it went, day by day, and what stood out."
                 } else {
                     "Nothing was spent in ${MonthNames.short(month, today)}."
                 },
@@ -294,7 +296,11 @@ private fun CategoryBreakdown(
             modifier = Modifier.semantics { heading() }.padding(bottom = Spacing.m),
         )
         if (summaries.isEmpty()) {
-            Text(emptyText, style = MaterialTheme.typography.bodyMedium)
+            EmptyState(
+                illustration = R.drawable.kp_empty_insights,
+                title = "Nothing to break down",
+                body = emptyText,
+            )
             return@Column
         }
         val largest = summaries.maxOf { it.amount }.coerceAtLeast(0.01)

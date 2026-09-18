@@ -10,17 +10,19 @@ import java.time.LocalDate
  * Designed in `docs/ai-prompt-set-design.md` and approved 2026-09-19.
  */
 enum class AiPrompt(val label: String, val eyebrow: String) {
+    // Labels are short on purpose: three long ones stack one per chip-row on a phone and eat the
+    // card. The eyebrow above each answer carries what the question actually means.
     /** What happened. Aggregates plus the daily series, so it can say something a total cannot. */
-    MonthInReview("Month in review", "This month"),
+    MonthInReview("This month", "How the month went"),
 
     /** Diagnostic, and the one question a single month genuinely cannot answer. Needs history. */
-    Overspending("Where am I overspending?", "Against your last three months"),
+    Overspending("Overspending", "Against your last three months"),
 
     /** Advice. Kept apart from the diagnosis so a diagnosis doesn't always arrive with advice. */
-    WhatToChange("What should I change?", "Three things, with figures"),
+    WhatToChange("What to change", "Three things, with figures"),
 
     /** A group's whole life. Lives on the group sheet — asking it from Insights would need a picker. */
-    TripReview("How did this trip go?", "This group, start to finish"),
+    TripReview("Read this trip", "This group, start to finish"),
     ;
 
     /** The three that belong on Insights, in the order they appear. */

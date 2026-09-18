@@ -43,6 +43,10 @@ import com.vaibhav.kharchapaani.ui.components.ConfirmSheetContent
 import com.vaibhav.kharchapaani.ui.components.ExportContent
 import com.vaibhav.kharchapaani.ui.components.ExportScope
 import com.vaibhav.kharchapaani.ui.components.SheetHandle
+import com.vaibhav.kharchapaani.ui.components.AskSection
+import com.vaibhav.kharchapaani.ui.components.EmptyState
+import com.vaibhav.kharchapaani.domain.AiPrompt
+import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.screens.HomeScreen
 import com.vaibhav.kharchapaani.ui.screens.InsightsScreen
 import com.vaibhav.kharchapaani.ui.shell.AppTab
@@ -124,6 +128,74 @@ class ScreenRenderCapture {
                 KpSnackbarHost(snackbars, Modifier.align(Alignment.BottomCenter).padding(bottom = snackbarClearance()))
                 KpDock(currentTab = AppTab.Activity, onSelectTab = {}, onAdd = {}, modifier = Modifier.align(Alignment.BottomCenter))
             }
+        }
+    }
+
+    @Test
+    fun `the ask section, in each of its states`() = capture("ask_section") {
+        Column(
+            Modifier.fillMaxSize().background(CharcoalBg).padding(Spacing.page),
+            verticalArrangement = Arrangement.spacedBy(Spacing.l),
+        ) {
+            AskSection(
+                prompts = AiPrompt.forInsights,
+                asked = AiPrompt.Overspending,
+                answer = "Food is Rs 2,100 above your last three months, which averaged Rs 3,000. " +
+                    "Transport and Bills are both in line. The jump is mostly the 14th and 15th, " +
+                    "which came to Rs 1,624 between them.",
+                isGenerating = false,
+                failed = false,
+                hasSpending = true,
+                asksLeft = 17,
+                possessive = "your",
+                onAsk = {},
+            )
+            AskSection(
+                prompts = AiPrompt.forInsights,
+                asked = AiPrompt.MonthInReview,
+                answer = null,
+                isGenerating = true,
+                failed = false,
+                hasSpending = true,
+                asksLeft = 16,
+                possessive = "your",
+                onAsk = {},
+            )
+            AskSection(
+                prompts = AiPrompt.forInsights,
+                asked = null,
+                answer = null,
+                isGenerating = false,
+                failed = false,
+                hasSpending = false,
+                asksLeft = 20,
+                possessive = "your",
+                onAsk = {},
+            )
+        }
+    }
+
+    @Test
+    fun `empty states`() = capture("empty_states") {
+        Column(
+            Modifier.fillMaxSize().background(CharcoalBg).padding(Spacing.page),
+            verticalArrangement = Arrangement.spacedBy(Spacing.l),
+        ) {
+            EmptyState(
+                illustration = com.vaibhav.kharchapaani.R.drawable.kp_empty_friends,
+                title = "No friends yet",
+                body = "Add anyone you split with — a name and a colour is all it takes, and they don't need the app.",
+            )
+            EmptyState(
+                illustration = com.vaibhav.kharchapaani.R.drawable.kp_empty_groups,
+                title = "No groups yet",
+                body = "Make one for a trip or a flat. A shared group keeps everyone you invite in sync.",
+            )
+            EmptyState(
+                illustration = com.vaibhav.kharchapaani.R.drawable.kp_empty_insights,
+                title = "Nothing logged this month",
+                body = "Log an expense and this fills in: where it went, day by day, and what stands out.",
+            )
         }
     }
 

@@ -1,7 +1,8 @@
 package com.vaibhav.kharchapaani.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,7 +10,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +36,7 @@ import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
  *
  * Designed in `docs/ai-prompt-set-design.md`, approved 2026-09-19.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AskSection(
     prompts: List<AiPrompt>,
@@ -58,12 +59,12 @@ fun AskSection(
             .testTag("ask_section"),
     ) {
         Text("Ask about $possessive money", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
-        Row(
+        // Wrapped, not scrolled: three chips do not fit one phone-width row, and a horizontal
+        // scroller hid the third question behind an edge with nothing to say it was there.
+        FlowRow(
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = Spacing.m)
-                .horizontalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(Spacing.s),
+            modifier = Modifier.fillMaxWidth().padding(top = Spacing.m),
         ) {
             prompts.forEach { prompt ->
                 ChoiceChip(
@@ -111,6 +112,9 @@ fun AskAnswer(
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         when {
             isGenerating -> {
+                // The label goes above the shimmer, where the answer's own label will be — so the
+                // block doesn't reshuffle the moment the text arrives.
+                Text(asked?.eyebrow?.uppercase() ?: "READING", style = EyebrowText)
                 listOf(1f, 0.94f, 0.62f).forEach { width ->
                     Box(
                         Modifier
@@ -121,11 +125,6 @@ fun AskAnswer(
                             .shimmerLoading()
                     )
                 }
-                Text(
-                    text = asked?.eyebrow?.uppercase() ?: "READING",
-                    style = EyebrowText,
-                    modifier = Modifier.padding(top = Spacing.xs),
-                )
             }
 
             !hasSpending -> Text(
