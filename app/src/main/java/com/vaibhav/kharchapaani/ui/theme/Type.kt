@@ -1,50 +1,61 @@
 package com.vaibhav.kharchapaani.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.googlefonts.Font
-import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
 import com.vaibhav.kharchapaani.R
 
-// Google Font Provider Setup
-val fontProvider = GoogleFont.Provider(
-    providerAuthority = "com.google.android.gms.fonts",
-    providerPackage = "com.google.android.gms",
-    certificates = R.array.com_google_android_gms_fonts_certs
+/**
+ * The three families ship inside the APK.
+ *
+ * They used to be fetched at runtime from the Play Services font provider. When that provider is
+ * missing, blocked, or simply hasn't downloaded a family yet, Compose falls back to the system sans
+ * without saying a word — so the whole app silently rendered in Roboto on some devices and in its
+ * own type on others, and the same screenshot could not be trusted twice. A bundled font is the
+ * same font everywhere.
+ *
+ * Each is the family's variable font (one file, every weight on the `wght` axis), which is how
+ * Google Fonts publishes all three; Space Grotesk has no static SemiBold at all. Android applies
+ * the axis from API 26. On 24 and 25 the axis is ignored and every weight renders at the file's
+ * default instance — still the right typeface, just one weight. The declared [FontWeight] keeps
+ * Compose from synthesising a fake bold on top.
+ */
+@OptIn(ExperimentalTextApi::class)
+private fun weightedFont(resId: Int, weight: FontWeight) = Font(
+    resId = resId,
+    weight = weight,
+    variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight)),
 )
 
-// Primary Display & Headings Font: Outfit / Syne
-val outfitFont = GoogleFont("Outfit")
+// Primary Display & Headings Font: Outfit
 val outfitFontFamily = FontFamily(
-    Font(googleFont = outfitFont, fontProvider = fontProvider, weight = FontWeight.Normal),
-    Font(googleFont = outfitFont, fontProvider = fontProvider, weight = FontWeight.Medium),
-    Font(googleFont = outfitFont, fontProvider = fontProvider, weight = FontWeight.SemiBold),
-    Font(googleFont = outfitFont, fontProvider = fontProvider, weight = FontWeight.Bold),
-    Font(googleFont = outfitFont, fontProvider = fontProvider, weight = FontWeight.ExtraBold)
+    weightedFont(R.font.outfit_variable, FontWeight.Normal),
+    weightedFont(R.font.outfit_variable, FontWeight.Medium),
+    weightedFont(R.font.outfit_variable, FontWeight.SemiBold),
+    weightedFont(R.font.outfit_variable, FontWeight.Bold),
+    weightedFont(R.font.outfit_variable, FontWeight.ExtraBold),
 )
 val displayFontFamily = outfitFontFamily
 
-
 // Body & Labels Font: Plus Jakarta Sans
-val plusJakartaFont = GoogleFont("Plus Jakarta Sans")
 val plusJakartaFontFamily = FontFamily(
-    Font(googleFont = plusJakartaFont, fontProvider = fontProvider, weight = FontWeight.Normal),
-    Font(googleFont = plusJakartaFont, fontProvider = fontProvider, weight = FontWeight.Medium),
-    Font(googleFont = plusJakartaFont, fontProvider = fontProvider, weight = FontWeight.SemiBold),
-    Font(googleFont = plusJakartaFont, fontProvider = fontProvider, weight = FontWeight.Bold)
+    weightedFont(R.font.plus_jakarta_sans_variable, FontWeight.Normal),
+    weightedFont(R.font.plus_jakarta_sans_variable, FontWeight.Medium),
+    weightedFont(R.font.plus_jakarta_sans_variable, FontWeight.SemiBold),
+    weightedFont(R.font.plus_jakarta_sans_variable, FontWeight.Bold),
 )
 
-// Tabular Numerals & Finance Font: Space Grotesk / JetBrains Mono
-val spaceGroteskFont = GoogleFont("Space Grotesk")
+// Tabular Numerals & Finance Font: Space Grotesk
 val numericFontFamily = FontFamily(
-    Font(googleFont = spaceGroteskFont, fontProvider = fontProvider, weight = FontWeight.Normal),
-    Font(googleFont = spaceGroteskFont, fontProvider = fontProvider, weight = FontWeight.Medium),
-    Font(googleFont = spaceGroteskFont, fontProvider = fontProvider, weight = FontWeight.SemiBold),
-    Font(googleFont = spaceGroteskFont, fontProvider = fontProvider, weight = FontWeight.Bold)
+    weightedFont(R.font.space_grotesk_variable, FontWeight.Normal),
+    weightedFont(R.font.space_grotesk_variable, FontWeight.Medium),
+    weightedFont(R.font.space_grotesk_variable, FontWeight.SemiBold),
+    weightedFont(R.font.space_grotesk_variable, FontWeight.Bold),
 )
 
 /**
