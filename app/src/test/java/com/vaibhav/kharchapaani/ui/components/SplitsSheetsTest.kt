@@ -141,7 +141,7 @@ class SplitsSheetsTest {
             }
         }
 
-        composeTestRule.onNodeWithText("All settled · In your groups").assertExists()
+        composeTestRule.onNodeWithText("All settled · Shared").assertExists()
         composeTestRule.onNodeWithTag("person_balance_card_4").assert(
             androidx.compose.ui.test.SemanticsMatcher("has no delete action") { node ->
                 node.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsActions.CustomActions) { null }

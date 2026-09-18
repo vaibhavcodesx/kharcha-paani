@@ -77,7 +77,7 @@ fun FriendRow(
         owesMe -> "Owes you"
         iOwe -> "You owe them"
         else -> "All settled"
-    } + if (canDelete) "" else " · In your groups"
+    } + if (canDelete) "" else " · Shared"
 
     Box(modifier.fillMaxWidth().clip(position.shape)) {
         Row(
@@ -123,7 +123,7 @@ fun FriendRow(
                 tier = if (settling) KpButtonTier.Outline else KpButtonTier.Ghost,
                 onClickLabel = if (settling) "Settle up with ${person.name}" else "Record a payment with ${person.name}",
                 testTag = "settle_person_${person.id}",
-                modifier = Modifier.padding(start = Spacing.s).widthIn(min = 84.dp),
+                modifier = Modifier.padding(start = Spacing.s).widthIn(min = 76.dp),
             )
         }
         DropdownMenu(

@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +34,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -62,6 +64,9 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
+
+/** One day's cell in the strip under the flow chart. */
+private val DayCellWidth = 52.dp
 
 /** Big enough that a month total fits inside the hole without touching the arcs around it. */
 private val RingSize = 148.dp
@@ -276,6 +281,7 @@ fun DailyFlowChart(
     if (elapsed.isEmpty() || elapsed.all { it.amount <= 0.0 }) return
 
     val peak = remember(elapsed) { elapsed.maxOf { it.amount }.coerceAtLeast(1.0) }
+    val density = LocalDensity.current
     val grown by animateFloatAsState(1f, animationSpec = tween(700), label = "flow_grow")
     val dayFormat = remember { DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault()) }
     val pinned = selectedDay?.let { index -> elapsed.getOrNull(index) }
@@ -380,11 +386,22 @@ fun DailyFlowChart(
         }
 
         // The exact numbers, because the chart only answers "was that a lot".
+        //
+        // Scrolled to the end, not the start: a month opens on the 1st, and early in the month the
+        // first six cells are all "—" while the spending is two weeks along. The most recent day is
+        // the one you came to look at.
+        val strip = rememberScrollState()
+        LaunchedEffect(elapsed.size) { strip.scrollTo(strip.maxValue) }
+        LaunchedEffect(selectedDay) {
+            val index = selectedDay ?: return@LaunchedEffect
+            val cellPx = with(density) { (DayCellWidth + Spacing.xs).toPx() }
+            strip.animateScrollTo((index * cellPx - cellPx * 2).toInt().coerceAtLeast(0))
+        }
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = Spacing.m)
-                .horizontalScroll(rememberScrollState()),
+                .horizontalScroll(strip),
             horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
         ) {
             elapsed.forEachIndexed { index, day ->
@@ -403,7 +420,7 @@ private fun DayCell(day: DaySpend, selected: Boolean, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .width(52.dp)
+            .width(DayCellWidth)
             .clip(KpShapes.small)
             .background(if (selected) CharcoalElevated else Color.Transparent)
             .clickable(onClickLabel = "Show ${day.date.dayOfMonth}", onClick = onClick)
