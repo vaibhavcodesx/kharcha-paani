@@ -132,6 +132,7 @@ fun ConfirmBottomSheet(
     onSave: () -> Unit,
     onDismiss: () -> Unit,
     hasUnsavedInput: () -> Boolean = { false },
+    addedBy: String? = null,
     categories: List<String> = Categories.categoriesFor(type, CategoryPrefs()),
     paymentMethods: List<String> = Categories.paymentMethods(CategoryPrefs()),
 ) {
@@ -153,7 +154,7 @@ fun ConfirmBottomSheet(
             onDateChange = onDateChange, onGroupIdChange = onGroupIdChange, onIsSplitChange = onIsSplitChange,
             onSplitModeChange = onSplitModeChange, onPaidByPersonIdChange = onPaidByPersonIdChange,
             onTogglePersonShare = onTogglePersonShare, onExactAmountChange = onExactAmountChange,
-            onPercentageChange = onPercentageChange, onOpenAddFriend = onOpenAddFriend,
+            onPercentageChange = onPercentageChange, onOpenAddFriend = onOpenAddFriend, addedBy = addedBy,
             categories = categories, paymentMethods = paymentMethods,
             onSave = {
                 focusManager.clearFocus()
@@ -209,6 +210,9 @@ fun ConfirmSheetContent(
     onOpenAddFriend: () -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
+    // Set when editing a groupmate's expense this account paid for: who added it. They alone can
+    // change who paid, unsplit it or move it, so those controls aren't offered.
+    addedBy: String? = null,
     categories: List<String> = Categories.categoriesFor(type, CategoryPrefs()),
     paymentMethods: List<String> = Categories.paymentMethods(CategoryPrefs()),
 ) {
@@ -246,18 +250,25 @@ fun ConfirmSheetContent(
         // The Expense / Income control names the sheet; a "New expense" title beside it said the
         // same thing twice.
         Text(
-            text = if (isEditing) "EDITING" else "NEW ENTRY",
+            text = when {
+                addedBy != null -> "EDITING · ADDED BY ${addedBy.uppercase()}"
+                isEditing -> "EDITING"
+                else -> "NEW ENTRY"
+            },
             style = EyebrowText,
             modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() },
         )
-        SegmentedControl(
-            options = listOf("expense", "income"),
-            selected = type,
-            label = { if (it == "income") "Income" else "Expense" },
-            onSelect = onTypeChange,
-            accentFor = { if (it == "income") ChartreuseSecondary else WarmAmberPrimary },
-            modifier = Modifier.fillMaxWidth(),
-        )
+        // A groupmate's expense stays an expense: only its adder could make it something else.
+        if (addedBy == null) {
+            SegmentedControl(
+                options = listOf("expense", "income"),
+                selected = type,
+                label = { if (it == "income") "Income" else "Expense" },
+                onSelect = onTypeChange,
+                accentFor = { if (it == "income") ChartreuseSecondary else WarmAmberPrimary },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
         if (isParsing) {
             ParsingPlaceholder()
@@ -339,7 +350,7 @@ fun ConfirmSheetContent(
                 icon = KpIcons.Calendar,
                 expanded = open == Detail.When,
                 onToggle = { toggle(Detail.When) },
-                position = if (availableGroups.isEmpty()) RowPosition.Last else RowPosition.Middle,
+                position = if (availableGroups.isEmpty() && addedBy == null) RowPosition.Last else RowPosition.Middle,
             ) {
                 val now = System.currentTimeMillis()
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
@@ -355,7 +366,11 @@ fun ConfirmSheetContent(
                     )
                 }
             }
-            if (availableGroups.isNotEmpty()) {
+            if (addedBy != null) {
+                SheetRow(label = "Group", position = RowPosition.Last) {
+                    Text(group?.let { "${it.emoji} ${it.name}" } ?: "", style = MaterialTheme.typography.bodyLarge, color = OffWhiteText)
+                }
+            } else if (availableGroups.isNotEmpty()) {
                 ExpandableDetail(
                     label = "Group",
                     value = group?.let { "${it.emoji} ${it.name}" } ?: "None",
@@ -373,7 +388,16 @@ fun ConfirmSheetContent(
             }
         }
 
-        if (!isIncome) {
+        if (!isIncome && addedBy != null) {
+            SplitEditor(
+                amount = amount, splitMode = splitMode, paidByPersonId = paidByPersonId, shares = shares,
+                onSplitModeChange = onSplitModeChange, onPaidByPersonIdChange = onPaidByPersonIdChange,
+                onTogglePersonShare = onTogglePersonShare, onExactAmountChange = onExactAmountChange,
+                onPercentageChange = onPercentageChange, onOpenAddFriend = onOpenAddFriend,
+                payerLockedBy = addedBy,
+                modifier = Modifier.padding(top = Spacing.xl),
+            )
+        } else if (!isIncome) {
             Text("WHO'S IT FOR", style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s))
             SegmentedControl(
                 options = listOf(false, true),

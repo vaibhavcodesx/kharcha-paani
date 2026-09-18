@@ -342,9 +342,12 @@ class LedgerRepository(
         val isSplit = shares.isNotEmpty()
         db.withTransaction {
             val existing = db.transactionDao().getTransactionByIdDirect(tx.id) ?: return@withTransaction
-            // Decision 2: only the person who added a group expense can change it. The UI hides the
-            // action; this keeps a stray call from queueing an edit the server would refuse.
-            if (!existing.isOwnedByMe) return@withTransaction
+            val existingSplit = db.groupSyncDao().splitForTransaction(tx.id)
+            // The adder or, for a group expense, the payer (item 11). The payer can't hand the payment
+            // to someone else, unsplit it or move it out of its group; the server refuses those too.
+            // The UI hides what isn't allowed; this keeps a stray call from queueing a refused edit.
+            if (!FullTransaction(existing, existingSplit).canEdit) return@withTransaction
+            if (!existing.isOwnedByMe && (paidByPersonId != -1L || shares.isEmpty() || tx.groupId != existing.groupId)) return@withTransaction
             requireWritableGroup(existing.groupId)
             requireWritableGroup(tx.groupId)
             val syncState = syncStateFor(groupId = tx.groupId, isSplit = isSplit)
@@ -370,7 +373,8 @@ class LedgerRepository(
                     createdAt = existing.createdAt,
                     updatedAt = System.currentTimeMillis(),
                     syncState = syncState,
-                    ownerProfileId = null,
+                    // A payer's edit leaves the expense with whoever added it.
+                    ownerProfileId = existing.ownerProfileId,
                 )
             )
             // Keep the split's server id across edits so save_group_expense updates the same split.
@@ -390,7 +394,7 @@ class LedgerRepository(
     suspend fun deleteTransaction(txId: Long) = withContext(Dispatchers.IO) {
         db.withTransaction {
             val existing = db.transactionDao().getTransactionByIdDirect(txId) ?: return@withTransaction
-            if (!existing.isOwnedByMe) return@withTransaction
+            if (!FullTransaction(existing, db.groupSyncDao().splitForTransaction(txId)).canEdit) return@withTransaction
             requireWritableGroup(existing.groupId)
             if (existing.syncState != SyncState.LOCAL_ONLY) {
                 db.syncDao().insertPendingDelete(PendingRemoteDeleteEntity(existing.remoteId))

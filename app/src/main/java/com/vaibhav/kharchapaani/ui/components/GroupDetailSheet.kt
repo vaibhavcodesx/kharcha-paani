@@ -142,8 +142,8 @@ fun GroupDetailContent(
                     expense = expense,
                     detail = "${dateFormat.format(Date(expense.transaction.date))} · ${GroupExpenseCredit.line(expense, groupDetails.members)}",
                     position = RowPosition.of(index, groupDetails.transactions.size),
-                    // Decision 2: only the person who added a group expense can edit it.
-                    onClick = if (expense.transaction.isOwnedByMe) ({ onEditTransaction(expense) }) else null,
+                    // Whoever added it or paid for it can edit it (item 11).
+                    onClick = if (expense.canEdit) ({ onEditTransaction(expense) }) else null,
                 )
             }
         }

@@ -305,6 +305,7 @@ fun SplitFlowApp(
     // Confirm Bottom Sheet State
     val isConfirmSheetOpen by viewModel.isConfirmSheetOpen.collectAsState()
     val editingTxId by viewModel.editingTransactionId.collectAsState()
+    val editingAddedBy by viewModel.editingAddedBy.collectAsState()
     val txType by viewModel.type.collectAsState()
     val txAmount by viewModel.amount.collectAsState()
     val txMerchant by viewModel.merchant.collectAsState()
@@ -528,6 +529,7 @@ fun SplitFlowApp(
         paidByPersonId = paidByPersonId,
         shares = shares,
         isEditing = editingTxId != null,
+        addedBy = editingAddedBy,
         onTypeChange = { viewModel.updateType(it) },
         onAmountChange = { viewModel.updateAmount(it) },
         onMerchantChange = { viewModel.updateMerchant(it) },

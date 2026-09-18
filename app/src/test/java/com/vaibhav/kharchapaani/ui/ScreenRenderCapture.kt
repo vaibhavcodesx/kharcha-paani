@@ -191,6 +191,25 @@ class ScreenRenderCapture {
         }
     }
 
+    @Test
+    fun `editing a groupmate's expense you paid for`() = capture("confirm_sheet_payer_edit") {
+        Column(Modifier.fillMaxSize().background(CharcoalSurface), horizontalAlignment = Alignment.CenterHorizontally) {
+            SheetHandle()
+            ConfirmSheetContent(
+                addedBy = "Priya",
+                isParsing = false, isEditing = true, type = "expense", amount = "370", merchant = "McDonald's",
+                category = "Food", paymentMethod = "GPay", note = "", date = at(today, 13, 20), groupId = 7,
+                availableGroups = listOf(GroupEntity(id = 7, name = "Goa trip", emoji = "🏖️")), isSplit = true,
+                splitMode = SplitMode.EQUAL, paidByPersonId = -1L,
+                shares = listOf(ShareInput(-1, "You", 123.34), ShareInput(2, "Rohan", 123.33), ShareInput(3, "Meera", 123.33, isSelected = true)),
+                onTypeChange = {}, onAmountChange = {}, onMerchantChange = {}, onCategoryChange = {}, onPaymentMethodChange = {},
+                onNoteChange = {}, onDateChange = {}, onGroupIdChange = {}, onIsSplitChange = {}, onSplitModeChange = {},
+                onPaidByPersonIdChange = {}, onTogglePersonShare = {}, onExactAmountChange = { _, _ -> },
+                onPercentageChange = { _, _ -> }, onOpenAddFriend = {}, onSave = {},
+            )
+        }
+    }
+
     private val rohan = PersonEntity(id = 2, name = "Rohan Mehta", avatarColor = "#70C1FF", profileId = "r")
     private val meera = PersonEntity(id = 3, name = "Meera", avatarColor = "#FFB3BA")
     private val arjun = PersonEntity(id = 4, name = "Arjun", avatarColor = "#B5EAD7")

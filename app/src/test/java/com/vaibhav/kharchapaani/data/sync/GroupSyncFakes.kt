@@ -73,7 +73,9 @@ class FakeGroupRemote(private val self: String) : GroupRemote {
         val tx = expense.transaction
         requireActiveMember(tx.groupId)
         val existing = expenses[tx.id]
-        if (existing != null && existing.ownerId != self) throw RowsRejectedException(403, "row-level security")
+        // The adder, or the payer keeping themselves as payer (migration payer_can_edit_group_expenses).
+        val payerEdit = existing?.split?.paidBy == self && expense.split.paidBy == self
+        if (existing != null && existing.ownerId != self && !payerEdit) throw RowsRejectedException(403, "row-level security")
         val shareTotal = expense.shares.fold(BigDecimal.ZERO) { acc, share -> acc + share.shareAmount }
         if (shareTotal.compareTo(tx.amount) != 0 || expense.split.totalAmount.compareTo(tx.amount) != 0) {
             throw RowsRejectedException(400, "shares ($shareTotal) must equal the amount (${tx.amount})")
