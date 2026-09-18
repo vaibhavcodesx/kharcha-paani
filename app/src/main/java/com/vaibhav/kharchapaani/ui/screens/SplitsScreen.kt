@@ -229,9 +229,10 @@ private fun BalanceSummary(
     Column(modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
             val style = pairedFigureStyle(owedToMe, iOwe)
-            SummaryFigure("Owed to you", owedToMe, MoneyIn, style, Modifier.weight(1f))
+            // Zero is not a direction: a ₹0 debt in the debt colour reads as a debt at a glance.
+            SummaryFigure("Owed to you", owedToMe, if (owedToMe >= 0.005) MoneyIn else MutedWarmGray, style, Modifier.weight(1f))
             Box(Modifier.padding(horizontal = Spacing.xl).width(1.dp).fillMaxHeight().background(CharcoalBorder))
-            SummaryFigure("You owe", iOwe, MoneyOut, style, Modifier.weight(1f))
+            SummaryFigure("You owe", iOwe, if (iOwe >= 0.005) MoneyOut else MutedWarmGray, style, Modifier.weight(1f))
         }
         Row(Modifier.padding(top = Spacing.s).offset(x = -Spacing.m)) {
             if (owedToMe >= 0.005 || iOwe >= 0.005) {

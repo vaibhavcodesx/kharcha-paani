@@ -104,10 +104,6 @@ class MainViewModel(
 
     private val ledgerRepo = LedgerRepository(db, onLocalTransactionChange = ::requestSync, selfProfileId = userId)
 
-    init {
-        publishUpiIfMissing()
-    }
-
     private val authRepo = AuthRepository(
         supabase = SupabaseClientProvider.get(application),
         googleWebClientId = BuildConfig.GOOGLE_WEB_CLIENT_ID,
@@ -252,6 +248,17 @@ class MainViewModel(
                 else -> "Saved on this phone. It'll reach your groups next time you're online."
             }
         }
+    }
+
+    /**
+     * Runs once the whole view model is built.
+     *
+     * Deliberately at the bottom of the class, not the top: Kotlin runs initialisers and `init`
+     * blocks in declaration order, so an `init` above `settings` gets a null `settings` and takes
+     * the app down on launch. It did, once.
+     */
+    init {
+        publishUpiIfMissing()
     }
 
     /** Sends this account's UPI ID up if the profile doesn't have it yet (first run after update). */
