@@ -55,6 +55,8 @@ object CsvExport {
         groups: List<GroupEntity>,
         range: ExportRange,
         zone: ZoneId,
+        /** A group's name, when the export is one group's entries. */
+        fileNameSuffix: String? = null,
     ): CsvFile {
         val names = people.associate { it.id to it.name }
         val groupNames = groups.associate { it.id to it.name }
@@ -87,14 +89,19 @@ object CsvExport {
             append(line(header))
             rows.forEach { append(line(it)) }
         }
-        return CsvFile(fileName(range), content, rows.size)
+        return CsvFile(fileName(range, fileNameSuffix), content, rows.size)
     }
 
-    fun fileName(range: ExportRange): String = "KharchaPaani_" + when (range) {
-        is ExportRange.Month -> range.month.toString()
-        is ExportRange.Dates -> "${range.from}_to_${range.to}"
-        ExportRange.Everything -> "all"
-    } + ".csv"
+    fun fileName(range: ExportRange, suffix: String? = null): String {
+        val what = when (range) {
+            is ExportRange.Month -> range.month.toString()
+            is ExportRange.Dates -> "${range.from}_to_${range.to}"
+            ExportRange.Everything -> "all"
+        }
+        // A group name can hold anything; keep the file name to plain characters.
+        val group = suffix?.replace(Regex("[^A-Za-z0-9]+"), "_")?.trim('_')?.takeIf { it.isNotEmpty() }
+        return listOfNotNull("KharchaPaani", group, what).joinToString("_") + ".csv"
+    }
 
     private fun line(fields: List<String>) = fields.joinToString(",", postfix = "\r\n") { quote(it) }
 
