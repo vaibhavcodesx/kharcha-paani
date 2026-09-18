@@ -67,6 +67,9 @@ import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.format.MonthNames
 import com.vaibhav.kharchapaani.ui.shell.dockClearance
 import com.vaibhav.kharchapaani.ui.components.AccountAvatar
+import com.vaibhav.kharchapaani.ui.components.CategoryRing
+import com.vaibhav.kharchapaani.ui.components.DailyFlowChart
+import com.vaibhav.kharchapaani.domain.DailySpend
 import com.vaibhav.kharchapaani.ui.components.KpButton
 import com.vaibhav.kharchapaani.ui.components.KpButtonTier
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
@@ -123,6 +126,10 @@ fun InsightsScreen(
     val isThisMonth = month == YearMonth.from(today)
     // A category opened in one month closes when the month changes.
     var selected by rememberSaveable(month) { mutableStateOf<String?>(null) }
+    var selectedDay by rememberSaveable(month) { mutableStateOf<Int?>(null) }
+    val dailySpend = remember(transactions, month, today) {
+        DailySpend.of(transactions, month, today, ZoneId.systemDefault())
+    }
     val selectedEntries = remember(transactions, selected, month) {
         selected?.let { MonthInsights.categoryEntries(transactions, it, month, ZoneId.systemDefault()) }.orEmpty()
     }
@@ -159,6 +166,26 @@ fun InsightsScreen(
                 analytics = analytics,
                 emptyText = if (isThisMonth) "Nothing logged this month yet." else "Nothing was logged in ${MonthNames.short(month, today)}.",
                 modifier = Modifier.padding(top = Spacing.xl),
+            )
+        }
+        item(key = "ring") {
+            // Insights had no chart at all — only flat bars, while the app's one donut sat on the
+            // group sheet. The ring and the list below share a selection, so they are two views of
+            // one state rather than two controls.
+            CategoryRing(
+                categories = analytics.categorySummaries,
+                total = analytics.totalExpense,
+                selected = selected,
+                onSelect = { selected = it },
+                modifier = Modifier.padding(top = Spacing.xxl),
+            )
+        }
+        item(key = "flow") {
+            DailyFlowChart(
+                days = dailySpend,
+                selectedDay = selectedDay,
+                onSelectDay = { selectedDay = it },
+                modifier = Modifier.padding(top = Spacing.l),
             )
         }
         item(key = "categories") {

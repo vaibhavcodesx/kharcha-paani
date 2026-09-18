@@ -106,6 +106,40 @@ class MoneyDirectionColourTest {
         assertTrue(contrast(BarTrack, CharcoalCard) >= 1.5)
     }
 
+    @Test
+    fun `no two categories are the same colour on the ring`() {
+        // Insights now draws every category as an arc in one circle, so "three shades of blue"
+        // stops being a nicety. Transport, Entertainment and Investment all sat within 18° of each
+        // other, two of them at the same hue exactly.
+        val palette = listOf(
+            "Food" to CatFood, "Transport" to CatTransport, "Shopping" to CatShopping,
+            "Bills" to CatBills, "Entertainment" to CatEntertainment, "Health" to CatHealth,
+            "Rent" to CatRent, "Team Payment" to CatTeamPayment, "Groceries" to CatGroceries,
+            "Investment" to CatInvestment, "Income" to CatIncome,
+        )
+        for (i in palette.indices) {
+            for (j in i + 1 until palette.size) {
+                val (nameA, a) = palette[i]
+                val (nameB, b) = palette[j]
+                val gap = hueGap(hue(a), hue(b))
+                assertTrue("$nameA and $nameB are only ${gap.toInt()}° apart", gap >= 12f)
+            }
+        }
+    }
+
+    @Test
+    fun `the fallback category has no hue of its own to clash with`() {
+        // "Other" covers anything unrecognised, including a groupmate's own category name, so it
+        // deliberately sits outside the wheel rather than borrowing a real category's colour.
+        assertTrue(saturation(CatOther) < 0.1f)
+    }
+
+    private fun saturation(c: Color): Float {
+        val maxC = maxOf(c.red, c.green, c.blue)
+        val minC = minOf(c.red, c.green, c.blue)
+        return if (maxC == 0f) 0f else (maxC - minC) / maxC
+    }
+
     private fun parseHex(hex: String): Color {
         val v = hex.removePrefix("#").toLong(16)
         return Color(0xFF000000L or v)
