@@ -16,6 +16,8 @@ data class RemoteProfile(
     @SerialName("display_name") val displayName: String? = null,
     @SerialName("avatar_url") val avatarUrl: String? = null,
     @SerialName("avatar_emoji") val avatarEmoji: String? = null,
+    /** Where to pay them, for settle-up. Format-checked by the server and re-checked before use. */
+    @SerialName("upi_id") val upiId: String? = null,
 )
 
 @Serializable

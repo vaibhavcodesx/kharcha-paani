@@ -5,13 +5,16 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.vaibhav.kharchapaani.domain.AiUsage
 import com.vaibhav.kharchapaani.domain.CategoryPrefs
 import com.vaibhav.kharchapaani.domain.UpiPayee
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.time.LocalDate
 
 private val Context.appSettings: DataStore<Preferences> by preferencesDataStore(name = "app_settings")
 
@@ -58,8 +61,32 @@ class AppSettings(context: Context) {
         }
     }
 
+    /**
+     * How many AI answers have been generated today (backlog item 16).
+     *
+     * A backstop against a loop or a stuck retry rather than a budget — the key is on a free tier
+     * for this volume. Stored as the day plus a count, so it resets by itself when the date moves
+     * on and needs no scheduled clean-up.
+     */
+    val aiUsage: Flow<AiUsage> = store.data.map { prefs ->
+        val day = prefs[AI_USAGE_DAY]?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        if (day == null) AiUsage.none else AiUsage(day, prefs[AI_USAGE_COUNT] ?: 0)
+    }
+
+    /** Records one answer against [today], rolling the count over if the day has changed. */
+    suspend fun recordAiAsk(today: LocalDate) {
+        store.edit { prefs ->
+            val day = prefs[AI_USAGE_DAY]?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+            val next = (if (day == null) AiUsage.none else AiUsage(day, prefs[AI_USAGE_COUNT] ?: 0)).afterAsking(today)
+            prefs[AI_USAGE_DAY] = next.day.toString()
+            prefs[AI_USAGE_COUNT] = next.used
+        }
+    }
+
     private companion object {
         val json = Json { ignoreUnknownKeys = true }
+        val AI_USAGE_DAY = stringPreferencesKey("ai_usage_day")
+        val AI_USAGE_COUNT = intPreferencesKey("ai_usage_count")
         fun categoryPrefsKey(userId: String) = stringPreferencesKey("category_prefs_$userId")
         val ASK_BEFORE_DISCARDING = booleanPreferencesKey("ask_before_discarding")
         fun upiIdKey(userId: String) = stringPreferencesKey("upi_id_$userId")

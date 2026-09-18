@@ -72,7 +72,7 @@ fun AddFriendContent(onAdd: (name: String, colorHex: String) -> Unit, modifier: 
     ) {
         SheetTitle(
             title = "Add a friend",
-            supporting = "They don't need the app. To split with them across phones, share a group with them later.",
+            supporting = "A name and a colour is all it takes — they don't need the app. You can split with them, log IOUs and settle up exactly as with anyone else; it stays your record. Share a group later if you want them to see it too.",
         )
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
             PersonAvatar(name = name.ifBlank { "?" }, colorHex = colour, size = 56.dp)

@@ -339,6 +339,11 @@ fun SplitFlowApp(
 
     // AI Summary
     val aiSummary by viewModel.aiSummary.collectAsState()
+    val askedPrompt by viewModel.askedPrompt.collectAsState()
+    val aiAsksLeft by viewModel.aiAsksLeft.collectAsState()
+    val tripReview by viewModel.tripReview.collectAsState()
+    val isReviewingTrip by viewModel.isReviewingTrip.collectAsState()
+    val tripReviewFailed by viewModel.tripReviewFailed.collectAsState()
     val isGeneratingSummary by viewModel.isGeneratingSummary.collectAsState()
 
     // Statement Import State
@@ -463,7 +468,10 @@ fun SplitFlowApp(
                         people = people,
                         aiSummary = aiSummary,
                         isGeneratingSummary = isGeneratingSummary,
-                        onGenerateAiSummary = { viewModel.generateAiFinancialSummary() },
+                        onAsk = { viewModel.askInsights(it) },
+                        askedPrompt = askedPrompt,
+                        aiAsksLeft = aiAsksLeft,
+                        aiAvailable = viewModel.aiAvailable,
                         onExport = { viewModel.openExport() },
                         onEditTransaction = { viewModel.openEditTransaction(it) },
                         aiSummaryFailed = aiSummaryFailed,
@@ -665,6 +673,12 @@ fun SplitFlowApp(
             }
         },
         onExportGroup = { groupId -> viewModel.exportGroupCsv(context, groupId) },
+        onAskTripReview = { groupId -> viewModel.askTripReview(groupId) },
+        tripReview = tripReview,
+        isReviewingTrip = isReviewingTrip,
+        tripReviewFailed = tripReviewFailed,
+        aiAsksLeft = aiAsksLeft,
+        aiAvailable = viewModel.aiAvailable,
         onDismiss = {
             sharedGroups.dismissInvite()
             viewModel.dismissGroupDetail()

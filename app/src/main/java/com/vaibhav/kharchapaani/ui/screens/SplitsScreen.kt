@@ -47,7 +47,9 @@ import com.vaibhav.kharchapaani.ui.components.pairedFigureStyle
 import com.vaibhav.kharchapaani.ui.components.SegmentedControl
 import com.vaibhav.kharchapaani.ui.components.TripCard
 import com.vaibhav.kharchapaani.ui.shell.dockClearance
+import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.ui.components.AccountAvatar
+import com.vaibhav.kharchapaani.ui.components.EmptyState
 import com.vaibhav.kharchapaani.ui.components.KpButton
 import com.vaibhav.kharchapaani.ui.components.KpButtonTier
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
@@ -154,9 +156,10 @@ fun SplitsScreen(
                 }
                 if (friends.isEmpty()) {
                     item(key = "friends_empty") {
-                        EmptySection(
+                        EmptyState(
+                            illustration = R.drawable.kp_empty_friends,
                             title = "No friends yet",
-                            body = "Add the people you split with. They don't need the app; to split across phones, share a group with them.",
+                            body = "Add anyone you split with — a name and a colour is all it takes, and they don't need the app. Splits, IOUs and settling up all work the same. Share a group only when you want them to see it on their own phone.",
                         )
                     }
                 }
@@ -191,7 +194,8 @@ fun SplitsScreen(
                 }
                 if (groups.isEmpty()) {
                     item(key = "groups_empty") {
-                        EmptySection(
+                        EmptyState(
+                            illustration = R.drawable.kp_empty_groups,
                             title = "No groups yet",
                             body = "Make one for a trip or a flat. A shared group keeps everyone you invite in sync; join one with the code a friend sends.",
                         )
@@ -268,17 +272,3 @@ private fun SectionActions(actions: @Composable () -> Unit) {
     }
 }
 
-@Composable
-private fun EmptySection(title: String, body: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(KpShapes.large)
-            .background(CharcoalCard)
-            .padding(Spacing.xl),
-    ) {
-        Text(title, style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(Spacing.xs))
-        Text(body, style = MaterialTheme.typography.bodyMedium)
-    }
-}

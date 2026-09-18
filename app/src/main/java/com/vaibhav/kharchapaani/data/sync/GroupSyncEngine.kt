@@ -12,6 +12,7 @@ import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncMetaEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
+import com.vaibhav.kharchapaani.domain.UpiLink
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import java.util.UUID
@@ -454,13 +455,18 @@ class GroupSyncEngine(
                     profileId = profileId,
                     avatarUrl = profile?.avatarUrl,
                     avatarEmoji = profile?.avatarEmoji,
+                    // Re-validated rather than stored as sent: this string was typed on someone
+                    // else's phone and ends up inside a upi://pay link.
+                    upiId = profile?.upiId?.let(UpiLink::cleanId),
                 )
             )
         }
         // A hidden profile (null) keeps the name we already know rather than blanking it.
-        val changed = name != existing.name || profile?.avatarUrl != existing.avatarUrl || profile?.avatarEmoji != existing.avatarEmoji
+        val upiId = profile?.upiId?.let(UpiLink::cleanId)
+        val changed = name != existing.name || profile?.avatarUrl != existing.avatarUrl ||
+            profile?.avatarEmoji != existing.avatarEmoji || upiId != existing.upiId
         if (name != null && changed) {
-            dao.updatePersonProfile(existing.id, name, profile?.avatarUrl, profile?.avatarEmoji)
+            dao.updatePersonProfile(existing.id, name, profile?.avatarUrl, profile?.avatarEmoji, upiId)
         }
         return existing.id
     }

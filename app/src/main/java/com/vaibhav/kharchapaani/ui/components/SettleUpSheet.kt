@@ -11,7 +11,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.platform.testTag
 import com.vaibhav.kharchapaani.domain.UpiPayee
+import com.vaibhav.kharchapaani.domain.UpiLink
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.groups.RecordInGroupSection
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
@@ -103,12 +107,27 @@ fun SettleUpContent(
         SheetRow(label = "Note") {
             SheetTextInput(value = note, onValueChange = { note = it }, placeholder = "Optional, like “Goa hotel”")
         }
-        if (theyPaid && upiPayee != null && value > 0) {
+        // Whose QR to show depends on which way the money is going, and this only ever showed one
+        // of the two. "They paid me" showed mine, which is right — but "I paid them" showed nothing
+        // at all, so the person who actually had to send money had no idea where to send it. Their
+        // handle now arrives with their profile.
+        val theirPayee = remember(person) {
+            person.upiId?.let(UpiLink::cleanId)?.let { UpiPayee(it, person.name) }
+        }
+        val payingThem = !theyPaid
+        val payee = if (payingThem) theirPayee else upiPayee
+        if (payee != null && value > 0) {
             UpiPaymentCard(
-                payee = upiPayee,
+                payee = payee,
                 amount = value,
                 note = note.ifBlank { "Kharcha Paani settle up" },
                 modifier = Modifier.padding(top = Spacing.m),
+            )
+        } else if (payingThem && value > 0) {
+            Text(
+                text = "${firstName(person.name)} hasn't added a UPI ID yet, so there's nothing to scan. Record the payment here once you've sent it.",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = Spacing.m).testTag("no_payee_upi"),
             )
         }
         RecordInGroupSection(

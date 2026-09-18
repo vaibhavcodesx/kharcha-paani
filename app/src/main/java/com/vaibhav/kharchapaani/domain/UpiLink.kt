@@ -9,11 +9,29 @@ import java.math.RoundingMode
  */
 object UpiLink {
 
-    /** `name@bank`: the handle is 2-256 of letters, digits, dot, dash, underscore; the bank starts with a letter. */
-    private val UPI_ID = Regex("^[A-Za-z0-9._-]{2,256}@[A-Za-z][A-Za-z0-9.-]{1,64}$")
+    /**
+     * `name@bank`: the handle is 2-64 of letters, digits, dot, dash, underscore; the bank starts
+     * with a letter. 64 is well past any real VPA (NPCI handles run to about 50) and is the same
+     * bound the server's `profiles_upi_id_format` check constraint uses, so exactly one rule
+     * governs what can be stored and what can be built into a link.
+     *
+     * What it excludes is the point: `&`, `=`, `?` and whitespace can never appear, so a handle
+     * that arrives from a groupmate cannot smuggle a second parameter into a upi://pay link.
+     */
+    private val UPI_ID = Regex("^[A-Za-z0-9._-]{2,64}@[A-Za-z][A-Za-z0-9.-]{1,64}$")
 
     /** The ID as it should be saved (trimmed; UPI IDs aren't case-sensitive, so lowercased), or null. */
     fun cleanId(raw: String): String? = raw.trim().lowercase().takeIf { UPI_ID.matches(it) }
+
+    /**
+     * A payment link, or null when [upiId] is not a UPI ID.
+     *
+     * Returns null rather than building something from an unvalidated string, because this is also
+     * how a *groupmate's* handle reaches a link — and that string was typed on someone else's
+     * phone. [build] stays for a handle already known good.
+     */
+    fun buildOrNull(upiId: String, payeeName: String, amount: Double? = null, note: String? = null): String? =
+        cleanId(upiId)?.let { build(it, payeeName, amount, note) }
 
     fun build(upiId: String, payeeName: String, amount: Double? = null, note: String? = null): String {
         val params = buildList {

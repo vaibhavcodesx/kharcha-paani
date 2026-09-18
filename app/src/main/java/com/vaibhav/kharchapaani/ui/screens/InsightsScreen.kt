@@ -67,6 +67,11 @@ import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.format.MonthNames
 import com.vaibhav.kharchapaani.ui.shell.dockClearance
 import com.vaibhav.kharchapaani.ui.components.AccountAvatar
+import com.vaibhav.kharchapaani.R
+import com.vaibhav.kharchapaani.ui.components.AskSection
+import com.vaibhav.kharchapaani.ui.components.EmptyState
+import com.vaibhav.kharchapaani.domain.AiPrompt
+import com.vaibhav.kharchapaani.domain.AI_DAILY_CAP
 import com.vaibhav.kharchapaani.ui.components.CategoryRing
 import com.vaibhav.kharchapaani.ui.components.DailyFlowChart
 import com.vaibhav.kharchapaani.domain.DailySpend
@@ -113,7 +118,12 @@ fun InsightsScreen(
     people: List<PersonEntity> = emptyList(),
     aiSummary: String?,
     isGeneratingSummary: Boolean,
-    onGenerateAiSummary: () -> Unit,
+    onAsk: (AiPrompt) -> Unit,
+    askedPrompt: AiPrompt? = null,
+    aiAsksLeft: Int = AI_DAILY_CAP,
+    // No key in this build means the section isn't drawn at all: a button that can never work is
+    // worse than no button.
+    aiAvailable: Boolean = true,
     onExport: () -> Unit,
     onEditTransaction: ((FullTransaction) -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -197,7 +207,7 @@ fun InsightsScreen(
                 onEditTransaction = onEditTransaction,
                 possessive = possessive,
                 emptyText = if (isThisMonth) {
-                    "Once you log an expense this month, you'll see which categories it went to here."
+                    "Log an expense and this fills in: where it went, day by day, and what stood out."
                 } else {
                     "Nothing was spent in ${MonthNames.short(month, today)}."
                 },
@@ -212,16 +222,21 @@ fun InsightsScreen(
                 modifier = Modifier.padding(top = Spacing.xxl),
             )
         }
-        item(key = "review") {
-            MonthReview(
-                summary = aiSummary,
-                isGenerating = isGeneratingSummary,
-                failed = aiSummaryFailed,
-                hasSpending = analytics.totalExpense > 0,
-                possessive = possessive,
-                onGenerate = onGenerateAiSummary,
-                modifier = Modifier.padding(top = Spacing.xxl),
-            )
+        if (aiAvailable) {
+            item(key = "ask") {
+                AskSection(
+                    prompts = AiPrompt.forInsights,
+                    asked = askedPrompt,
+                    answer = aiSummary,
+                    isGenerating = isGeneratingSummary,
+                    failed = aiSummaryFailed,
+                    hasSpending = analytics.totalExpense > 0,
+                    asksLeft = aiAsksLeft,
+                    possessive = possessive,
+                    onAsk = onAsk,
+                    modifier = Modifier.padding(top = Spacing.xxl),
+                )
+            }
         }
     }
 }
@@ -281,7 +296,11 @@ private fun CategoryBreakdown(
             modifier = Modifier.semantics { heading() }.padding(bottom = Spacing.m),
         )
         if (summaries.isEmpty()) {
-            Text(emptyText, style = MaterialTheme.typography.bodyMedium)
+            EmptyState(
+                illustration = R.drawable.kp_empty_insights,
+                title = "Nothing to break down",
+                body = emptyText,
+            )
             return@Column
         }
         val largest = summaries.maxOf { it.amount }.coerceAtLeast(0.01)
@@ -434,62 +453,3 @@ private fun StatTile(label: String, value: String, modifier: Modifier = Modifier
     }
 }
 
-/** An on-demand read of the month from the AI, only once there's something to read. */
-@Composable
-private fun MonthReview(
-    summary: String?,
-    isGenerating: Boolean,
-    failed: Boolean,
-    hasSpending: Boolean,
-    possessive: String,
-    onGenerate: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier
-            .fillMaxWidth()
-            .clip(KpShapes.large)
-            .background(CharcoalCard)
-            .padding(Spacing.l)
-            .testTag("ai_summary_card"),
-    ) {
-        Text("Month in review", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
-        Spacer(Modifier.height(Spacing.s))
-        when {
-            isGenerating -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                listOf(1f, 0.92f, 0.6f).forEach { width ->
-                    Box(Modifier.fillMaxWidth(width).height(14.dp).clip(KpShapes.small).background(CharcoalElevated).shimmerLoading())
-                }
-                Text("Reading $possessive entries…", style = MaterialTheme.typography.bodyMedium)
-            }
-            summary != null -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                Text(summary, style = MaterialTheme.typography.bodyLarge)
-                if (failed) Text("Couldn't refresh it just now. Check your connection and try again.", style = MaterialTheme.typography.bodyMedium, color = WarmAmberLight)
-            }
-            failed -> Text(
-                "Couldn't get a summary just now. Check your connection and try again.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = WarmAmberLight,
-            )
-            hasSpending -> Text(
-                "Get a short read on where $possessive money went and what stands out.",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            else -> Text("Log a few expenses first; there's nothing to review yet.", style = MaterialTheme.typography.bodyMedium)
-        }
-        if (hasSpending && !isGenerating) {
-            TextButton(
-                onClick = onGenerate,
-                modifier = Modifier.padding(top = Spacing.xs).testTag("generate_ai_summary_button"),
-            ) {
-                Icon(com.vaibhav.kharchapaani.ui.icons.KpIcons.Insights, contentDescription = null, tint = WarmAmberLight, modifier = Modifier.size(18.dp))
-                Text(
-                    if (summary == null) "Get a summary" else "Refresh summary",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = WarmAmberLight,
-                    modifier = Modifier.padding(start = Spacing.s),
-                )
-            }
-        }
-    }
-}

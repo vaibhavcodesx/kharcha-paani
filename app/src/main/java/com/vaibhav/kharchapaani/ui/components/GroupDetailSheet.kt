@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import kotlin.math.roundToInt
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import com.vaibhav.kharchapaani.ui.theme.BarTrack
+import com.vaibhav.kharchapaani.domain.AI_DAILY_CAP
+import com.vaibhav.kharchapaani.domain.AiPrompt
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
@@ -81,6 +83,12 @@ fun GroupDetailSheet(
     sharedGroupPanel: @Composable (GroupWithDetails) -> Unit = {},
     onSettleUpWith: (personId: Long) -> Unit = {},
     onExportGroup: (groupId: Long) -> Unit = {},
+    onAskTripReview: (groupId: Long) -> Unit = {},
+    tripReview: String? = null,
+    isReviewingTrip: Boolean = false,
+    tripReviewFailed: Boolean = false,
+    aiAsksLeft: Int = AI_DAILY_CAP,
+    aiAvailable: Boolean = true,
 ) {
     if (groupDetails == null) return
     KpModalSheet(onDismiss = onDismiss) {
@@ -102,6 +110,12 @@ fun GroupDetailContent(
     modifier: Modifier = Modifier,
     onSettleUpWith: (personId: Long) -> Unit = {},
     onExportGroup: (groupId: Long) -> Unit = {},
+    onAskTripReview: (groupId: Long) -> Unit = {},
+    tripReview: String? = null,
+    isReviewingTrip: Boolean = false,
+    tripReviewFailed: Boolean = false,
+    aiAsksLeft: Int = AI_DAILY_CAP,
+    aiAvailable: Boolean = true,
 ) {
     val group = groupDetails.group
     val dateFormat = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
@@ -184,6 +198,42 @@ fun GroupDetailContent(
         if (shares.size > 1) {
             SectionTitle("Who spent what", top = Spacing.xxl)
             MemberShareDonut(shares, Modifier.padding(top = Spacing.s))
+        }
+
+        // The trip read lives here rather than on Insights: it is about a group, and asking it from
+        // Insights would need a group picker for no reason (owner decision, 2026-09-19).
+        if (aiAvailable && groupDetails.transactionsCount > 0) {
+            SectionTitle("How did this trip go?", top = Spacing.xxl)
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = Spacing.s)
+                    .clip(KpShapes.large)
+                    .background(CharcoalCard)
+                    .padding(Spacing.l)
+                    .testTag("trip_review_card"),
+            ) {
+                AskAnswer(
+                    asked = AiPrompt.TripReview,
+                    answer = tripReview,
+                    isGenerating = isReviewingTrip,
+                    failed = tripReviewFailed,
+                    hasSpending = true,
+                    asksLeft = aiAsksLeft,
+                    possessive = "this group's",
+                    onRetry = { onAskTripReview(group.id) },
+                )
+                if (tripReview == null && !isReviewingTrip) {
+                    KpButton(
+                        label = "Read this trip",
+                        onClick = { onAskTripReview(group.id) },
+                        tier = KpButtonTier.Ghost,
+                        enabled = aiAsksLeft > 0,
+                        testTag = "trip_review_button",
+                        modifier = Modifier.padding(top = Spacing.m),
+                    )
+                }
+            }
         }
 
         if (debts.isNotEmpty()) {
