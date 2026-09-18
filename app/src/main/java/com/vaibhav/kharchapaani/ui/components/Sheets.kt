@@ -58,6 +58,13 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.ui.theme.BrandGradient
@@ -284,9 +291,34 @@ fun BigAmountField(
     onAmountChange: (String) -> Unit,
     accent: Color,
     modifier: Modifier = Modifier,
+    autoFocus: Boolean = false,
     testTag: String? = null,
 ) {
-    Row(horizontalArrangement = Arrangement.Center, modifier = modifier.fillMaxWidth().padding(vertical = Spacing.xl)) {
+    val focusRequester = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    // The amount is the first thing anyone does in this sheet, so the sheet opens ready for it.
+    // Without this the big "0" read as a label rather than a field, and nothing was focused.
+    LaunchedEffect(autoFocus) {
+        if (autoFocus) {
+            focusRequester.requestFocus()
+            keyboard?.show()
+        }
+    }
+    fun focusAmount() {
+        focusRequester.requestFocus()
+        keyboard?.show()
+    }
+    Row(
+        horizontalArrangement = Arrangement.Center,
+        modifier = modifier
+            .fillMaxWidth()
+            // The whole band is the field. It used to be IntrinsicSize.Min with a 2dp floor, so on
+            // an empty sheet the only thing you could tap was the width of the "0" itself.
+            .clip(KpShapes.large)
+            .clickable(onClickLabel = "Enter an amount", onClick = ::focusAmount)
+            .testTag("amount_field_band")
+            .padding(vertical = Spacing.xl),
+    ) {
         // A smaller symbol on the number's baseline, so the amount leads rather than the "₹".
         Text("₹", style = MoneyText.large, color = accent, modifier = Modifier.alignByBaseline())
         Box(Modifier.padding(start = Spacing.xs).alignByBaseline()) {
@@ -302,6 +334,7 @@ fun BigAmountField(
                     // As wide as what's typed, so "₹" and the number stay centred together.
                     .width(IntrinsicSize.Min)
                     .widthIn(min = 2.dp)
+                    .focusRequester(focusRequester)
                     .semantics { contentDescription = "Amount in rupees" }
                     .then(if (testTag != null) Modifier.testTag(testTag) else Modifier),
             )
@@ -315,6 +348,8 @@ fun SheetRow(
     label: String,
     modifier: Modifier = Modifier,
     position: RowPosition = RowPosition.Single,
+    icon: ImageVector? = null,
+    iconTint: Color = MutedWarmGray,
     content: @Composable RowScope.() -> Unit,
 ) {
     Row(
@@ -327,6 +362,7 @@ fun SheetRow(
             .padding(horizontal = Spacing.l, vertical = Spacing.s),
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(SheetLabelWidth))
+        if (icon != null) Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.padding(end = Spacing.s).size(18.dp))
         content()
     }
 }

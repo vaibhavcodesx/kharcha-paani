@@ -291,11 +291,18 @@ fun ConfirmSheetContent(
             )
         }
 
-        BigAmountField(amount = amount, onAmountChange = onAmountChange, accent = accent, testTag = "confirm_amount_input")
+        BigAmountField(
+            amount = amount,
+            onAmountChange = onAmountChange,
+            accent = accent,
+            // A new entry opens on the keypad; an edit opens on what is already there.
+            autoFocus = amount.isEmpty(),
+            testTag = "confirm_amount_input",
+        )
 
         // What was understood, one row per detail.
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            SheetRow(label = "Merchant", position = RowPosition.First) {
+            SheetRow(label = "Merchant", position = RowPosition.First, icon = KpIcons.Merchant) {
                 SheetTextInput(
                     value = merchant,
                     onValueChange = onMerchantChange,
@@ -331,6 +338,7 @@ fun ConfirmSheetContent(
             ExpandableDetail(
                 label = if (isIncome) "Received via" else "Paid with",
                 value = paymentMethod,
+                icon = KpIcons.Card,
                 expanded = open == Detail.Payment,
                 onToggle = { toggle(Detail.Payment) },
                 position = RowPosition.Middle,
@@ -367,13 +375,14 @@ fun ConfirmSheetContent(
                 }
             }
             if (addedBy != null) {
-                SheetRow(label = "Group", position = RowPosition.Last) {
+                SheetRow(label = "Group", position = RowPosition.Last, icon = KpIcons.Group) {
                     Text(group?.let { "${it.emoji} ${it.name}" } ?: "", style = MaterialTheme.typography.bodyLarge, color = OffWhiteText)
                 }
             } else if (availableGroups.isNotEmpty()) {
                 ExpandableDetail(
                     label = "Group",
                     value = group?.let { "${it.emoji} ${it.name}" } ?: "None",
+                    icon = KpIcons.Group,
                     expanded = open == Detail.Group,
                     onToggle = { toggle(Detail.Group) },
                     position = RowPosition.Last,

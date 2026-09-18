@@ -3,8 +3,13 @@ package com.vaibhav.kharchapaani.ui.theme
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material3.Shapes
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Density
@@ -163,3 +168,28 @@ val KpMaterialShapes = Shapes(
     large = KpShapes.large,
     extraLarge = SquircleShape(32.dp),
 )
+
+/**
+ * The perforation across a ticket, at [fraction] of the surface's height.
+ *
+ * The group cards have had this since they were built and it is the most distinctive thing the app
+ * draws — a torn stub, which is exactly what a bill is. It was one occurrence; it now belongs to
+ * anything that records money changing hands, and deliberately **never** to the dock, which is
+ * navigation rather than a receipt (owner decision, 2026-09-18).
+ */
+fun Modifier.perforation(
+    fraction: Float = 0.5f,
+    inset: Dp = 18.dp,
+    color: Color = CharcoalBorder,
+): Modifier = this.drawWithContent {
+    drawContent()
+    val y = size.height * fraction
+    val insetPx = inset.toPx()
+    drawLine(
+        color = color,
+        start = Offset(insetPx, y),
+        end = Offset(size.width - insetPx, y),
+        strokeWidth = 1.5.dp.toPx(),
+        pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 5.dp.toPx())),
+    )
+}

@@ -33,6 +33,7 @@ import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
+import com.vaibhav.kharchapaani.ui.theme.perforation
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
@@ -70,13 +71,16 @@ fun SettlementItemCard(
 
     // The row itself opens the menu, so its amount lines up with every other row's instead of
     // sitting left of a ⋯ button.
-    Box(modifier.fillMaxWidth().clip(position.shape)) {
+    // The ticket motif, extended from the group cards to the other place money changes hands
+    // (backlog item 17). Deliberately not the dock, which is navigation, not a receipt.
+    Box(modifier.fillMaxWidth().clip(KpShapes.ticket)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 64.dp)
                 .background(CharcoalCard)
+                .perforation(fraction = 0.82f)
                 .then(
                     if (item.involvesMe) {
                         Modifier.clickable(onClickLabel = "More options for ${item.title}") { showMenu = true }

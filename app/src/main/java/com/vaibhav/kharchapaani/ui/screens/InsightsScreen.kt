@@ -66,6 +66,13 @@ import com.vaibhav.kharchapaani.ui.components.shimmerLoading
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.format.MonthNames
 import com.vaibhav.kharchapaani.ui.shell.dockClearance
+import com.vaibhav.kharchapaani.ui.components.AccountAvatar
+import com.vaibhav.kharchapaani.ui.components.CategoryRing
+import com.vaibhav.kharchapaani.ui.components.DailyFlowChart
+import com.vaibhav.kharchapaani.domain.DailySpend
+import com.vaibhav.kharchapaani.ui.components.KpButton
+import com.vaibhav.kharchapaani.ui.components.KpButtonTier
+import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -80,6 +87,7 @@ import com.vaibhav.kharchapaani.ui.theme.OutlineInteractive
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
+import com.vaibhav.kharchapaani.ui.theme.BarTrack
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.YearMonth
@@ -97,6 +105,9 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun InsightsScreen(
+    accountAvatar: String = "?",
+    onOpenAccount: () -> Unit = {},
+    syncStatus: SyncStatus = SyncStatus(),
     analytics: MonthlyAnalytics,
     transactions: List<FullTransaction> = emptyList(),
     people: List<PersonEntity> = emptyList(),
@@ -115,6 +126,10 @@ fun InsightsScreen(
     val isThisMonth = month == YearMonth.from(today)
     // A category opened in one month closes when the month changes.
     var selected by rememberSaveable(month) { mutableStateOf<String?>(null) }
+    var selectedDay by rememberSaveable(month) { mutableStateOf<Int?>(null) }
+    val dailySpend = remember(transactions, month, today) {
+        DailySpend.of(transactions, month, today, ZoneId.systemDefault())
+    }
     val selectedEntries = remember(transactions, selected, month) {
         selected?.let { MonthInsights.categoryEntries(transactions, it, month, ZoneId.systemDefault()) }.orEmpty()
     }
@@ -128,9 +143,13 @@ fun InsightsScreen(
     ) {
         item(key = "header") {
             ScreenHeader(title = "Insights", supporting = "Where your money went, month by month") {
-                TextButton(onClick = onExport, modifier = Modifier.testTag("export_csv_button")) {
-                    Text("Export", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
-                }
+                KpButton(
+                    label = "Export",
+                    onClick = onExport,
+                    tier = KpButtonTier.Ghost,
+                    testTag = "export_csv_button",
+                )
+                AccountAvatar(avatar = accountAvatar, syncStatus = syncStatus, onClick = onOpenAccount)
             }
         }
         item(key = "month") {
@@ -147,6 +166,26 @@ fun InsightsScreen(
                 analytics = analytics,
                 emptyText = if (isThisMonth) "Nothing logged this month yet." else "Nothing was logged in ${MonthNames.short(month, today)}.",
                 modifier = Modifier.padding(top = Spacing.xl),
+            )
+        }
+        item(key = "ring") {
+            // Insights had no chart at all — only flat bars, while the app's one donut sat on the
+            // group sheet. The ring and the list below share a selection, so they are two views of
+            // one state rather than two controls.
+            CategoryRing(
+                categories = analytics.categorySummaries,
+                total = analytics.totalExpense,
+                selected = selected,
+                onSelect = { selected = it },
+                modifier = Modifier.padding(top = Spacing.xxl),
+            )
+        }
+        item(key = "flow") {
+            DailyFlowChart(
+                days = dailySpend,
+                selectedDay = selectedDay,
+                onSelectDay = { selectedDay = it },
+                modifier = Modifier.padding(top = Spacing.l),
             )
         }
         item(key = "categories") {
@@ -277,7 +316,10 @@ private fun CategoryBarRow(
     onClick: () -> Unit,
 ) {
     val grown by animateFloatAsState(fraction, animationSpec = tween(600), label = "bar_${summary.category}")
-    val barColor = if (emphasis) WarmAmberPrimary else OutlineInteractive
+    // Each category's own colour, the same one its badge two inches to the left is already using.
+    // One amber for all of them meant the badge carried the category and the bar carried nothing.
+    val categoryColor = CategoryHelper.getCategoryColor(summary.category)
+    val barColor = if (emphasis) categoryColor else categoryColor.copy(alpha = 0.35f)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -311,7 +353,9 @@ private fun CategoryBarRow(
                 .height(8.dp),
         ) {
             val radius = CornerRadius(size.height / 2)
-            drawRoundRect(color = CharcoalBg, cornerRadius = radius)
+            // CharcoalBg on a CharcoalCard row measured 1.2:1 — the empty part of the bar was
+            // invisible, so a short bar read as a short line rather than as a small share.
+            drawRoundRect(color = BarTrack, cornerRadius = radius)
             val width = (size.width * grown).coerceAtLeast(size.height)
             drawRoundRect(color = barColor, size = Size(width, size.height), cornerRadius = radius)
         }

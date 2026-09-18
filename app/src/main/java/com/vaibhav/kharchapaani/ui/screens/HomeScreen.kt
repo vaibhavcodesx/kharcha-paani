@@ -61,6 +61,9 @@ import com.vaibhav.kharchapaani.ui.home.CaptureCard
 import com.vaibhav.kharchapaani.ui.home.MonthStrip
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.shell.dockClearance
+import com.vaibhav.kharchapaani.domain.MerchantVisits
+import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
+import java.time.YearMonth
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -78,6 +81,7 @@ import java.time.ZoneId
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
+    people: List<PersonEntity> = emptyList(),
     activity: List<ActivityItem>,
     totalNetOwed: Double,
     monthlyAnalytics: MonthlyAnalytics,
@@ -105,6 +109,9 @@ fun HomeScreen(
 ) {
     var showSearch by rememberSaveable { mutableStateOf(searchQuery.isNotEmpty()) }
     val days = remember(activity, today) { ActivityDays.group(activity, today, ZoneId.systemDefault()) }
+    val visits = remember(activity, today) {
+        MerchantVisits.thisMonth(activity, YearMonth.from(today), ZoneId.systemDefault())
+    }
 
     LazyColumn(
         modifier = modifier
@@ -175,6 +182,9 @@ fun HomeScreen(
                     .padding(top = if (index == 0) 0.dp else 2.dp)
                 when (item) {
                     is ActivityItem.Transaction -> TransactionItemCard(
+                        people = people,
+                        visits = MerchantVisits.key(item.fullTransaction.transaction.merchant)
+                            ?.let { visits[it] ?: 0 } ?: 0,
                         fullTx = item.fullTransaction,
                         isReadOnly = item.isReadOnly,
                         onEdit = { onEditTransaction(item.fullTransaction) },

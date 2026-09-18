@@ -412,6 +412,7 @@ fun SplitFlowApp(
                 when (targetTab) {
                     0 -> HomeScreen(
                         activity = activityFeed,
+                        people = people,
                         totalNetOwed = totalNetOwed,
                         monthlyAnalytics = monthlyAnalytics,
                         isParsing = isParsing,
@@ -436,6 +437,9 @@ fun SplitFlowApp(
                     )
 
                     1 -> SplitsScreen(
+                        accountAvatar = authUiState.accountAvatar,
+                        onOpenAccount = { isAccountSheetOpen = true },
+                        syncStatus = syncStatus,
                         personBalances = personBalances,
                         groups = groups,
                         onOpenAddFriend = { viewModel.openAddFriend() },
@@ -451,6 +455,9 @@ fun SplitFlowApp(
                     )
 
                     2 -> InsightsScreen(
+                        accountAvatar = authUiState.accountAvatar,
+                        onOpenAccount = { isAccountSheetOpen = true },
+                        syncStatus = syncStatus,
                         analytics = insightsAnalytics,
                         transactions = rawTransactions,
                         people = people,

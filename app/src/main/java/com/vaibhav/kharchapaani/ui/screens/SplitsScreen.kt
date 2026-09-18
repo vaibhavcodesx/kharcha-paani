@@ -47,10 +47,16 @@ import com.vaibhav.kharchapaani.ui.components.pairedFigureStyle
 import com.vaibhav.kharchapaani.ui.components.SegmentedControl
 import com.vaibhav.kharchapaani.ui.components.TripCard
 import com.vaibhav.kharchapaani.ui.shell.dockClearance
+import com.vaibhav.kharchapaani.ui.components.AccountAvatar
+import com.vaibhav.kharchapaani.ui.components.KpButton
+import com.vaibhav.kharchapaani.ui.components.KpButtonTier
+import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
+import com.vaibhav.kharchapaani.ui.theme.MoneyIn
+import com.vaibhav.kharchapaani.ui.theme.MoneyOut
 import com.vaibhav.kharchapaani.ui.theme.EyebrowText
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
@@ -64,6 +70,9 @@ private enum class SplitsSection { Friends, Groups }
 
 @Composable
 fun SplitsScreen(
+    accountAvatar: String = "?",
+    onOpenAccount: () -> Unit = {},
+    syncStatus: SyncStatus = SyncStatus(),
     personBalances: List<PersonBalance>,
     groups: List<GroupWithDetails>,
     onOpenAddFriend: () -> Unit,
@@ -102,7 +111,9 @@ fun SplitsScreen(
         contentPadding = PaddingValues(start = Spacing.page, end = Spacing.page, top = Spacing.l, bottom = dockClearance()),
     ) {
         item(key = "header") {
-            ScreenHeader(title = "Splits", supporting = "Who owes whom, with friends and on trips")
+            ScreenHeader(title = "Splits", supporting = "Who owes whom, with friends and on trips") {
+                AccountAvatar(avatar = accountAvatar, syncStatus = syncStatus, onClick = onOpenAccount)
+            }
         }
         item(key = "summary") {
             BalanceSummary(
@@ -133,9 +144,12 @@ fun SplitsScreen(
             SplitsSection.Friends -> {
                 item(key = "friends_header") {
                     SectionActions {
-                        TextButton(onClick = onOpenAddFriend, modifier = Modifier.testTag("add_friend_button")) {
-                            Text("Add a friend", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
-                        }
+                        KpButton(
+                            label = "Add a friend",
+                            onClick = onOpenAddFriend,
+                            tier = KpButtonTier.Outline,
+                            testTag = "add_friend_button",
+                        )
                     }
                 }
                 if (friends.isEmpty()) {
@@ -160,12 +174,19 @@ fun SplitsScreen(
             SplitsSection.Groups -> {
                 item(key = "groups_header") {
                     SectionActions {
-                        TextButton(onClick = onJoinGroup, modifier = Modifier.testTag("join_group_button")) {
-                            Text("Join", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
-                        }
-                        TextButton(onClick = onOpenCreateGroup, modifier = Modifier.testTag("create_group_button")) {
-                            Text("New group", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
-                        }
+                        KpButton(
+                            label = "Join",
+                            onClick = onJoinGroup,
+                            tier = KpButtonTier.Ghost,
+                            testTag = "join_group_button",
+                            modifier = Modifier.padding(end = Spacing.s),
+                        )
+                        KpButton(
+                            label = "New group",
+                            onClick = onOpenCreateGroup,
+                            tier = KpButtonTier.Outline,
+                            testTag = "create_group_button",
+                        )
                     }
                 }
                 if (groups.isEmpty()) {
@@ -204,19 +225,25 @@ private fun BalanceSummary(
     Column(modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
             val style = pairedFigureStyle(owedToMe, iOwe)
-            SummaryFigure("Owed to you", owedToMe, ChartreuseSecondary, style, Modifier.weight(1f))
+            SummaryFigure("Owed to you", owedToMe, MoneyIn, style, Modifier.weight(1f))
             Box(Modifier.padding(horizontal = Spacing.xl).width(1.dp).fillMaxHeight().background(CharcoalBorder))
-            SummaryFigure("You owe", iOwe, OffWhiteText, style, Modifier.weight(1f))
+            SummaryFigure("You owe", iOwe, MoneyOut, style, Modifier.weight(1f))
         }
         Row(Modifier.padding(top = Spacing.s).offset(x = -Spacing.m)) {
             if (owedToMe >= 0.005 || iOwe >= 0.005) {
-                TextButton(onClick = onOpenSimplifyDebts, modifier = Modifier.testTag("simplify_debts_button")) {
-                    Text("See who pays whom", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
-                }
+                KpButton(
+                    label = "See who pays whom",
+                    onClick = onOpenSimplifyDebts,
+                    tier = KpButtonTier.Link,
+                    testTag = "simplify_debts_button",
+                )
             }
-            TextButton(onClick = onOpenIou, modifier = Modifier.testTag("record_iou_button")) {
-                Text("Log an IOU", style = MaterialTheme.typography.labelLarge, color = MutedWarmGray)
-            }
+            KpButton(
+                label = "Log an IOU",
+                onClick = onOpenIou,
+                tier = KpButtonTier.Link,
+                testTag = "record_iou_button",
+            )
         }
     }
 }

@@ -68,6 +68,7 @@ import com.vaibhav.kharchapaani.ui.components.GlassActionBar
 import com.vaibhav.kharchapaani.ui.components.KpModalSheet
 import com.vaibhav.kharchapaani.ui.components.RowPosition
 import com.vaibhav.kharchapaani.ui.components.SheetRow
+import com.vaibhav.kharchapaani.ui.components.BrandMark
 import com.vaibhav.kharchapaani.ui.components.SheetScaffold
 import com.vaibhav.kharchapaani.ui.components.SheetTextInput
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
@@ -174,6 +175,9 @@ fun AccountSheetContent(
             null
         },
     ) {
+        // No brand mark appeared anywhere in the app, which is a real part of why a settings page
+        // reads as generic (backlog item 19).
+        BrandMark(Modifier.padding(bottom = Spacing.l))
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.xl)) {
             Box(
                 contentAlignment = Alignment.Center,

@@ -39,6 +39,8 @@ import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
+import com.vaibhav.kharchapaani.ui.theme.MoneyIn
+import com.vaibhav.kharchapaani.ui.theme.MoneyOut
 import com.vaibhav.kharchapaani.ui.theme.EyebrowText
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
@@ -47,6 +49,7 @@ import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.SquircleShape
 import com.vaibhav.kharchapaani.ui.theme.TicketShape
+import com.vaibhav.kharchapaani.ui.theme.perforation
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import kotlin.math.abs
 
@@ -86,18 +89,7 @@ fun TripCard(
                 .fillMaxWidth()
                 .clip(Ticket)
                 .background(CharcoalCard)
-                .drawWithContent {
-                    drawContent()
-                    val y = size.height / 2
-                    val inset = 18.dp.toPx()
-                    drawLine(
-                        color = CharcoalBorder,
-                        start = Offset(inset, y),
-                        end = Offset(size.width - inset, y),
-                        strokeWidth = 1.5.dp.toPx(),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 5.dp.toPx())),
-                    )
-                }
+                .perforation()
                 .combinedClickable(
                     onClickLabel = "Open ${group.name}",
                     onLongClickLabel = if (canDelete) "More options" else null,
@@ -136,8 +128,8 @@ fun TripCard(
                         text = Money.format(abs(details.netBalanceForMe)),
                         style = MoneyText.row,
                         color = when {
-                            owed -> ChartreuseSecondary
-                            owe -> OffWhiteText
+                            owed -> MoneyIn
+                            owe -> MoneyOut
                             else -> MutedWarmGray
                         },
                     )

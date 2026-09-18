@@ -80,7 +80,10 @@ class SplitsSheetsTest {
         composeTestRule.onNodeWithContentDescription("Mint").performScrollTo().performClick()
         composeTestRule.onNodeWithTag("confirm_add_friend_button").assertIsEnabled().performClick()
 
-        assertEquals("Rohan" to "#B5EAD7", added)
+        // The hex comes from the palette rather than being repeated here, so respacing the
+        // palette's hues doesn't break a test about names and colour selection.
+        val mint = FriendColours.first { it.second == "Mint" }.first
+        assertEquals("Rohan" to mint, added)
     }
 
     @Test

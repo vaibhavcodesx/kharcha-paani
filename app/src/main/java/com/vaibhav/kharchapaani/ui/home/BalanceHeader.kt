@@ -12,41 +12,33 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
-import com.vaibhav.kharchapaani.ui.sync.SyncBadge
-import com.vaibhav.kharchapaani.ui.sync.SyncBadgeOverlay
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
-import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
+import com.vaibhav.kharchapaani.ui.components.AccountAvatar
 import com.vaibhav.kharchapaani.ui.components.AnimatedRollingNumber
-import com.vaibhav.kharchapaani.ui.components.bounceClick
 import com.vaibhav.kharchapaani.ui.components.pressBounce
 import com.vaibhav.kharchapaani.ui.theme.BrandGradient
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
-import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
+import com.vaibhav.kharchapaani.ui.theme.MoneyIn
+import com.vaibhav.kharchapaani.ui.theme.MoneyOut
+import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.EyebrowText
+import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
-import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
-import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import kotlin.math.abs
 
 /**
@@ -93,37 +85,6 @@ fun BalanceHeader(
     }
 }
 
-@Composable
-private fun AccountAvatar(avatar: String, syncStatus: SyncStatus, onClick: () -> Unit) {
-    val syncDescription = SyncBadge.describe(syncStatus)
-    // One clickable rather than IconButton + bounceClick, so TalkBack sees a single "Account" button.
-    // Compose expands the touch target to 48dp.
-    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(48.dp)) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(40.dp)
-            .clip(CircleShape)
-            .background(WarmAmberPrimary.copy(alpha = 0.18f))
-            .bounceClick(onClick = onClick)
-            .semantics {
-                contentDescription = "Account"
-                role = Role.Button
-                if (syncDescription != null) stateDescription = syncDescription
-            }
-            .testTag("home_account_button"),
-    ) {
-        Text(
-            text = avatar,
-            style = MaterialTheme.typography.titleLarge,
-            color = WarmAmberLight,
-            modifier = Modifier.clearAndSetSemantics {},
-        )
-    }
-    SyncBadgeOverlay(syncStatus, avatarSize = 40.dp)
-    }
-}
-
 /**
  * The two figures under the hero: what came in this month, and where the split ledger stands.
  *
@@ -144,7 +105,7 @@ fun MonthStrip(
         MonthFigure(
             label = "Came in",
             amount = analytics.totalIncome,
-            color = ChartreuseSecondary,
+            color = MoneyIn,
             modifier = Modifier.weight(1f),
         )
         Box(
@@ -161,7 +122,11 @@ fun MonthStrip(
                 else -> "All square"
             },
             amount = abs(netBalance),
-            color = if (owedToMe) ChartreuseSecondary else OffWhiteText,
+            color = when {
+                owedToMe -> MoneyIn
+                iOwe -> MoneyOut
+                else -> MutedWarmGray
+            },
             onClick = onOpenSimplifyDebts.takeIf { owedToMe || iOwe },
             modifier = Modifier.weight(1f),
         )
