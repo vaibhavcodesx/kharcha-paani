@@ -178,7 +178,7 @@ fun GroupDetailContent(
 
         if (shares.size > 1) {
             SectionTitle("Who spent what", top = Spacing.xxl)
-            MemberShareDonut(shares, groupDetails.totalExpenses, Modifier.padding(top = Spacing.s))
+            MemberShareDonut(shares, Modifier.padding(top = Spacing.s))
         }
 
         if (debts.isNotEmpty()) {
@@ -298,7 +298,9 @@ private fun SectionTitle(text: String, top: Dp) {
  * numbers. Colour follows the person, the same colour as their avatar everywhere else.
  */
 @Composable
-private fun MemberShareDonut(shares: List<MemberShare>, total: Double, modifier: Modifier = Modifier) {
+private fun MemberShareDonut(shares: List<MemberShare>, modifier: Modifier = Modifier) {
+    // The ring's own total, so the centre always adds up to the slices around it.
+    val total = shares.sumOf { it.amount }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -377,16 +379,15 @@ private fun DebtRow(debt: SimplifiedDebt, position: RowPosition, onSettleUp: (()
             .padding(start = Spacing.l, end = Spacing.xs, top = Spacing.xs, bottom = Spacing.xs)
             .testTag("debt_${debt.fromPersonId}_${debt.toPersonId}"),
     ) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                text = "${debt.fromPersonName} → ${debt.toPersonName}",
-                style = MaterialTheme.typography.bodyLarge,
-                color = OffWhiteText,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(Money.format(debt.amount), style = MoneyText.small, color = MutedWarmGray)
-        }
+        Text(
+            text = "${debt.fromPersonName} → ${debt.toPersonName}",
+            style = MaterialTheme.typography.bodyLarge,
+            color = OffWhiteText,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f).padding(end = Spacing.m),
+        )
+        Text(Money.format(debt.amount), style = MoneyText.row, color = OffWhiteText)
         if (onSettleUp != null) {
             TextButton(onClick = onSettleUp, modifier = Modifier.testTag("settle_${debt.fromPersonId}_${debt.toPersonId}")) {
                 Text("Settle up", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
