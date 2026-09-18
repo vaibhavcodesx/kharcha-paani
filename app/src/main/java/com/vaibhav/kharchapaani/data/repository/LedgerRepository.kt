@@ -10,6 +10,7 @@ import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
+import com.vaibhav.kharchapaani.data.db.entity.SubscriptionEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.data.model.FullTransaction
@@ -23,10 +24,13 @@ import com.vaibhav.kharchapaani.domain.ExportRange
 import com.vaibhav.kharchapaani.domain.GroupBalances
 import com.vaibhav.kharchapaani.domain.MonthAnalytics
 import com.vaibhav.kharchapaani.domain.SplitRounding
+import com.vaibhav.kharchapaani.domain.SubscriptionSchedule
+import com.vaibhav.kharchapaani.domain.SubscriptionCycle
 import com.vaibhav.kharchapaani.domain.roundPaisa
 import java.util.Locale
 import java.util.UUID
 import java.time.LocalDate
+import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
 import kotlin.math.abs
@@ -697,6 +701,76 @@ class LedgerRepository(
         }
         return shares.map { it.copy(shareAmount = rounded.getValue(it.personId)) }
     }
+
+    // ============================================================
+    // Subscriptions (backlog item 8)
+    // ============================================================
+
+    val subscriptions: Flow<List<SubscriptionEntity>> = db.subscriptionDao().getAllSubscriptions()
+
+    /**
+     * Saves a subscription. [chargeFromStart] false starts it from the next due date, leaving the
+     * charges since its start date out of the ledger; true (the default) creates them on the next run.
+     */
+    suspend fun saveSubscription(subscription: SubscriptionEntity, chargeFromStart: Boolean = true, today: LocalDate = LocalDate.now()): Long =
+        withContext(Dispatchers.IO) {
+            val chargedThrough = if (chargeFromStart) subscription.chargedThrough else localDateMillis(today)
+            db.subscriptionDao().insert(subscription.copy(chargedThrough = chargedThrough))
+        }
+
+    /** Stops future charges; the ones already in the ledger stay, as they really happened. */
+    suspend fun cancelSubscription(id: Long, at: LocalDate = LocalDate.now()) = withContext(Dispatchers.IO) {
+        val existing = db.subscriptionDao().byId(id) ?: return@withContext
+        db.subscriptionDao().update(existing.copy(cancelledAt = localDateMillis(at)))
+    }
+
+    /** A cancelled subscription can be removed once it's no longer wanted in the list. */
+    suspend fun deleteSubscription(id: Long) = withContext(Dispatchers.IO) {
+        db.subscriptionDao().delete(id)
+    }
+
+    /**
+     * Creates the expense for every due date that has arrived and isn't in the ledger yet, and
+     * remembers how far each subscription has been charged. Nothing is ever created for the future,
+     * and running twice creates nothing twice. Returns how many entries were added.
+     */
+    suspend fun runDueSubscriptions(today: LocalDate = LocalDate.now(), zone: ZoneId = ZoneId.systemDefault()): Int =
+        withContext(Dispatchers.IO) {
+            var created = 0
+            for (subscription in db.subscriptionDao().getRunnableDirect()) {
+                val cycle = runCatching { SubscriptionCycle.valueOf(subscription.cycle) }.getOrNull() ?: continue
+                val start = localDate(subscription.startDate, zone)
+                val chargedThrough = subscription.chargedThrough?.let { localDate(it, zone) }
+                val due = SubscriptionSchedule.dueDates(start, cycle, today, subscription.cancelledAt?.let { localDate(it, zone) })
+                    .filter { chargedThrough == null || it.isAfter(chargedThrough) }
+                if (due.isEmpty()) continue
+
+                for (date in due) {
+                    db.transactionDao().insertTransaction(
+                        TransactionEntity(
+                            type = "expense",
+                            amount = subscription.amount,
+                            category = subscription.category,
+                            merchant = subscription.name,
+                            paymentMethod = subscription.paymentMethod,
+                            date = date.atTime(9, 0).atZone(zone).toInstant().toEpochMilli(),
+                            note = "Subscription",
+                            syncState = syncStateFor(groupId = null, isSplit = false),
+                        )
+                    )
+                    created++
+                }
+                db.subscriptionDao().update(subscription.copy(chargedThrough = localDateMillis(due.last(), zone)))
+            }
+            if (created > 0) onLocalTransactionChange()
+            created
+        }
+
+    private fun localDate(millis: Long, zone: ZoneId = ZoneId.systemDefault()): LocalDate =
+        Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
+
+    private fun localDateMillis(date: LocalDate, zone: ZoneId = ZoneId.systemDefault()): Long =
+        date.atStartOfDay(zone).toInstant().toEpochMilli()
 
     /** Everything in [range] as a spreadsheet; see [CsvExport]. */
     suspend fun exportCsv(range: ExportRange, zone: ZoneId = ZoneId.systemDefault(), groupId: Long? = null): CsvFile = withContext(Dispatchers.IO) {
