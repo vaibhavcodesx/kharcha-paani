@@ -106,7 +106,7 @@ fun KpButton(
                     tier == KpButtonTier.Primary && enabled -> Modifier.background(BrandGradient.diagonal())
                     tier == KpButtonTier.Primary -> Modifier.background(SolidColor(CharcoalElevated))
                     tier == KpButtonTier.Outline -> Modifier.border(1.dp, OutlineInteractive, shape)
-                    tier == KpButtonTier.Ghost -> Modifier.background(CharcoalElevated)
+                    tier == KpButtonTier.Ghost -> Modifier.background(GhostFill)
                     else -> Modifier
                 }
             )
@@ -133,6 +133,20 @@ fun KpButton(
         )
     }
 }
+
+/**
+ * Ghost's fill, and the reason it is a translucent white rather than a colour.
+ *
+ * It used to be `CharcoalElevated` (#22201D), which against the `CharcoalCard` (#1E1C1A) that most
+ * Ghost buttons sit on differs by four points per channel — about 1.05:1. The container was
+ * effectively not drawn: "Record" on a friend row and "Read this trip" in its card both read as
+ * plain labels, and the trip one was reported as not being clickable at all.
+ *
+ * A fixed opaque colour cannot work for a tier used on two different surfaces. A wash over whatever
+ * is behind it can: it lands around #343230 on a card and #262523 on the page, visible on both
+ * without ever becoming an Outline.
+ */
+private val GhostFill = Color.White.copy(alpha = 0.10f)
 
 /** Colour is not the only signal, so a disabled tier keeps its shape. Exposed for tests. */
 val KpButtonTier.hasContainer: Boolean

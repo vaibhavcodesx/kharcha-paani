@@ -23,6 +23,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
@@ -87,6 +88,11 @@ fun TripCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                // An archived group is finished business kept for the record, but it drew at
+                // exactly the weight of a live one, so a list of three trips gave equal billing to
+                // the one nobody is spending on. Dimming the whole card, tag included, says
+                // "still here, no longer current" without a second treatment to learn.
+                .alpha(if (group.isArchived) ARCHIVED_ALPHA else 1f)
                 .clip(Ticket)
                 .background(CharcoalCard)
                 .perforation()
@@ -195,3 +201,6 @@ private fun MemberStack(details: GroupWithDetails) {
 
 private val HalfHeight = 68.dp
 private val Ticket = TicketShape(corner = 20.dp, notchRadius = 9.dp)
+
+/** Clearly recessed, still readable: an archived group is history, not hidden. */
+private const val ARCHIVED_ALPHA = 0.55f
