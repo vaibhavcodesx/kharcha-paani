@@ -100,6 +100,8 @@ fun AccountSheet(
     onSaveProfile: (name: String, emoji: String?) -> Unit,
     onAskBeforeDiscardingChange: (Boolean) -> Unit,
     onOpenExport: () -> Unit,
+    onBackUp: () -> Unit = {},
+    onRestore: () -> Unit = {},
     onRetryFailedSync: () -> Unit,
     onRetryProfile: () -> Unit,
     onSignOut: () -> Unit,
@@ -117,6 +119,8 @@ fun AccountSheet(
             onSaveProfile = onSaveProfile,
             onAskBeforeDiscardingChange = onAskBeforeDiscardingChange,
             onOpenExport = onOpenExport,
+            onBackUp = onBackUp,
+            onRestore = onRestore,
             onRetryFailedSync = onRetryFailedSync,
             onRetryProfile = onRetryProfile,
             onSignOut = onSignOut,
@@ -137,6 +141,8 @@ fun AccountSheetContent(
     onSaveProfile: (name: String, emoji: String?) -> Unit,
     onAskBeforeDiscardingChange: (Boolean) -> Unit,
     onOpenExport: () -> Unit,
+    onBackUp: () -> Unit = {},
+    onRestore: () -> Unit = {},
     onRetryFailedSync: () -> Unit,
     onRetryProfile: () -> Unit,
     onSignOut: () -> Unit,
@@ -322,8 +328,28 @@ fun AccountSheetContent(
             SettingRow(
                 title = "Export to a spreadsheet",
                 detail = "A month, dates or everything, as CSV",
-                position = RowPosition.Last,
+                position = RowPosition.Middle,
                 modifier = Modifier.clickable(onClickLabel = "Open export", onClick = onOpenExport).testTag("setting_export"),
+            ) {
+                Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
+            }
+            // Deliberately worded as insurance rather than a chore. A normal update keeps all of
+            // this — tested by installing one release over another and watching a local friend, a
+            // subscription and a custom category come through. What loses it is uninstalling, a
+            // new phone, or a change of signing key.
+            SettingRow(
+                title = "Back up what's only on this phone",
+                detail = "Local friends, subscriptions and your own categories, as a file",
+                position = RowPosition.Middle,
+                modifier = Modifier.clickable(onClickLabel = "Back up local data", onClick = onBackUp).testTag("setting_backup"),
+            ) {
+                Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
+            }
+            SettingRow(
+                title = "Restore from a backup",
+                detail = "Adds back anything missing; never overwrites what's here",
+                position = RowPosition.Last,
+                modifier = Modifier.clickable(onClickLabel = "Restore from a backup", onClick = onRestore).testTag("setting_restore"),
             ) {
                 Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
             }

@@ -37,6 +37,7 @@ import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
 import com.vaibhav.kharchapaani.data.repository.ArchivedGroupException
 import com.vaibhav.kharchapaani.data.remote.AppIdentity
 import com.vaibhav.kharchapaani.data.repository.GeminiRepository
+import com.vaibhav.kharchapaani.data.repository.LocalBackupRepository
 import com.vaibhav.kharchapaani.data.repository.ParseChoices
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.data.settings.AppSettings
@@ -50,6 +51,9 @@ import com.vaibhav.kharchapaani.domain.AiContext
 import com.vaibhav.kharchapaani.domain.AiPrompt
 import com.vaibhav.kharchapaani.domain.AskBoard
 import com.vaibhav.kharchapaani.domain.AskState
+import com.vaibhav.kharchapaani.domain.LocalBackup
+import com.vaibhav.kharchapaani.domain.BackupSettings
+import com.vaibhav.kharchapaani.domain.BackupReadResult
 import com.vaibhav.kharchapaani.domain.DailySpend
 import com.vaibhav.kharchapaani.domain.GroupInsights
 import com.vaibhav.kharchapaani.ui.format.MonthNames
@@ -1497,6 +1501,80 @@ class MainViewModel(
             _isExportOpen.value = false
             context.startActivity(Intent.createChooser(send, if (csv.rows == 1) "Export 1 entry" else "Export ${csv.rows} entries"))
         }
+    }
+
+    private val backupRepo = LocalBackupRepository(db)
+
+    /**
+     * Writes the local-only half of the ledger to a JSON file and hands it to the share sheet.
+     *
+     * Insurance, not routine: a normal app update keeps all of this. It is uninstalling, a new
+     * phone, or a change of signing key that loses it. See [LocalBackup].
+     */
+    fun exportLocalBackup(context: Context) {
+        viewModelScope.launch {
+            val backup = backupRepo.collect(appVersion = BuildConfig.VERSION_NAME)
+            if (backup.isEmpty) {
+                _statusMessage.value = "Nothing on this phone that isn't already backed up to your account."
+                return@launch
+            }
+            val fileName = LocalBackup.fileName(backup.exportedAt)
+            val uri = writeToCache(fileName, LocalBackup.encode(backup))
+            val send = Intent(Intent.ACTION_SEND).apply {
+                type = "application/json"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_SUBJECT, fileName)
+                clipData = ClipData.newRawUri(fileName, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(send, "Back up ${backup.summary()}"))
+        }
+    }
+
+    /** Reads a backup file the person picked and puts back whatever is missing. */
+    fun importLocalBackup(context: Context, uri: Uri) {
+        viewModelScope.launch {
+            val text = withContext(Dispatchers.IO) {
+                runCatching { context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } }.getOrNull()
+            }
+            if (text == null) {
+                _statusMessage.value = "Couldn't open that file."
+                return@launch
+            }
+            when (val result = LocalBackup.decode(text)) {
+                is BackupReadResult.Unreadable ->
+                    _statusMessage.value = "That doesn't look like a Kharcha Paani backup."
+                is BackupReadResult.TooNew ->
+                    _statusMessage.value = "That backup was written by a newer version of the app. Update first."
+                is BackupReadResult.Ok -> {
+                    val report = backupRepo.restore(result.backup)
+                    restoreSettings(result.backup.settings)
+                    _statusMessage.value = report.copy(settingsRestored = !result.backup.settings.isEmpty).message()
+                }
+            }
+        }
+    }
+
+    /** Category and payment-method choices live in DataStore, so they restore separately. */
+    private suspend fun restoreSettings(saved: BackupSettings) {
+        if (saved.isEmpty) return
+        settings.updateCategoryPrefs(userId) { current ->
+            current.copy(
+                customExpense = (current.customExpense + saved.customCategories).distinct(),
+                customIncome = (current.customIncome + saved.customIncomeCategories).distinct(),
+                hiddenCategories = current.hiddenCategories + saved.hiddenCategories + saved.hiddenIncomeCategories,
+                customPaymentMethods = (current.customPaymentMethods + saved.customPaymentMethods).distinct(),
+                hiddenPaymentMethods = current.hiddenPaymentMethods + saved.hiddenPaymentMethods,
+            )
+        }
+        saved.askBeforeDiscarding?.let { settings.setAskBeforeDiscarding(it) }
+    }
+
+    private suspend fun writeToCache(fileName: String, content: String): Uri = withContext(Dispatchers.IO) {
+        val app = getApplication<Application>()
+        val dir = File(app.cacheDir, "exports").apply { mkdirs() }
+        val file = File(dir, fileName).apply { writeText(content, Charsets.UTF_8) }
+        FileProvider.getUriForFile(app, "${app.packageName}.fileprovider", file)
     }
 
     private suspend fun writeExport(csv: CsvFile): Uri = withContext(Dispatchers.IO) {

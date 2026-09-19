@@ -11,6 +11,10 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface SubscriptionDao {
 
+    /** Every subscription, for the local backup. Subscriptions live on this phone only. */
+    @Query("SELECT * FROM subscriptions ORDER BY name COLLATE NOCASE")
+    suspend fun getAllDirect(): List<SubscriptionEntity>
+
     @Query("SELECT * FROM subscriptions ORDER BY cancelledAt IS NOT NULL, name COLLATE NOCASE")
     fun getAllSubscriptions(): Flow<List<SubscriptionEntity>>
 

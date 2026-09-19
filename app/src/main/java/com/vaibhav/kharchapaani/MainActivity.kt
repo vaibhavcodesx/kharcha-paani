@@ -7,6 +7,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Parcelable
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -489,6 +491,16 @@ fun SplitFlowApp(
         }
     }
 
+    // OpenDocument rather than GetContent: it returns a URI that survives the process being
+    // rebuilt, and a backup is exactly the thing someone picks from Drive or Files rather than
+    // from a gallery.
+    val pickBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            isAccountSheetOpen = false
+            viewModel.importLocalBackup(context, uri)
+        }
+    }
+
     if (isAccountSheetOpen) {
         AccountSheet(
             state = authUiState,
@@ -513,6 +525,11 @@ fun SplitFlowApp(
                 isAccountSheetOpen = false
                 viewModel.openExport()
             },
+            onBackUp = {
+                isAccountSheetOpen = false
+                viewModel.exportLocalBackup(context)
+            },
+            onRestore = { pickBackup.launch(arrayOf("application/json", "text/plain", "*/*")) },
             onRetryFailedSync = viewModel::retryFailedSync,
             onRetryProfile = onRetryProfile,
             onSignOut = {
