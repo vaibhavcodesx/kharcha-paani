@@ -122,7 +122,7 @@ jobs:
           if [ "${{ inputs.omit_ai_key }}" = "true" ]; then
             notes="$notes
 
-This build ships without a Gemini API key, so the AI features (Ask about your money, Read this trip, statement scanning) are hidden. Everything else works."
+            This build ships without a Gemini API key, so the AI features (Ask about your money, Read this trip, statement scanning) are hidden. Everything else works."
           fi
           gh release create "${{ inputs.tag }}" "$final_apk" \
             --title "Kharcha Paani ${{ inputs.tag }}" \
