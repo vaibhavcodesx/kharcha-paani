@@ -22,13 +22,15 @@ class LocalBackupTest {
         people: List<BackupPerson> = listOf(person),
         subscriptions: List<BackupSubscription> = emptyList(),
         settlements: List<BackupSettlement> = emptyList(),
+        transactions: List<BackupTransaction> = emptyList(),
         settings: BackupSettings = BackupSettings(),
     ) = LocalBackup(
         exportedAt = 1_758_000_000_000L,
-        appVersion = "1.0.0",
+        appVersion = "1.1.0",
         people = people,
         subscriptions = subscriptions,
         settlements = settlements,
+        transactions = transactions,
         settings = settings,
     )
 
@@ -45,6 +47,16 @@ class LocalBackupTest {
             ),
             settlements = listOf(
                 BackupSettlement(fromName = "Offline_Friend", toName = null, amount = 25.0, date = 900L, createdAt = 900L)
+            ),
+            transactions = listOf(
+                BackupTransaction(
+                    remoteId = "abc", type = "expense", amount = 500.0, category = "Food",
+                    merchant = "Dinner", paymentMethod = "Cash", date = 2_000L, createdAt = 2_000L,
+                    split = BackupSplit(
+                        totalAmount = 500.0, splitType = "equal", paidByName = "Offline_Friend",
+                        shares = listOf(BackupShare(null, 250.0), BackupShare("Offline_Friend", 250.0)),
+                    ),
+                )
             ),
             settings = BackupSettings(customCategories = listOf("Sample_Category"), askBeforeDiscarding = true),
         )
@@ -120,6 +132,15 @@ class LocalBackupTest {
         ).summary()
 
         assertEquals("1 friend, 1 subscription", summary)
+    }
+
+    @Test
+    fun `a v1 file still restores, it simply has little in it`() {
+        // v1 shipped with an always-empty splits array. Refusing to read those files would strip
+        // people of the friends and subscriptions v1 *did* capture.
+        val v1 = """{"version":1,"exported_at":1,"app_version":"1.0.0","people":[],"splits":[]}"""
+
+        assertTrue(LocalBackup.decode(v1) is BackupReadResult.Ok)
     }
 
     @Test
