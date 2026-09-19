@@ -12,6 +12,7 @@ import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncMetaEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
+import com.vaibhav.kharchapaani.domain.PersonColours
 import com.vaibhav.kharchapaani.domain.UpiLink
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.domain.SplitRounding
@@ -451,7 +452,7 @@ class GroupSyncEngine(
             return dao.insertPerson(
                 PersonEntity(
                     name = name ?: FALLBACK_NAME,
-                    avatarColor = AVATAR_COLORS[abs(profileId.hashCode() % AVATAR_COLORS.size)],
+                    avatarColor = PersonColours.stable(profileId),
                     profileId = profileId,
                     avatarUrl = profile?.avatarUrl,
                     avatarEmoji = profile?.avatarEmoji,
@@ -485,10 +486,6 @@ class GroupSyncEngine(
         private val CURSOR_OVERLAP = 5.seconds
         private const val DEFAULT_EMOJI = "👥"
         private const val FALLBACK_NAME = "Group member"
-        // The same palette AddFriendSheet offers, so synced members look like local friends. Only
-        // ever read when a person is first inserted, so changing it never recolours anyone already
-        // on the phone.
-        private val AVATAR_COLORS = listOf("#F2D06B", "#C6F24C", "#86E37F", "#5BD6B0", "#70C1FF", "#A79BF5", "#E092E8", "#FF8FB0")
         private const val TAG = "GroupSync"
     }
 }

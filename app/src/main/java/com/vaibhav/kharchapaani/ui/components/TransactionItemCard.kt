@@ -79,10 +79,9 @@ fun TransactionItemCard(
     val time = remember(tx.date) { SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(tx.date)) }
     // "Split between 3" told you a count and nothing else; the faces say who, at a glance, which
     // is what anyone actually wants from a shared expense in a list (backlog §5, Image 13).
-    val detail = listOfNotNull(
-        time,
-        tx.paymentMethod.takeIf { it.isNotBlank() },
-    ).joinToString(" · ")
+    // The payment method has left this string and become its own pill: as plain text it was the
+    // same grey word on nearly every row, which is reading load for no information.
+    val detail = time
     val sharers = remember(fullTx, people) {
         if (!isSplit) emptyList() else fullTx.shares.mapNotNull { share -> people.firstOrNull { it.id == share.personId } }
     }
@@ -166,6 +165,7 @@ fun TransactionItemCard(
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(text = detail, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    PaymentPill(method = tx.paymentMethod, modifier = Modifier.padding(start = Spacing.s))
                     if (isSplit) {
                         SharerFaces(
                             sharers = sharers,

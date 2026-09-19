@@ -33,7 +33,6 @@ import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
-import com.vaibhav.kharchapaani.ui.theme.perforation
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
@@ -71,8 +70,17 @@ fun SettlementItemCard(
 
     // The row itself opens the menu, so its amount lines up with every other row's instead of
     // sitting left of a ⋯ button.
+    //
     // The ticket motif, extended from the group cards to the other place money changes hands
     // (backlog item 17). Deliberately not the dock, which is navigation, not a receipt.
+    //
+    // The notched edges stay; the perforation does not. It was drawn at 0.82 of the height while
+    // the notches this shape cuts sit at 0.5, so the line met nothing at either end — it ran
+    // across the card a few pixels under the subtitle with only padding beneath it, which is what
+    // "looks oddly placed" was seeing. Moving it to 0.5 would not have fixed it either: a
+    // perforation separates two bands of content and this row is one band, so on a TripCard it
+    // tears a stub off and here it would cut straight through the text. The motif came across
+    // without the layout that earns it (round 2, §7).
     Box(modifier.fillMaxWidth().clip(KpShapes.ticket)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -80,7 +88,6 @@ fun SettlementItemCard(
                 .fillMaxWidth()
                 .heightIn(min = 64.dp)
                 .background(CharcoalCard)
-                .perforation(fraction = 0.82f)
                 .then(
                     if (item.involvesMe) {
                         Modifier.clickable(onClickLabel = "More options for ${item.title}") { showMenu = true }

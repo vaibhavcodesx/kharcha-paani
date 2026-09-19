@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
+import com.vaibhav.kharchapaani.domain.PersonColours
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.EyebrowText
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
@@ -40,10 +41,13 @@ import com.vaibhav.kharchapaani.ui.theme.SquircleShape
  *
  * None of them sits near the brand amber, which is reserved for "You".
  */
-val FriendColours = listOf(
-    "#F2D06B" to "Sand", "#C6F24C" to "Lime", "#86E37F" to "Green", "#5BD6B0" to "Mint",
-    "#70C1FF" to "Sky", "#A79BF5" to "Violet", "#E092E8" to "Orchid", "#FF8FB0" to "Rose",
-)
+private val ColourNames = listOf("Sand", "Lime", "Green", "Mint", "Sky", "Violet", "Orchid", "Rose")
+
+/**
+ * The picker's swatches: [PersonColours.palette] with names on. One list, so a colour chosen here
+ * and a colour assigned by sync can never drift apart.
+ */
+val FriendColours: List<Pair<String, String>> = PersonColours.palette.zip(ColourNames)
 
 @Composable
 fun AddFriendSheet(isOpen: Boolean, onAdd: (name: String, colorHex: String) -> Unit, onDismiss: () -> Unit) {

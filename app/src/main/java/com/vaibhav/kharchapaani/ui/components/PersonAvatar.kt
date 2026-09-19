@@ -16,9 +16,9 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.vaibhav.kharchapaani.domain.PersonColours
 import com.vaibhav.kharchapaani.ui.theme.SquircleShape
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
-import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 
 /**
  * A person's emoji if they picked one, else their initials, on their colour. Decorative: the name
@@ -61,8 +61,17 @@ fun PersonAvatar(
     }
 }
 
-fun parseColor(hex: String, fallback: Color = WarmAmberPrimary): Color =
+/**
+ * The fallback is a neutral, not the brand amber it used to be.
+ *
+ * Amber is [PersonColours.MINE] — "You". So an unreadable colour didn't fail visibly, it quietly
+ * made that person look like the account holder, in the one chart where telling people apart is
+ * the entire point.
+ */
+fun parseColor(hex: String, fallback: Color = UnknownPersonGray): Color =
     runCatching { Color(android.graphics.Color.parseColor(hex)) }.getOrDefault(fallback)
+
+private val UnknownPersonGray = Color(0xFFB9B2A8)
 
 /** "Rohan Mehta" → "RM", "rohan" → "R", blank → "?". */
 fun initials(name: String): String =

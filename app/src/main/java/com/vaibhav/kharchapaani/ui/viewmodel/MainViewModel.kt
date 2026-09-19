@@ -261,6 +261,7 @@ class MainViewModel(
      */
     init {
         publishUpiIfMissing()
+        viewModelScope.launch { ledgerRepo.repairPersonColours() }
     }
 
     /** Sends this account's UPI ID up if the profile doesn't have it yet (first run after update). */
