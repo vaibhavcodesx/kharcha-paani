@@ -45,6 +45,10 @@ interface PersonDao {
 
     @Query("DELETE FROM people WHERE id = :id")
     suspend fun deletePersonById(id: Long)
+
+    /** Only the colour, for the one-off repass that separates two people who ended up alike. */
+    @Query("UPDATE people SET avatarColor = :colorHex WHERE id = :id")
+    suspend fun updatePersonColour(id: Long, colorHex: String)
 }
 
 @Dao

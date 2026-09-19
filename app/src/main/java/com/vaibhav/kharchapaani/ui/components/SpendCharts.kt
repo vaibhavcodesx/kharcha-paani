@@ -101,8 +101,7 @@ fun CategoryRing(
     val grown by animateFloatAsState(1f, animationSpec = tween(600), label = "ring_grow")
     val focused = slices.indexOfFirst { it.category == selected }.takeIf { it >= 0 }
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(KpShapes.large)
@@ -110,6 +109,7 @@ fun CategoryRing(
             .padding(Spacing.l)
             .testTag("category_ring"),
     ) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.size(RingSize)) {
             Canvas(
                 Modifier
@@ -186,23 +186,40 @@ fun CategoryRing(
             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
             modifier = Modifier.weight(1f).padding(start = Spacing.l),
         ) {
-            slices.take(6).forEach { slice ->
+            slices.take(LEGEND_BESIDE_RING).forEach { slice ->
                 RingLegendRow(
                     slice = slice,
                     selected = slice.category == selected,
                     onClick = { onSelect(if (slice.category == selected) null else slice.category) },
                 )
             }
-            if (slices.size > 6) {
-                Text(
-                    "+${slices.size - 6} more below",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = SubMutedWarmGray,
-                )
+        }
+    }
+        // Anything that doesn't fit beside the ring continues underneath at full width, rather
+        // than being replaced by "+2 more below" — which named a number and then made you go and
+        // find it. The count is whatever this person's categories come to, custom ones included,
+        // so it is never capped and never needs its own scroller inside a page that already
+        // scrolls.
+        val overflow = slices.drop(LEGEND_BESIDE_RING)
+        if (overflow.isNotEmpty()) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                modifier = Modifier.fillMaxWidth().padding(top = Spacing.m).testTag("ring_legend_overflow"),
+            ) {
+                overflow.forEach { slice ->
+                    RingLegendRow(
+                        slice = slice,
+                        selected = slice.category == selected,
+                        onClick = { onSelect(if (slice.category == selected) null else slice.category) },
+                    )
+                }
             }
         }
     }
 }
+
+/** How many legend rows stand beside the ring before the rest continue below it. */
+private const val LEGEND_BESIDE_RING = 6
 
 @Composable
 private fun RingLegendRow(slice: CategorySummary, selected: Boolean, onClick: () -> Unit) {

@@ -97,9 +97,19 @@ fun Modifier.liquidGlass(
     }
     .drawWithContent {
         drawContent()
-        // A hairline along the top edge only, fading out before the shape's shoulders, the way
-        // light catches the lip of a real piece of glass. Never a ring around the whole shape.
         val outline = shape.createOutline(size, layoutDirection, this)
+        // A rim all the way round, at a fraction of the highlight's strength: just enough to give
+        // the pane an edge where it meets the page, which is the "small border" asked for in
+        // round 2 §6. This is not the old gradient edge-stroke that made the dock read as a
+        // bordered box — that one was the brightest thing on the shape and did the same work all
+        // the way round. At 7% it is below the tint's own lift and only resolves as a boundary.
+        drawOutline(
+            outline = outline,
+            color = Color.White.copy(alpha = 0.07f),
+            style = Stroke(width = 1.dp.toPx()),
+        )
+        // On top of it, the specular: a hairline along the top edge only, fading out before the
+        // shape's shoulders, the way light catches the lip of a real piece of glass.
         clipRect(bottom = size.height * TOP_HIGHLIGHT_FRACTION) {
             drawOutline(
                 outline = outline,

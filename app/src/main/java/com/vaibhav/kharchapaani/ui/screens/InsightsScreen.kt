@@ -9,6 +9,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -71,6 +74,7 @@ import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.ui.components.AskSection
 import com.vaibhav.kharchapaani.ui.components.EmptyState
 import com.vaibhav.kharchapaani.domain.AiPrompt
+import com.vaibhav.kharchapaani.domain.AskBoard
 import com.vaibhav.kharchapaani.domain.AI_DAILY_CAP
 import com.vaibhav.kharchapaani.ui.components.CategoryRing
 import com.vaibhav.kharchapaani.ui.components.DailyFlowChart
@@ -116,10 +120,8 @@ fun InsightsScreen(
     analytics: MonthlyAnalytics,
     transactions: List<FullTransaction> = emptyList(),
     people: List<PersonEntity> = emptyList(),
-    aiSummary: String?,
-    isGeneratingSummary: Boolean,
+    askBoard: AskBoard = AskBoard(),
     onAsk: (AiPrompt) -> Unit,
-    askedPrompt: AiPrompt? = null,
     aiAsksLeft: Int = AI_DAILY_CAP,
     // No key in this build means the section isn't drawn at all: a button that can never work is
     // worse than no button.
@@ -128,7 +130,6 @@ fun InsightsScreen(
     onEditTransaction: ((FullTransaction) -> Unit)? = null,
     modifier: Modifier = Modifier,
     today: LocalDate = LocalDate.now(),
-    aiSummaryFailed: Boolean = false,
     month: YearMonth = YearMonth.from(today),
     earliestMonth: YearMonth = month,
     onMonthChange: (YearMonth) -> Unit = {},
@@ -226,10 +227,7 @@ fun InsightsScreen(
             item(key = "ask") {
                 AskSection(
                     prompts = AiPrompt.forInsights,
-                    asked = askedPrompt,
-                    answer = aiSummary,
-                    isGenerating = isGeneratingSummary,
-                    failed = aiSummaryFailed,
+                    board = askBoard,
                     hasSpending = analytics.totalExpense > 0,
                     asksLeft = aiAsksLeft,
                     possessive = possessive,
@@ -304,6 +302,14 @@ private fun CategoryBreakdown(
             return@Column
         }
         val largest = summaries.maxOf { it.amount }.coerceAtLeast(0.01)
+        // Tapping a slice on the ring selects a row down here, and that row is very often below the
+        // fold — so the chart responded and, from where you were looking, nothing happened. The
+        // selected row now asks to be scrolled to; the request travels up through the page's own
+        // scroller, so it works wherever the row happens to be.
+        val bringSelectedIntoView = remember { BringIntoViewRequester() }
+        LaunchedEffect(selected) {
+            if (selected != null) bringSelectedIntoView.bringIntoView()
+        }
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             summaries.forEachIndexed { index, summary ->
                 val isSelected = summary.category == selected
@@ -315,6 +321,7 @@ private fun CategoryBreakdown(
                     position = RowPosition.of(index, summaries.size),
                     possessive = possessive,
                     onClick = { onSelect(summary.category) },
+                    modifier = if (isSelected) Modifier.bringIntoViewRequester(bringSelectedIntoView) else Modifier,
                 )
                 AnimatedVisibility(visible = isSelected, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
                     CategoryEntries(entries, onEditTransaction)
@@ -333,6 +340,7 @@ private fun CategoryBarRow(
     position: RowPosition,
     possessive: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val grown by animateFloatAsState(fraction, animationSpec = tween(600), label = "bar_${summary.category}")
     // Each category's own colour, the same one its badge two inches to the left is already using.
@@ -340,7 +348,7 @@ private fun CategoryBarRow(
     val categoryColor = CategoryHelper.getCategoryColor(summary.category)
     val barColor = if (emphasis) categoryColor else categoryColor.copy(alpha = 0.35f)
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(position.shape)
             .background(if (isSelected) CharcoalElevated else CharcoalCard)

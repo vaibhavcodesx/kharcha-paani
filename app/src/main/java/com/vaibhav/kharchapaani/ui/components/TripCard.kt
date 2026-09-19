@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.ui.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +24,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
@@ -32,6 +34,7 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.model.GroupWithDetails
 import com.vaibhav.kharchapaani.ui.format.Money
@@ -46,6 +49,7 @@ import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
+import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.SquircleShape
 import com.vaibhav.kharchapaani.ui.theme.TicketShape
@@ -73,20 +77,27 @@ fun TripCard(
     var showMenu by remember { mutableStateOf(false) }
     val currentOnDelete by rememberUpdatedState(onDelete)
     val accent = remember(group.colorHex) { parseColor(group.colorHex) }
-    val meta = listOfNotNull(
-        "${details.members.size + 1} people",
-        "${details.transactionsCount} ${if (details.transactionsCount == 1) "expense" else "expenses"}",
-        when {
-            group.isArchived -> "Archived"
-            group.isShared -> "Shared"
-            else -> null
-        },
-    ).joinToString(" · ")
+    // Whether the group is shared or archived is a *state*, not a count, and as a third item on
+    // the end of the counts it was the one that got cut: "3 people · 14 expenses · Shar…". It sits
+    // beside the name as a tag instead, where it reads better, has room, and matches the payment
+    // pill the transaction rows now use.
+    val state = when {
+        group.isArchived -> "Archived"
+        group.isShared -> "Shared"
+        else -> null
+    }
+    val meta = "${details.members.size + 1} people · " +
+        "${details.transactionsCount} ${if (details.transactionsCount == 1) "expense" else "expenses"}"
 
     Box(modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                // An archived group is finished business kept for the record, but it drew at
+                // exactly the weight of a live one, so a list of three trips gave equal billing to
+                // the one nobody is spending on. Dimming the whole card, tag included, says
+                // "still here, no longer current" without a second treatment to learn.
+                .alpha(if (group.isArchived) ARCHIVED_ALPHA else 1f)
                 .clip(Ticket)
                 .background(CharcoalCard)
                 .perforation()
@@ -112,7 +123,16 @@ fun TripCard(
                     Text(group.emoji, style = MaterialTheme.typography.headlineMedium)
                 }
                 Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
-                    Text(group.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = group.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        state?.let { StateTag(it, Modifier.padding(start = Spacing.s)) }
+                    }
                     Text(meta, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Column(horizontalAlignment = Alignment.End) {
@@ -195,3 +215,21 @@ private fun MemberStack(details: GroupWithDetails) {
 
 private val HalfHeight = 68.dp
 private val Ticket = TicketShape(corner = 20.dp, notchRadius = 9.dp)
+
+/** Clearly recessed, still readable: an archived group is history, not hidden. */
+private const val ARCHIVED_ALPHA = 0.55f
+
+/** "Shared" or "Archived" beside a group's name: an outlined tag, the same quiet form as [PaymentPill]. */
+@Composable
+private fun StateTag(label: String, modifier: Modifier = Modifier) {
+    Text(
+        text = label.uppercase(),
+        style = EyebrowText.copy(fontSize = 9.sp, letterSpacing = 0.6.sp),
+        color = SubMutedWarmGray,
+        maxLines = 1,
+        modifier = modifier
+            .clip(KpShapes.small)
+            .border(1.dp, SubMutedWarmGray.copy(alpha = 0.35f), KpShapes.small)
+            .padding(horizontal = 5.dp, vertical = 1.dp),
+    )
+}

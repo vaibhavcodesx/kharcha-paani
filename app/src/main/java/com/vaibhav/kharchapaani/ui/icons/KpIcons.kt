@@ -234,6 +234,34 @@ object KpIcons {
         line("M12 3v7.5M9 7.5l3 3 3-3")
     }
 
+    // Payment methods. Three glyphs on the same grid as everything else, so a transaction row's
+    // payment pill belongs to the same icon family as its category badge.
+
+    /** A banknote: cash. */
+    val Cash = kpIcon("Cash") {
+        tone("M2.5 6.5h19a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-19a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z")
+        line("M2.5 6.5h19a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-19a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z")
+        line("M9.75 12a2.25 2.25 0 1 0 4.5 0a2.25 2.25 0 1 0-4.5 0z")
+        line("M5 9.5v5M19 9.5v5")
+    }
+
+    /** A phone showing a code: paying by UPI. */
+    val Upi = kpIcon("Upi") {
+        tone("M7.5 2.5h9a1.5 1.5 0 0 1 1.5 1.5v16a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 20V4a1.5 1.5 0 0 1 1.5-1.5z")
+        line("M7.5 2.5h9a1.5 1.5 0 0 1 1.5 1.5v16a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 20V4a1.5 1.5 0 0 1 1.5-1.5z")
+        line("M9.25 6.5h2.5v2.5h-2.5zM12.25 6.5h2.5v2.5h-2.5zM9.25 11h2.5v2.5h-2.5z")
+        solid("M12.25 11h2.5v2.5h-2.5z")
+        line("M10 17h4")
+    }
+
+    /** A building with columns: a bank transfer. */
+    val Bank = kpIcon("Bank") {
+        tone("M3 9.5h18v9H3z")
+        line("M12 3l9 5H3l9-5z")
+        line("M3 18.5h18M5 20.5h14")
+        line("M6.5 10.5v6M10.5 10.5v6M13.5 10.5v6M17.5 10.5v6")
+    }
+
     val Other = kpIcon("Other") {
         tone("M15.5 13.5h2.5a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2h-2.5a2 2 0 0 1-2-2v-2.5a2 2 0 0 1 2-2z")
         line("M6 4h2.5a2 2 0 0 1 2 2v2.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z")

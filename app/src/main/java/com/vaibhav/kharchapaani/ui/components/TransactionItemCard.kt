@@ -47,6 +47,7 @@ import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
+import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
@@ -79,10 +80,9 @@ fun TransactionItemCard(
     val time = remember(tx.date) { SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(tx.date)) }
     // "Split between 3" told you a count and nothing else; the faces say who, at a glance, which
     // is what anyone actually wants from a shared expense in a list (backlog §5, Image 13).
-    val detail = listOfNotNull(
-        time,
-        tx.paymentMethod.takeIf { it.isNotBlank() },
-    ).joinToString(" · ")
+    // The payment method has left this string and become its own pill: as plain text it was the
+    // same grey word on nearly every row, which is reading load for no information.
+    val detail = time
     val sharers = remember(fullTx, people) {
         if (!isSplit) emptyList() else fullTx.shares.mapNotNull { share -> people.firstOrNull { it.id == share.personId } }
     }
@@ -166,6 +166,7 @@ fun TransactionItemCard(
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(text = detail, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    PaymentPill(method = tx.paymentMethod, modifier = Modifier.padding(start = Spacing.s))
                     if (isSplit) {
                         SharerFaces(
                             sharers = sharers,
@@ -177,10 +178,22 @@ fun TransactionItemCard(
             }
             Column(horizontalAlignment = Alignment.End) {
                 val shown = if (isSplit) fullTx.myPersonalShare else tx.amount
+                // A split someone else paid in full leaves my share at zero, and "-₹0" is not a
+                // number anyone means: it reads as a negative nothing. No sign, and the muted
+                // colour the settled rows already use, so the row says "this cost me nothing".
+                val nothingOwed = shown < ROUNDS_TO_ZERO
                 Text(
-                    text = if (isIncome) Money.format(shown, showPlus = true) else "-${Money.format(shown)}",
+                    text = when {
+                        nothingOwed -> Money.format(0.0)
+                        isIncome -> Money.format(shown, showPlus = true)
+                        else -> "-${Money.format(shown)}"
+                    },
                     style = MoneyText.row,
-                    color = if (isIncome) ChartreuseSecondary else OffWhiteText,
+                    color = when {
+                        nothingOwed -> MutedWarmGray
+                        isIncome -> ChartreuseSecondary
+                        else -> OffWhiteText
+                    },
                 )
                 if (isSplit) {
                     Text(text = "of ${Money.format(tx.amount)}", style = MoneyText.small)
@@ -229,3 +242,6 @@ internal object SwipeCommit {
 
     fun isFarEnough(offsetPx: Float, rowWidthPx: Float): Boolean = rowWidthPx > 0f && abs(offsetPx) >= rowWidthPx * FRACTION
 }
+
+/** Below half a paisa nothing changed hands, whatever the arithmetic says. */
+private const val ROUNDS_TO_ZERO = 0.005

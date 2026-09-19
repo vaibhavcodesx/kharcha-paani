@@ -23,6 +23,8 @@ import com.vaibhav.kharchapaani.domain.CsvFile
 import com.vaibhav.kharchapaani.domain.ExportRange
 import com.vaibhav.kharchapaani.domain.GroupBalances
 import com.vaibhav.kharchapaani.domain.MonthAnalytics
+import com.vaibhav.kharchapaani.domain.PersonColour
+import com.vaibhav.kharchapaani.domain.PersonColours
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.domain.SubscriptionSchedule
 import com.vaibhav.kharchapaani.domain.SubscriptionCycle
@@ -476,6 +478,25 @@ class LedgerRepository(
 
     suspend fun addPerson(name: String, avatarColor: String): Long = withContext(Dispatchers.IO) {
         db.personDao().insertPerson(PersonEntity(name = name.trim(), avatarColor = avatarColor))
+    }
+
+    /**
+     * Separates any two people on this phone who ended up wearing the same colour.
+     *
+     * Colours were picked once, at insert, against nobody — so two people could hold the same one
+     * for ever, which is what put three near-identical oranges in one group donut. Whoever had a
+     * colour first keeps it; anyone duplicating it moves. See [PersonColours.respace].
+     *
+     * Runs at startup, writes only the rows that actually have to change, and does nothing at all
+     * on a phone where nobody clashes — so it costs one read on every launch after the first.
+     */
+    suspend fun repairPersonColours() = withContext(Dispatchers.IO) {
+        val people = db.personDao().getAllPeopleDirect()
+        val changes = PersonColours.respace(
+            people.map { PersonColour(id = it.id, key = it.profileId ?: it.name, colorHex = it.avatarColor, createdAt = it.createdAt) }
+        )
+        if (changes.isEmpty()) return@withContext
+        db.withTransaction { changes.forEach { (id, hex) -> db.personDao().updatePersonColour(id, hex) } }
     }
 
     suspend fun deletePerson(personId: Long) = withContext(Dispatchers.IO) {

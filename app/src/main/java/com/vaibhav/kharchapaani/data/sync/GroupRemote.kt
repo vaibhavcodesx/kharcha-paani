@@ -41,9 +41,7 @@ interface GroupRemote {
 class SupabaseGroupRemote(private val supabase: SupabaseClient) : GroupRemote {
 
     override suspend fun visibleGroups(): List<RemoteGroup> =
-        supabase.from("groups").select(
-            Columns.raw("*, group_members(profile_id, profiles(id, display_name, avatar_url, avatar_emoji))")
-        ).decodeList()
+        supabase.from("groups").select(Columns.raw(VISIBLE_GROUPS_COLUMNS)).decodeList()
 
     override suspend fun createGroup(id: String, name: String, emoji: String?) = rejectingContent {
         supabase.postgrest.rpc(
@@ -163,5 +161,17 @@ class SupabaseGroupRemote(private val supabase: SupabaseClient) : GroupRemote {
             if (retryable) throw e
             throw RowsRejectedException(e.statusCode, e.error)
         }
+    }
+
+    companion object {
+        /**
+         * PostgREST returns the columns you name and nothing else, so a field missing from this
+         * string arrives as its default rather than as an error — which is how every groupmate's
+         * UPI ID silently stayed null on the device while the server was serving it correctly.
+         * `GroupSelectColumnsTest` walks [RemoteProfile] and [RemoteGroupMember] and fails if a
+         * field is ever added to either without being added here.
+         */
+        internal const val VISIBLE_GROUPS_COLUMNS =
+            "*, group_members(profile_id, profiles(id, display_name, avatar_url, avatar_emoji, upi_id))"
     }
 }

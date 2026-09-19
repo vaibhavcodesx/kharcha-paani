@@ -13,6 +13,7 @@ import com.vaibhav.kharchapaani.domain.Categories
 import com.vaibhav.kharchapaani.domain.CategoryPrefs
 import com.vaibhav.kharchapaani.domain.LocalStatementParser
 import com.vaibhav.kharchapaani.domain.AI_VOICE
+import com.vaibhav.kharchapaani.domain.AiAnswerText
 import com.vaibhav.kharchapaani.domain.AiPrompt
 import com.vaibhav.kharchapaani.domain.instruction
 import com.vaibhav.kharchapaani.domain.StatementPdf
@@ -280,7 +281,7 @@ class GeminiRepository(
                 put("generationConfig", JSONObject().apply {
                     // Low, not zero: these are sentences, and zero makes them read like a form letter.
                     put("temperature", 0.35)
-                    put("maxOutputTokens", 2048)
+                    put("maxOutputTokens", ASK_MAX_OUTPUT_TOKENS)
                 })
             }
             val request = Request.Builder()
@@ -295,7 +296,13 @@ class GeminiRepository(
                     return@withContext null
                 }
                 val candidate = JSONObject(responseBody).optJSONArray("candidates")?.optJSONObject(0)
-                candidate?.let(::answerText)?.takeIf { it.isNotBlank() }
+                    ?: run {
+                        Log.e(TAG, "No candidate for ${prompt.name}: ${responseBody.take(400)}")
+                        return@withContext null
+                    }
+                val truncated = candidate.optString("finishReason") == "MAX_TOKENS"
+                if (truncated) Log.w(TAG, "${prompt.name} hit the output cap of $ASK_MAX_OUTPUT_TOKENS tokens")
+                AiAnswerText.tidy(answerText(candidate), truncated)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error asking ${prompt.name}: ${e.message}", e)
@@ -604,6 +611,22 @@ class GeminiRepository(
 
         /** Room for a long year of rows without letting a runaway answer stream forever. */
         private const val STATEMENT_MAX_OUTPUT_TOKENS = 32768
+
+        /**
+         * The budget for one [ask] answer — and the whole reason the AI answers were broken.
+         *
+         * This was 2048, which looks generous for four sentences until you notice that
+         * `maxOutputTokens` on a thinking model counts the model's *thinking* as well as its
+         * answer. The harder the question, the more of the budget the thinking took and the less
+         * was left to write with, which is exactly the pattern that was reported: "This month"
+         * mostly came back but stopped mid-sentence, and "What to change" — three findings, each
+         * justified against three months of history — usually spent the entire allowance thinking
+         * and returned no text at all, which this class then reported as a failure.
+         *
+         * One cause, two symptoms. The answers themselves are 200-400 tokens; the rest is headroom
+         * for thought, and [AiAnswerText] handles the tail if a question ever outgrows even this.
+         */
+        private const val ASK_MAX_OUTPUT_TOKENS = 8192
 
         private fun defaultClient(): OkHttpClient = OkHttpClient.Builder()
             .connectTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)

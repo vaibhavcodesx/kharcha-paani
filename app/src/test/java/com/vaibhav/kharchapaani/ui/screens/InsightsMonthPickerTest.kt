@@ -56,8 +56,6 @@ class InsightsMonthPickerTest {
                 InsightsScreen(
                     analytics = MonthAnalytics.of(entries, emptyList(), emptyList(), month, today, zone),
                     transactions = entries.map { FullTransaction(it) },
-                    aiSummary = null,
-                    isGeneratingSummary = false,
                     onAsk = {},
                     onExport = {},
                     today = today,
@@ -136,7 +134,7 @@ class InsightsMonthPickerTest {
                 InsightsScreen(
                     analytics = MonthAnalytics.of(all, emptyList(), emptyList(), month, today, zone),
                     transactions = all.map { FullTransaction(it) },
-                    aiSummary = null, isGeneratingSummary = false, onAsk = {}, onExport = {},
+                    onAsk = {}, onExport = {},
                     today = today, month = month, earliestMonth = YearMonth.of(2026, 7), onMonthChange = { month = it },
                 )
             }

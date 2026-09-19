@@ -9,6 +9,7 @@ import com.vaibhav.kharchapaani.data.model.GroupWithDetails
 import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
 import com.vaibhav.kharchapaani.data.model.SimplifiedDebt
 import java.time.Instant
+import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
@@ -28,7 +29,17 @@ object AiContext {
     /** How many previous months [Overspending] and [WhatToChange] compare against. */
     const val TRAILING_MONTHS = 3
 
-    private fun rupees(amount: Double): String = "Rs " + Money.plain(amount)
+    /**
+     * Amounts go into the prompt with the same symbol the screen uses, because a model echoes the
+     * notation it is shown: written as "Rs 4672" here, answers came back saying "Rs 4672" beside a
+     * screen saying "₹4,672". [AiAnswerText.rupees] still normalises the answer, since a prompt can
+     * ask for a format but not guarantee one.
+     */
+    private fun rupees(amount: Double): String = "₹" + Money.plain(amount)
+
+    /** "25 August" — how a person says a date out loud, and so how an answer should read. */
+    internal fun spokenDate(date: LocalDate): String =
+        "${date.dayOfMonth} ${date.month.name.lowercase().replaceFirstChar { it.uppercase() }}"
 
     fun monthInReview(
         analytics: MonthlyAnalytics,
@@ -50,7 +61,9 @@ object AiContext {
         if (elapsed.isNotEmpty()) {
             appendLine()
             appendLine("Average per day so far: ${rupees(DailySpend.dailyAverage(days))}")
-            DailySpend.busiest(days)?.let { appendLine("Busiest day: ${it.date} at ${rupees(it.amount)}") }
+            // Spelled out, not ISO: the model quotes this line almost verbatim, and an answer
+            // reading "the busiest day was 2026-08-25" is the one place the seams showed.
+            DailySpend.busiest(days)?.let { appendLine("Busiest day: ${spokenDate(it.date)} at ${rupees(it.amount)}") }
             appendLine("Days with nothing spent: ${elapsed.count { it.amount <= 0.0 }} of ${elapsed.size}")
             appendLine()
             appendLine("Spending per day:")

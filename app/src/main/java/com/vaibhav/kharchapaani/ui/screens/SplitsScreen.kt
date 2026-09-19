@@ -51,6 +51,7 @@ import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.ui.components.AccountAvatar
 import com.vaibhav.kharchapaani.ui.components.EmptyState
 import com.vaibhav.kharchapaani.ui.components.KpButton
+import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.components.KpButtonTier
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
@@ -150,6 +151,7 @@ fun SplitsScreen(
                             label = "Add a friend",
                             onClick = onOpenAddFriend,
                             tier = KpButtonTier.Outline,
+                            icon = KpIcons.Group,
                             testTag = "add_friend_button",
                         )
                     }
@@ -182,12 +184,12 @@ fun SplitsScreen(
                             onClick = onJoinGroup,
                             tier = KpButtonTier.Ghost,
                             testTag = "join_group_button",
-                            modifier = Modifier.padding(end = Spacing.s),
                         )
                         KpButton(
                             label = "New group",
                             onClick = onOpenCreateGroup,
                             tier = KpButtonTier.Outline,
+                            icon = KpIcons.Add,
                             testTag = "create_group_button",
                         )
                     }
@@ -234,19 +236,28 @@ private fun BalanceSummary(
             Box(Modifier.padding(horizontal = Spacing.xl).width(1.dp).fillMaxHeight().background(CharcoalBorder))
             SummaryFigure("You owe", iOwe, if (iOwe >= 0.005) MoneyOut else MutedWarmGray, style, Modifier.weight(1f))
         }
-        Row(Modifier.padding(top = Spacing.s).offset(x = -Spacing.m)) {
+        // Two real actions, not a footnote. As bare amber text with no container and no icon they
+        // read as a caption under the figures, out of step with every other row in the app, which
+        // pairs an icon with its label. "Log an IOU" in particular creates a record — Ghost is the
+        // tier for exactly that: repeatable, low-stakes, and visibly a control.
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+            modifier = Modifier.padding(top = Spacing.m),
+        ) {
             if (owedToMe >= 0.005 || iOwe >= 0.005) {
                 KpButton(
-                    label = "See who pays whom",
+                    label = "Who pays whom",
                     onClick = onOpenSimplifyDebts,
-                    tier = KpButtonTier.Link,
+                    tier = KpButtonTier.Ghost,
+                    icon = KpIcons.Settle,
                     testTag = "simplify_debts_button",
                 )
             }
             KpButton(
                 label = "Log an IOU",
                 onClick = onOpenIou,
-                tier = KpButtonTier.Link,
+                tier = KpButtonTier.Ghost,
+                icon = KpIcons.Lend,
                 testTag = "record_iou_button",
             )
         }
@@ -264,10 +275,14 @@ private fun SummaryFigure(label: String, amount: Double, color: androidx.compose
 /** A section's create actions, at the end. The Friends | Groups control above already names it. */
 @Composable
 private fun SectionActions(actions: @Composable () -> Unit) {
+    // Left-aligned and tight to the list beneath it. Right-aligned, a single "Add a friend" sat
+    // alone in a wide empty band between the tabs and the first row, attached to neither — which
+    // is what "feels odd and throws off the page" was looking at. Starting at the left puts it
+    // under the tab it belongs to and reads as that list's own toolbar.
     Row(
-        horizontalArrangement = Arrangement.End,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(top = Spacing.s, bottom = Spacing.xs),
+        modifier = Modifier.fillMaxWidth().padding(top = Spacing.m, bottom = Spacing.s),
     ) {
         actions()
     }

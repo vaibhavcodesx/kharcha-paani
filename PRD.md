@@ -1414,14 +1414,71 @@ re-scoped; the verification results are in
   built, because it means rewriting every share and settlement naming
   either of them, and getting that wrong silently corrupts a ledger.
 
+## Design & Bug Backlog Round 2 (owner, 2026-09-19) — companion doc
+
+`design-and-feature-backlog-round2.md`, with the source screenshots under
+`docs/design-reference/2026-09-1 11;16 AM Post_Changes SS/`. Scores the
+previous round and reports what the build actually did on a real phone.
+
+Its two headline items were both **regressions or non-functioning features
+reported as fixed**, which is the thing to take from this round: the previous
+session verified the UPI work with a synthetic RLS test and the AI work with
+unit tests, and both passed while the features did not work. Neither test was
+wrong; both tested the wrong layer. See `docs/round-2-investigation.md` for
+what each cause turned out to be.
+
+### Decisions taken (2026-09-19, round 2)
+
+- **17. Every UPI delivery method, not one.** Alongside the two QR codes, the
+  same `upi://pay` link is a button that hands off to whichever UPI app the
+  payer has. A QR needs a second device or a screenshot; the phone holding the
+  debt can just open the app. Decided independently of the bug fix, and worth
+  it on its own.
+
+- **18. A person's colour is a property of the set, not of the row.** Colours
+  were assigned once, at insert, against nobody, so two people could hold the
+  same one for ever. They are now respaced across everyone on the phone —
+  first holder keeps it, a duplicate moves — which is what makes "the same
+  colour everywhere a person appears" a guarantee rather than a hope.
+
+- **19. Each AI question owns its own result.** Three independent requests
+  shared one answer and one error flag. `AskBoard` keys both by question,
+  which also means an answer already fetched is shown again for free instead
+  of costing another of the day's asks.
+
+- **20. Payment method is an icon, not a word.** Reference-led (§8), matched
+  on what a name contains rather than a fixed list, because categories and
+  payment methods are user-extendable.
+
+- **21. Contrast is measured, not judged.** `SurfaceContrastTest` (containers,
+  in L\*) and `TextContrastTest` (text, in WCAG ratio). The Ghost tier had
+  been invisible on cards since it was written, and no amount of looking at
+  screenshots had caught it.
+
+### Examined and deliberately not changed
+
+- **§10.3, bottom clipping.** What reproduces is the floating dock passing
+  over content mid-scroll, which is what a floating dock does. Every list's
+  `contentPadding` already clears the dock at the end of the list, which is
+  the case that matters.
+- **§10.4, the bolt.** The Bills icon and the owner's chosen ⚡ avatar really
+  do look alike on the Insights screen. Both available fixes cost more than
+  the problem: dropping ⚡ from the avatar list silently changes an avatar
+  already chosen (`cleanEmoji` would reject it and fall back to initials), and
+  a bolt is the clearest glyph available for a utility bill. **Owner's call
+  which to keep** — this is a preference, not a defect.
+- **§10.9, the wordmark.** Already shipped, at the top of the account sheet,
+  above where the v3 screenshot started.
+
 ### Still open
 
-- **The dock's glass**, awaiting a device screenshot: `liquidGlass`'s
-  tint alpha and blur radius are the two knobs.
 - **Merging a local friend into a joined account** — its own design pass,
   migration and balance-equality tests.
 - **`minSdk` 24 → 26**, which would give Android 7.x the bundled fonts'
   weight axis. A product call.
+- **§10.5, repeated food icons** and **§10.6, the month switcher's pattern** —
+  both real, both cosmetic, neither started.
+- **The ⚡ collision above**, pending the owner's preference.
 
 
 ## PART C — Testing & Quality

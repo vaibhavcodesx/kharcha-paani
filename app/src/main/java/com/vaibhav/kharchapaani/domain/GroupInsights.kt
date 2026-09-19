@@ -25,7 +25,10 @@ object GroupInsights {
      * You are the brand amber, and no colour in the friend palette sits near it, so "You" can never
      * collide with a member on the donut or in an avatar stack.
      */
-    const val MY_COLOR = "#FF7A3D"
+    const val MY_COLOR = PersonColours.MINE
+
+    /** Someone who has left: a neutral, so they read as absent rather than as another member. */
+    private const val FORMER_MEMBER_COLOR = "#D5D8DC"
 
     /**
      * Each member's share of the group's spending, largest first. A member's share is what the
@@ -53,7 +56,8 @@ object GroupInsights {
                 MemberShare(
                     personId = personId,
                     name = if (personId == ME) myName else names[personId]?.name ?: "Former member",
-                    colorHex = if (personId == ME) MY_COLOR else names[personId]?.avatarColor ?: "#D5D8DC",
+                    // A person whose row has gone still needs a colour, and it must not be MY_COLOR.
+                    colorHex = if (personId == ME) MY_COLOR else names[personId]?.avatarColor ?: FORMER_MEMBER_COLOR,
                     amount = amount / 100.0,
                     fraction = amount.toFloat() / total,
                 )

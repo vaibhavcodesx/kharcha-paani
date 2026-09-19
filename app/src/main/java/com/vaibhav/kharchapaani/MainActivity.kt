@@ -338,13 +338,9 @@ fun SplitFlowApp(
     val selectedGroupForDetail by viewModel.selectedGroupForDetail.collectAsState()
 
     // AI Summary
-    val aiSummary by viewModel.aiSummary.collectAsState()
-    val askedPrompt by viewModel.askedPrompt.collectAsState()
+    val askBoard by viewModel.askBoard.collectAsState()
     val aiAsksLeft by viewModel.aiAsksLeft.collectAsState()
     val tripReview by viewModel.tripReview.collectAsState()
-    val isReviewingTrip by viewModel.isReviewingTrip.collectAsState()
-    val tripReviewFailed by viewModel.tripReviewFailed.collectAsState()
-    val isGeneratingSummary by viewModel.isGeneratingSummary.collectAsState()
 
     // Statement Import State
     val isImportStatementOpen by viewModel.isImportStatementOpen.collectAsState()
@@ -392,7 +388,6 @@ fun SplitFlowApp(
         }
     }
     val syncStatus by viewModel.syncStatus.collectAsStateWithLifecycle()
-    val aiSummaryFailed by viewModel.aiSummaryFailed.collectAsState()
     val parseNotice by viewModel.parseNotice.collectAsState()
 
     val hazeState = rememberHazeState()
@@ -466,15 +461,12 @@ fun SplitFlowApp(
                         analytics = insightsAnalytics,
                         transactions = rawTransactions,
                         people = people,
-                        aiSummary = aiSummary,
-                        isGeneratingSummary = isGeneratingSummary,
+                        askBoard = askBoard,
                         onAsk = { viewModel.askInsights(it) },
-                        askedPrompt = askedPrompt,
                         aiAsksLeft = aiAsksLeft,
                         aiAvailable = viewModel.aiAvailable,
                         onExport = { viewModel.openExport() },
                         onEditTransaction = { viewModel.openEditTransaction(it) },
-                        aiSummaryFailed = aiSummaryFailed,
                         month = insightsMonth,
                         earliestMonth = earliestInsightsMonth,
                         onMonthChange = { viewModel.setInsightsMonth(it) },
@@ -675,8 +667,6 @@ fun SplitFlowApp(
         onExportGroup = { groupId -> viewModel.exportGroupCsv(context, groupId) },
         onAskTripReview = { groupId -> viewModel.askTripReview(groupId) },
         tripReview = tripReview,
-        isReviewingTrip = isReviewingTrip,
-        tripReviewFailed = tripReviewFailed,
         aiAsksLeft = aiAsksLeft,
         aiAvailable = viewModel.aiAvailable,
         onDismiss = {

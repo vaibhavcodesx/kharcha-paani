@@ -73,6 +73,7 @@ import com.vaibhav.kharchapaani.ui.components.SheetScaffold
 import com.vaibhav.kharchapaani.ui.components.SheetTextInput
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
+import com.vaibhav.kharchapaani.ui.theme.BrandGradient
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
@@ -185,6 +186,11 @@ fun AccountSheetContent(
                     .size(64.dp)
                     .clip(CircleShape)
                     .background(WarmAmberPrimary.copy(alpha = 0.18f))
+                    // The brand gradient as a ring. It is the app's one distinctive mark and it
+                    // was used only as a fill — on the add button and the hero figure — never as
+                    // an edge. This is the one avatar in the app that is *yours*, which is the
+                    // right place for it and the reason it goes nowhere else.
+                    .border(2.dp, BrandGradient.diagonal(), CircleShape)
                     .semantics { contentDescription = "Your avatar" },
             ) {
                 Text(
