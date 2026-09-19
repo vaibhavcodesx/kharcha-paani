@@ -11,3 +11,11 @@
 local.properties
 .env
 debug.keystore
+
+# Built APKs staged for sharing, never committed
+dist/
+
+# Signing. The private key and its passwords never go near the repository.
+*.jks
+*.keystore
+keystore.properties

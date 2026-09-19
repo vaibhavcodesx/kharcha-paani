@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.util.Base64
 import android.util.Log
 import com.vaibhav.kharchapaani.BuildConfig
+import com.vaibhav.kharchapaani.data.remote.AppIdentity
 import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
 import com.vaibhav.kharchapaani.data.model.ParsedTransactionResult
 import com.vaibhav.kharchapaani.data.model.StatementParseResult
@@ -39,7 +40,13 @@ import java.util.concurrent.TimeUnit
  * @param apiKey where the key comes from, so tests don't depend on this build having one.
  */
 class GeminiRepository(
-    private val client: OkHttpClient = defaultClient(),
+    /**
+     * This app's package and signing fingerprint, sent with every request so a Gemini key
+     * restricted to this app is accepted. Null in tests and when the signature can't be read;
+     * see [AppIdentity].
+     */
+    appIdentity: AppIdentity? = null,
+    private val client: OkHttpClient = defaultClient(appIdentity),
     private val endpoint: (model: String) -> String = ::googleEndpoint,
     private val apiKey: () -> String = ::buildConfigApiKey,
 ) {
@@ -628,10 +635,13 @@ class GeminiRepository(
          */
         private const val ASK_MAX_OUTPUT_TOKENS = 8192
 
-        private fun defaultClient(): OkHttpClient = OkHttpClient.Builder()
+        // The statement call derives its own longer-timeout client from this one with
+        // `newBuilder()`, so an interceptor added here reaches every Gemini request there is.
+        private fun defaultClient(appIdentity: AppIdentity?): OkHttpClient = OkHttpClient.Builder()
             .connectTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .readTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .addInterceptor(AppIdentity.restrictionInterceptor(appIdentity))
             .build()
 
         private fun googleEndpoint(model: String): String =

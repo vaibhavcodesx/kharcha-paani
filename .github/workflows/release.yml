@@ -1,0 +1,131 @@
+name: Release APK
+
+# Manual only. Never on push — a release is a decision, not a side effect of committing.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag, e.g. v1.0.0 (must match versionName in app/build.gradle.kts)'
+        required: true
+        type: string
+      omit_ai_key:
+        description: 'Build without the Gemini key (AI section hidden). Use for wider sharing.'
+        required: false
+        default: false
+        type: boolean
+      prerelease:
+        description: 'Mark the GitHub Release as a pre-release'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      # The tag is the release's identity, so it has to agree with what the APK will report.
+      # Catching this here costs seconds; catching it after publishing means deleting a release.
+      - name: Check the tag matches versionName
+        run: |
+          version_name=$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts)
+          expected="v${version_name}"
+          if [ "${{ inputs.tag }}" != "$expected" ]; then
+            echo "::error::Tag '${{ inputs.tag }}' does not match versionName '$version_name' (expected '$expected')."
+            echo "Bump versionName and versionCode in app/build.gradle.kts, or pass the matching tag."
+            exit 1
+          fi
+          echo "version_name=$version_name" >> "$GITHUB_ENV"
+
+      # Written, used and deleted within this job. Secrets are masked in logs by Actions.
+      - name: Restore the signing keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::Secret KEYSTORE_BASE64 is not set. See README > Releasing."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+
+      # The Secrets Gradle Plugin reads .env; without it every BuildConfig value falls back to the
+      # placeholders in .env.example and the shipped app cannot reach Supabase.
+      - name: Write .env from secrets
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+        run: |
+          {
+            echo "SUPABASE_URL=$SUPABASE_URL"
+            echo "SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY"
+            echo "GOOGLE_WEB_CLIENT_ID=$GOOGLE_WEB_CLIENT_ID"
+          } > .env
+          if [ "${{ inputs.omit_ai_key }}" = "true" ]; then
+            echo "Building without the Gemini key: the AI section will be hidden."
+          else
+            echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> .env
+          fi
+
+      - name: Build the signed release APK
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ "${{ inputs.omit_ai_key }}" = "true" ]; then
+            ./gradlew :app:assembleRelease -PomitAiKey
+          else
+            ./gradlew :app:assembleRelease
+          fi
+
+      # assembleRelease leaves the APK unsigned rather than failing when credentials are missing,
+      # so "it built" is not the same as "it is installable". This is the check that it is.
+      - name: Verify the APK is signed
+        run: |
+          apk=$(ls app/build/outputs/apk/release/*.apk | head -1)
+          build_tools=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$build_tools/apksigner" verify --print-certs "$apk"
+          echo "apk_path=$apk" >> "$GITHUB_ENV"
+
+      - name: Name the APK after the release
+        run: |
+          suffix=""
+          if [ "${{ inputs.omit_ai_key }}" = "true" ]; then suffix="-no-ai"; fi
+          final="KharchaPaani-${{ inputs.tag }}${suffix}.apk"
+          cp "$apk_path" "$final"
+          echo "final_apk=$final" >> "$GITHUB_ENV"
+
+      - name: Clean up the keystore and .env
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks" .env
+
+      - name: Create the GitHub Release and attach the APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="Install: download the APK below, open it on your phone, and allow installation from this source when Android asks."
+          if [ "${{ inputs.omit_ai_key }}" = "true" ]; then
+            notes="$notes
+
+This build ships without a Gemini API key, so the AI features (Ask about your money, Read this trip, statement scanning) are hidden. Everything else works."
+          fi
+          gh release create "${{ inputs.tag }}" "$final_apk" \
+            --title "Kharcha Paani ${{ inputs.tag }}" \
+            --notes "$notes" \
+            --target "${{ github.sha }}" \
+            ${{ inputs.prerelease && '--prerelease' || '' }}

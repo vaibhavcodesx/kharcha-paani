@@ -1470,6 +1470,34 @@ what each cause turned out to be.
 - **§10.9, the wordmark.** Already shipped, at the top of the account sheet,
   above where the v3 screenshot started.
 
+### Backlog: move Gemini behind a Supabase Edge Function (2026-09-19)
+
+**Not built. Logged here rather than done, because it is too large to bundle
+into a distribution-prep pass.**
+
+The Gemini key is compiled into `BuildConfig` and therefore into every APK that
+carries it. Anyone with the file can extract it. The distribution pass added the
+two mitigations that are available client-side — an Android application
+restriction on the key (package + signing SHA-1, with `AppIdentity` sending the
+`X-Android-Package` / `X-Android-Cert` headers that make it enforceable) and a
+quota ceiling — plus `-PomitAiKey`, which ships a build with no key at all.
+
+None of those stop a determined person: Google's own documentation calls
+bypassing the app restriction "straightforward", because the headers are just
+headers. The only fix that actually holds is for the key never to reach the
+client.
+
+**Shape of the work:** a Supabase Edge Function holding the key, called by the
+app with its existing Supabase session as auth; per-user rate limiting there
+(which would also replace `AI_DAILY_CAP`, currently enforced only on-device and
+so trivially resettable); and rewriting the five call sites in
+`GeminiRepository` to point at it. Statement scanning is the awkward one — it
+posts a PDF of up to 14 MB, so either the function streams it or the app
+uploads to Storage first and passes a reference.
+
+**Do it when** the app goes past people you know, or the key gets abused,
+whichever is first.
+
 ### Still open
 
 - **Merging a local friend into a joined account** — its own design pass,
