@@ -46,6 +46,7 @@ import com.vaibhav.kharchapaani.ui.components.SheetHandle
 import com.vaibhav.kharchapaani.ui.components.AskSection
 import com.vaibhav.kharchapaani.ui.components.EmptyState
 import com.vaibhav.kharchapaani.domain.AiPrompt
+import com.vaibhav.kharchapaani.domain.AskBoard
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.screens.HomeScreen
 import com.vaibhav.kharchapaani.ui.screens.InsightsScreen
@@ -137,14 +138,19 @@ class ScreenRenderCapture {
             Modifier.fillMaxSize().background(CharcoalBg).padding(Spacing.page),
             verticalArrangement = Arrangement.spacedBy(Spacing.l),
         ) {
+            // Answered under one chip while another has failed — the case that used to show the
+            // failure under every chip at once.
             AskSection(
                 prompts = AiPrompt.forInsights,
-                asked = AiPrompt.Overspending,
-                answer = "Food is Rs 2,100 above your last three months, which averaged Rs 3,000. " +
-                    "Transport and Bills are both in line. The jump is mostly the 14th and 15th, " +
-                    "which came to Rs 1,624 between them.",
-                isGenerating = false,
-                failed = false,
+                board = AskBoard()
+                    .asking(AiPrompt.WhatToChange).failed(AiPrompt.WhatToChange)
+                    .asking(AiPrompt.Overspending)
+                    .answered(
+                        AiPrompt.Overspending,
+                        "Food is ₹2,100 above your last three months, which averaged ₹3,000. " +
+                            "Transport and Bills are both in line. The jump is mostly the 14th " +
+                            "and 15th, which came to ₹1,624 between them.",
+                    ),
                 hasSpending = true,
                 asksLeft = 17,
                 possessive = "your",
@@ -152,10 +158,7 @@ class ScreenRenderCapture {
             )
             AskSection(
                 prompts = AiPrompt.forInsights,
-                asked = AiPrompt.MonthInReview,
-                answer = null,
-                isGenerating = true,
-                failed = false,
+                board = AskBoard().asking(AiPrompt.MonthInReview),
                 hasSpending = true,
                 asksLeft = 16,
                 possessive = "your",
@@ -163,10 +166,7 @@ class ScreenRenderCapture {
             )
             AskSection(
                 prompts = AiPrompt.forInsights,
-                asked = null,
-                answer = null,
-                isGenerating = false,
-                failed = false,
+                board = AskBoard(),
                 hasSpending = false,
                 asksLeft = 20,
                 possessive = "your",
@@ -392,8 +392,7 @@ class ScreenRenderCapture {
                 ),
                 topMerchant = "Swiggy", dailyStreak = 6,
             ),
-            transactions = food, aiSummary = null, isGeneratingSummary = false,
-            onAsk = {}, onExport = {}, today = today,
+            transactions = food, onAsk = {}, onExport = {}, today = today,
         )
     }
 

@@ -58,9 +58,9 @@ class AiContextTest {
         val days = DailySpend.of(listOf(tx(1, "Chai", 120.0, day = 3)), month, today, zone)
         val block = AiContext.monthInReview(analytics, days, month)
 
-        assertTrue(block.contains("Rs 5265.34"))
-        assertTrue(block.contains("Transport: Rs 2636.66"))
-        assertTrue(block.contains("Food: Rs 2009.68"))
+        assertTrue(block.contains("₹5265.34"))
+        assertTrue(block.contains("Transport: ₹2636.66"))
+        assertTrue(block.contains("Food: ₹2009.68"))
         assertTrue(block.contains("Train tickets return"))
         assertTrue(block.contains("Days logged in a row: 4"))
     }
@@ -73,18 +73,20 @@ class AiContextTest {
         )
         val block = AiContext.monthInReview(analytics, days, month)
 
-        assertTrue(block.contains("Busiest day: 2026-09-09"))
-        assertTrue(block.contains("2026-09-03: Rs 120"))
-        assertTrue(block.contains("2026-09-09: Rs 1800"))
+        assertTrue(block.contains("Busiest day: 9 September"))
+        assertTrue(block.contains("2026-09-03: ₹120"))
+        assertTrue(block.contains("2026-09-09: ₹1800"))
     }
 
     @Test
-    fun `amounts are written plainly, never as dollars`() {
+    fun `amounts carry the rupee sign, and never a dollar`() {
+        // The prompt used to say "Rs", and answers dutifully came back saying "Rs 4672" beside a
+        // screen reading "₹4,672". A model writes back the notation it is shown.
         val block = AiContext.monthInReview(analytics, emptyList(), month)
 
         assertFalse(block.contains("$"))
-        assertFalse(block.contains("₹"))
-        assertTrue(block.contains("Rs "))
+        assertFalse(block.contains("Rs "))
+        assertTrue(block.contains("₹"))
     }
 
     // --- The trailing comparison
@@ -210,8 +212,8 @@ class AiContextTest {
         assertTrue(block.contains("Goa trip"))
         assertTrue(block.contains("2026-09-01 to 2026-09-09"))
         assertTrue(block.contains("9 day(s)"))
-        assertTrue(block.contains("Rs 1000 a day"))
-        assertTrue(block.contains("Single biggest expense: Hotel at Rs 8000"))
+        assertTrue(block.contains("₹1000 a day"))
+        assertTrue(block.contains("Single biggest expense: Hotel at ₹8000"))
     }
 
     @Test

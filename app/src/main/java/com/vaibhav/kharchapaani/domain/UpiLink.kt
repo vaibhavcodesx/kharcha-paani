@@ -59,5 +59,11 @@ object UpiLink {
     private const val MAX_NOTE = 50
 }
 
-/** Where friends pay this account: its UPI ID and the name UPI apps show. Kept only on this phone. */
+/**
+ * Where to pay someone: their UPI ID and the name UPI apps show.
+ *
+ * Holds either end of a settlement — this account's own handle, or a groupmate's as it arrived with
+ * their profile. It is published to `profiles.upi_id` and readable only by people who share a group
+ * (`profiles_select_self_or_groupmate`), never publicly.
+ */
 data class UpiPayee(val upiId: String, val name: String)

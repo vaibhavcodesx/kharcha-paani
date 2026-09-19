@@ -71,6 +71,7 @@ import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.ui.components.AskSection
 import com.vaibhav.kharchapaani.ui.components.EmptyState
 import com.vaibhav.kharchapaani.domain.AiPrompt
+import com.vaibhav.kharchapaani.domain.AskBoard
 import com.vaibhav.kharchapaani.domain.AI_DAILY_CAP
 import com.vaibhav.kharchapaani.ui.components.CategoryRing
 import com.vaibhav.kharchapaani.ui.components.DailyFlowChart
@@ -116,10 +117,8 @@ fun InsightsScreen(
     analytics: MonthlyAnalytics,
     transactions: List<FullTransaction> = emptyList(),
     people: List<PersonEntity> = emptyList(),
-    aiSummary: String?,
-    isGeneratingSummary: Boolean,
+    askBoard: AskBoard = AskBoard(),
     onAsk: (AiPrompt) -> Unit,
-    askedPrompt: AiPrompt? = null,
     aiAsksLeft: Int = AI_DAILY_CAP,
     // No key in this build means the section isn't drawn at all: a button that can never work is
     // worse than no button.
@@ -128,7 +127,6 @@ fun InsightsScreen(
     onEditTransaction: ((FullTransaction) -> Unit)? = null,
     modifier: Modifier = Modifier,
     today: LocalDate = LocalDate.now(),
-    aiSummaryFailed: Boolean = false,
     month: YearMonth = YearMonth.from(today),
     earliestMonth: YearMonth = month,
     onMonthChange: (YearMonth) -> Unit = {},
@@ -226,10 +224,7 @@ fun InsightsScreen(
             item(key = "ask") {
                 AskSection(
                     prompts = AiPrompt.forInsights,
-                    asked = askedPrompt,
-                    answer = aiSummary,
-                    isGenerating = isGeneratingSummary,
-                    failed = aiSummaryFailed,
+                    board = askBoard,
                     hasSpending = analytics.totalExpense > 0,
                     asksLeft = aiAsksLeft,
                     possessive = possessive,

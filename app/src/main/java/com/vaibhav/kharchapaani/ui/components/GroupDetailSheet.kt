@@ -6,6 +6,7 @@ import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import com.vaibhav.kharchapaani.ui.theme.BarTrack
 import com.vaibhav.kharchapaani.domain.AI_DAILY_CAP
 import com.vaibhav.kharchapaani.domain.AiPrompt
+import com.vaibhav.kharchapaani.domain.AskState
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
@@ -84,15 +85,31 @@ fun GroupDetailSheet(
     onSettleUpWith: (personId: Long) -> Unit = {},
     onExportGroup: (groupId: Long) -> Unit = {},
     onAskTripReview: (groupId: Long) -> Unit = {},
-    tripReview: String? = null,
-    isReviewingTrip: Boolean = false,
-    tripReviewFailed: Boolean = false,
+    tripReview: AskState = AskState.Idle,
     aiAsksLeft: Int = AI_DAILY_CAP,
     aiAvailable: Boolean = true,
 ) {
     if (groupDetails == null) return
     KpModalSheet(onDismiss = onDismiss) {
-        GroupDetailContent(groupDetails, onAddExpense, onEditTransaction, sharedGroupPanel, onSettleUpWith = onSettleUpWith, onExportGroup = onExportGroup)
+        // Every argument named and forwarded. Four of them used to stop here: the sheet took
+        // onAskTripReview, tripReview, aiAsksLeft and aiAvailable and passed none of them on, so
+        // the content fell back to its defaults — and the default for onAskTripReview is `{}`.
+        // The button drew, enabled, at full contrast, and ran an empty lambda. That is the whole
+        // of "the trip AI doesn't work at all, it isn't even clickable": it was wired to nothing.
+        // Defaults on a composable's callbacks make this invisible to the compiler, so the rule
+        // here is that a forwarding call names every parameter rather than relying on any of them.
+        GroupDetailContent(
+            groupDetails = groupDetails,
+            onAddExpense = onAddExpense,
+            onEditTransaction = onEditTransaction,
+            sharedGroupPanel = sharedGroupPanel,
+            onSettleUpWith = onSettleUpWith,
+            onExportGroup = onExportGroup,
+            onAskTripReview = onAskTripReview,
+            tripReview = tripReview,
+            aiAsksLeft = aiAsksLeft,
+            aiAvailable = aiAvailable,
+        )
     }
 }
 
@@ -111,9 +128,7 @@ fun GroupDetailContent(
     onSettleUpWith: (personId: Long) -> Unit = {},
     onExportGroup: (groupId: Long) -> Unit = {},
     onAskTripReview: (groupId: Long) -> Unit = {},
-    tripReview: String? = null,
-    isReviewingTrip: Boolean = false,
-    tripReviewFailed: Boolean = false,
+    tripReview: AskState = AskState.Idle,
     aiAsksLeft: Int = AI_DAILY_CAP,
     aiAvailable: Boolean = true,
 ) {
@@ -215,19 +230,23 @@ fun GroupDetailContent(
             ) {
                 AskAnswer(
                     asked = AiPrompt.TripReview,
-                    answer = tripReview,
-                    isGenerating = isReviewingTrip,
-                    failed = tripReviewFailed,
+                    state = tripReview,
                     hasSpending = true,
                     asksLeft = aiAsksLeft,
-                    possessive = "this group's",
                     onRetry = { onAskTripReview(group.id) },
+                    // The Insights wording told you to pick a question, above a card with no
+                    // questions on it and a single button.
+                    idleMessage = "A read of the whole group: who carried it, what it cost, how it went.",
                 )
-                if (tripReview == null && !isReviewingTrip) {
+                if (tripReview !is AskState.Answered && tripReview !is AskState.Asking) {
                     KpButton(
                         label = "Read this trip",
                         onClick = { onAskTripReview(group.id) },
-                        tier = KpButtonTier.Ghost,
+                        // Outline, not Ghost: Ghost's fill is CharcoalElevated, which against the
+                        // CharcoalCard this button sits on is very nearly the same colour, leaving
+                        // it with no visible edge at all. It read as a caption rather than a
+                        // button, which is why it was reported as "not even clickable".
+                        tier = KpButtonTier.Outline,
                         enabled = aiAsksLeft > 0,
                         testTag = "trip_review_button",
                         modifier = Modifier.padding(top = Spacing.m),

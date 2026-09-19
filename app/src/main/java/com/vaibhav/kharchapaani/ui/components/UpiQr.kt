@@ -1,5 +1,9 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -23,6 +27,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -38,6 +43,7 @@ import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.vaibhav.kharchapaani.domain.UpiLink
 import com.vaibhav.kharchapaani.domain.UpiPayee
 import com.vaibhav.kharchapaani.ui.format.Money
+import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
@@ -134,5 +140,29 @@ fun UpiPaymentCard(payee: UpiPayee, modifier: Modifier = Modifier, amount: Doubl
                 Text("Copy", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
             }
         }
+        // The same link the QR encodes, as something to tap. A QR needs a second device or a
+        // screenshot; on the phone that is already holding the debt, handing the link straight to a
+        // UPI app is both faster and one less thing that has to render correctly to work at all.
+        val context = LocalContext.current
+        KpButton(
+            label = if (shownAmount != null) "Pay ${Money.format(shownAmount)} in a UPI app" else "Open in a UPI app",
+            onClick = {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
+                try {
+                    // A chooser rather than the default handler: most phones have several UPI apps
+                    // and only one of them has the money in it.
+                    context.startActivity(Intent.createChooser(intent, "Pay with"))
+                } catch (e: ActivityNotFoundException) {
+                    // No UPI app at all. The QR and the copyable ID above still work, so this is a
+                    // dead end rather than a failure worth interrupting anyone over.
+                    Log.w("UpiPaymentCard", "No app handles upi://pay on this device", e)
+                }
+            },
+            tier = KpButtonTier.Outline,
+            icon = KpIcons.Send,
+            fillWidth = true,
+            modifier = Modifier.fillMaxWidth().padding(top = Spacing.s),
+            testTag = "upi_deep_link_button",
+        )
     }
 }

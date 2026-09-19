@@ -20,6 +20,8 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.domain.AiPrompt
+import com.vaibhav.kharchapaani.domain.AskBoard
+import com.vaibhav.kharchapaani.domain.AskState
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
 import com.vaibhav.kharchapaani.ui.theme.EyebrowText
@@ -40,10 +42,7 @@ import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 @Composable
 fun AskSection(
     prompts: List<AiPrompt>,
-    asked: AiPrompt?,
-    answer: String?,
-    isGenerating: Boolean,
-    failed: Boolean,
+    board: AskBoard,
     hasSpending: Boolean,
     asksLeft: Int,
     possessive: String,
@@ -69,8 +68,11 @@ fun AskSection(
             prompts.forEach { prompt ->
                 ChoiceChip(
                     label = prompt.label,
-                    selected = prompt == asked,
-                    enabled = hasSpending && asksLeft > 0 && !isGenerating,
+                    selected = prompt == board.selected,
+                    // A question already answered stays tappable while another is running and when
+                    // the day's asks are gone: showing an answer that is already here costs
+                    // nothing, and greying it out would hide work already paid for.
+                    enabled = hasSpending && (!board.needsAsking(prompt) || (asksLeft > 0 && !board.isAsking)),
                     onClick = { onAsk(prompt) },
                     modifier = Modifier.testTag("ask_${prompt.name}"),
                 )
@@ -78,14 +80,11 @@ fun AskSection(
         }
         Box(Modifier.fillMaxWidth().padding(top = Spacing.m)) {
             AskAnswer(
-                asked = asked,
-                answer = answer,
-                isGenerating = isGenerating,
-                failed = failed,
+                asked = board.selected,
+                state = board.selectedState,
                 hasSpending = hasSpending,
                 asksLeft = asksLeft,
-                possessive = possessive,
-                onRetry = { asked?.let(onAsk) },
+                onRetry = { board.selected?.let(onAsk) },
             )
         }
     }
@@ -100,18 +99,17 @@ fun AskSection(
 @Composable
 fun AskAnswer(
     asked: AiPrompt?,
-    answer: String?,
-    isGenerating: Boolean,
-    failed: Boolean,
+    state: AskState,
     hasSpending: Boolean,
     asksLeft: Int,
-    possessive: String,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    /** What the empty state says. The group sheet has one button, not a row of questions. */
+    idleMessage: String = "Pick a question. Nothing runs until you tap one.",
 ) {
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         when {
-            isGenerating -> {
+            state is AskState.Asking -> {
                 // The label goes above the shimmer, where the answer's own label will be — so the
                 // block doesn't reshuffle the moment the text arrives.
                 Text(asked?.eyebrow?.uppercase() ?: "READING", style = EyebrowText)
@@ -127,6 +125,13 @@ fun AskAnswer(
                 }
             }
 
+            // An answer already in hand outranks every other state, including the day's cap:
+            // it is here, it cost an ask, and there is no reason to replace it with a notice.
+            state is AskState.Answered -> {
+                if (asked != null) Text(asked.eyebrow.uppercase(), style = EyebrowText)
+                Text(state.text, style = MaterialTheme.typography.bodyLarge)
+            }
+
             !hasSpending -> Text(
                 "Log a few expenses first; there's nothing to read yet.",
                 style = MaterialTheme.typography.bodyMedium,
@@ -137,20 +142,9 @@ fun AskAnswer(
                 style = MaterialTheme.typography.bodyMedium,
             )
 
-            answer != null -> {
-                if (asked != null) Text(asked.eyebrow.uppercase(), style = EyebrowText)
-                Text(answer, style = MaterialTheme.typography.bodyLarge)
-                if (failed) {
-                    RetryLine("Couldn't refresh it just now.", onRetry)
-                }
-            }
+            state is AskState.Failed -> RetryLine("Couldn't get an answer just now.", onRetry)
 
-            failed -> RetryLine("Couldn't get an answer just now.", onRetry)
-
-            else -> Text(
-                "Pick a question. Nothing runs until you tap one.",
-                style = MaterialTheme.typography.bodyMedium,
-            )
+            else -> Text(idleMessage, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

@@ -47,6 +47,8 @@ import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
 import com.vaibhav.kharchapaani.domain.AI_DAILY_CAP
 import com.vaibhav.kharchapaani.domain.AiContext
 import com.vaibhav.kharchapaani.domain.AiPrompt
+import com.vaibhav.kharchapaani.domain.AskBoard
+import com.vaibhav.kharchapaani.domain.AskState
 import com.vaibhav.kharchapaani.domain.DailySpend
 import com.vaibhav.kharchapaani.domain.GroupInsights
 import com.vaibhav.kharchapaani.ui.format.MonthNames
@@ -335,10 +337,9 @@ class MainViewModel(
         val picked = month.coerceAtMost(YearMonth.now())
         if (picked == _insightsMonth.value) return
         _insightsMonth.value = picked
-        // A review of one month doesn't belong under another.
-        _aiSummary.value = null
-        _aiSummaryFailed.value = false
-        _askedPrompt.value = null
+        // A review of one month doesn't belong under another, and that goes for all three at once.
+        askJob?.cancel()
+        _askBoard.value = _askBoard.value.cleared()
     }
 
     /** Recent Activity: transactions plus settlements and IOUs, filtered and searched together. */
@@ -466,14 +467,6 @@ class MainViewModel(
         id?.let { selected -> all.firstOrNull { it.group.id == selected } }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    // AI Financial Summary
-    private val _aiSummary = MutableStateFlow<String?>(null)
-    val aiSummary: StateFlow<String?> = _aiSummary.asStateFlow()
-
-    /** The last summary request failed; the review card says so instead of inventing one. */
-    private val _aiSummaryFailed = MutableStateFlow(false)
-    val aiSummaryFailed: StateFlow<Boolean> = _aiSummaryFailed.asStateFlow()
-
     /** Shown at the top of the quick-add sheet, e.g. when a bill couldn't be read. */
     private val _parseNotice = MutableStateFlow<String?>(null)
     val parseNotice: StateFlow<String?> = _parseNotice.asStateFlow()
@@ -482,8 +475,6 @@ class MainViewModel(
         _statusMessage.value = text
     }
 
-    private val _isGeneratingSummary = MutableStateFlow(false)
-    val isGeneratingSummary: StateFlow<Boolean> = _isGeneratingSummary.asStateFlow()
 
     // Statement Import State
     private val _isImportStatementOpen = MutableStateFlow(false)
@@ -1332,9 +1323,14 @@ class MainViewModel(
         }
     }
 
-    /** Which question the answer on screen belongs to, so the chip that asked it stays selected. */
-    private val _askedPrompt = MutableStateFlow<AiPrompt?>(null)
-    val askedPrompt: StateFlow<AiPrompt?> = _askedPrompt.asStateFlow()
+    /**
+     * Each Insights question's own result, and which one is on screen.
+     *
+     * One shared answer and one shared `failed` flag used to stand in for all three, so a failure
+     * in any of them read as a failure of all of them. See [AskBoard].
+     */
+    private val _askBoard = MutableStateFlow(AskBoard())
+    val askBoard: StateFlow<AskBoard> = _askBoard.asStateFlow()
 
     /** How many answers are left today (backlog item 16, cap of [AI_DAILY_CAP]). */
     val aiAsksLeft: StateFlow<Int> = settings.aiUsage
@@ -1347,20 +1343,26 @@ class MainViewModel(
     private var askJob: Job? = null
 
     /**
-     * Runs one of Insights' prompts. Tapping a second one cancels the first — no queue, because a
-     * queued answer arrives under a chip that is no longer selected.
+     * Shows one of Insights' questions, asking it only if it hasn't been answered yet.
+     *
+     * Tapping back to a chip that already has an answer just shows it again: instant, and it
+     * doesn't spend another of the day's asks on a question that has already been answered for
+     * this month. Tapping one that failed retries it. Starting a new request cancels one already
+     * running — no queue, because a queued answer lands under a chip nobody is looking at.
      */
     fun askInsights(prompt: AiPrompt) {
+        if (!_askBoard.value.needsAsking(prompt)) {
+            _askBoard.value = _askBoard.value.select(prompt)
+            return
+        }
         askJob?.cancel()
         askJob = viewModelScope.launch {
             val month = _insightsMonth.value
             if (!settings.aiUsage.first().canAsk(LocalDate.now())) {
-                _aiSummaryFailed.value = true
+                _askBoard.value = _askBoard.value.select(prompt)
                 return@launch
             }
-            _isGeneratingSummary.value = true
-            _askedPrompt.value = prompt
-            _aiSummaryFailed.value = false
+            _askBoard.value = _askBoard.value.asking(prompt)
 
             val zone = ZoneId.systemDefault()
             val today = LocalDate.now()
@@ -1386,12 +1388,12 @@ class MainViewModel(
 
             val answer = geminiRepo.ask(prompt, MonthNames.possessive(month, today), data)
             settings.recordAiAsk(today)
-            // Dropped if another month was picked while it was being written.
-            if (month == _insightsMonth.value) {
-                if (answer != null) _aiSummary.value = answer
-                _aiSummaryFailed.value = answer == null
-            }
-            _isGeneratingSummary.value = false
+            // Dropped if another month was picked while it was being written: that month's board
+            // was already cleared, and this answer is about the previous one.
+            if (month != _insightsMonth.value) return@launch
+            _askBoard.value = answer
+                ?.let { _askBoard.value.answered(prompt, it) }
+                ?: _askBoard.value.failed(prompt)
         }
     }
 
@@ -1409,33 +1411,34 @@ class MainViewModel(
         return AiContext.trailingComparison(insightsAnalytics.value.categorySummaries, previous, month)
     }
 
-    private val _tripReview = MutableStateFlow<String?>(null)
-    /** The trip read for the open group sheet, or null when none has been asked for. */
-    val tripReview: StateFlow<String?> = _tripReview.asStateFlow()
+    /** The trip read for the open group sheet. Its own state, not the Insights board's. */
+    private val _tripReview = MutableStateFlow<AskState>(AskState.Idle)
+    val tripReview: StateFlow<AskState> = _tripReview.asStateFlow()
 
-    private val _isReviewingTrip = MutableStateFlow(false)
-    val isReviewingTrip: StateFlow<Boolean> = _isReviewingTrip.asStateFlow()
-
-    private val _tripReviewFailed = MutableStateFlow(false)
-    val tripReviewFailed: StateFlow<Boolean> = _tripReviewFailed.asStateFlow()
+    /**
+     * Its own job, separate from [askJob]: a trip read and an Insights answer are about different
+     * things on different screens, and opening a group shouldn't cancel an answer being written.
+     */
+    private var tripJob: Job? = null
 
     /** Clears a trip read so the next group opened doesn't show the last one's. */
     fun clearTripReview() {
-        _tripReview.value = null
-        _tripReviewFailed.value = false
+        tripJob?.cancel()
+        _tripReview.value = AskState.Idle
     }
 
     /** Reads one group, start to finish. Group sheet only — it is about a group. */
     fun askTripReview(groupId: Long) {
-        askJob?.cancel()
-        askJob = viewModelScope.launch {
+        tripJob?.cancel()
+        tripJob = viewModelScope.launch {
+            // Nothing to read yet, so nothing to say: leaving the state alone keeps the button
+            // where it is rather than flashing an error at someone who tapped a live button.
             val details = groups.value.firstOrNull { it.group.id == groupId } ?: return@launch
             if (!settings.aiUsage.first().canAsk(LocalDate.now())) {
-                _tripReviewFailed.value = true
+                _tripReview.value = AskState.Failed
                 return@launch
             }
-            _isReviewingTrip.value = true
-            _tripReviewFailed.value = false
+            _tripReview.value = AskState.Asking
 
             val zone = ZoneId.systemDefault()
             val data = AiContext.tripReview(
@@ -1449,9 +1452,7 @@ class MainViewModel(
             )
             val answer = geminiRepo.ask(AiPrompt.TripReview, "this group's", data)
             settings.recordAiAsk(LocalDate.now())
-            _tripReview.value = answer
-            _tripReviewFailed.value = answer == null
-            _isReviewingTrip.value = false
+            _tripReview.value = answer?.let(AskState::Answered) ?: AskState.Failed
         }
     }
 
