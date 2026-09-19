@@ -16,7 +16,7 @@ The app has always had two, and the difference is the whole story:
 | Splitting | Yes — full splits, IOUs, settle up | Yes |
 | Balances | Yes, tracked exactly the same | Yes |
 | Do they see it? | No. It's your record of what's owed | Yes, live on their phone |
-| Sync | **No — this phone only.** See below | Shared with the group |
+| Sync | **No — this phone only**, and safe across updates. See below | Shared with the group |
 
 A local friend is stored as a `PersonEntity` with no `profileId`. Everything
 the ledger does — splits, shares, settlements, the debt simplifier, the
@@ -96,21 +96,44 @@ The server has eight tables — `profiles`, `groups`, `group_members`,
 is no `people` table, and every row that names a person does so by *profile id*.
 A local friend has no profile, so there is nowhere for them to go.
 
-**What that means in practice:**
+### Normal updates are safe — this was tested, not assumed
 
-| | Survives a reinstall or a new phone |
-|---|---|
-| Your own expenses and income | Yes |
-| Shared groups, their expenses and settlements | Yes |
-| Your name, avatar and UPI ID | Yes |
-| **Local friends, and anything owed to or by them** | **No** |
-| **Local-only groups** | **No** |
-| **Subscriptions** | **No** |
-| **Custom categories and payment methods, and app settings** | **No** |
+Installing a new version over the old one keeps everything. On 2026-09-19 the
+published v1.0.0 was installed from the GitHub Release, a local-only friend, a
+subscription and a custom category were added, and a v1.0.1 signed with the same
+key was installed over the top without uninstalling. All three came through
+untouched, and the package record showed `firstInstallTime` unchanged while
+`lastUpdateTime` moved — Android kept the original install and its data
+directory rather than starting a new one.
+
+So the day-to-day answer is: **update freely, nothing is at risk.**
+
+### The two things that do lose it
+
+1. **Uninstalling**, including "uninstall and reinstall" to fix something, and
+   a factory reset or a new phone.
+2. **A change of signing key.** Android refuses to install an APK over one
+   signed differently, so the only way through is to uninstall first — which is
+   case 1 again. This is why the release keystore matters as much as the data:
+   lose the key and every future update becomes an uninstall for everyone.
+
+In both cases what comes back when you sign in again is everything on the
+server; what does not is everything below.
+
+| | Survives a normal update | Survives uninstall / new phone |
+|---|---|---|
+| Your own expenses and income | Yes | Yes |
+| Shared groups, their expenses and settlements | Yes | Yes |
+| Your name, avatar and UPI ID | Yes | Yes |
+| Local friends, and anything owed to or by them | **Yes** | **No** |
+| Local-only groups | **Yes** | **No** |
+| Subscriptions | **Yes** | **No** |
+| Custom categories and payment methods, and app settings | **Yes** | **No** |
 
 The privacy half of the original claim still holds, and is stronger than stated:
 a local friend's name never leaves your device at all.
 
-**Before you uninstall, or move phones,** export a CSV
-(Settings → Export to a spreadsheet → Everything). It is the only copy of the
-local-only half of your ledger.
+**If you are about to uninstall, move phones, or you have lost the release
+keystore,** take a backup first — Settings → Export to a spreadsheet, and the
+JSON backup for the local-only half. It is insurance against those three cases,
+not something normal use requires.
