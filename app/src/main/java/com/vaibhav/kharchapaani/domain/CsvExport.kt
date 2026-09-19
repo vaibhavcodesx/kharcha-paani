@@ -2,6 +2,7 @@ package com.vaibhav.kharchapaani.domain
 
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
+import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.data.model.FullTransaction
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -57,12 +58,21 @@ object CsvExport {
         zone: ZoneId,
         /** A group's name, when the export is one group's entries. */
         fileNameSuffix: String? = null,
+        /**
+         * Settlements and IOUs, which this export used to leave out entirely.
+         *
+         * A range called "Everything" that silently omitted every payment between two people was
+         * wrong on its own terms, and worse in a settle-up app, where those rows are half the
+         * ledger: a spreadsheet of expenses alone says what was spent and nothing about who
+         * actually paid whom back.
+         */
+        settlements: List<SettlementEntity> = emptyList(),
     ): CsvFile {
         val names = people.associate { it.id to it.name }
         val groupNames = groups.associate { it.id to it.name }
         fun nameOf(personId: Long) = if (personId == ME) "You" else names[personId] ?: "Former member"
 
-        val rows = entriesIn(transactions, range, zone).map { ft ->
+        val expenseRows = entriesIn(transactions, range, zone).map { ft ->
             val tx = ft.transaction
             val at = Instant.ofEpochMilli(tx.date).atZone(zone)
             val split = ft.split
@@ -83,8 +93,37 @@ object CsvExport {
             )
         }
 
+        val settlementRows = settlements
+            .filter { range.contains(Instant.ofEpochMilli(it.date).atZone(zone).toLocalDate()) }
+            .sortedWith(compareBy({ it.date }, { it.id }))
+            .map { settlement ->
+                val at = Instant.ofEpochMilli(settlement.date).atZone(zone)
+                val from = nameOf(settlement.fromPersonId)
+                val to = nameOf(settlement.toPersonId)
+                listOf(
+                    at.format(DATE),
+                    at.format(TIME),
+                    if (settlement.isIou) "IOU" else "Settlement",
+                    money(settlement.amount),
+                    money(settlement.amount),
+                    "",
+                    if (settlement.isIou) "$from lent $to" else "$from paid $to",
+                    "",
+                    settlement.groupId?.let { groupNames[it] }.orEmpty(),
+                    "",
+                    from,
+                    "",
+                    settlement.note,
+                )
+            }
+
+        // Merged and re-sorted, so the spreadsheet reads as one chronological ledger rather than
+        // expenses followed by an afterthought.
+        val rows = (expenseRows + settlementRows).sortedBy { "${it[0]} ${it[1]}" }
+
         val content = buildString {
-            // Excel reads a file without a byte-order mark as the local code page, garbling ₹ and names.
+            // Excel reads a file without a byte-order mark as the local code page, garbling the
+            // rupee sign and names.
             append('﻿')
             append(line(header))
             rows.forEach { append(line(it)) }

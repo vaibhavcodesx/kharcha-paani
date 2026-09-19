@@ -13,132 +13,150 @@ import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.domain.BackupGroup
 import com.vaibhav.kharchapaani.domain.BackupPerson
+import com.vaibhav.kharchapaani.domain.BackupSettings
 import com.vaibhav.kharchapaani.domain.BackupSettlement
 import com.vaibhav.kharchapaani.domain.BackupShare
 import com.vaibhav.kharchapaani.domain.BackupSplit
 import com.vaibhav.kharchapaani.domain.BackupSubscription
+import com.vaibhav.kharchapaani.domain.BackupTransaction
+import com.vaibhav.kharchapaani.domain.CategoryPrefs
 import com.vaibhav.kharchapaani.domain.LocalBackup
 import com.vaibhav.kharchapaani.domain.RestoreReport
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Reading and writing the local-only half of the ledger as a file.
+ * Reading and writing everything the server will never hold.
  *
- * "Local-only" means precisely: rows the server has no way to hold, because every remote row that
- * names a person names them by profile id and a friend without an account has none. See
- * [LocalBackup] for the list and for why this is insurance rather than routine.
+ * See [LocalBackup] for what that includes and why the rule is "would the sync engine upload it"
+ * rather than "does a friend without an account appear in it" — the second is what the first
+ * version of this class asked, and it left real financial history out of the file.
  */
 class LocalBackupRepository(private val db: AppDatabase) {
 
     /** What the ledger calls "you". Never a row in `people`. */
     private val me = -1L
 
-    suspend fun collect(appVersion: String): LocalBackup = withContext(Dispatchers.IO) {
-        val people = db.personDao().getAllPeopleDirect()
-        val local = people.filter { it.profileId == null }
-        val localIds = local.map { it.id }.toSet()
-        val nameOf = local.associate { it.id to it.name }
+    suspend fun collect(appVersion: String, settings: BackupSettings = BackupSettings()): LocalBackup =
+        withContext(Dispatchers.IO) {
+            val people = db.personDao().getAllPeopleDirect()
+            val localPeople = people.filter { it.profileId == null }
+            // Every person, not just local ones: a split with a registered groupmate outside a
+            // shared group is just as unsyncable, and its shares still have to name someone.
+            val nameOf = people.associate { it.id to it.name }
 
-        val groups = db.groupDao().getAllGroupsDirect().filter { it.syncState == SyncState.LOCAL_ONLY }
-        val members = db.groupDao().getAllGroupMembersDirect().groupBy { it.groupId }
+            val allGroups = db.groupDao().getAllGroupsDirect()
+            val groupById = allGroups.associateBy { it.id }
+            val localGroups = allGroups.filter { !it.isShared }
+            val members = db.groupDao().getAllGroupMembersDirect().groupBy { it.groupId }
 
-        // Only the settlements the server cannot hold: one side has to be a local friend. A
-        // settlement between two accounts comes back on its own.
-        val settlements = db.settlementDao().getAllSettlementsDirect()
-            .filter { it.fromPersonId in localIds || it.toPersonId in localIds }
+            // A settlement reaches the server only inside a shared group.
+            val settlements = db.settlementDao().getAllSettlementsDirect()
+                .filter { settlement -> settlement.groupId?.let { groupById[it]?.isShared } != true }
 
-        // Likewise splits. The *expense* may well sync — personal transactions do — but its shares
-        // are stored remotely against profile ids, so a share belonging to a local friend is only
-        // ever here. The expense rides along so a restore can rebuild the split either way.
-        val splits = db.splitDao().getAllSplitsDirect().mapNotNull { split ->
-            val shares = db.splitDao().getSharesForSplitDirect(split.id)
-            if (shares.none { it.personId in localIds }) return@mapNotNull null
-            val transaction = db.transactionDao().getTransactionByIdDirect(split.transactionId)
-                ?: return@mapNotNull null
-            BackupSplit(
-                transactionRemoteId = transaction.remoteId.takeIf { it.isNotBlank() },
-                merchant = transaction.merchant,
-                category = transaction.category,
-                paymentMethod = transaction.paymentMethod,
-                date = transaction.date,
-                note = transaction.note,
-                totalAmount = split.totalAmount,
-                splitType = split.splitType,
-                shares = shares.map {
-                    BackupShare(
-                        name = nameOf[it.personId],
-                        amount = it.shareAmount,
-                        percentage = it.percentage,
+            val splitByTransaction = db.splitDao().getAllSplitsDirect().associateBy { it.transactionId }
+            val transactions = db.transactionDao().getAllTransactionsDirect().filter { transaction ->
+                LocalBackup.isUnsyncable(
+                    isSplit = transaction.isSplit || splitByTransaction.containsKey(transaction.id),
+                    inSharedGroup = transaction.groupId?.let { groupById[it]?.isShared ?: false },
+                )
+            }
+
+            LocalBackup(
+                exportedAt = System.currentTimeMillis(),
+                appVersion = appVersion,
+                people = localPeople.map {
+                    BackupPerson(
+                        name = it.name,
+                        avatarColor = it.avatarColor,
+                        avatarEmoji = it.avatarEmoji,
+                        createdAt = it.createdAt,
                     )
                 },
+                groups = localGroups.map { group ->
+                    BackupGroup(
+                        name = group.name,
+                        emoji = group.emoji,
+                        description = group.description,
+                        colorHex = group.colorHex,
+                        createdAt = group.createdAt,
+                        archivedAt = group.archivedAt,
+                        memberNames = members[group.id].orEmpty().mapNotNull { nameOf[it.personId] },
+                    )
+                },
+                subscriptions = db.subscriptionDao().getAllDirect().map {
+                    BackupSubscription(
+                        name = it.name,
+                        amount = it.amount,
+                        category = it.category,
+                        paymentMethod = it.paymentMethod,
+                        cycle = it.cycle,
+                        startDate = it.startDate,
+                        chargedThrough = it.chargedThrough,
+                        cancelledAt = it.cancelledAt,
+                        createdAt = it.createdAt,
+                    )
+                },
+                settlements = settlements.map {
+                    BackupSettlement(
+                        fromName = nameOf[it.fromPersonId],
+                        toName = nameOf[it.toPersonId],
+                        amount = it.amount,
+                        date = it.date,
+                        note = it.note,
+                        isIou = it.isIou,
+                        groupName = it.groupId?.let { id -> groupById[id]?.name },
+                        createdAt = it.createdAt,
+                    )
+                },
+                transactions = transactions.map { transaction ->
+                    val split = splitByTransaction[transaction.id]
+                    BackupTransaction(
+                        remoteId = transaction.remoteId.takeIf { it.isNotBlank() },
+                        type = transaction.type,
+                        amount = transaction.amount,
+                        category = transaction.category,
+                        merchant = transaction.merchant,
+                        paymentMethod = transaction.paymentMethod,
+                        date = transaction.date,
+                        note = transaction.note,
+                        groupName = transaction.groupId?.let { groupById[it]?.name },
+                        createdAt = transaction.createdAt,
+                        split = split?.let {
+                            BackupSplit(
+                                totalAmount = it.totalAmount,
+                                splitType = it.splitType,
+                                paidByName = nameOf[it.paidByPersonId],
+                                shares = db.splitDao().getSharesForSplitDirect(it.id).map { share ->
+                                    BackupShare(
+                                        name = nameOf[share.personId],
+                                        amount = share.shareAmount,
+                                        percentage = share.percentage,
+                                    )
+                                },
+                            )
+                        },
+                    )
+                },
+                settings = settings,
             )
         }
 
-        LocalBackup(
-            exportedAt = System.currentTimeMillis(),
-            appVersion = appVersion,
-            people = local.map {
-                BackupPerson(
-                    name = it.name,
-                    avatarColor = it.avatarColor,
-                    avatarEmoji = it.avatarEmoji,
-                    createdAt = it.createdAt,
-                )
-            },
-            groups = groups.map { group ->
-                BackupGroup(
-                    name = group.name,
-                    emoji = group.emoji,
-                    description = group.description,
-                    colorHex = group.colorHex,
-                    createdAt = group.createdAt,
-                    archivedAt = group.archivedAt,
-                    memberNames = members[group.id].orEmpty().mapNotNull { nameOf[it.personId] },
-                )
-            },
-            subscriptions = db.subscriptionDao().getAllDirect().map {
-                BackupSubscription(
-                    name = it.name,
-                    amount = it.amount,
-                    category = it.category,
-                    paymentMethod = it.paymentMethod,
-                    cycle = it.cycle,
-                    startDate = it.startDate,
-                    chargedThrough = it.chargedThrough,
-                    cancelledAt = it.cancelledAt,
-                    createdAt = it.createdAt,
-                )
-            },
-            settlements = settlements.map {
-                BackupSettlement(
-                    fromName = nameOf[it.fromPersonId],
-                    toName = nameOf[it.toPersonId],
-                    amount = it.amount,
-                    date = it.date,
-                    note = it.note,
-                    isIou = it.isIou,
-                    createdAt = it.createdAt,
-                )
-            },
-        )
-    }
-
     /**
-     * Puts back whatever is missing, and touches nothing that is already there.
+     * Puts back whatever is missing and touches nothing already there.
      *
-     * Additive on purpose. A restore that replaced what it found could wipe a ledger someone has
-     * been using since the backup was taken, and the common case — restoring onto a phone that has
-     * already synced — is exactly that. Running it twice is a no-op, and [RestoreReport] says so
-     * rather than reporting a silent success.
+     * Additive on purpose. The common case is restoring onto a phone that has already synced, so a
+     * restore that replaced what it found could wipe a ledger in use since the backup was taken.
+     * Running it twice is a no-op, and [RestoreReport] says what it skipped rather than reporting a
+     * success that leaves you unsure whether it duplicated everything.
      */
     suspend fun restore(backup: LocalBackup): RestoreReport = withContext(Dispatchers.IO) {
         var report = RestoreReport()
 
         db.withTransaction {
             // People first: everything else refers to them by name.
-            val existing = db.personDao().getAllPeopleDirect().associateBy { it.name.trim().lowercase() }
-            val idOf = existing.mapValues { it.value.id }.toMutableMap()
+            val idOf = db.personDao().getAllPeopleDirect()
+                .associate { it.name.trim().lowercase() to it.id }.toMutableMap()
 
             for (person in backup.people) {
                 val key = person.name.trim().lowercase()
@@ -146,7 +164,7 @@ class LocalBackupRepository(private val db: AppDatabase) {
                     report = report.copy(peopleSkipped = report.peopleSkipped + 1)
                     continue
                 }
-                val id = db.personDao().insertPerson(
+                idOf[key] = db.personDao().insertPerson(
                     PersonEntity(
                         name = person.name,
                         avatarColor = person.avatarColor,
@@ -154,18 +172,17 @@ class LocalBackupRepository(private val db: AppDatabase) {
                         createdAt = person.createdAt,
                     )
                 )
-                idOf[key] = id
                 report = report.copy(peopleAdded = report.peopleAdded + 1)
             }
 
-            fun personId(name: String?): Long? =
-                if (name == null) me else idOf[name.trim().lowercase()]
+            /** Null name is you; an unknown name means the row cannot be placed. */
+            fun personId(name: String?): Long? = if (name == null) me else idOf[name.trim().lowercase()]
 
-            val groupKeys = db.groupDao().getAllGroupsDirect()
-                .map { it.name.trim().lowercase() to it.createdAt }.toMutableSet()
+            val groupIdOf = db.groupDao().getAllGroupsDirect()
+                .associate { it.name.trim().lowercase() to it.id }.toMutableMap()
             for (group in backup.groups) {
-                val key = group.name.trim().lowercase() to group.createdAt
-                if (key in groupKeys) {
+                val key = group.name.trim().lowercase()
+                if (key in groupIdOf) {
                     report = report.copy(groupsSkipped = report.groupsSkipped + 1)
                     continue
                 }
@@ -181,8 +198,10 @@ class LocalBackupRepository(private val db: AppDatabase) {
                     )
                 )
                 val memberIds = listOf(me) + group.memberNames.mapNotNull { personId(it) }
-                db.groupSyncDao().insertMembers(memberIds.distinct().map { GroupMemberEntity(groupId = groupId, personId = it) })
-                groupKeys += key
+                db.groupSyncDao().insertMembers(
+                    memberIds.distinct().map { GroupMemberEntity(groupId = groupId, personId = it) }
+                )
+                groupIdOf[key] = groupId
                 report = report.copy(groupsAdded = report.groupsAdded + 1)
             }
 
@@ -211,8 +230,64 @@ class LocalBackupRepository(private val db: AppDatabase) {
                 report = report.copy(subscriptionsAdded = report.subscriptionsAdded + 1)
             }
 
+            // Transactions before settlements: neither depends on the other, but doing the bigger
+            // one first means a failure part-way leaves the smaller set obviously absent.
+            val existing = db.transactionDao().getAllTransactionsDirect()
+            val byRemoteId = existing.filter { it.remoteId.isNotBlank() }.associateBy { it.remoteId }
+            val byShape = existing.map { Triple(it.date, it.merchant, it.amount) }.toMutableSet()
+
+            for (backedUp in backup.transactions) {
+                val alreadyHere = backedUp.remoteId?.let { byRemoteId[it] }
+                val shape = Triple(backedUp.date, backedUp.merchant, backedUp.amount)
+                if (alreadyHere != null || shape in byShape) {
+                    report = report.copy(transactionsSkipped = report.transactionsSkipped + 1)
+                    continue
+                }
+                val transactionId = db.transactionDao().insertTransaction(
+                    TransactionEntity(
+                        type = backedUp.type,
+                        amount = backedUp.amount,
+                        category = backedUp.category,
+                        merchant = backedUp.merchant,
+                        paymentMethod = backedUp.paymentMethod,
+                        date = backedUp.date,
+                        note = backedUp.note,
+                        isSplit = backedUp.split != null,
+                        groupId = backedUp.groupName?.let { groupIdOf[it.trim().lowercase()] },
+                        createdAt = backedUp.createdAt,
+                        remoteId = backedUp.remoteId ?: java.util.UUID.randomUUID().toString(),
+                        syncState = SyncState.LOCAL_ONLY,
+                    )
+                )
+                byShape += shape
+                report = report.copy(transactionsAdded = report.transactionsAdded + 1)
+
+                val split = backedUp.split ?: continue
+                val splitId = db.splitDao().insertSplit(
+                    SplitEntity(
+                        transactionId = transactionId,
+                        totalAmount = split.totalAmount,
+                        // The field whose loss would flip who owes whom, silently.
+                        paidByPersonId = personId(split.paidByName) ?: me,
+                        splitType = split.splitType,
+                    )
+                )
+                db.groupSyncDao().insertShares(
+                    split.shares.mapNotNull { share ->
+                        personId(share.name)?.let {
+                            SplitShareEntity(
+                                splitId = splitId,
+                                personId = it,
+                                shareAmount = share.amount,
+                                percentage = share.percentage,
+                            )
+                        }
+                    }
+                )
+            }
+
             val settlementKeys = db.settlementDao().getAllSettlementsDirect()
-                .map { Triple(it.fromPersonId, it.toPersonId, it.amount to it.date) }.toMutableSet()
+                .map { listOf(it.fromPersonId, it.toPersonId, it.amount, it.date) }.toMutableSet()
             for (settlement in backup.settlements) {
                 val from = personId(settlement.fromName)
                 val to = personId(settlement.toName)
@@ -220,7 +295,7 @@ class LocalBackupRepository(private val db: AppDatabase) {
                     report = report.copy(settlementsSkipped = report.settlementsSkipped + 1)
                     continue
                 }
-                val key = Triple(from, to, settlement.amount to settlement.date)
+                val key = listOf(from, to, settlement.amount, settlement.date)
                 if (key in settlementKeys) {
                     report = report.copy(settlementsSkipped = report.settlementsSkipped + 1)
                     continue
@@ -233,63 +308,25 @@ class LocalBackupRepository(private val db: AppDatabase) {
                         date = settlement.date,
                         note = settlement.note,
                         isIou = settlement.isIou,
+                        groupId = settlement.groupName?.let { groupIdOf[it.trim().lowercase()] },
                         createdAt = settlement.createdAt,
+                        syncState = SyncState.LOCAL_ONLY,
                     )
                 )
                 settlementKeys += key
                 report = report.copy(settlementsAdded = report.settlementsAdded + 1)
             }
-
-            report = report.copy(
-                splitsAdded = 0,
-                splitsSkipped = 0,
-            )
-            val transactions = db.transactionDao().getAllTransactionsDirect()
-            val byRemoteId = transactions.filter { it.remoteId.isNotBlank() }.associateBy { it.remoteId }
-            for (split in backup.splits) {
-                // The expense may already be back from the server. Prefer that copy — adding a
-                // second one would double the month's spending, which is worse than losing a split.
-                val existingTransaction = split.transactionRemoteId?.let { byRemoteId[it] }
-                    ?: transactions.firstOrNull {
-                        it.date == split.date && it.merchant == split.merchant && it.amount == split.totalAmount
-                    }
-                val transactionId = when {
-                    existingTransaction != null -> {
-                        if (db.splitDao().getSplitByTransactionIdDirect(existingTransaction.id) != null) {
-                            report = report.copy(splitsSkipped = report.splitsSkipped + 1)
-                            continue
-                        }
-                        existingTransaction.id
-                    }
-                    else -> db.transactionDao().insertTransaction(
-                        TransactionEntity(
-                            type = "expense",
-                            amount = split.totalAmount,
-                            category = split.category,
-                            merchant = split.merchant,
-                            paymentMethod = split.paymentMethod,
-                            date = split.date,
-                            note = split.note,
-                        )
-                    )
-                }
-                val splitId = db.splitDao().insertSplit(
-                    SplitEntity(
-                        transactionId = transactionId,
-                        totalAmount = split.totalAmount,
-                        paidByPersonId = me,
-                        splitType = split.splitType,
-                    )
-                )
-                val shares = split.shares.mapNotNull { share ->
-                    personId(share.name)?.let {
-                        SplitShareEntity(splitId = splitId, personId = it, shareAmount = share.amount, percentage = share.percentage)
-                    }
-                }
-                db.groupSyncDao().insertShares(shares)
-                report = report.copy(splitsAdded = report.splitsAdded + 1)
-            }
         }
         report
     }
 }
+
+/** The DataStore half, which the repository is handed rather than reaching for. */
+fun CategoryPrefs.toBackup(askBeforeDiscarding: Boolean): BackupSettings = BackupSettings(
+    customCategories = customExpense,
+    hiddenCategories = hiddenCategories.toList(),
+    customIncomeCategories = customIncome,
+    customPaymentMethods = customPaymentMethods,
+    hiddenPaymentMethods = hiddenPaymentMethods.toList(),
+    askBeforeDiscarding = askBeforeDiscarding,
+)

@@ -12,6 +12,8 @@ import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.domain.MemberShare
+import com.vaibhav.kharchapaani.domain.GroupFeed
+import com.vaibhav.kharchapaani.domain.GroupFeedEntry
 import com.vaibhav.kharchapaani.domain.GroupInsights
 import com.vaibhav.kharchapaani.data.model.SimplifiedDebt
 import com.vaibhav.kharchapaani.data.model.CategorySummary
@@ -53,6 +55,8 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
+import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.data.model.FullTransaction
 import com.vaibhav.kharchapaani.data.model.GroupWithDetails
 import com.vaibhav.kharchapaani.domain.GroupExpenseCredit
@@ -284,9 +288,14 @@ fun GroupDetailContent(
             }
         }
 
+        // Expenses *and* settlements. The list used to render transactions alone, so a settlement
+        // or an IOU recorded in this group appeared nowhere in it — while the balances at the top
+        // counted it, which is the worst of both: the figures moved and the screen didn't say why.
+        val feed = remember(groupDetails) { GroupFeed.of(groupDetails.transactions, groupDetails.settlements) }
+
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = Spacing.xl, bottom = Spacing.s)) {
             Text(
-                text = "Expenses · ${groupDetails.transactions.size}",
+                text = "Activity · ${feed.size}",
                 style = MaterialTheme.typography.titleSmall,
                 color = OffWhiteText,
                 modifier = Modifier.weight(1f).semantics { heading() },
@@ -297,23 +306,83 @@ fun GroupDetailContent(
                 }
             }
         }
-        if (groupDetails.transactions.isEmpty()) {
+        if (feed.isEmpty()) {
             Text(
                 text = if (group.isArchived) "Nothing was logged in this group." else "Nothing logged here yet. Add the first expense below.",
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            groupDetails.transactions.forEachIndexed { index, expense ->
-                GroupExpenseRow(
-                    expense = expense,
-                    detail = "${dateFormat.format(Date(expense.transaction.date))} · ${GroupExpenseCredit.line(expense, groupDetails.members)}",
-                    position = RowPosition.of(index, groupDetails.transactions.size),
-                    // Whoever added it or paid for it can edit it (item 11).
-                    onClick = if (expense.canEdit) ({ onEditTransaction(expense) }) else null,
-                )
+            feed.forEachIndexed { index, entry ->
+                val position = RowPosition.of(index, feed.size)
+                when (entry) {
+                    is GroupFeedEntry.Expense -> GroupExpenseRow(
+                        expense = entry.transaction,
+                        detail = "${dateFormat.format(Date(entry.date))} · ${GroupExpenseCredit.line(entry.transaction, groupDetails.members)}",
+                        position = position,
+                        // Whoever added it or paid for it can edit it (item 11).
+                        onClick = if (entry.transaction.canEdit) ({ onEditTransaction(entry.transaction) }) else null,
+                    )
+                    is GroupFeedEntry.Movement -> GroupMovementRow(
+                        settlement = entry.settlement,
+                        members = groupDetails.members,
+                        detail = dateFormat.format(Date(entry.date)),
+                        position = position,
+                    )
+                }
             }
         }
+    }
+}
+
+/** A settlement or IOU inside a group, in the same shape as the expense rows beside it. */
+@Composable
+private fun GroupMovementRow(
+    settlement: SettlementEntity,
+    members: List<PersonEntity>,
+    detail: String,
+    position: RowPosition,
+) {
+    val incoming = GroupFeed.isIncoming(settlement)
+    val accent = if (incoming) ChartreuseSecondary else WarmAmberLight
+    val title = remember(settlement, members) { GroupFeed.describe(settlement, members) }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 64.dp)
+            .clip(position.shape)
+            .background(CharcoalCard)
+            .semantics(mergeDescendants = true) {}
+            .padding(horizontal = Spacing.l, vertical = Spacing.m)
+            .testTag("group_settlement_${settlement.id}"),
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(40.dp).clip(KpShapes.small).background(accent.copy(alpha = 0.14f)),
+        ) {
+            Icon(
+                imageVector = if (settlement.isIou) KpIcons.Lend else KpIcons.Settle,
+                contentDescription = null,
+                tint = accent,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                text = listOfNotNull(detail, if (settlement.isIou) "IOU" else "Settlement", settlement.note.takeIf { it.isNotBlank() })
+                    .joinToString(" · "),
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Text(
+            text = (if (incoming) "+" else "-") + Money.format(settlement.amount),
+            style = MoneyText.row,
+            color = if (incoming) ChartreuseSecondary else OffWhiteText,
+        )
     }
 }
 

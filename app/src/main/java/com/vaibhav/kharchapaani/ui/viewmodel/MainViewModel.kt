@@ -38,6 +38,7 @@ import com.vaibhav.kharchapaani.data.repository.ArchivedGroupException
 import com.vaibhav.kharchapaani.data.remote.AppIdentity
 import com.vaibhav.kharchapaani.data.repository.GeminiRepository
 import com.vaibhav.kharchapaani.data.repository.LocalBackupRepository
+import com.vaibhav.kharchapaani.data.repository.toBackup
 import com.vaibhav.kharchapaani.data.repository.ParseChoices
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.data.settings.AppSettings
@@ -1513,7 +1514,14 @@ class MainViewModel(
      */
     fun exportLocalBackup(context: Context) {
         viewModelScope.launch {
-            val backup = backupRepo.collect(appVersion = BuildConfig.VERSION_NAME)
+            // Settings are read here and handed in: the repository owns the database, not
+            // DataStore, and the first version of this simply forgot to pass them — which is
+            // exactly why every export came back with empty category lists.
+            val backup = backupRepo.collect(
+                appVersion = BuildConfig.VERSION_NAME,
+                settings = settings.categoryPrefs(userId).first()
+                    .toBackup(askBeforeDiscarding = settings.askBeforeDiscarding.first()),
+            )
             if (backup.isEmpty) {
                 _statusMessage.value = "Nothing on this phone that isn't already backed up to your account."
                 return@launch
@@ -1562,7 +1570,7 @@ class MainViewModel(
             current.copy(
                 customExpense = (current.customExpense + saved.customCategories).distinct(),
                 customIncome = (current.customIncome + saved.customIncomeCategories).distinct(),
-                hiddenCategories = current.hiddenCategories + saved.hiddenCategories + saved.hiddenIncomeCategories,
+                hiddenCategories = current.hiddenCategories + saved.hiddenCategories,
                 customPaymentMethods = (current.customPaymentMethods + saved.customPaymentMethods).distinct(),
                 hiddenPaymentMethods = current.hiddenPaymentMethods + saved.hiddenPaymentMethods,
             )

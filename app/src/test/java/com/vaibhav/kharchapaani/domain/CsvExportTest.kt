@@ -4,6 +4,7 @@ import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
+import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.data.model.FullTransaction
 import org.junit.Assert.assertEquals
@@ -114,6 +115,68 @@ class CsvExportTest {
             "\"2025-03-05\",\"21:00\",\"Expense\",\"900.00\",\"300.00\",\"Food\",\"Truffles\",\"Card\",\"Goa trip\",\"Split (equal)\",\"Priya\",\"You: 300.00; Priya: 600.00\",\"\"",
             line,
         )
+    }
+
+    // --- Settlements and IOUs, which this export used to omit entirely
+
+    private fun settlement(id: Long, time: LocalDateTime, amount: Double, from: Long, to: Long, isIou: Boolean = false) =
+        SettlementEntity(
+            id = id, fromPersonId = from, toPersonId = to, amount = amount,
+            date = time.atZone(zone).toInstant().toEpochMilli(), isIou = isIou,
+        )
+
+    private val rohan = PersonEntity(id = 2, name = "Rohan", avatarColor = "#70C1FF")
+
+    @Test
+    fun `a settlement appears in the export at all`() {
+        // The bug: "Everything" exported expenses only, so every payment between two people —
+        // half the ledger in a settle-up app — was silently missing from the spreadsheet.
+        val csv = CsvExport.build(
+            emptyList(), listOf(rohan), emptyList(), ExportRange.Everything, zone,
+            settlements = listOf(settlement(1, LocalDateTime.of(2025, 3, 4, 9, 0), 250.0, from = 2, to = -1)),
+        )
+
+        assertEquals(1, csv.rows)
+        assertTrue(rows(csv)[1].contains("Settlement"))
+        assertTrue(rows(csv)[1].contains("Rohan paid You"))
+    }
+
+    @Test
+    fun `an IOU is labelled as one, and says who lent to whom`() {
+        val csv = CsvExport.build(
+            emptyList(), listOf(rohan), emptyList(), ExportRange.Everything, zone,
+            settlements = listOf(settlement(1, LocalDateTime.of(2025, 3, 4, 9, 0), 40.0, from = -1, to = 2, isIou = true)),
+        )
+
+        assertTrue(rows(csv)[1].contains("IOU"))
+        assertTrue(rows(csv)[1].contains("You lent Rohan"))
+    }
+
+    @Test
+    fun `settlements obey the range like everything else`() {
+        val march = settlement(1, LocalDateTime.of(2025, 3, 4, 9, 0), 10.0, from = 2, to = -1)
+        val february = settlement(2, LocalDateTime.of(2025, 2, 4, 9, 0), 10.0, from = 2, to = -1)
+
+        val csv = CsvExport.build(
+            emptyList(), listOf(rohan), emptyList(), ExportRange.Month(YearMonth.of(2025, 3)), zone,
+            settlements = listOf(march, february),
+        )
+
+        assertEquals(1, csv.rows)
+    }
+
+    @Test
+    fun `expenses and settlements come out as one list in date order`() {
+        val csv = CsvExport.build(
+            listOf(tx(1, LocalDateTime.of(2025, 3, 5, 9, 0), 100.0)),
+            listOf(rohan), emptyList(), ExportRange.Everything, zone,
+            settlements = listOf(settlement(1, LocalDateTime.of(2025, 3, 4, 9, 0), 250.0, from = 2, to = -1)),
+        )
+
+        val lines = rows(csv)
+        assertEquals(3, lines.size)
+        assertTrue("the 4th should sort before the 5th", lines[1].contains("2025-03-04"))
+        assertTrue(lines[2].contains("2025-03-05"))
     }
 
     @Test

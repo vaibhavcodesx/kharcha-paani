@@ -809,6 +809,8 @@ class LedgerRepository(
             range,
             zone,
             fileNameSuffix = group?.name,
+            settlements = db.settlementDao().getAllSettlementsDirect()
+                .filter { groupId == null || it.groupId == groupId },
         )
     }
 }

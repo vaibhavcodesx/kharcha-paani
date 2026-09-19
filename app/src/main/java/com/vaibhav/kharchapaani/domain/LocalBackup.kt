@@ -5,29 +5,48 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
- * A backup of the half of the ledger the server does not hold.
+ * A backup of everything the server will never hold.
  *
- * Everything else — your own expenses, shared groups and their expenses and settlements, your
- * profile — comes back on its own when you sign in, because it is on the server. These do not:
- * there is no `people` table up there, and every row that names a person does so by profile id, so
- * a friend with no account has nowhere to live but this phone. The same goes for local-only groups,
- * subscriptions, and your category and payment-method choices.
+ * ## What that turned out to mean
  *
- * **This is insurance, not routine.** A normal update keeps all of it — verified on 2026-09-19 by
- * installing v1.0.1 over the published v1.0.0 and watching a local friend, a subscription and a
- * custom category come through untouched. What loses it is uninstalling, a new phone, or a change
- * of signing key (which forces an uninstall). Those are the cases this file is for.
+ * The first version of this file backed up "rows involving a friend with no account". That was too
+ * narrow, and the narrowness was invisible until a real export came back with an empty `splits`
+ * array next to a friend who was owed money. Reading the sync engine rather than reasoning about
+ * it gives the actual rule, and it is much wider:
  *
- * ## Why people are matched by name on restore
+ * - `SyncDao.pendingPersonalTransactions` selects `... AND groupId IS NULL AND isSplit = 0`.
+ *   **Every split expense is excluded from upload** — the whole transaction, not just its shares,
+ *   and regardless of who it was split with.
+ * - `GroupSyncEngine.buildGroupExpense` returns null unless the transaction's group exists and
+ *   every participant has a profile, so a local-only group's expenses never upload either.
+ * - The same class returns null for a settlement with no `groupId`, so **settlements only sync
+ *   inside a shared group** — a settlement between two accounts outside one is local as well.
  *
- * Row ids are `autoGenerate` and mean nothing outside the database that issued them. A backup
- * restored into a different install would point at whatever happens to hold id 4 there. So people
- * are written out by name, every reference to them is by name, and [Restore] resolves those names
- * to whatever ids the target database ends up using.
+ * So the predicate is not "does a local friend appear in it" but "would the sync engine ever
+ * upload it". [isUnsyncable] is that predicate, kept next to the format it decides the contents of.
+ *
+ * ## What is still true
+ *
+ * A normal app update keeps all of this — verified on 2026-09-19 by installing v1.0.1 over the
+ * published v1.0.0 and watching a local friend, a subscription and a custom category come through
+ * with `firstInstallTime` unchanged. This file is for uninstalling, a new phone, and a change of
+ * signing key. It is insurance, not routine.
+ *
+ * ## Why names, not ids
+ *
+ * Row ids are `autoGenerate` and mean nothing outside the database that issued them. People are
+ * written out by name and referred to by name everywhere else, so a restore resolves them to
+ * whatever ids the target database ends up using. `null` means "you", which the ledger stores as
+ * `personId = -1` and which is stable across installs in a way a generated id is not.
  */
 @Serializable
 data class LocalBackup(
-    /** Bumped when the shape changes in a way an older app could not read. */
+    /**
+     * 1: the first format. Its `splits` array was always empty because of the bug above; a v1 file
+     * still restores, it simply has little in it.
+     *
+     * 2: transactions carry their own split, their payer, their type and their group.
+     */
     val version: Int = FORMAT_VERSION,
     @SerialName("exported_at") val exportedAt: Long,
     @SerialName("app_version") val appVersion: String,
@@ -35,26 +54,28 @@ data class LocalBackup(
     val groups: List<BackupGroup> = emptyList(),
     val subscriptions: List<BackupSubscription> = emptyList(),
     val settlements: List<BackupSettlement> = emptyList(),
-    val splits: List<BackupSplit> = emptyList(),
+    /** Every expense the server would never receive, with its split inline. */
+    val transactions: List<BackupTransaction> = emptyList(),
     val settings: BackupSettings = BackupSettings(),
 ) {
-    /** Nothing local-only on this phone; offering to write the file would be a lie. */
+
     val isEmpty: Boolean
         get() = people.isEmpty() && groups.isEmpty() && subscriptions.isEmpty() &&
-            settlements.isEmpty() && splits.isEmpty() && settings.isEmpty
+            settlements.isEmpty() && transactions.isEmpty() && settings.isEmpty
 
     /** What the UI reports, in the order a person would check it. */
     fun summary(): String = listOfNotNull(
         people.size.takeIf { it > 0 }?.let { "$it ${if (it == 1) "friend" else "friends"}" },
         groups.size.takeIf { it > 0 }?.let { "$it ${if (it == 1) "group" else "groups"}" },
+        transactions.size.takeIf { it > 0 }?.let { "$it ${if (it == 1) "expense" else "expenses"}" },
+        settlements.size.takeIf { it > 0 }?.let { "$it ${if (it == 1) "settlement" else "settlements"}" },
         subscriptions.size.takeIf { it > 0 }?.let { "$it ${if (it == 1) "subscription" else "subscriptions"}" },
-        (settlements.size + splits.size).takeIf { it > 0 }?.let { "$it ${if (it == 1) "record" else "records"}" },
     ).joinToString(", ").ifEmpty { "settings only" }
 
     companion object {
-        const val FORMAT_VERSION = 1
+        const val FORMAT_VERSION = 2
 
-        /** Pretty-printed on purpose: a backup you can open and read is one you can trust. */
+        /** Pretty-printed on purpose: a backup you can open and read is one you can check. */
         val json = Json {
             prettyPrint = true
             ignoreUnknownKeys = true
@@ -64,24 +85,40 @@ data class LocalBackup(
         fun encode(backup: LocalBackup): String = json.encodeToString(backup)
 
         /**
-         * Reads a backup file, or fails with why.
+         * Reads a backup file, or says why it could not.
          *
-         * A file chosen by hand from a file picker is the one input here that is entirely
-         * arbitrary, so every failure is a message rather than a crash.
+         * A file chosen by hand from a picker is the one entirely arbitrary input here, so every
+         * failure is a message rather than a crash.
          */
         fun decode(text: String): BackupReadResult = try {
             val backup = json.decodeFromString<LocalBackup>(text)
-            when {
-                backup.version > FORMAT_VERSION ->
-                    BackupReadResult.TooNew(backup.version)
-                else -> BackupReadResult.Ok(backup)
-            }
+            if (backup.version > FORMAT_VERSION) BackupReadResult.TooNew(backup.version)
+            else BackupReadResult.Ok(backup)
         } catch (e: Exception) {
             BackupReadResult.Unreadable
         }
 
         fun fileName(exportedAt: Long): String =
             "kharcha-paani-backup-${java.time.Instant.ofEpochMilli(exportedAt).toString().take(10)}.json"
+
+        /**
+         * Whether a transaction is one the sync engine would never upload, and so one this file
+         * has to carry.
+         *
+         * Mirrors `SyncDao.pendingPersonalTransactions` and `GroupSyncEngine.buildGroupExpense`.
+         * Deliberately errs towards including: a row backed up twice is de-duplicated on restore,
+         * a row left out is gone.
+         *
+         * @param inSharedGroup null when the transaction belongs to no group.
+         */
+        fun isUnsyncable(isSplit: Boolean, inSharedGroup: Boolean?): Boolean = when {
+            // Excluded by `isSplit = 0`, whoever it was split with.
+            isSplit -> true
+            // No group: an ordinary personal expense, which does upload.
+            inSharedGroup == null -> false
+            // A local-only group's expenses have nowhere on the server to go.
+            else -> !inSharedGroup
+        }
     }
 }
 
@@ -131,10 +168,10 @@ data class BackupSubscription(
 )
 
 /**
- * Money that changed hands with a local friend.
+ * Money that changed hands outside a shared group, in either direction, IOU or settlement.
  *
- * [fromName] and [toName] are null for "you", which is how the ledger stores it (`personId = -1`)
- * and is stable across installs in a way a profile id would not need to be.
+ * [fromName] and [toName] are null for "you". Direction is the whole meaning of the row, so it is
+ * carried literally rather than normalised into an amount with a sign.
  */
 @Serializable
 data class BackupSettlement(
@@ -144,28 +181,44 @@ data class BackupSettlement(
     val date: Long,
     val note: String = "",
     @SerialName("is_iou") val isIou: Boolean = false,
+    @SerialName("group_name") val groupName: String? = null,
     @SerialName("created_at") val createdAt: Long,
 )
 
 /**
- * A split that gives a local friend a share, and the expense it belongs to.
+ * An expense the server would never receive, carrying its split.
  *
- * The expense itself may well be on the server — personal transactions sync — but its *split* is
- * not, because shares are stored server-side against profile ids and a local friend has none. So
- * the expense is carried here too, and [Restore] attaches the split to the copy that came back
- * from the server when it can find it, rather than creating a second one.
+ * [remoteId] is kept so a restore onto a phone that has already synced can recognise the same row
+ * rather than adding a second copy of it.
  */
 @Serializable
-data class BackupSplit(
-    @SerialName("transaction_remote_id") val transactionRemoteId: String? = null,
-    val merchant: String,
+data class BackupTransaction(
+    @SerialName("remote_id") val remoteId: String? = null,
+    /** "expense" or "income". */
+    val type: String,
+    val amount: Double,
     val category: String,
+    val merchant: String,
     @SerialName("payment_method") val paymentMethod: String,
     val date: Long,
     val note: String = "",
+    @SerialName("group_name") val groupName: String? = null,
+    @SerialName("created_at") val createdAt: Long,
+    val split: BackupSplit? = null,
+)
+
+/**
+ * How one expense was divided.
+ *
+ * [paidByName] is the field whose absence would corrupt a ledger quietly: an expense the friend
+ * paid and an expense you paid are the same rows with the payer swapped, and restoring the second
+ * as the first flips who owes whom without failing.
+ */
+@Serializable
+data class BackupSplit(
     @SerialName("total_amount") val totalAmount: Double,
     @SerialName("split_type") val splitType: String,
-    /** Name to share. Null name is your own share. */
+    @SerialName("paid_by_name") val paidByName: String? = null,
     val shares: List<BackupShare> = emptyList(),
 )
 
@@ -182,16 +235,14 @@ data class BackupSettings(
     @SerialName("custom_categories") val customCategories: List<String> = emptyList(),
     @SerialName("hidden_categories") val hiddenCategories: List<String> = emptyList(),
     @SerialName("custom_income_categories") val customIncomeCategories: List<String> = emptyList(),
-    @SerialName("hidden_income_categories") val hiddenIncomeCategories: List<String> = emptyList(),
     @SerialName("custom_payment_methods") val customPaymentMethods: List<String> = emptyList(),
     @SerialName("hidden_payment_methods") val hiddenPaymentMethods: List<String> = emptyList(),
     @SerialName("ask_before_discarding") val askBeforeDiscarding: Boolean? = null,
 ) {
     val isEmpty: Boolean
         get() = customCategories.isEmpty() && hiddenCategories.isEmpty() &&
-            customIncomeCategories.isEmpty() && hiddenIncomeCategories.isEmpty() &&
-            customPaymentMethods.isEmpty() && hiddenPaymentMethods.isEmpty() &&
-            askBeforeDiscarding == null
+            customIncomeCategories.isEmpty() && customPaymentMethods.isEmpty() &&
+            hiddenPaymentMethods.isEmpty() && askBeforeDiscarding == null
 }
 
 /** What a restore did, for the message afterwards. */
@@ -204,17 +255,16 @@ data class RestoreReport(
     val subscriptionsSkipped: Int = 0,
     val settlementsAdded: Int = 0,
     val settlementsSkipped: Int = 0,
-    val splitsAdded: Int = 0,
-    val splitsSkipped: Int = 0,
+    val transactionsAdded: Int = 0,
+    val transactionsSkipped: Int = 0,
     val settingsRestored: Boolean = false,
 ) {
-    val added: Int get() = peopleAdded + groupsAdded + subscriptionsAdded + settlementsAdded + splitsAdded
-    val skipped: Int get() = peopleSkipped + groupsSkipped + subscriptionsSkipped + settlementsSkipped + splitsSkipped
+    val added: Int get() = peopleAdded + groupsAdded + subscriptionsAdded + settlementsAdded + transactionsAdded
+    val skipped: Int get() = peopleSkipped + groupsSkipped + subscriptionsSkipped + settlementsSkipped + transactionsSkipped
 
     /**
-     * Deliberately says what was skipped as well as what was added. A restore run twice should be
-     * visibly a no-op the second time, not silently "successful" in a way that leaves you unsure
-     * whether it duplicated anything.
+     * Says what was skipped as well as what was added. A restore run twice should be visibly a
+     * no-op the second time, not a success that leaves you unsure whether it duplicated the lot.
      */
     fun message(): String = when {
         added == 0 && skipped == 0 && settingsRestored -> "Settings restored. Nothing else in that backup was missing."
