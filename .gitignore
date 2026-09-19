@@ -19,3 +19,4 @@ dist/
 *.jks
 *.keystore
 keystore.properties
+keystore-base64.txt
