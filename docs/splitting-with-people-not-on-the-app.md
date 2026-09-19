@@ -16,7 +16,7 @@ The app has always had two, and the difference is the whole story:
 | Splitting | Yes — full splits, IOUs, settle up | Yes |
 | Balances | Yes, tracked exactly the same | Yes |
 | Do they see it? | No. It's your record of what's owed | Yes, live on their phone |
-| Sync | Backed up to your account, but private to you | Shared with the group |
+| Sync | **No — this phone only.** See below | Shared with the group |
 
 A local friend is stored as a `PersonEntity` with no `profileId`. Everything
 the ledger does — splits, shares, settlements, the debt simplifier, the
@@ -87,8 +87,30 @@ its own item rather than smuggled into a UI change.
 
 ## A note on what "not on the app" means for your data
 
-A local friend is a name you typed. It syncs to **your** account as part of your
-ledger backup, so it survives a lost phone, and it is visible to nobody else —
-the RLS policies scope every row to its owner or to a shared group's members,
-and a local friend is in neither. Their name never reaches another person's
-device.
+A local friend is a name you typed, and it lives **only on this phone**. An
+earlier version of this document said it was backed up to your account; that was
+wrong, and it matters, so here is what is actually true.
+
+The server has eight tables — `profiles`, `groups`, `group_members`,
+`transactions`, `splits`, `split_shares`, `settlements`, `group_invites`. There
+is no `people` table, and every row that names a person does so by *profile id*.
+A local friend has no profile, so there is nowhere for them to go.
+
+**What that means in practice:**
+
+| | Survives a reinstall or a new phone |
+|---|---|
+| Your own expenses and income | Yes |
+| Shared groups, their expenses and settlements | Yes |
+| Your name, avatar and UPI ID | Yes |
+| **Local friends, and anything owed to or by them** | **No** |
+| **Local-only groups** | **No** |
+| **Subscriptions** | **No** |
+| **Custom categories and payment methods, and app settings** | **No** |
+
+The privacy half of the original claim still holds, and is stronger than stated:
+a local friend's name never leaves your device at all.
+
+**Before you uninstall, or move phones,** export a CSV
+(Settings → Export to a spreadsheet → Everything). It is the only copy of the
+local-only half of your ledger.
