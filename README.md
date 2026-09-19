@@ -8,6 +8,66 @@ This contains everything you need to run your app locally.
 
 View your app in AI Studio: https://ai.studio/apps/07d9b3ea-e5c5-4bbc-a9b9-e35c13895442
 
+## Download
+
+**[Latest release](https://github.com/vaibhavcodesx/kharcha-paani/releases/latest)** &nbsp;·&nbsp; [All releases](https://github.com/vaibhavcodesx/kharcha-paani/releases)
+
+Direct link to the newest APK, which always points at whatever the current release is:
+
+```
+https://github.com/vaibhavcodesx/kharcha-paani/releases/latest
+```
+
+### Installing on Android
+
+1. Open the link above on your phone and download the `.apk` file.
+2. Tap the downloaded file. Android will ask whether to allow installs from
+   this source — that prompt is normal for an app that doesn't come from the
+   Play Store. Allow it for your browser or file manager.
+3. Tap **Install**, then **Open**.
+
+If your phone blocks it, the setting is under **Settings > Apps > Special app
+access > Install unknown apps**.
+
+Updates appear on the same Releases page. Download the newer APK and install it
+over the old one — your data stays, because every release is signed with the
+same key.
+
+> **A note on sending the APK around:** WhatsApp usually refuses `.apk`
+> attachments. Send the Releases link instead of the file.
+
+### Two kinds of build
+
+Some releases are published without a Gemini API key. Those hide the AI
+features (Ask about your money, Read this trip, statement scanning) and work
+normally otherwise; they are marked in the release notes and their filename
+ends `-no-ai`. Everything else — expenses, splits, groups, settling up, UPI
+QR codes, CSV export — is the same in both.
+
+## Releasing (maintainer)
+
+Full reasoning in `docs/distribution.md`. The short version:
+
+1. Bump `versionCode` **and** `versionName` in `app/build.gradle.kts`.
+   `versionCode` must strictly increase or Android refuses the update.
+2. Commit and push to `main`.
+3. GitHub > **Actions** > **Release APK** > **Run workflow**. Enter the tag
+   (`v1.1.0` — it must match `versionName`), and tick *omit_ai_key* if this is
+   a build for wider sharing.
+4. The workflow builds, signs, verifies the signature, creates the release and
+   attaches the APK.
+
+Building one locally instead:
+
+```bash
+./gradlew :app:assembleRelease              # with the AI features
+./gradlew :app:assembleRelease -PomitAiKey  # without the Gemini key
+```
+
+This needs a `keystore.properties` at the repo root (gitignored) — see
+`docs/distribution.md`. Without it the build still succeeds but the APK is
+left **unsigned** and will not install.
+
 ## Run Locally
 
 **Prerequisites:**  [Android Studio](https://developer.android.com/studio)

@@ -35,6 +35,7 @@ import com.vaibhav.kharchapaani.data.model.SplitMode
 import com.vaibhav.kharchapaani.data.model.StatementParseResult
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
 import com.vaibhav.kharchapaani.data.repository.ArchivedGroupException
+import com.vaibhav.kharchapaani.data.remote.AppIdentity
 import com.vaibhav.kharchapaani.data.repository.GeminiRepository
 import com.vaibhav.kharchapaani.data.repository.ParseChoices
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
@@ -134,7 +135,8 @@ class MainViewModel(
             requestSync()
         }
     }
-    private val geminiRepo = GeminiRepository()
+    // Identity passed in so requests carry the headers a key restricted to this app requires.
+    private val geminiRepo = GeminiRepository(appIdentity = AppIdentity.of(application))
 
     private val settings = AppSettings(application)
 

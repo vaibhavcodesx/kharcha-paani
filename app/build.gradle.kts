@@ -1,4 +1,5 @@
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+import java.util.Properties
 
 plugins {
   alias(libs.plugins.android.application)
@@ -11,6 +12,64 @@ plugins {
   alias(libs.plugins.google.services)
 }
 
+/**
+ * Where a release build gets its signing key.
+ *
+ * Two sources, in order: a `keystore.properties` at the repo root (gitignored — for building on
+ * this machine), then environment variables (for CI, where the values come from GitHub Secrets).
+ * Neither is committed, and the private key itself never is.
+ *
+ * Null when any part is missing or the keystore file is not where it says, which leaves the
+ * release build unsigned instead of failing.
+ */
+data class ReleaseSigning(
+  val storePath: String,
+  val storePassword: String,
+  val keyAlias: String,
+  val keyPassword: String,
+)
+
+val releaseSigning: ReleaseSigning? = run {
+  val properties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+  }
+  fun value(propertyName: String, envName: String): String? =
+    properties.getProperty(propertyName)?.takeIf { it.isNotBlank() }
+      ?: System.getenv(envName)?.takeIf { it.isNotBlank() }
+
+  val storePath = value("storeFile", "KEYSTORE_PATH") ?: return@run null
+  val storePassword = value("storePassword", "STORE_PASSWORD") ?: return@run null
+  val keyAlias = value("keyAlias", "KEY_ALIAS") ?: "upload"
+  val keyPassword = value("keyPassword", "KEY_PASSWORD") ?: return@run null
+
+  // A path that points at nothing is the same as no credentials at all. The resolved path goes in
+  // the message because the usual cause is invisible otherwise: java.util.Properties treats a
+  // backslash as an escape character, so a Windows path written with backslashes in
+  // keystore.properties arrives here with them stripped. Use forward slashes.
+  val resolved = rootProject.file(storePath)
+  if (!resolved.exists()) {
+    logger.warn(
+      "Release signing: no keystore at '${resolved.absolutePath}' (read as '$storePath'), so the " +
+        "release APK will be UNSIGNED and will not install. On Windows, write the path in " +
+        "keystore.properties with forward slashes."
+    )
+    return@run null
+  }
+  ReleaseSigning(resolved.absolutePath, storePassword, keyAlias, keyPassword)
+}
+
+/**
+ * `-PomitAiKey` builds an APK with no Gemini key in it at all.
+ *
+ * The key is compiled into BuildConfig and is extractable from any APK that carries it, so this
+ * is the build to hand to someone whose use of it you cannot vouch for. `GeminiRepository`
+ * already treats a blank key as "no key", and `MainViewModel.aiAvailable` hides the whole AI
+ * section when that is the case, so the app degrades to everything-but-the-AI rather than
+ * showing buttons that cannot work.
+ */
+val omitAiKey = providers.gradleProperty("omitAiKey").isPresent
+
 android {
   namespace = "com.vaibhav.kharchapaani"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
@@ -19,19 +78,30 @@ android {
     applicationId = "com.vaibhav.kharchapaani"
     minSdk = 24
     targetSdk = 36
+    // Bump both for every release you publish. versionCode is what Android compares to decide
+    // "is this an update?" — it must strictly increase or the new APK refuses to install over
+    // the old one. versionName is the human label and should match the git tag: tag v1.1.0,
+    // versionName "1.1.0".
     versionCode = 1
-    versionName = "1.0"
+    versionName = "1.0.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+    // Replaces the field the Secrets plugin would have emitted, so the APK carries no key.
+    if (omitAiKey) buildConfigField("String", "GEMINI_API_KEY", "\"\"")
   }
 
   signingConfigs {
-    create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
+    // Only created when credentials are actually available. Declaring it unconditionally meant
+    // `assembleRelease` failed for anyone without the private key — including CI, and including
+    // a fresh clone — because storePassword came back null from an unset environment variable.
+    if (releaseSigning != null) {
+      create("release") {
+        storeFile = file(releaseSigning.storePath)
+        storePassword = releaseSigning.storePassword
+        keyAlias = releaseSigning.keyAlias
+        keyPassword = releaseSigning.keyPassword
+      }
     }
     create("debugConfig") {
       storeFile = file("${rootDir}/debug.keystore")
@@ -46,7 +116,10 @@ android {
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.getByName("release")
+      // Null leaves the APK unsigned rather than failing the build. An unsigned APK will not
+      // install on a phone, which is the right outcome: a release build with no key is for
+      // checking that the release variant compiles, not for handing to anyone.
+      signingConfig = if (releaseSigning != null) signingConfigs.getByName("release") else null
     }
     debug { signingConfig = signingConfigs.getByName("debugConfig") }
   }
@@ -79,6 +152,8 @@ secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
   ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
+  // Ignored here so the plugin does not emit the field; the empty one below takes its place.
+  if (omitAiKey) ignoreList.add("GEMINI_API_KEY")
 }
 
 googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
