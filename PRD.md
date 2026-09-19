@@ -1498,6 +1498,52 @@ uploads to Storage first and passes a reference.
 **Do it when** the app goes past people you know, or the key gets abused,
 whichever is first.
 
+### Round 3 (2026-09-20): the backup shipped broken, and what that taught
+
+**v1.1.0 published.** The reported bug was an export with an empty `splits`
+array beside a friend who was owed money. Three causes, and only the third was
+interesting:
+
+1. `splits` was computed in `collect()` and never passed to the constructor.
+2. `settings` was never computed at all.
+3. **The rule was wrong.** It asked "does a friend without an account appear in
+   this row". Reading `SyncDao.pendingPersonalTransactions` gives the real
+   answer: `... AND groupId IS NULL AND isSplit = 0`. *No split expense is ever
+   uploaded* — the whole transaction, whoever it was split with. The predicate
+   is now `LocalBackup.isUnsyncable`, written once beside the format.
+
+Format v2 carries `paidByName`, which v1 hardcoded to "me". That is the field
+whose loss corrupts silently rather than loudly: an expense they paid and one
+you paid are the same rows with the payer swapped.
+
+**The testing lesson, which is the durable part.** `LocalBackupTest` built a
+`LocalBackup` by hand and round-tripped it through JSON. It passed the whole
+time the feature was broken, because it never called `collect()`. A test that
+constructs the thing it is checking tests the constructor.
+`LocalBackupRoundTripTest` starts from a real database with money in it and
+asserts a *balance*. Reintroducing the original defect fails 7 of its 12
+assertions — checked, not assumed.
+
+Two more found by auditing for the same shape ("reports success without doing
+the thing"): a group's settlements and IOUs appeared nowhere in its own sheet
+while the balances above them counted them; and the CSV export omitted every
+settlement, including from the range named "Everything".
+
+### Staged, awaiting review (2026-09-20)
+
+**Splits with a friend who has no account, synced.**
+`supabase/migrations/20260920000000_local_participant_shares.sql`, 12/12 on the
+local harness, **not applied** — it replaces `split_shares_insert`, which is a
+hard stop. Case in `docs/staged-local-participant-sync.md`. The client half is
+not written and is the larger one; dropping `isSplit = 0` from the upload query
+is the part that wants its own pass.
+
+**Process note:** two UPI migrations were applied live last session via the MCP
+tool and never written to `supabase/migrations/`, so the repository and
+production disagreed and the local harness tested a schema production does not
+have. Both are now committed. A migration applied through the tool still has to
+land in the folder.
+
 ### Still open
 
 - **Merging a local friend into a joined account** — its own design pass,
