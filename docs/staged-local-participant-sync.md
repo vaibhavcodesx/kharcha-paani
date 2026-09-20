@@ -1,7 +1,11 @@
-# Staged for review: splits with a friend who has no account
+# Splits with a friend who has no account
 
-**Status: built and tested, not applied.** It replaces an RLS policy, which is a hard stop under
-the project's own rule. Everything below is ready to apply on your word.
+**Status: the schema is APPLIED to live (2026-09-20, after review). The client half is not
+written — see PRD.md, "Local-friend splits: the client half".**
+
+So the database can hold this today and nothing writes it yet. That is deliberate: turning it on
+means `SyncDao.pendingPersonalTransactions` stops filtering `isSplit = 0`, which changes what
+previously-local-only data begins syncing, and that wants its own session.
 
 - Migration: `supabase/migrations/20260920000000_local_participant_shares.sql`
 - Test: `supabase/tests/rls_local_participant_shares_test.sql` — **12/12 against the local harness**
@@ -77,9 +81,10 @@ inside its owner's expense, visible to exactly the people who could already read
 | A share for a real profile still needs group membership | ✅ |
 | A share for a profile outside the group is still refused | ✅ |
 
-## If you approve it
+## What is left
 
-1. Apply `20260920000000_local_participant_shares.sql`.
+1. ~~Apply `20260920000000_local_participant_shares.sql`~~ — done, 2026-09-20. 12/12 against live,
+   rolled back cleanly, advisors clean.
 2. The client work is **not** written yet and is the larger half: `RemoteShare` gains
    `local_name`; `GroupSyncEngine.buildGroupExpense` stops returning null when a sharer has no
    profile and sends the name instead; the pull side maps a `local_name` back to a local

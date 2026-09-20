@@ -1,4 +1,6 @@
--- STAGED, NOT APPLIED. Awaiting owner review, because it changes an RLS policy.
+-- APPLIED to the live project on 2026-09-20, after owner review (it changes an RLS policy, which
+-- is a hard stop under this project's rules). 12/12 against the local harness and 12/12 again
+-- against live, rolled back cleanly, advisors clean.
 --
 -- Lets a split name someone who has no account.
 --

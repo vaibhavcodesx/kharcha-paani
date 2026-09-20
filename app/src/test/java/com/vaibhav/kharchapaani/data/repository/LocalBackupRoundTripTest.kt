@@ -218,6 +218,43 @@ class LocalBackupRoundTripTest {
     }
 
     @Test
+    fun `when each expense happened, and when it was logged, both survive`() = runTest {
+        // A restored ledger with every date reset to the day of the restore would balance
+        // correctly and still be useless: you could not tell which month anything belonged to,
+        // and Insights would report the lot as spent today.
+        seed()
+
+        LocalBackupRepository(target).restore(exported())
+
+        val restored = target.transactionDao().getAllTransactionsDirect().associateBy { it.merchant }
+        assertEquals(2_000L, restored.getValue("Dinner").date)
+        assertEquals(2_000L, restored.getValue("Dinner").createdAt)
+        assertEquals(3_000L, restored.getValue("Cab").date)
+        assertEquals(3_000L, restored.getValue("Cab").createdAt)
+    }
+
+    @Test
+    fun `every IOU and settlement keeps its own date too`() = runTest {
+        seed()
+
+        LocalBackupRepository(target).restore(exported())
+
+        val dates = target.settlementDao().getAllSettlementsDirect().map { it.date }.sorted()
+        assertEquals(listOf(4_000L, 5_000L, 6_000L), dates)
+    }
+
+    @Test
+    fun `the exported file carries a date for every row`() = runTest {
+        // Checked on the file itself, not just after a restore: the backup is something a person
+        // can open and read, and a row with no date in it is not a record of anything.
+        seed()
+        val backup = exported()
+
+        assertTrue(backup.transactions.all { it.date > 0 && it.createdAt > 0 })
+        assertTrue(backup.settlements.all { it.date > 0 && it.createdAt > 0 })
+    }
+
+    @Test
     fun `a local group and its membership come back`() = runTest {
         seed()
 

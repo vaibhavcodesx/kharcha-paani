@@ -1529,14 +1529,65 @@ the thing"): a group's settlements and IOUs appeared nowhere in its own sheet
 while the balances above them counted them; and the CSV export omitted every
 settlement, including from the range named "Everything".
 
-### Staged, awaiting review (2026-09-20)
+### Applied 2026-09-20: the schema half of local-friend sync
 
-**Splits with a friend who has no account, synced.**
-`supabase/migrations/20260920000000_local_participant_shares.sql`, 12/12 on the
-local harness, **not applied** — it replaces `split_shares_insert`, which is a
-hard stop. Case in `docs/staged-local-participant-sync.md`. The client half is
-not written and is the larger one; dropping `isSplit = 0` from the upload query
-is the part that wants its own pass.
+`supabase/migrations/20260920000000_local_participant_shares.sql` is **live**,
+approved after review. `split_shares` gains `local_name text null` beside a now
+nullable `profile_id`, a check requiring exactly one of the two, and two partial
+unique indexes. `split_shares_insert` gained a second branch: a local name may
+be written only by the owner of that transaction. Reads are untouched.
+
+12/12 on the local harness and 12/12 again against live, rolled back leaving
+nothing behind; security and performance advisors clean (the two warnings and
+three INFO notes that remain all predate it and are unrelated). Case and
+reasoning in `docs/staged-local-participant-sync.md`.
+
+**The database can now hold this. Nothing writes it yet** — see the backlog item
+below.
+
+---
+
+## BACKLOG — defined, scoped, not started
+
+### Local-friend splits: the client half
+
+**Status: not started.** Deliberately separate from the 2026-09-20 schema
+change, because it alters what previously-local-only data begins syncing and
+deserves its own session rather than being folded into a wrap-up.
+
+The schema is in place and unused. Making it real is four pieces:
+
+1. **`RemoteShare` gains `local_name`** (`data/sync/RemoteGroups.kt`), and the
+   `save_group_expense` payload builder learns to send it.
+2. **`GroupSyncEngine.buildGroupExpense` stops returning null** when a sharer
+   has no profile. Today it bails with "payer has no profile"; it should send
+   the name instead. The payer itself still has to be a real profile — someone
+   with no account cannot have paid *from* an account.
+3. **The pull side maps a `local_name` back to a local `PersonEntity`**,
+   creating one if this device has never seen that name, and matching
+   case-insensitively on trimmed name the way `LocalBackupRepository.restore`
+   already does. The two should share one helper rather than drift apart.
+4. **`SyncDao.pendingPersonalTransactions` drops `AND isSplit = 0`.**
+
+**Point 4 is the one to think hardest about.** It is one clause, and it changes
+the meaning of every split expense already sitting on every phone: rows that
+have only ever been local start uploading. Before touching it, work out what
+happens to a phone with months of local splits — whether they upload in one
+burst, whether a split naming a groupmate who *does* have a profile should now
+be attributed to them, and whether any of that can surprise someone who never
+asked for their splits to be shared. That question is the reason this is its own
+task.
+
+**Tests it needs:** the RLS suite already covers the server. The client side
+wants a round trip through `GroupSyncEngine` with a local participant, in both
+directions, asserting balances — the same shape as
+`LocalBackupRoundTripTest`, and for the same reason: a test that hand-builds
+the payload would not have caught the backup bug either.
+
+**Not urgent.** The local backup covers the data-loss case today, verified on
+device end to end. This makes it automatic rather than something to remember.
+
+
 
 **Process note:** two UPI migrations were applied live last session via the MCP
 tool and never written to `supabase/migrations/`, so the repository and

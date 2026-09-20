@@ -1,7 +1,6 @@
--- Checks for the STAGED migration 20260920000000_local_participant_shares.
+-- Checks for migration 20260920000000_local_participant_shares, applied to live on 2026-09-20.
 --
--- That migration is not applied to the live project: it replaces an RLS policy, which is a
--- hard-stop item pending owner review. This is the evidence for that review.
+-- Ran 12/12 here and 12/12 against the live project, which rolled back leaving nothing behind.
 --
 -- Same conventions as rls_payer_edit_test.sql: one transaction ending in ROLLBACK, one result row
 -- per check, nothing left behind. Safe to run on the live project as `postgres`.
