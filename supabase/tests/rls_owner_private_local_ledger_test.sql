@@ -133,6 +133,11 @@ select public._expect_error('a negative share is refused',
         '{"id":"20000000-0000-4000-8000-00000000a005","type":"expense","amount":100,"category":"Food","merchant":"x","payment_method":"UPI","date":"2026-09-20T20:00:00Z","note":""}',
         '{"id":"30000000-0000-4000-8000-00000000a005","total_amount":100,"shares":[{"local_name":null,"share_amount":150},{"local_name":"Rohan","share_amount":-50}]}') $q$);
 
+select public._expect_error('a share with no amount at all is refused',
+  $q$ select public.save_local_split(
+        '{"id":"20000000-0000-4000-8000-00000000a008","type":"expense","amount":100,"category":"Food","merchant":"x","payment_method":"UPI","date":"2026-09-20T20:00:00Z","note":""}',
+        '{"id":"30000000-0000-4000-8000-00000000a008","total_amount":100,"shares":[{"local_name":"Rohan","share_amount":100},{"local_name":"Meera"}]}') $q$);
+
 select public._expect_error('a local split cannot be put on a group expense',
   $q$ select public.save_local_split(
         '{"id":"20000000-0000-4000-8000-00000000a006","type":"expense","amount":100,"category":"Food","merchant":"x","payment_method":"UPI","date":"2026-09-20T20:00:00Z","note":"","group_id":"10000000-0000-4000-8000-00000000a001"}',

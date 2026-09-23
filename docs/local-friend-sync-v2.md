@@ -5,7 +5,7 @@ and tested behind `LocalFriendSync.ENABLED = false`.**
 
 - Migration: `supabase/staged/20260923000000_owner_private_local_ledger.sql`. It's kept out of
   `supabase/migrations/` so nothing can apply it by accident.
-- Test: `supabase/tests/rls_owner_private_local_ledger_test.sql`, **28/28 on the local harness**.
+- Test: `supabase/tests/rls_owner_private_local_ledger_test.sql`, **29/29 on the local harness**.
   Each refusal was checked to fail for the intended reason (constraint `23514` vs RLS `42501`).
 - The existing suites still pass with it in place: `rls_local_participant_shares_test` 12/12,
   `rls_groups_test` 100/100, `rls_payer_edit_test` 28/28, `rls_leave_and_immutability_test` 51/51.

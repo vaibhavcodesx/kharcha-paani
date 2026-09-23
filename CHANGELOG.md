@@ -50,7 +50,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - **(server)** `supabase/staged/20260923000000_owner_private_local_ledger.sql`: owner-private
   `local_splits` and `local_settlements` tables and an atomic `save_local_split` function, so a
   personal split or IOU with a friend who has no account can be kept in the cloud. New tables
-  with new RLS policies, so it waits for owner review. 28/28 on the local harness. See
+  with new RLS policies, so it waits for owner review. 29/29 on the local harness. See
   [`docs/local-friend-sync-v2.md`](docs/local-friend-sync-v2.md).
 - The app side of that sync, built and tested but switched off (`LocalFriendSync.ENABLED`) until
   the migration is applied: new personal splits and IOUs with friends who have no account go up

@@ -47,7 +47,9 @@ as $$
     and not exists (
       select 1 from jsonb_array_elements(p_shares) s
       where jsonb_typeof(s) <> 'object'
-         or jsonb_typeof(s -> 'share_amount') <> 'number'
+         -- coalesce: a missing key is SQL null, and "null <> 'number'" is null, not true, so a
+         -- share with no amount at all used to pass (found in review, PR #49).
+         or coalesce(jsonb_typeof(s -> 'share_amount'), 'missing') <> 'number'
          or (s ->> 'share_amount')::numeric < 0
          or (s ? 'local_name' and jsonb_typeof(s -> 'local_name') not in ('string', 'null'))
          or (jsonb_typeof(s -> 'local_name') = 'string'
