@@ -1,0 +1,916 @@
+# PRD status log, 2026-09-13 to 2026-09-20 (archived)
+
+Moved here verbatim from `PRD.md` on 2026-09-23, when the PRD went back to being the spec and
+`CHANGELOG.md` took over recording what changed. Nothing was edited except the heading levels.
+This is the engineering record: what was verified, how, and what each check caught. The
+changelog is the summary; this is the evidence.
+
+---
+
+### Status Log (living record — update as work progresses)
+
+- ✅ Supabase project created (`kharcha-paani`, `ap-northeast-1`,
+  Postgres 17).
+- ✅ Google Sign-In provider enabled on Supabase, Web OAuth Client ID
+  configured in Google Cloud Console.
+- ✅ Initial schema migration applied via the Supabase MCP connection:
+  all 7 tables created, RLS enabled on every one, `SECURITY DEFINER`
+  helper functions used to avoid self-referencing RLS recursion on
+  `groups`/`group_members`, `auth.uid()` wrapped per Postgres
+  performance best practice, and a real security-advisor finding fixed
+  (the `profiles`-creation trigger function was callable directly via
+  REST RPC — access revoked).
+- ✅ **Package rename** (branch `foundation/finish-schema-and-package`):
+  `namespace` `com.example` → `com.vaibhav.kharchapaani`. The
+  `applicationId` was actually the AI Studio-generated
+  `com.aistudio.splitflow.wzvq`, not `com.example`; it is now
+  `com.vaibhav.kharchapaani` too. This installs as a **separate app** from
+  any existing AI Studio build on a phone, so that build's local Room data
+  is not visible to the renamed app. Keep the old install (or a CSV export)
+  until Migration Plan step 5.
+- ✅ **Migrations versioned in git**: both already-applied migrations are
+  saved under `supabase/migrations/`, byte-verified against
+  `supabase_migrations.schema_migrations` by md5.
+- ✅ **Follow-up migration applied** (`20260913154813`):
+  `splits.split_type` (text, `equal`/`exact`/`percentage`, default
+  `equal`), `split_shares.percentage` (nullable unscaled numeric, 0–100),
+  `settlements.is_iou` (boolean, default false), and `settlements.group_id`
+  (nullable FK → `groups`, `on delete set null`, indexed). Settlements RLS
+  is intentionally unchanged. Security advisor: clean.
+- ✅ **`SECURITY DEFINER` helper bodies checked**: read the live
+  `pg_get_functiondef` output for `private.is_group_member`,
+  `can_access_transaction`, and `owns_transaction`. All three already use
+  `(select auth.uid())`, and all have `search_path = ''`. EXECUTE is granted
+  to `authenticated` only. No change needed.
+- ✅ **Build verified after the rename**: `:app:compileDebugKotlin` and
+  `:app:testDebugUnitTest` pass (5 tests, 0 failures, 0 skipped, all under
+  `com.vaibhav.kharchapaani`). The only compiler warnings are pre-existing
+  deprecations: `Icons.Filled.*` → `AutoMirrored` variants, and
+  `fallbackToDestructiveMigration()`. The first attempt had failed only
+  because drive C: was full.
+- 🔎 **Found while doing the above; not fixed, belongs to later steps**:
+  - *Step 3 (sync)*: no table has `updated_at` or a soft-delete column,
+    so last-write-wins and delete propagation have nothing to compare
+    against. Room stores money as `Double`, while Postgres uses
+    `numeric(12,2)`, so shares like 100/3 will round on every round-trip.
+    `AppDatabase` uses `fallbackToDestructiveMigration()` with
+    `exportSchema = false`, so the first Room schema change for sync
+    (e.g. adding `pending_sync`) **wipes all local data** unless real Room
+    migrations replace it. Its `onCreate` callback also seeds sample
+    people (Rahul/Priya/Arjun), which step 5's upload must not push to the
+    cloud as real data.
+  - *Step 4 (groups/RLS)*:
+    - `group_members_insert_self` lets any signed-in user join any group
+      whose UUID they know. There is no invite-code check yet.
+    - `profiles` is readable by every signed-in user.
+    - `split_shares` is readable only by the share-holder and the payer.
+      Other members of a 3+ person group can't see all shares, so debt
+      simplification across the group can't run for them.
+    - Split and settlement rows can reference any profile, including
+      non-members.
+    - There is no policy that lets a member leave a group.
+  - *Tooling*: the repo has no `gradlew`/wrapper JAR (needed for CI in
+    Part C). ~~`debug.keystore` is gitignored and absent~~ generated
+    locally in step 2 (still gitignored; see below).
+  - *UI (Part B)*: the widget still reads "⚡ SplitFlow", and classes and
+    resources keep the `SplitFlow*` name. The real palette is
+    `CharcoalBg #0E0D0C` and chartreuse `#C6F24C`, not the `#121214` /
+    `#CCFF00` this PRD lists.
+
+#### Migration Plan step 2: supabase-kt + Google Sign-In (branch `feature/supabase-google-sign-in`)
+
+- ✅ **Dependencies**: `supabase-kt` 3.6.0 (auth + postgrest), Ktor
+  OkHttp engine, `androidx.credentials` 1.6.0, `googleid` 1.2.0.
+  - 3.6.0 is the newest supabase-kt this project's Kotlin 2.2.10 can
+    use; 3.7.0+ is built with Kotlin 2.4. Moving to it means bumping
+    Kotlin first, as its own change (Room/Moshi KSP need re-checking).
+  - OkHttp and logging-interceptor moved 4.10 → 5.3.2, because the
+    Ktor engine requires OkHttp 5. Gemini's Retrofit client now runs on
+    OkHttp 5 too; it compiles, but hasn't been exercised at runtime yet.
+- ✅ **Auth flow**: Credential Manager → Google ID token with a
+  SHA-256-hashed nonce → `supabase.auth.signInWith(IDToken)` with the raw
+  nonce. If the device has no Google account, it falls back to
+  `GetSignInWithGoogleOption`. Every failure maps to a specific message;
+  a dismissed picker shows nothing.
+- ✅ **Offline-first session handling**: supabase-kt reports
+  `RefreshFailure` when a token expires with no network, and it's mapped
+  to *still signed in*. Being offline never locks the user out. Sign-out
+  clears the local session even when the logout call can't reach the
+  server.
+- ✅ **Session storage**: a dedicated `supabase_auth` SharedPreferences
+  file, excluded from Auto Backup and from Android 12+ cloud backup and
+  device transfer.
+- ✅ **UI**:
+  - Sign-in gate in `MainActivity`: blank frame while the stored session
+    loads, then `SignInScreen` or the app.
+  - Account button in the Home header, opening an account sheet. The
+    sheet shows whether the `profiles` row loaded, says the ledger is
+    still local-only, and offers sign-out.
+  - Material 3 audit run on all three surfaces. Contrast was measured
+    for every pairing and one real failure fixed (sign-out outline 1.28:1
+    → 3.17:1), plus a double-clickable account button, a tablet max
+    width, and heading semantics.
+- ✅ **Tests**: 19 new unit tests (nonce, `SessionStatus` → `AuthState`
+  mapping, client-ID validation, UI state, `SignInScreen` via
+  Robolectric). All 24 pass and `assembleDebug` passes. The offline
+  mapping test was mutation-checked: breaking the mapping makes it fail.
+- ✅ **Config**:
+  - `.env.example` documents `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`
+    and `GOOGLE_WEB_CLIENT_ID`.
+  - Found: an **empty** value in `.env` breaks `BuildConfig.java`
+    generation. Documented, and the placeholder ID is rejected at
+    runtime.
+  - The local `.env` `SUPABASE_URL` had a stray `/rest/v1/` suffix, now
+    fixed.
+  - A local `debug.keystore` was generated. SHA-1
+    `1C:B2:42:8A:71:4F:9A:F7:6A:24:9D:32:37:D3:6C:EB:C0:14:28:1B` is
+    verified on the built APK.
+- ✅ **Verified end-to-end on a real phone (2026-09-13)**:
+  - Setup: Android OAuth client registered (package + SHA-1 above), and
+    the Web client ID placed in `.env`.
+  - Google sign-in succeeded, and the account sheet showed "Cloud
+    profile ready".
+  - A Gemini expense entry also worked, so the OkHttp 4 → 5 bump holds
+    at runtime.
+  - Checked via the Supabase MCP connection: exactly one `auth.users`
+    row (provider `google`, one `google` identity) and a matching
+    `profiles` row with `display_name` and `avatar_url` populated. The
+    row was created by `on_auth_user_created` in the same transaction.
+- 🔎 **Carried forward**:
+  - ~~*Before step 3*: replace `fallbackToDestructiveMigration()`~~,
+    done (see step 3 prerequisites below).
+  - ~~*Step 3*: tie the local ledger to the account~~, done (see below).
+  - *Step 5*: exclude the seeded Rahul/Priya/Arjun/Alex rows and the
+    "Lonavala 2026" sample group from the upload.
+  - *Part B*: the existing Home IOU button has the same
+    IconButton + `bounceClick` double-clickable issue fixed on the new
+    account button.
+
+#### Migration Plan step 3: prerequisites (PR #4, branch `feature/sync-personal-transactions`)
+
+- ✅ **Room migrations**:
+  - `fallbackToDestructiveMigration()` removed. A missing migration now
+    fails to open instead of wiping the ledger.
+  - The Room Gradle plugin exports a JSON schema per version to
+    `app/schemas` (v2 baseline committed), and migrations register in
+    `AppDatabase.ALL_MIGRATIONS`.
+  - `AppDatabaseMigrationSafetyTest` was mutation-checked: re-adding the
+    fallback makes it fail.
+- ✅ **Per-account ledgers** (design and all three decisions approved):
+  - One `ledger-<userId>.db` per account.
+  - The first account to sign in takes over the pre-accounts
+    `splitflow.db`, with the WAL checkpointed before the rename.
+  - New accounts start empty (seeding removed). Sign-out keeps the file.
+  - `AccountSessionHolder` gives each account its own `MainViewModel`,
+    cleared before that account's database closes.
+  - The widget shows only the signed-in account, and "Sign in" when
+    signed out.
+  - Fixed along the way: rotation no longer re-parses a shared screenshot.
+  - Accepted limit: separation is app-enforced, not encrypted.
+- ✅ **Gradle wrapper + Android CI** (pulled forward from Part C):
+  - Gradle 9.3.1 wrapper pinned to the official SHA-256.
+  - `android-ci.yml` runs `:app:testDebugUnitTest` on every PR (JDK 25)
+    and uploads the results.
+  - Reason: Windows Application Control blocks Robolectric's native SQLite
+    DLL on the dev machine, so database tests are verified on CI. Smart
+    App Control was deliberately left on.
+- ✅ **Verified on CI (Linux)**: 36 tests, 0 failures, 0 skipped,
+  including all 8 `LedgerDatabasesTest` and both
+  `AccountSessionHolderTest` cases.
+- **Process change (2026-09-13, refined 2026-09-14)**: PRs merge once CI
+  is green and the results have been checked. Still reviewed first:
+  anything touching RLS or auth/security config, and **any database
+  migration that isn't purely additive** (drops, type changes, or
+  changes to existing data). Requested design discussions also still
+  happen first.
+
+#### Migration Plan step 3: sync loop for personal transactions (PR #5, branch `feature/sync-loop-personal-transactions`)
+
+Design approved on 2026-09-14:
+- **Conflicts:** last write to reach the server wins, and a still-queued
+  local change beats a pulled one.
+- **Pre-sync history** isn't uploaded; step 5 decides. In practice
+  there's no legacy data to migrate: the old install's data is gone and a
+  CSV backup exists.
+- **Realtime** is deferred to step 4. Pulls only for now.
+
+- ✅ **Supabase migration `20260913184544`** (purely additive, 0 rows,
+  applied under the fast-track rule):
+  - `transactions.updated_at` (server-owned via a
+    `BEFORE INSERT OR UPDATE` trigger) and `deleted_at` for soft deletes.
+  - An index on `(owner_id, updated_at)`.
+  - Checked under RLS as an authenticated user in a rolled-back
+    transaction: the trigger overrides a client-sent `updated_at`, and
+    the soft delete works. RLS is unchanged.
+- ✅ **Room v3** with a real `MIGRATION_2_3`:
+  - `remoteId` (a device-generated UUID that is also the server id),
+    `updatedAt` and `syncState`.
+  - New `pending_remote_deletes` and `sync_meta` tables.
+  - Existing rows get unique v4 UUIDs and stay `LOCAL_ONLY`.
+- ✅ **Repository writes queue sync atomically**:
+  - Personal expenses become `PENDING`; split and group expenses stay
+    `LOCAL_ONLY`.
+  - Edits keep `remoteId` and `createdAt`. This also fixes an existing
+    bug: editing used to reset `createdAt`.
+  - Converting a synced expense into a split queues a server delete.
+- ✅ **`TransactionSyncEngine`**:
+  - Batched idempotent upserts, marked synced only if the row is
+    unchanged since read.
+  - Soft deletes, then an overlapped, paged pull.
+  - A row the server rejects is marked `FAILED` instead of blocking the
+    queue.
+- ✅ **WorkManager**:
+  - Debounced sync after each write and on app start/foreground.
+  - Periodic sync every 15 minutes while signed in; cancelled on
+    sign-out.
+  - Only the signed-in account's queue runs.
+- ✅ **Account sheet sync status**: synced / waiting / syncing /
+  couldn't sync, with Retry.
+- **Known limits (accepted for step 3)**:
+  - An offline edit that syncs later can overwrite a newer edit from
+    another device, or revive a row another device deleted. This follows
+    from the approved conflict rule.
+  - `SyncWorker.doWork()` can't run under Robolectric (supabase-kt auth
+    init never completes there), so its decision logic is tested directly.
+- 🔎 **Found, not fixed** (correctness audit, priority 2):
+  - Deleting a group leaves its transactions with a dangling `groupId`
+    (no foreign key).
+  - `deletePerson` removes shares but leaves `isSplit = true` on the
+    transaction.
+  - ~~REPLACE inserts could cascade-delete child rows~~: assessed and
+    fixed, see below.
+  - The widget duplicates the ledger balance maths instead of using the
+    repository.
+- ✅ **Two-device verification (2026-09-14, done by the user)**: phone
+  and emulator on the same account, changes made on each appeared on the
+  other. Sync works end to end.
+
+#### REPLACE-insert cascade risk: assessment and fix (2026-09-14, before step 4)
+
+- **The mechanism**: SQLite's `INSERT OR REPLACE` *deletes* the
+  conflicting row before inserting. Room turns foreign keys on
+  (`PRAGMA foreign_keys = ON` in the generated `AppDatabase_Impl`), so
+  that delete fires `ON DELETE CASCADE`. The three affected parent tables
+  are `groups` → `group_members` and `transactions` → `splits` →
+  `split_shares`.
+- **What triggers it**: a REPLACE insert into one of those tables with a
+  primary key that already exists, or (for `transactions`) a `remoteId`
+  that already exists.
+- **Origin**:
+  - All 8 REPLACE inserts in `Daos.kt` date from the AI Studio build.
+  - Step 3 added no REPLACE on a parent table: its REPLACE inserts write
+    to `pending_remote_deletes` and `sync_meta`, which have no children.
+  - Step 3 *did* add a second trigger key, the unique `transactions.remoteId`
+    index.
+- **Reproduced in real SQLite** (3.45, the exact v3 table definitions,
+  foreign keys on):
+  - REPLACE with an existing transaction id silently removed its split
+    and all 3 shares.
+  - REPLACE with an existing `remoteId` swapped in a copy with no split.
+  - REPLACE with an existing group id dropped its members from 3 to 0.
+  - ABORT and a true `ON CONFLICT DO UPDATE` both left the children
+    intact.
+- **Could it have affected shipped data? No.** Every call site was
+  traced:
+  - All inserts build new entities (`id = 0`, auto-generated, with a fresh
+    random `remoteId`).
+  - Edits use `@Update`.
+  - Sync pulls look rows up by `remoteId`, then insert with ABORT or run a
+    conditional UPDATE.
+- **Severity**:
+  - *Before the fix*: latent, since no current code could trigger it.
+    But the impact if triggered was high: splits, shares or members lost
+    with no error.
+  - *Likelihood rose sharply in step 4*: syncing groups, members, splits
+    and shares writes rows whose ids already exist locally, and the loss
+    would then have propagated to the server and friends' devices.
+- ✅ **Fix (PR #6)**:
+  - All 8 app-data inserts switched from REPLACE to ABORT, with a
+    header comment explaining why.
+  - `SyncDao`'s two REPLACE inserts stay, documented as safe: those tables
+    have no children, and overwriting is the intent.
+  - No schema change.
+  - `DuplicateInsertSafetyTest` checks that re-inserting an existing
+    transaction, split or group id throws and leaves children intact,
+    that a duplicate `remoteId` is rejected, and that a batch import
+    containing an existing id rolls back as a whole.
+- **Step 4 design input**: Room's `@Upsert` falls back to an update by
+  *primary key*, so it isn't a safe way to write synced rows keyed by
+  `remoteId`. Sync writes keep the explicit "find by remoteId, then
+  conditional update" pattern.
+
+#### Migration Plan step 4: groups, invites, multi-user splits
+
+Design approved on 2026-09-14:
+1. Sharing happens only inside groups; a 1:1 split means a two-person
+   group.
+2. Only the person who added a group expense can edit or delete it.
+   *Amended by backlog item 11 (owner, 2026-09-15; migration
+   `payer_can_edit_group_expenses`, PR #31): the person who paid can
+   edit and delete it too. Only the adder can change who paid or move it
+   out of its group, and it always stays owned by the adder.*
+3. Either party can record a settlement.
+4. Groups are archived rather than deleted; members can leave.
+5. Invites are 8-character codes that expire after 7 days, shared as
+   `kharchapaani://join/CODE`.
+6. Equal splits round to 2 decimals, with the leftover paisa going to the
+   payer.
+7. Existing local groups and friends stay local-only.
+
+A fourth RLS gap turned up while re-reading the live policies:
+transactions could be attached to any group.
+
+- ✅ **PR 1: RLS policies and database functions** (PR #7,
+  `supabase/migrations/20260914033124_groups_invites_rls.sql`). Reviewed
+  and approved by the user in two rounds, then **applied to live
+  2026-09-14**.
+  - Fixes all four gaps: joining only via invite code, profiles visible
+    only to groupmates, shares visible to group members, group writes
+    require membership.
+  - Also: members can leave, groups are archived instead of deleted,
+    settlements are group-scoped, and splits, shares and settlements may
+    only reference members.
+  - New `group_invites` table, plus `create_group`, `create_group_invite`,
+    `revoke_group_invite`, `preview_invite`, `join_group` and the atomic
+    `save_group_expense` (runs as the caller, so RLS still applies).
+  - **Review round 1 (2026-09-14): hard deletes closed at the database
+    level.**
+    - Hard deletes never reach other devices, so step 3's soft-delete
+      design was only guaranteed while the app behaved.
+    - Found while fixing: `anon` and `authenticated` held DELETE *and*
+      TRUNCATE on every public table (Supabase default privileges), and
+      TRUNCATE ignores RLS entirely.
+    - The fix:
+      - Delete policies dropped on transactions, splits, shares and
+        settlements.
+      - DELETE and TRUNCATE revoked from client roles on all app tables,
+        so deletes now fail loudly with `42501`. The only real delete
+        left is leaving a group.
+      - Shares are soft-deleted instead: `save_group_expense` now
+        soft-deletes removed shares, updates kept ones and inserts new
+        ones, with the unique index made partial.
+      - `settlements` gained `updated_at` / `deleted_at` so they can be
+        retracted.
+      - A trigger bumps the parent transaction on any split or share
+        write, so direct child edits still reach members.
+  - **`supabase/tests/rls_groups_test.sql`**: 100 checks with alice, bob,
+    carol and mallory. It runs as a single transaction that ends in
+    `ROLLBACK`.
+    - Run locally on PGlite (PostgreSQL 18.3; live is 17.6), with a
+      Supabase-style bootstrap that mirrors the live roles, `auth.uid()`
+      and default privileges: **100/100 pass**, and it rolled back
+      cleanly.
+    - Every expected refusal was checked to fail for the intended reason.
+      Hard-delete and truncate checks accept only `42501`.
+    - Mutation-checked (16 mutations), each caught:
+      - each original gap
+      - anon EXECUTE
+      - DELETE restored on each of five tables
+      - DELETE privilege alone
+      - TRUNCATE on transactions and on settlements
+      - no parent-bump trigger
+      - a strict membership check on removed shares
+      - no unique index on active shares
+    - The mutations caught two checks that passed for the wrong reason:
+      anon EXECUTE was masked by the function's own check, and a truncate
+      of `transactions` was blocked by a foreign key rather than the
+      privilege. Both checks were rewritten.
+    - Includes the exact writes step 3's personal sync sends (upsert,
+      soft delete, pull), so the 3 live personal transactions keep syncing.
+  - **Live verification**:
+    - Applied as version `20260914033124`. Supabase's stored statement
+      md5 `d7241d26…` is byte-identical to the reviewed file.
+    - `rls_groups_test.sql` run on live (PostgreSQL 17.6): **100/100 pass**
+      with the same refusal reasons as locally.
+    - Afterwards: 0 test users, profiles, helper tables or functions
+      left; the 3 real personal transactions are untouched.
+    - Security advisor: only the anticipated warning (`authenticated` can
+      execute the 5 definer RPCs) and the existing, irrelevant
+      leaked-password warning (Google-only sign-in).
+    - Performance advisor: only "unused index" notices (no data yet).
+- ✅ **PR 2: group sync columns and the Realtime publication** (PR #8,
+  `supabase/migrations/20260914034325_group_sync_columns.sql`, fast-track:
+  purely additive).
+  - `groups` gained `updated_at` (trigger), `description` and `color_hex`.
+    Joining or leaving bumps the group's clock, so membership changes
+    reach members' devices.
+  - Partial pull indexes on group transactions and settlements.
+  - Realtime publishes `transactions`, `settlements` and `groups` only.
+    Members, splits and shares are covered by their parent's clock.
+  - `supabase/tests/group_sync_columns_test.sql`: 10 checks, rolled back.
+  - Live: applied and re-checked (3 columns, 2 triggers, the 3 published
+    tables; still 0 groups, and the 3 real transactions untouched). CI:
+    66 tests, 0 failures.
+- ✅ **PR 3: shared-group data layer and sync engine** (PR #9,
+  fast-track: no server changes; the Room migration is purely additive).
+  - **Room v4** (`MIGRATION_3_4`, `4.json`, `Migration3To4Test`):
+    - people carry a Supabase `profileId`;
+    - groups, splits and settlements get backfilled unique `remoteId`s,
+      and groups and settlements get sync state;
+    - transactions record `ownerProfileId` for groupmates' expenses;
+    - tombstones get an `entityType`.
+    - Every existing row stays `LOCAL_ONLY` (decision 7).
+  - **`SplitRounding`**: shares round to paisa with the leftover on the
+    payer (decision 6), so they pass `save_group_expense`'s exact-sum
+    check. Shares that don't add up are kept as entered and the expense
+    fails to sync, rather than silently changing what someone owes.
+  - **`GroupBalances`**: net positions for every member, including debts
+    between two groupmates, plus `DebtSimplifier.simplifyPositions`.
+    Shared groups' "your balance" now includes settlements.
+  - **`SupabaseGroupRemote`**:
+    - calls `create_group` and `save_group_expense`;
+    - pulls groups with embedded members, and expenses with embedded
+      splits (object, array or null all decode);
+    - pages settlements.
+    - A **403 on a group write is final** (the group is archived or the
+      writer left) instead of being retried forever.
+  - **`LedgerRepository` rules**:
+    - only the adder edits or deletes a group expense;
+    - only the two parties retract a settlement;
+    - only the creator renames, archives or un-archives a group;
+    - shared groups and groupmates can't be deleted locally;
+    - membership only comes from the server.
+    - Moving an expense out of a shared group retracts it and gives it a
+      new remote id, because members only pull their group's rows.
+    - Analytics and the streak ignore groupmates' expenses I have no share
+      in.
+  - **`GroupSyncEngine`**, run by `SyncWorker` after personal sync:
+    - Push: groups, then expenses, then settlements, then retractions.
+    - Pull: all visible groups with members, removing any this account has
+      left; then expenses and settlements by cursor.
+    - A newly visible group resets those cursors, so history from before
+      joining arrives.
+    - Same conflict rules as step 3.
+    - "Last synced" is written only after both engines finish.
+  - Status counts and Retry now include groups, group expenses and
+    settlements.
+  - Tests:
+    - JVM, run locally: `SplitRoundingTest` (8), `GroupBalancesTest` (3),
+      `RemoteGroupsDecodingTest` (3).
+    - Robolectric with real Room: `GroupSyncEngineTest` (11) against a fake
+      server that enforces the schema's rules, and
+      `SharedGroupRepositoryTest` (10).
+    - The first CI run had 1 failure, in the migration test's own
+      assertion: SQLite returns the REAL 300.0 as "300". It now compares
+      numerically.
+  - Logged for the correctness audit:
+    - `DebtSimplifier` truncates rather than rounds paisa;
+    - a pulled expense replaces its local split on every pull, even when
+      unchanged;
+    - leaving a group discards changes still queued in it.
+- ✅ **PR 4: shared group, invite and join UI** (PR #10, fast-track: no
+  RLS, auth or server changes).
+  - **Create:** "Share with others" in the create dialog. A shared group
+    starts with only the creator (names up to 60 characters).
+  - **Invite:** from the group sheet, as an 8-character code plus a
+    `kharchapaani://join/CODE` link, via Android's share sheet. The invite
+    can be turned off. Groups that haven't reached the server yet can't be
+    invited to, and the sheet says so.
+  - **Join:** by tapped link or the new Join entry on the Splits screen.
+    The group is always **previewed first** (name, inviter, member count)
+    and nothing is joined until confirmed. One message covers unknown,
+    expired and revoked codes.
+  - **Archive / restore** (creator only), and **leave**, with a
+    confirmation. Leaving removes the group and its history from the
+    device.
+  - **Expense entry in shared groups:**
+    - only members can be picked;
+    - equal splits round to paisa with the leftover on the payer;
+    - percentage splits become exact proportional amounts (33.3% × 3
+      still adds up);
+    - groupmates' expenses read "Added by X" and don't open the editor;
+    - archived groups take no new expenses;
+    - shared groups have no delete button.
+  - The group sheet now follows live data, so a sync updates it while
+    it's open.
+  - `SharedGroupsController` holds the state and uses no Android types.
+    `SupabaseGroupMembershipRemote` calls the PR 1 RPCs. `InviteLink`
+    parses links and codes.
+  - Also fixed:
+    - The group sheet's "Add Expense" button had both a `bounceClick` and
+      an `onClick` handler, so one tap could add twice.
+    - **Compose version skew:** `lifecycle-viewmodel-compose` 2.10, pulled
+      in through other AndroidX libraries, needs Compose UI 1.9.0 at
+      runtime. So the device and test runtimes ran Compose 1.9.0 while
+      BOM 2024.09.00 compiled against 1.7.0.
+      - Calls to APIs that 1.9 changed, like `FlowRow`, throw
+        `NoSuchMethodError`. The existing Create Group member picker has
+        the same call.
+      - CI caught this in the new panel's UI tests (2 failures). The BOM
+        is now 2025.08.00: Compose 1.9.0, Material3 1.3.2.
+  - Tests:
+    - JVM: `InviteLinkTest` (3), plus 2 new rounding cases.
+    - CI: `SharedGroupsControllerTest` (7) and `SharedGroupUiTest` (4).
+- ✅ **PR 5: Realtime doorbell** (PR #11, fast-track: no server changes;
+  Realtime delivers only RLS-visible rows from the 3 tables PR 2
+  published).
+  - While in the foreground and signed in, changes to `transactions`,
+    `settlements` or `groups` (or a reconnect that may have missed some)
+    schedule a normal sync after a 2-second quiet period.
+  - Events carry no data; rows still arrive only through pulls, so a lost
+    or duplicated event can't corrupt anything. Failed subscriptions
+    retry with backoff (1 s doubling, capped at 60 s).
+  - This device's own push echoes back as one extra pull-only pass, which
+    writes nothing and can't loop.
+  - `SyncDoorbell` (debounce and retry, `SyncDoorbellTest` on the JVM with
+    virtual time) and `SupabaseLedgerChanges` (the channel), run with
+    `repeatOnLifecycle(STARTED)`. New dependency: `realtime-kt` 3.6.0.
+- 🔎 **Step 4 two-device test (2026-09-14)** found two bugs; the follow-up
+  audit found more of the same two kinds.
+  - ✅ **Settle Up / Record IOU / group-less splits didn't sync** (PR #13).
+    - Not a missing sync flag. Both dialogs saved settlements with no
+      group, and the server only accepts settlements (and
+      `save_group_expense` only accepts splits) inside an active shared
+      group containing everyone involved (decision 1).
+    - Fix, as the user chose:
+      - with a groupmate, the dialogs ask for the shared group
+        (preselected when there's one, required when there are several),
+        or offer to create one;
+      - saving a split with groupmates outside a shared group asks to add
+        it to a group, create one, or keep it on this phone;
+      - friends without an account stay local as before.
+  - ✅ **Archived groups still accepted new expenses in the app** (PR
+    #12).
+    - The database already refused every write into an archived group:
+      4 checks in `rls_groups_test.sql`, and reconfirmed by an audit
+      probe.
+    - The app now hides archived groups from the picker and refuses writes
+      to them (`ArchivedGroupException`).
+  - ✅ **Found in the audit: a refused delete stalled sync forever** (PR
+    #12). Deleting or retracting in a group archived before the change
+    synced got a 403 that wasn't handled. The worker retried endlessly,
+    so neither personal nor group sync completed again. Refused deletes
+    are now isolated from their batch, dropped, and the row re-pulled.
+  - Audit of local writes: every write goes through `LedgerRepository`,
+    and each save/edit/delete path matches what the sync engines push.
+  - Audit of app-only rules vs RLS (rolled-back probe on the local
+    harness). Enforced by the database:
+    - editing or deleting others' expenses;
+    - writes into archived groups;
+    - an ex-member's invites and edits;
+    - edits to a split you were removed from.
+
+    **Gaps:**
+    - a creator who left could still rename, archive or un-archive the
+      group and revoke its invites;
+    - invites made by someone who left still admitted people;
+    - any owner could null a group expense's `group_id`.
+
+    **Judgement calls, approved by the user:**
+    - either party could rewrite a settlement;
+    - group names were only length-checked in `create_group`.
+- ✅ **RLS fix for the audit gaps** (PR #14,
+  `supabase/migrations/20260914142135_leave_rules_and_immutable_records.sql`).
+  Reviewed and approved, then applied to live and verified (below).
+  - `groups_update_creator` and `revoke_group_invite` require current
+    membership.
+  - `preview_invite` / `join_group` only accept codes whose creator is
+    still a member.
+  - Trigger `transactions_keep_group`: a group expense can't change
+    `group_id`, except the foreign key's set-null when the service role
+    deletes the group.
+  - Trigger `settlements_lock_columns`: only `deleted_at` can change after
+    insert, with the same group-deletion exception.
+  - Constraint `groups_name_length`: 1–60 characters after trimming. The
+    one live group name was checked and passes.
+  - Both triggers raise `23514` (HTTP 400) rather than `42501`: the app
+    marks a 400 as a failed row, while personal sync retries a 403.
+  - `supabase/tests/rls_leave_and_immutability_test.sql`: **51/51** on
+    PGlite, rolled back cleanly.
+    - Every refusal checked for its exact SQLSTATE or message.
+    - Existing scripts still pass: `rls_groups_test.sql` 100/100,
+      `group_sync_columns_test.sql` 10/10.
+    - 11 mutations (each part undone), each caught.
+  - **Live verification (2026-09-14)**:
+    - Applied as version `20260914142135`. Supabase's stored statement
+      md5 `e1ff4c71…` is byte-identical to the reviewed file, which was
+      renamed to match.
+    - On live (PostgreSQL 17.6), both run as rolled-back transactions:
+      - `rls_leave_and_immutability_test.sql` **51/51**, with the same
+        refusal codes as locally;
+      - `rls_groups_test.sql` **100/100**.
+    - Afterwards: 0 test users, helper tables or functions left. Real data
+      untouched (2 users, 1 group, 7 transactions of which 4 are group
+      expenses); both triggers and the constraint are present.
+    - Security advisor unchanged: only the anticipated warning
+      (`authenticated` can execute the 5 definer RPCs) and the irrelevant
+      leaked-password notice.
+    - Performance advisor: only "unused index" notices.
+- ✅ **Step 4 complete (2026-09-14).** The two-device retest after PRs
+  #12–#14 passed end to end: settle up and IOU in a group, the split
+  prompt, archived groups read-only on both phones, and leaving.
+- ✅ **Correctness backlog batch** (PRs #15–#17, fast-track, 155 tests on
+  CI):
+  - **Settlements and IOUs missing from Recent Activity** (reported
+    after the retest).
+    - Home now merges them with transactions (`ActivityFeed`), newest
+      first, under All and Splits, and searchable.
+    - Rows read "Bob paid you" / "You lent Bob".
+    - Either party can retract one from its menu.
+  - **Duplicate click handlers** (the "IOU double-tap" item).
+    - Several buttons had their own `onClick` plus `bounceClick`'s
+      clickable.
+    - Correction to PR #10: Compose sends a tap to only one of two nested
+      clickables, so actions never ran twice. The real effects were a
+      second button announced by screen readers and a press animation
+      separate from the click.
+    - `pressBounce(interactionSource)` keeps one handler per control.
+  - **Paisa truncation.**
+    - `(x * 100).toLong() / 100.0` turned 33.33 into 33.32 and 0.29
+      into 0.28, and rounded negative balances toward zero.
+    - Balances, group totals, analytics, statement totals and the debt
+      simplifier now use `roundPaisa` (half up).
+    - The simplifier no longer drops exact one-paisa debts.
+  - **Deleting a local group** now detaches its expenses and settlements,
+    with their sync state unchanged, instead of leaving a dangling
+    `groupId`.
+  - **Deleting a friend** collapses splits that no longer involve anyone
+    else, keeping my spend the same: my full payment, or the share I had
+    when they paid. If none of it was mine, it's removed. Splits another
+    friend paid are kept.
+  - **The widget** reads `LedgerRepository`'s analytics and balances
+    instead of its own copy of the math.
+  - **Unchanged pulls:** a pulled group expense or settlement that matches
+    the local copy is no longer rewritten. The cursor overlap had been
+    replacing splits and shares on every sync.
+  - **Leaving a group** now warns how many changes there haven't synced,
+    with Sync now / Leave anyway, instead of silently dropping them.
+  - Also fixed: a race in `SharedGroupsControllerTest` (the leave callback
+    ran after the "left" message).
+  - One CI run failed before building (the runner timed out downloading
+    Gradle) and passed on re-run.
+- ✅ **Step 5 closed (2026-09-14):** no local data to migrate. The
+  "convert a local group to shared" feature was not added.
+- 🔄 **Part B UI/UX pass started (2026-09-14).**
+  - **Audit:** `docs/part-b-ui-audit.md`.
+  - **Owner decisions:**
+    - dark mode only;
+    - Liquid Glass via Haze;
+    - cut the Insights table (a "filter by category" feature is wanted
+      later);
+    - custom-drawn icons.
+  - ✅ **Foundations (PR #19, 165 tests on CI):**
+    - squircle shapes, spacing scale, type scale, contrast fix;
+    - glass material and brand gradient;
+    - `Money.format`: paisa shown, Indian grouping;
+    - odometer balance;
+    - read-only rows can't be swiped.
+    - Found by the new test: one swipe deleted the same expense twice
+      (`confirmValueChange` runs more than once), now fixed.
+  - ✅ **App shell (PR #20):**
+    - floating glass dock with a separate gradient add button (replaces
+      the NavigationBar and the FAB that covered the last row);
+    - custom duotone nav and category icons;
+    - directional tab motion;
+    - shared screen header.
+    - A Robolectric render capture saves `screens/dock.png` in the CI
+      test results for visual review.
+    - M3 audit of the shell:
+      - text contrast 6.3–14:1;
+      - tabs are `Role.Tab` in a selectable group with touch targets of
+        at least 50dp;
+      - the dock is capped at 560dp wide for tablets.
+    - Still open: content lists also stretch on wide screens (Part B
+      later).
+  - ✅ **Home and quick-add (PR #21, 180 tests on CI):**
+    - **Home header:** the balance is the header, in the brand gradient,
+      replacing the title row, tagline, streak badge and IOU icon.
+    - **Month strip:** this month's spend and income.
+    - **Capture:** one input (type or mic) with Scan bill / Statement /
+      IOU underneath. The demo preset chips are gone.
+    - **Day timeline:**
+      - sticky day headers with each day's spend (my share);
+      - rows joined into one panel per day;
+      - the ⋮ menu that duplicated swipe is replaced by TalkBack
+        Edit/Delete actions.
+    - **Quick-add sheet:**
+      - amount first;
+      - details as rows that open their choices in place;
+      - a floating Liquid Glass save bar that says "Add an amount" when
+        disabled;
+      - loading rows instead of a spinner.
+    - `ChoiceChip` and `SegmentedControl` are shared for the remaining
+      sheets.
+    - **Checked on the CI renders** (`home.png`, `confirm_sheet.png`,
+      `dock.png`). Real blur still needs a look on an Android 12+ phone.
+  - ✅ **Polish from render review (PR #22):**
+    - every sheet has a visible grab bar (3.3:1, was 1.3:1) with
+      Material's TalkBack label, in place of a close X (owner request);
+    - Home's month figures are no longer a card;
+    - settlement rows open their menu on tap, so amounts align;
+    - the quick-add header stops repeating "expense".
+  - ✅ **Splits & Trips (PR #23, 190 tests on CI):**
+    - **Splits screen:**
+      - "who owes whom" summary;
+      - Friends | Groups control;
+      - compact friend rows with one Settle button;
+      - trip-ticket group cards.
+    - **Settle up, IOU, add friend and new group are sheets** on shared
+      sheet components (`KpModalSheet`, `SheetScaffold`,
+      `GlassActionBar`), with disabled actions that say what's missing.
+    - **Bug fixed:** typing a decimal point in an exact split share
+      dropped it, so ₹12.50 was saved as ₹125. It was proven by a test
+      that failed on CI first (the field held "125"), then fixed.
+    - **IOU** no longer preselects the first friend when there's a choice.
+  - 🔎 **Deferred (triaged, no decision needed):**
+    - the group and person detail sheets aren't restyled;
+    - the delete-friend and simplify-debts dialogs aren't sheets yet;
+    - a field scrolled into view by TalkBack or the keyboard can stop
+      behind a floating action bar (states batch);
+    - content stretches on wide screens.
+  - 🔎 **Machine note (2026-09-15):** a local Gradle build exhausted RAM
+    and crashed the laptop mid-session; no work was lost.
+    `~/.gradle/gradle.properties` now caps the heap at 2 GB, uses 2
+    workers and runs no daemon, and every build is checked for leftover
+    Java processes.
+  - ✅ **Insights and widget (PR #24, 198 tests on CI):**
+    - Insights is one page:
+      - spent vs came in;
+      - ranked category bars in one amber hue (a donut can't compare
+        close values; per-category pastels only repeated the label);
+      - two stat tiles;
+      - the AI review on request.
+    - The Notion table is cut.
+    - **Bug fixed:** a category's entry list showed every month's
+      transactions under a this-month chart.
+    - **Bug fixed:** the widget's Speak button opened the app without
+      starting voice capture.
+    - **Widget rebuilt:** app mark and name instead of "⚡ SplitFlow",
+      theme colours, the app's own icons, 48dp buttons. Placed widgets
+      keep working (same provider class).
+    - Figures shown side by side now step down in size together (on
+      Insights and Splits).
+  - ✅ **States, messages and remaining sheets (PRs #25–#26, 212 tests
+    on CI). Part B is complete.**
+    - **Bug fixed:** a statement that failed to parse showed 8 fake
+      sample transactions; it now says it couldn't read the file.
+    - Toasts replaced by glass snackbars above the dock; the avatar
+      carries a sync badge (failed / syncing / waiting).
+    - Group detail, person history, join group, statement import,
+      delete friend and simplify debts rebuilt on the shared sheets.
+    - **Bug fixed:** deleting a groupmate was a silent no-op; the row
+      no longer offers it.
+    - Fields scrolled into view stop clear of a sheet's action bar; tab
+      content caps at a readable width on wide screens.
+- 📌 **Backlog (owner, 2026-09-14): "filter by category".** The
+  Notion-style Insights table was cut in Part B, but the owner wants a
+  way to see entries for one category later. Not scheduled.
+
+---
+
+### Backlog status
+
+- ✅ **5. Who added vs who paid** (PR #26): "Added by Priya · Paid by
+  Rohan" on group expenses when they differ.
+- ✅ **1. Swipe-to-delete while scrolling** (PR #27, 232 tests on CI).
+  Root cause: M3's swipe commits after 56dp *or any flick over
+  125dp/s*; a row now needs ~45% of its width. Undo snackbar instead of
+  a confirm dialog (frequent, reversible action); the ledger delete
+  waits for the snackbar to go. **Bug found and fixed:** a row brought
+  back by Undo was deleted a second time (saved swipe state); both
+  proven by tests red on CI first.
+- ✅ **2. Quick-add sheet discard prompt** (PR #27): swipe, tap outside
+  or Back with unsaved input asks Discard / Keep editing.
+- ✅ **4. Insights by month** (PR #28, 251 tests on CI). There was no
+  month picker; figures were hard-wired to the current month. Added a
+  month switcher; analytics extracted to `MonthAnalytics.of(month)` and
+  tested with entries across months (midnight edges, splits) in pure
+  JVM, real Room and Compose UI tests.
+- ✅ **3. CSV export by range** (PR #29). Root cause of "last 10-20":
+  the CSV was shared as text, which share targets truncate; now a .csv
+  file. Also fixed: junk banner rows, `1.0E7` amounts, missing quoting,
+  formula injection, no BOM. Month / dates / everything picker.
+- ✅ **6. Profile** (PR #32, 283 tests on CI).
+  - Display name editing.
+  - Emoji avatar instead of a photo (additive `profiles.avatar_emoji`,
+    applied to live 2026-09-15 as `20260915184031`); groupmates see it
+    via group sync (Room v5).
+  - Settings: "Ask before discarding an entry" (item 2) and export
+    (item 3).
+- ✅ **9. UPI ID and QR** (PR #33, 297 tests on CI). Local-only, per
+  account. Real `upi://pay` link; the QR is tested by decoding it back.
+  Settle up shows a code for the amount when a friend owes you.
+- ✅ **7. Categories and payment methods** (PRs #34, #35). One list for
+  the pickers, AI prompts and statement importer (Groceries, Investment,
+  Income (Salary) are now ordinary defaults, with icons). Hide defaults,
+  add your own, per account on this phone; the category name travels on
+  the expense, so groupmates see it.
+- ✅ **11. Payer edit/delete** (PR #31, 319 tests on CI). Owner approved
+  2026-09-18; migration applied to live as `20260918073251`.
+  - RLS via `private.can_edit_group_expense`, plus a trigger locking
+    `owner_id`. The payer can't name a different payer.
+  - Local PGlite: payer 28/28, groups 100/100, leave 51/51, sync 10/10.
+  - **Bug found:** the soft delete filtered on `owner_id`, which would
+    have silently left a payer's delete on the server.
+- ✅ **Audit fix: FileProvider** (PR #30): narrowed to `cache/exports/`.
+- ✅ **10. Group screen** (PR #37, 329 tests on CI). All six approved
+  parts: a donut of member shares (colour per person), who owes whom
+  after the group's settlements, Settle up on any row that includes you,
+  the group's spending by category, export this group, and an archived
+  banner.
+- ✅ **8. Subscriptions** (PR #38, 346 tests on CI). A subscription is a
+  rule, stored in Room v6; each charge becomes a real expense when its
+  date arrives (on app open), never future-dated, and never twice.
+  Backdating asks first; cancelling stops future charges and keeps past
+  ones. Monthly on the 31st clamps to short months.
+- 🔎 **Audit (not changed):** the server doesn't bound `display_name`
+  length (the app caps it at 40). A check constraint would also need
+  `handle_new_user` to truncate long Google names, which is auth config.
+- 🔎 **Audit (not changed):** the security advisor lists five
+  SECURITY DEFINER RPCs callable by signed-in users. They are the
+  intended group functions from step 4. Leaked-password protection is
+  off, but sign-in is Google-only.
+
+
+---
+
+### Batch 5 status (2026-09-18 / 19)
+
+The design backlog is complete. Everything in
+`design-and-feature-backlog.md` is built, closed as not-real, or
+re-scoped; the verification results are in
+`docs/design-audit-verification.md`.
+
+- ✅ **§1.1 Statement scanning** (PR #40). Root cause: one 30-second read
+  timeout shared by all four Gemini calls. Reading every row of every
+  page of a statement from a thinking model does not fit in it, so this
+  was the only AI path that could not finish — and it could not finish
+  every time. It has 180 seconds of its own. Four more defects in the
+  same path made it undiagnosable: non-2xx responses discarded unread,
+  `parts[0].text` only (a Gemini 3.x thought part threw the answer away),
+  no `maxOutputTokens`/`finishReason` check, one message for every cause.
+- ✅ **§2.1 Home hero metric** (PR #40). "Spent this month" leads; the
+  debt moves beside "Came in" and keeps its action.
+- ✅ **§2.2 The dock's glass** (PR #40). **Not a regression** — the diff
+  between the two glass commits is a doc comment. Two attempts: widening
+  the rim made it worse, because the amber tint at 7% over `#0E0D0C` *is*
+  rust, and a rim around a solid core reads as a border at any width. It
+  is one pane now, content directly on the glass, neutral tint, top-only
+  hairline. **Parked for a device screenshot.**
+- ✅ **Bundled fonts** (PR #40). Not in the backlog; the real bug behind
+  the audit's "everything uses the OS default sans". All three families
+  were fetched at runtime from the Play Services provider, so the same
+  build rendered in Roboto on some devices and its own type on others.
+  Caveat: variable-font weight axes apply from API 26 and `minSdk` is 24,
+  so Android 7.x renders one weight. Raising `minSdk` would close it.
+- ✅ **§6 items 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 17, 19, 21** (PR #41).
+  Colour that means something, four button tiers, Insights' first real
+  charts, and the backlog tail.
+- ✅ **§4.3 / item 16 — the AI prompt set** (PR #42). Designed in
+  `docs/ai-prompt-set-design.md`, approved with three answers: keep the
+  diagnosis and the advice as separate prompts, cap at 20 a day, trip
+  reads on the group sheet only.
+- ✅ **Items 4, 7, 18 closed**, not built: already correct, already
+  enabled, already fixed.
+
+---
+
+### Round 3 (2026-09-20): the backup shipped broken, and what that taught
+
+**v1.1.0 published.** The reported bug was an export with an empty `splits`
+array beside a friend who was owed money. Three causes, and only the third was
+interesting:
+
+1. `splits` was computed in `collect()` and never passed to the constructor.
+2. `settings` was never computed at all.
+3. **The rule was wrong.** It asked "does a friend without an account appear in
+   this row". Reading `SyncDao.pendingPersonalTransactions` gives the real
+   answer: `... AND groupId IS NULL AND isSplit = 0`. *No split expense is ever
+   uploaded* — the whole transaction, whoever it was split with. The predicate
+   is now `LocalBackup.isUnsyncable`, written once beside the format.
+
+Format v2 carries `paidByName`, which v1 hardcoded to "me". That is the field
+whose loss corrupts silently rather than loudly: an expense they paid and one
+you paid are the same rows with the payer swapped.
+
+**The testing lesson, which is the durable part.** `LocalBackupTest` built a
+`LocalBackup` by hand and round-tripped it through JSON. It passed the whole
+time the feature was broken, because it never called `collect()`. A test that
+constructs the thing it is checking tests the constructor.
+`LocalBackupRoundTripTest` starts from a real database with money in it and
+asserts a *balance*. Reintroducing the original defect fails 7 of its 12
+assertions — checked, not assumed.
+
+Two more found by auditing for the same shape ("reports success without doing
+the thing"): a group's settlements and IOUs appeared nowhere in its own sheet
+while the balances above them counted them; and the CSV export omitted every
+settlement, including from the range named "Everything".
+
+### Applied 2026-09-20: the schema half of local-friend sync
+
+`supabase/migrations/20260920000000_local_participant_shares.sql` is **live**,
+approved after review. `split_shares` gains `local_name text null` beside a now
+nullable `profile_id`, a check requiring exactly one of the two, and two partial
+unique indexes. `split_shares_insert` gained a second branch: a local name may
+be written only by the owner of that transaction. Reads are untouched.
+
+12/12 on the local harness and 12/12 again against live, rolled back leaving
+nothing behind; security and performance advisors clean (the two warnings and
+three INFO notes that remain all predate it and are unrelated). Case and
+reasoning in `docs/staged-local-participant-sync.md`.
+
+**The database can now hold this. Nothing writes it yet** — see the backlog item
+below.
+
+
+---
