@@ -272,8 +272,42 @@ private fun SubscriptionRow(
                 Icon(KpIcons.Delete, contentDescription = "Remove ${subscription.name}", tint = MutedWarmGray, modifier = Modifier.size(20.dp))
             }
         } else {
-            TextButton(onClick = onCancel, modifier = Modifier.testTag("cancel_subscription_${subscription.id}")) {
+            // Asked first: it can't be undone, and the button it leaves behind is Remove.
+            var confirming by remember { mutableStateOf(false) }
+            TextButton(onClick = { confirming = true }, modifier = Modifier.testTag("cancel_subscription_${subscription.id}")) {
                 Text("Cancel", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+            }
+            if (confirming) {
+                AlertDialog(
+                    onDismissRequest = { confirming = false },
+                    containerColor = CharcoalSurface,
+                    shape = KpShapes.large,
+                    modifier = Modifier.testTag("cancel_subscription_dialog"),
+                    title = { Text("Cancel ${subscription.name}?", style = MaterialTheme.typography.headlineMedium) },
+                    text = {
+                        Text(
+                            "No more charges from ${DayFormat.format(next)} on. The ones already logged stay. This can't be undone.",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                confirming = false
+                                onCancel()
+                            },
+                            modifier = Modifier.testTag("cancel_subscription_confirm"),
+                        ) {
+                            Text("Cancel it", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { confirming = false }) {
+                            Text("Keep it", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
+                        }
+                    },
+                    titleContentColor = OffWhiteText,
+                )
             }
         }
     }
