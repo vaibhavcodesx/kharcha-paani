@@ -185,6 +185,58 @@ class GroupSyncEngineTest {
     }
 
     @Test
+    fun `a share for a friend with no account comes back as that friend on the phone of whoever added it`() = runBlocking {
+        // What a reinstall looks like: the expense is on the server, the friend is not on this phone.
+        joinGoaWithBobAndCarol()
+        remote.expenseBy(
+            owner = alice, id = "tx-mine", groupId = goa, amount = 90.0, paidBy = alice,
+            shares = mapOf(alice to 30.0, bob to 30.0), localShares = mapOf("Rohan" to 30.0),
+        )
+
+        engine.sync()
+
+        val rohan = groupDao.localPersonByName("rohan")
+        assertNotNull("the friend is re-created from the name", rohan)
+        assertNull(rohan!!.profileId)
+        val split = groupDao.splitForTransaction(transaction("tx-mine")!!.id)!!
+        val shares = groupDao.sharesForSplit(split.id).associate { it.personId to it.shareAmount }
+        assertEquals(mapOf(-1L to 30.0, person(bob).id to 30.0, rohan.id to 30.0), shares)
+    }
+
+    @Test
+    fun `an existing friend of the same name is reused rather than duplicated`() = runBlocking {
+        joinGoaWithBobAndCarol()
+        val existing = db.personDao().insertPerson(PersonEntity(name = "Rohan ", avatarColor = "#70C1FF"))
+        remote.expenseBy(
+            owner = alice, id = "tx-mine", groupId = goa, amount = 60.0, paidBy = alice,
+            shares = mapOf(alice to 30.0), localShares = mapOf("ROHAN" to 30.0),
+        )
+
+        engine.sync()
+
+        val split = groupDao.splitForTransaction(transaction("tx-mine")!!.id)!!
+        assertTrue(groupDao.sharesForSplit(split.id).any { it.personId == existing })
+        assertEquals(1, db.personDao().getAllPeopleDirect().count { it.profileId == null })
+    }
+
+    @Test
+    fun `someone else's friend with no account is not planted in my friends list, and the pull still works`() = runBlocking {
+        // Before this, RemoteShare.profileId was non-null: one such share failed every member's pull.
+        joinGoaWithBobAndCarol()
+        remote.expenseBy(
+            owner = bob, id = "tx-bob", groupId = goa, amount = 90.0, paidBy = bob,
+            shares = mapOf(alice to 30.0, bob to 30.0), localShares = mapOf("Bob's cousin" to 30.0),
+        )
+
+        engine.sync()
+
+        val split = groupDao.splitForTransaction(transaction("tx-bob")!!.id)!!
+        val shares = groupDao.sharesForSplit(split.id).associate { it.personId to it.shareAmount }
+        assertEquals(mapOf(-1L to 30.0, person(bob).id to 30.0), shares)
+        assertNull(groupDao.localPersonByName("Bob's cousin"))
+    }
+
+    @Test
     fun `an expense a groupmate added but I paid can be edited here and the edit reaches the server`() = runBlocking {
         joinGoaWithBobAndCarol()
         remote.expenseBy(owner = bob, id = "tx-paid-by-me", groupId = goa, amount = 90.0, paidBy = alice, shares = mapOf(alice to 45.0, bob to 45.0))

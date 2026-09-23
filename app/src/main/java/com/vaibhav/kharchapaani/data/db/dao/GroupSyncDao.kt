@@ -67,6 +67,10 @@ interface GroupSyncDao {
     @Query("SELECT * FROM people WHERE id = :id")
     suspend fun personById(id: Long): PersonEntity?
 
+    /** A friend with no account, matched the way the server's unique index matches: trimmed, any case. */
+    @Query("SELECT * FROM people WHERE profileId IS NULL AND lower(trim(name)) = lower(trim(:name)) ORDER BY id LIMIT 1")
+    suspend fun localPersonByName(name: String): PersonEntity?
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertPerson(person: PersonEntity): Long
 

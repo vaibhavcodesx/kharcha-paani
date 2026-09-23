@@ -205,6 +205,7 @@ class FakeGroupRemote(private val self: String) : GroupRemote {
         shares: Map<String, Double>,
         removedShares: Map<String, Double> = emptyMap(),
         merchant: String = "Shack",
+        localShares: Map<String, Double> = emptyMap(),
     ) {
         val stamp = tick()
         val split = RemoteSplit(
@@ -212,8 +213,9 @@ class FakeGroupRemote(private val self: String) : GroupRemote {
             paidBy = paidBy,
             splitType = "exact",
             totalAmount = amount,
-            shares = shares.map { (profile, share) -> RemoteShare("share-$id-$profile", profile, share) } +
-                removedShares.map { (profile, share) -> RemoteShare("removed-$id-$profile", profile, share, deletedAt = stamp) },
+            shares = shares.map { (profile, share) -> RemoteShare("share-$id-$profile", profileId = profile, shareAmount = share) } +
+                removedShares.map { (profile, share) -> RemoteShare("removed-$id-$profile", profileId = profile, shareAmount = share, deletedAt = stamp) } +
+                localShares.map { (name, share) -> RemoteShare("local-$id-$name", localName = name, shareAmount = share) },
         )
         expenses[id] = RemoteGroupTransaction(
             id = id, ownerId = owner, type = "expense", amount = amount, category = "Food", merchant = merchant,
