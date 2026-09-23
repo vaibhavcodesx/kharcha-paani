@@ -453,8 +453,7 @@ class GroupSyncEngine(
         share.profileId?.let { return personIdFor(it) }
         val name = share.localName?.trim()?.takeIf { it.isNotEmpty() } ?: return null
         if (!ownedByMe) return null
-        return dao.localPersonByName(name)?.id
-            ?: dao.insertPerson(PersonEntity(name = name, avatarColor = PersonColours.stable(name)))
+        return LocalPeople.idFor(dao, name)
     }
 
     private suspend fun personIdFor(profileId: String): Long =

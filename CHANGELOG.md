@@ -33,6 +33,15 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - A share for a friend with no account now comes back as that friend on the phone of whoever
   added the expense (found by name, or re-created after a reinstall). On anyone else's phone it
   is left out rather than adding a stranger to their friends list.
+- Save stays disabled, and says why, while an exact or percentage split doesn't add up or has
+  nobody in it. An even three-way percentage split no longer reads as 99.9%.
+- Typed quick-add says when the AI couldn't be reached and the details are a best guess.
+- The account sheet says exactly what backs up to your account, and that splits and IOUs with
+  friends who aren't on the app stay on the phone.
+- A friend's history shows both figures to the paisa ("You paid ₹150.50 · their share ₹75.25")
+  in the same words as the group feed.
+- New entries default to your first visible category and payment method, not a hidden one.
+- Insights' daily chart has its own day axis.
 - `PRD.md` is back to being the spec: vision, architecture and decisions. What changed and when
   now lives here.
 
@@ -43,6 +52,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   personal split or IOU with a friend who has no account can be kept in the cloud. New tables
   with new RLS policies, so it waits for owner review. 28/28 on the local harness. See
   [`docs/local-friend-sync-v2.md`](docs/local-friend-sync-v2.md).
+- The app side of that sync, built and tested but switched off (`LocalFriendSync.ENABLED`) until
+  the migration is applied: new personal splits and IOUs with friends who have no account go up
+  with their split in one call, come back by name on a reinstall, and never take history with
+  them. Splits and IOUs recorded before it is switched on stay on the phone, even when edited.
 
 ## [1.1.0] - 2026-09-20
 

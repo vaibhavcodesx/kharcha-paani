@@ -32,6 +32,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 ownerId = userId,
             ).sync()
             GroupSyncEngine(database, SupabaseGroupRemote(supabase), selfProfileId = userId).sync()
+            // After personal sync, so a private split's expense is here before its split is pulled.
+            if (LocalFriendSync.ENABLED) LocalLedgerSyncEngine(database, SupabaseLocalLedgerRemote(supabase, userId)).sync()
             // Only a pass that got through both engines counts as "last synced".
             database.syncDao().putMeta(SyncMetaEntity(TransactionSyncEngine.LAST_SYNCED_AT, System.currentTimeMillis().toString()))
         }

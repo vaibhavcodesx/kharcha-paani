@@ -24,6 +24,21 @@ interface SyncDao {
     )
     suspend fun pendingPersonalTransactions(limit: Int): List<TransactionEntity>
 
+    /**
+     * Split personal expenses, which go up only through `save_local_split` with their split
+     * (LocalLedgerSyncEngine). Kept apart from [pendingPersonalTransactions] on purpose: that query's
+     * `isSplit = 0` is what stops a split ever travelling as a plain full-amount expense.
+     */
+    @Query(
+        "SELECT * FROM transactions WHERE syncState = 'PENDING' AND groupId IS NULL AND isSplit = 1 " +
+            "ORDER BY updatedAt LIMIT :limit"
+    )
+    suspend fun pendingPersonalSplits(limit: Int): List<TransactionEntity>
+
+    /** Settlements and IOUs outside any group: only ever PENDING when local-friend sync is on. */
+    @Query("SELECT * FROM settlements WHERE syncState = 'PENDING' AND groupId IS NULL ORDER BY updatedAt LIMIT :limit")
+    suspend fun pendingLocalSettlements(limit: Int): List<com.vaibhav.kharchapaani.data.db.entity.SettlementEntity>
+
     /** Returns 0 if the row changed while its push was in flight, leaving it PENDING. */
     @Query("UPDATE transactions SET syncState = 'SYNCED' WHERE id = :id AND updatedAt = :expectedUpdatedAt AND syncState = 'PENDING'")
     suspend fun markSyncedIfUnchanged(id: Long, expectedUpdatedAt: Long): Int

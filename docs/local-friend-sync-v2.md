@@ -1,6 +1,7 @@
 # Local-friend splits and IOUs in the cloud (v2)
 
-**Status (2026-09-23): server half staged, not applied. Waiting for owner review.**
+**Status (2026-09-24): server half staged, not applied, waiting for owner review. Client half built
+and tested behind `LocalFriendSync.ENABLED = false`.**
 
 - Migration: `supabase/staged/20260923000000_owner_private_local_ledger.sql`. It's kept out of
   `supabase/migrations/` so nothing can apply it by accident.
@@ -121,7 +122,15 @@ Not built this session, on purpose.
 
 ## The client half
 
-This stays behind a single flag, off, until the migration is applied. With the flag off, the
+**Built, off.** `data/sync/LocalLedgerRemote.kt` (flag, payloads, Supabase calls),
+`data/sync/LocalLedgerSyncEngine.kt` (push, pull, and `LocalPeople`, the one name-matching helper),
+the rules in `LedgerRepository.syncStateFor`, and `LocalLedgerSyncTest` (7 tests: a two-phone
+round trip asserting the balance and both timestamps, the guardrail, the flag-off case, a groupmate
+keeping a split local, paisa rounding, unsplitting, and retracting an IOU). Mutation-checked:
+dropping the guardrail fails the history test; keying the split tombstone like the expense's own
+fails the unsplit test.
+
+It stays behind a single flag, off, until the migration is applied. With the flag off, the
 app's requests are byte-for-byte what they are today. That matters because the pull has to
 embed `local_splits`, and selecting a table that doesn't exist yet would break every personal
 pull.
