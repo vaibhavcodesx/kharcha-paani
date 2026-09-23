@@ -131,9 +131,9 @@ dropping the guardrail fails the history test; keying the split tombstone like t
 fails the unsplit test.
 
 It stays behind a single flag, off, until the migration is applied. With the flag off, the
-app's requests are byte-for-byte what they are today. That matters because the pull has to
-embed `local_splits`, and selecting a table that doesn't exist yet would break every personal
-pull.
+app's requests are exactly what they are today: `LocalLedgerSyncEngine` is never constructed, and
+it is the only code that names the new tables. Asking for a table that doesn't exist yet would
+fail every sync.
 
 1. **Shipped 2026-09-23 (no flag needed):** `RemoteShare` decodes `local_name` with a nullable
    `profile_id`. Before this, one such share would have failed every member's group pull.
@@ -146,17 +146,16 @@ pull.
    then see ₹600 of your own spending instead of ₹300 plus Rohan owing ₹300. The clause stays
    as the guarantee that a split never travels without its shares.
 3. **Un-splitting** (an edit, or a friend deleted) queues a split tombstone. The existing
-   `pending_remote_deletes` table takes a new entity type, and the push soft-deletes the server
-   split.
-4. **Pull:** the personal pull embeds `local_splits(*)`. Names map back to local friends with the
-   same trimmed, case-insensitive match the restore already uses. There's one helper for both, so
-   they can't drift apart. A name this phone has never seen creates the friend.
+   `pending_remote_deletes` table takes a new entity type, keyed `local_split:<expense id>` so the
+   expense's own tombstone, which a later edit clears on purpose, can't take it with it.
+4. **Pull:** `local_splits` is pulled by its own cursor, right after the personal expenses, so a
+   split's expense is always here first; a split changed on its own moves its expense's clock
+   too (the trigger). Names map back to local friends through `LocalPeople`, the one helper the
+   group pull now also uses. A name this phone has never seen creates the friend. (The JSON
+   restore still has its own matcher; folding it in is a small follow-up.)
 5. **IOUs and settlements with local friends** push and pull through `local_settlements` the
    same way.
-6. **Tests:** the same shape as `LocalBackupRoundTripTest`. Start from a real Room database with
-   money in it, sync to a fake server that enforces the staged constraints, wipe, pull back, and
-   assert a **balance**. A second test covers the guardrail: rows that were `LOCAL_ONLY` before
-   the flag are still `LOCAL_ONLY` after a full sync with it on.
+6. **Tests:** `LocalLedgerSyncTest`, as described above.
 
 **Not covered, on purpose:** splits inside a *local* (unshared) group. They'd need the group
 itself on the server, which is its own design. The JSON backup keeps covering them.
