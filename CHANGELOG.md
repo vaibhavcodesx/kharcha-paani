@@ -13,6 +13,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-24
+
 ### Fixed
 
 - Signing back in after signing out could do nothing at all: no account picker, no message, and
@@ -33,6 +35,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - A share for a friend with no account now comes back as that friend on the phone of whoever
   added the expense (found by name, or re-created after a reinstall). On anyone else's phone it
   is left out rather than adding a stranger to their friends list.
+- Cancelling a subscription asks first; it can't be undone.
 - Save stays disabled, and says why, while an exact or percentage split doesn't add up or has
   nobody in it. An even three-way percentage split no longer reads as 99.9%.
 - Typed quick-add says when the AI couldn't be reached and the details are a best guess.
@@ -139,6 +142,7 @@ and redesigned.
   silently deleted splits, shares and members through cascades.
 - The file provider narrowed to exported files only.
 
-[Unreleased]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/vaibhavcodesx/kharcha-paani/releases/tag/v1.0.0
