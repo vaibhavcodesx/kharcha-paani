@@ -18,6 +18,7 @@ import com.vaibhav.kharchapaani.data.model.GroupWithDetails
 import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
 import com.vaibhav.kharchapaani.data.model.PersonBalance
 import com.vaibhav.kharchapaani.data.model.PersonLedgerItem
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.domain.CsvExport
 import com.vaibhav.kharchapaani.domain.CsvFile
 import com.vaibhav.kharchapaani.domain.ExportRange
@@ -227,7 +228,9 @@ class LedgerRepository(
                             id = "split_${split.id}",
                             date = tx.date,
                             title = tx.merchant.ifBlank { tx.category },
-                            subtitle = "You paid ₹${String.format(Locale.US, "%.0f", split.totalAmount)} (Their share)",
+                            // "You paid ₹150 (Their share)" read as their share being ₹150, and %.0f turned ₹150.50
+                            // into ₹151. Both figures, said separately, to the paisa.
+                            subtitle = "You paid ${Money.format(split.totalAmount)} · their share ${Money.format(personShare.shareAmount)}",
                             amount = personShare.shareAmount,
                             netChange = personShare.shareAmount, // they owe me more (+)
                             isSettlement = false
@@ -243,7 +246,7 @@ class LedgerRepository(
                             id = "split_${split.id}",
                             date = tx.date,
                             title = tx.merchant.ifBlank { tx.category },
-                            subtitle = "They paid ₹${String.format(Locale.US, "%.0f", split.totalAmount)} (Your share)",
+                            subtitle = "They paid ${Money.format(split.totalAmount)} · your share ${Money.format(myShare.shareAmount)}",
                             amount = myShare.shareAmount,
                             netChange = -myShare.shareAmount, // I owe them more (-)
                             isSettlement = false
@@ -261,8 +264,9 @@ class LedgerRepository(
                     PersonLedgerItem(
                         id = "settlement_${settlement.id}",
                         date = settlement.date,
-                        title = if (settlement.isIou) "Direct Loan / Transfer" else "Settlement Payment",
-                        subtitle = settlement.note.ifBlank { "You paid them" },
+                        // Worded the way the group feed words it (GroupFeed.describe), from your side.
+                        title = if (settlement.isIou) "You lent them" else "You paid them",
+                        subtitle = settlement.note.ifBlank { if (settlement.isIou) "IOU" else "Settled up" },
                         amount = settlement.amount,
                         netChange = settlement.amount,
                         isSettlement = true
@@ -274,8 +278,8 @@ class LedgerRepository(
                     PersonLedgerItem(
                         id = "settlement_${settlement.id}",
                         date = settlement.date,
-                        title = if (settlement.isIou) "Borrowed / Loan Received" else "Settlement Received",
-                        subtitle = settlement.note.ifBlank { "They paid you" },
+                        title = if (settlement.isIou) "They lent you" else "They paid you",
+                        subtitle = settlement.note.ifBlank { if (settlement.isIou) "IOU" else "Settled up" },
                         amount = settlement.amount,
                         netChange = -settlement.amount,
                         isSettlement = true

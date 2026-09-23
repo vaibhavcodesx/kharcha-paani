@@ -510,14 +510,27 @@ class MainViewModel(
         _selectedFilter.value = filter
     }
 
+    // The first of this account's own choices, not a hardcoded name: hiding "PopUPI" or "Food" in
+    // Categories & payment methods used to leave every new entry defaulting to the hidden one.
+    private fun defaultCategory(type: String): String {
+        val preferred = if (type == "income") "Income (Client)" else "Food"
+        val choices = Categories.categoriesFor(type, categoryPrefs.value)
+        return preferred.takeIf { it in choices } ?: choices.firstOrNull() ?: preferred
+    }
+
+    private fun defaultPaymentMethod(): String {
+        val choices = Categories.paymentMethods(categoryPrefs.value)
+        return "PopUPI".takeIf { it in choices } ?: choices.firstOrNull() ?: "PopUPI"
+    }
+
     fun openManualAdd(defaultType: String = "expense") {
         _parseNotice.value = null
         _editingTransactionId.value = null
         _type.value = defaultType
         _amount.value = ""
         _merchant.value = ""
-        _category.value = if (defaultType == "income") "Income (Client)" else "Food"
-        _paymentMethod.value = "PopUPI"
+        _category.value = defaultCategory(defaultType)
+        _paymentMethod.value = defaultPaymentMethod()
         _note.value = ""
         _date.value = System.currentTimeMillis()
         _groupId.value = null
@@ -535,8 +548,8 @@ class MainViewModel(
         _type.value = "expense"
         _amount.value = ""
         _merchant.value = ""
-        _category.value = "Food"
-        _paymentMethod.value = "PopUPI"
+        _category.value = defaultCategory("expense")
+        _paymentMethod.value = defaultPaymentMethod()
         _note.value = ""
         _date.value = System.currentTimeMillis()
         _groupId.value = targetGroupId

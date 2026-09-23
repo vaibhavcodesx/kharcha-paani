@@ -273,8 +273,11 @@ fun AccountSheetContent(
             SyncStatusRow(status = syncStatus, onRetryFailed = onRetryFailedSync)
         }
         Text(
-            text = "Your expenses back up to your account and keep working offline. Shared groups sync with " +
-                "everyone in them. Signing out keeps everything already on this phone.",
+            // Said precisely: "your expenses back up" was true only of unsplit ones, and a split or IOU
+            // with a friend who isn't on the app never leaves the phone. The last line is the remedy.
+            text = "Your own expenses back up to your account and keep working offline. Shared groups sync " +
+                "with everyone in them. Splits and IOUs with friends who aren't on the app stay on this " +
+                "phone only, so back them up below. Signing out keeps everything already here.",
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = Spacing.s, bottom = Spacing.xl),
         )
