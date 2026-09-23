@@ -19,6 +19,8 @@ data class ParsedTransactionResult(
     val confidence: Float = 1.0f,
     /** The bill couldn't be read: nothing here came from it, and the person should be told. */
     val readFailed: Boolean = false,
+    /** The AI couldn't be reached, so this came from matching words on the phone: worth a check. */
+    val guessedOnPhone: Boolean = false,
 )
 
 data class SplitWithShares(

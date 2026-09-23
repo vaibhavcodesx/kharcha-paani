@@ -35,6 +35,7 @@ import com.vaibhav.kharchapaani.data.model.SplitMode
 import com.vaibhav.kharchapaani.data.model.StatementParseResult
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
 import com.vaibhav.kharchapaani.data.repository.ArchivedGroupException
+import com.vaibhav.kharchapaani.ui.components.splitProblem
 import com.vaibhav.kharchapaani.data.remote.AppIdentity
 import com.vaibhav.kharchapaani.data.repository.GeminiRepository
 import com.vaibhav.kharchapaani.data.repository.LocalBackupRepository
@@ -528,6 +529,8 @@ class MainViewModel(
     }
 
     fun openManualAddForGroup(targetGroupId: Long) {
+        // A notice left from an earlier bill that couldn't be read doesn't belong on a fresh entry.
+        _parseNotice.value = null
         _editingTransactionId.value = null
         _type.value = "expense"
         _amount.value = ""
@@ -659,6 +662,7 @@ class MainViewModel(
             val friendNames = people.value.map { it.name }
             val parsed = geminiRepo.parseMessyText(rawText, friendNames, parseChoices())
             applyParsedResult(parsed)
+            if (parsed.guessedOnPhone) _parseNotice.value = "Couldn't reach the AI, so this is a best guess from your words. Check it before saving."
             _isParsing.value = false
             _isConfirmSheetOpen.value = true
         }
@@ -1042,6 +1046,11 @@ class MainViewModel(
     fun saveCurrentTransaction(askForGroup: Boolean = true) {
         val total = _amount.value.toDoubleOrNull() ?: 0.0
         if (total <= 0) return
+        // The sheet disables Save and says why; this keeps any other caller from saving it anyway.
+        if (_isSplit.value) splitProblem(_amount.value, _splitMode.value, _shares.value)?.let {
+            _statusMessage.value = it
+            return
+        }
 
         // A split with groupmates outside a shared group never reaches them (decision 1): ask first.
         if (askForGroup && _isSplit.value && !isSharedGroup(_groupId.value)) {

@@ -156,8 +156,9 @@ class GeminiRepository(
             Log.e(TAG, "Error parsing with Gemini: ${e.message}", e)
         }
 
-        // Fallback to local heuristic parser
-        LocalHeuristicParser.parse(rawText, knownFriends)
+        // Fallback to local heuristic parser. Said out loud: the sheet looked identical either way,
+        // so a failed AI call passed for a confident reading.
+        LocalHeuristicParser.parse(rawText, knownFriends).copy(guessedOnPhone = true)
     }
 
     suspend fun parseReceiptOrScreenshot(

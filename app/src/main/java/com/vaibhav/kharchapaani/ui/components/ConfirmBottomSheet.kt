@@ -235,10 +235,11 @@ fun ConfirmSheetContent(
         actionBar = if (isParsing) null else {
             {
                 val value = amount.toDoubleOrNull() ?: 0.0
+                val splitIssue = if (isSplit && value > 0) splitProblem(amount, splitMode, shares) else null
                 GlassActionBar(
                     label = if (isEditing) "Update" else "Save",
-                    disabledLabel = "Add an amount",
-                    enabled = value > 0,
+                    disabledLabel = splitIssue ?: "Add an amount",
+                    enabled = value > 0 && splitIssue == null,
                     onClick = onSave,
                     summary = if (value > 0) Money.format(value) else "₹0",
                     detail = listOfNotNull(merchant.ifBlank { null } ?: category, paymentMethod.ifBlank { null }).joinToString(" · "),
