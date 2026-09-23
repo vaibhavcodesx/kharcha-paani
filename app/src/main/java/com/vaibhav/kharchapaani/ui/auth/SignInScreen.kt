@@ -244,13 +244,17 @@ private fun SignInFailureNotice(
     }
 }
 
-private fun GoogleSignInFailure.message(): String = when (this) {
+internal fun GoogleSignInFailure.message(): String = when (this) {
     GoogleSignInFailure.NotConfigured -> "Google sign-in isn't set up in this build yet."
     GoogleSignInFailure.NoGoogleAccount -> "Add a Google account to this phone, then try again."
     GoogleSignInFailure.GoogleUnavailable ->
         "Google sign-in isn't available right now. Check that Google Play services is up to date."
     GoogleSignInFailure.Network -> "You're offline. Connect once to sign in."
     GoogleSignInFailure.Rejected -> "Sign-in didn't go through on our end. Try again in a moment."
+    GoogleSignInFailure.PickerBlocked ->
+        "Google didn't open the account picker. It holds it back for a few minutes after it's " +
+            "been closed several times — wait a moment and try again."
+    GoogleSignInFailure.Dismissed -> "No account picked. Tap Continue with Google when you're ready."
 }
 
 @Preview

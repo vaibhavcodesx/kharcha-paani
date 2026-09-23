@@ -1,0 +1,29 @@
+package com.vaibhav.kharchapaani.data.auth
+
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class PickerCancellationTest {
+
+    @Test
+    fun `a cancel faster than a person can react means nobody was shown anything`() {
+        assertTrue(PickerCancellation.wasSilent(elapsedMs = 80, message = "activity is cancelled by the user."))
+    }
+
+    @Test
+    fun `Google's cooldown message counts however long it took`() {
+        assertTrue(
+            PickerCancellation.wasSilent(
+                elapsedMs = 5_000,
+                message = "[16] Cannot display UI as the caller has been temporarily blocked due to too many canceled sign-in prompts.",
+            )
+        )
+    }
+
+    @Test
+    fun `a person who looked at the picker and closed it is left alone`() {
+        assertFalse(PickerCancellation.wasSilent(elapsedMs = 4_000, message = "activity is cancelled by the user."))
+        assertFalse(PickerCancellation.wasSilent(elapsedMs = 4_000, message = null))
+    }
+}

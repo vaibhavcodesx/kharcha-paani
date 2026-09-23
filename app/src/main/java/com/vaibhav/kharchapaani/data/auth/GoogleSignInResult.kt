@@ -28,4 +28,16 @@ enum class GoogleSignInFailure {
      * the Supabase Google provider's Client IDs.
      */
     Rejected,
+
+    /**
+     * Google cancelled the request without showing anything, twice: the bottom sheet and then
+     * the button flow. Seen after the picker has been dismissed a few times in a row.
+     */
+    PickerBlocked,
+
+    /**
+     * The person closed the picker themselves. Not an error, but still said out loud: a tap
+     * that ends with the screen unchanged reads as a broken button.
+     */
+    Dismissed,
 }
