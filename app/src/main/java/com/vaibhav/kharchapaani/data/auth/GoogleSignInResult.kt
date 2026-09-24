@@ -36,6 +36,13 @@ enum class GoogleSignInFailure {
     PickerBlocked,
 
     /**
+     * Google refused to sign in to this copy of the app after an account was picked ("Account
+     * reauth failed"): usually its signing certificate isn't registered with the OAuth client.
+     * Nothing the person can fix, so it says so rather than implying they cancelled.
+     */
+    AppNotAccepted,
+
+    /**
      * The person closed the picker themselves. Not an error, but still said out loud: a tap
      * that ends with the screen unchanged reads as a broken button.
      */

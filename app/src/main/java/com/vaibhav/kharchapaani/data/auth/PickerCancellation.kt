@@ -10,17 +10,32 @@ package com.vaibhav.kharchapaani.data.auth
  * picker, no message, no request ever reaching the server.
  *
  * A human cannot see a sheet and dismiss it in under [HUMAN_FLOOR_MS], and Google's cooldown says
- * so in its message, so either signal means nobody was asked.
+ * so in its message, so either signal means nobody was asked. Timing is the main one; the message
+ * check only adds the cooldown's own wording, never the generic status code.
  */
 internal object PickerCancellation {
 
     const val HUMAN_FLOOR_MS = 1_200L
 
-    private val systemMarkers = listOf("temporarily blocked", "too many canceled", "[16]", "reauth")
+    // Only Google's cooldown wording. Not "[16]": that is Google's status code for *any* cancel, and
+    // a person pressing Back on a picker they had been looking at arrives as "[16] Cancelled by
+    // user." — which, when it counted, sent a genuine dismissal to the fallback and then told them
+    // the picker had never opened. Caught smoke-testing the 1.2.0 release build, 2026-09-24.
+    private val systemMarkers = listOf("temporarily blocked", "too many canceled")
 
     fun wasSilent(elapsedMs: Long, message: String?): Boolean {
         if (elapsedMs < HUMAN_FLOOR_MS) return true
         val text = message?.lowercase() ?: return false
         return systemMarkers.any { it in text }
     }
+
+    /**
+     * "[16] Account reauth failed." is what Credential Manager says when Google won't vouch for this
+     * app: most often its package and signing certificate aren't registered as an Android OAuth
+     * client, which is exactly why every release-signed build failed to sign in while debug builds
+     * worked (found on the 1.2.0 release build, 2026-09-24). It arrives as a *cancel*, after the
+     * person has picked an account, so without this it read as "No account picked".
+     */
+    fun wasRefusedByGoogle(message: String?): Boolean =
+        message?.contains("reauth failed", ignoreCase = true) == true
 }

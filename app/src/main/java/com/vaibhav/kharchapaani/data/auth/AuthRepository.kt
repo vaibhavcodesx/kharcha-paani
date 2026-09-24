@@ -82,6 +82,12 @@ class AuthRepository(
             // which the account picker above can't.
             return askButtonFlow(::ask, nonce, hadNoAccount = true)
         } catch (e: GetCredentialCancellationException) {
+            // Every cancel is logged: Google reports misconfiguration and its own cooldown the same
+            // way as a person closing the picker, and the message and timing are the only clues.
+            Log.w(TAG, "Account picker cancelled after ${clock() - started} ms (${e.type}): ${e.message}")
+            if (PickerCancellation.wasRefusedByGoogle(e.message)) {
+                return GoogleTokenResult.Done(GoogleSignInResult.Failure(GoogleSignInFailure.AppNotAccepted))
+            }
             if (!PickerCancellation.wasSilent(clock() - started, e.message)) {
                 return GoogleTokenResult.Done(GoogleSignInResult.Cancelled)
             }
@@ -110,6 +116,10 @@ class AuthRepository(
         return try {
             tokenFrom(ask(addAccountRequest(nonce)))
         } catch (e: GetCredentialCancellationException) {
+            Log.w(TAG, "Sign in with Google dialog cancelled after ${clock() - started} ms (${e.type}): ${e.message}")
+            if (PickerCancellation.wasRefusedByGoogle(e.message)) {
+                return GoogleTokenResult.Done(GoogleSignInResult.Failure(GoogleSignInFailure.AppNotAccepted))
+            }
             val silent = PickerCancellation.wasSilent(clock() - started, e.message)
             if (silent) Log.w(TAG, "Sign in with Google dialog also cancelled unseen: ${e.message}")
             GoogleTokenResult.Done(
