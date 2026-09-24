@@ -74,8 +74,10 @@ class AiContextTest {
         val block = AiContext.monthInReview(analytics, days, month)
 
         assertTrue(block.contains("Busiest day: 9 September"))
-        assertTrue(block.contains("2026-09-03: ₹120"))
-        assertTrue(block.contains("2026-09-09: ₹1800"))
+        // Spoken, like the busiest day: ISO lines were quoted back as "2026-09-09".
+        assertTrue(block.contains("3 September: ₹120"))
+        assertTrue(block.contains("9 September: ₹1800"))
+        assertFalse(block.contains("2026-09-0"))
     }
 
     @Test
@@ -97,6 +99,26 @@ class AiContextTest {
 
         assertTrue(block.contains("There is no earlier month of data at all"))
         assertTrue(block.contains("Months of history available before this one: 0"))
+    }
+
+    @Test
+    fun `a month still in progress says so, and months are named the way people say them`() {
+        // Otherwise 18 days of September were compared against three whole months, and categories
+        // that simply hadn't happened yet were called "down".
+        val previous = mapOf(YearMonth.of(2026, 8) to listOf(CategorySummary("Food", 3000.0, 100f, 9)))
+        val block = AiContext.trailingComparison(analytics.categorySummaries, previous, month, today = today)
+
+        assertTrue(block.contains("still in progress: day 18 of 30"))
+        assertTrue(block.contains("September 2026"))
+        assertTrue(block.contains("August 2026:"))
+        assertFalse(block.contains("2026-08"))
+    }
+
+    @Test
+    fun `a past month is not called in progress`() {
+        val block = AiContext.trailingComparison(analytics.categorySummaries, emptyMap(), YearMonth.of(2026, 8), today = today)
+
+        assertFalse(block.contains("in progress"))
     }
 
     @Test
@@ -210,10 +232,35 @@ class AiContextTest {
         )
 
         assertTrue(block.contains("Goa trip"))
-        assertTrue(block.contains("2026-09-01 to 2026-09-09"))
+        assertTrue(block.contains("1 September to 9 September"))
         assertTrue(block.contains("9 day(s)"))
         assertTrue(block.contains("₹1000 a day"))
         assertTrue(block.contains("Single biggest expense: Hotel at ₹8000"))
+    }
+
+    @Test
+    fun `who paid up front is kept apart from what each share came to`() {
+        // "Who carried the cost" needs who paid. The block had only shares, headed "Who spent
+        // what", and answers credited whoever ate most with paying for everything.
+        val lal = PersonEntity(id = 2, name = "Lal", avatarColor = "#70C1FF")
+        val hotel = FullTransaction(
+            TransactionEntity(id = 1, type = "expense", amount = 8000.0, category = "Stay", merchant = "Hotel", paymentMethod = "UPI", date = at(9, 1)),
+            split = com.vaibhav.kharchapaani.data.db.entity.SplitEntity(id = 1, transactionId = 1, totalAmount = 8000.0, paidByPersonId = 2),
+        )
+        val cab = FullTransaction(
+            TransactionEntity(id = 2, type = "expense", amount = 1000.0, category = "Transport", merchant = "Cab", paymentMethod = "UPI", date = at(9, 2)),
+        )
+
+        assertEquals(listOf("Lal" to 8000.0, "You" to 1000.0), AiContext.paidBy(listOf(hotel, cab), listOf(lal)))
+
+        val details = GroupWithDetails(
+            group = GroupEntity(id = 1, name = "Goa trip", emoji = "🏖", description = ""),
+            members = listOf(lal), totalExpenses = 9000.0, myPaidAmount = 1000.0, myShare = 4500.0,
+            netBalanceForMe = -3500.0, transactionsCount = 2, transactions = listOf(hotel, cab),
+        )
+        val block = AiContext.tripReview(details, emptyList(), emptyList(), emptyList(), emptyList(), details.members, zone)
+        assertTrue(block.contains("Who paid up front:\n- Lal: ₹8000\n- You: ₹1000"))
+        assertTrue(block.contains("Each person's share of the spending"))
     }
 
     @Test

@@ -1,5 +1,10 @@
 package com.vaibhav.kharchapaani.ui.viewmodel
 
+import com.vaibhav.kharchapaani.domain.receiptNotice
+import com.vaibhav.kharchapaani.domain.quickAddNotice
+import com.vaibhav.kharchapaani.domain.AiFailure
+import com.vaibhav.kharchapaani.domain.AiAskResult
+import com.vaibhav.kharchapaani.data.repository.ReceiptReadResult
 import android.app.Application
 import android.content.ClipData
 import android.content.Context
@@ -673,9 +678,12 @@ class MainViewModel(
             _isParsing.value = true
             _parseNotice.value = null
             val friendNames = people.value.map { it.name }
-            val parsed = geminiRepo.parseMessyText(rawText, friendNames, parseChoices())
-            applyParsedResult(parsed)
-            if (parsed.guessedOnPhone) _parseNotice.value = "Couldn't reach the AI, so this is a best guess from your words. Check it before saving."
+            val outcome = geminiRepo.parseText(rawText, friendNames, parseChoices())
+            applyParsedResult(outcome.result)
+            // No method said: this account's own default, not "Other".
+            if (outcome.result.paymentMethod.isBlank()) _paymentMethod.value = defaultPaymentMethod()
+            // Why it's a guess, when it is: offline, out of quota and a refused key each say so.
+            _parseNotice.value = outcome.failure?.quickAddNotice()
             _isParsing.value = false
             _isConfirmSheetOpen.value = true
         }
@@ -685,10 +693,17 @@ class MainViewModel(
         viewModelScope.launch {
             _isParsing.value = true
             _isConfirmSheetOpen.value = true
-            val friendNames = people.value.map { it.name }
-            val parsed = geminiRepo.parseReceiptOrScreenshot(bitmap, friendNames, parseChoices())
-            applyParsedResult(parsed)
-            _parseNotice.value = if (parsed.readFailed) "Couldn't read that bill. Fill in the details, or try a clearer photo." else null
+            when (val read = geminiRepo.readReceipt(bitmap, parseChoices())) {
+                is ReceiptReadResult.Read -> {
+                    applyParsedResult(read.entry)
+                    _parseNotice.value = if (read.missingAmount) "Read the bill, but couldn't find the total. Fill in the amount." else null
+                }
+                is ReceiptReadResult.Failed -> {
+                    applyParsedResult(ParsedTransactionResult(type = "expense", amount = 0.0, merchant = "", category = "Other", paymentMethod = "Other", note = "", readFailed = true))
+                    // "Try a clearer photo" was the answer to being offline too.
+                    _parseNotice.value = read.reason.receiptNotice()
+                }
+            }
             _isParsing.value = false
         }
     }
@@ -742,6 +757,9 @@ class MainViewModel(
         StatementReadFailure.Timeout -> "That statement took too long to read. A shorter date range usually goes through."
         StatementReadFailure.Offline -> "Couldn't reach the internet. Try again once you're back online."
         StatementReadFailure.Rejected -> "Couldn't read that statement right now. Try again in a minute."
+        StatementReadFailure.RateLimited -> "Too many reads in a short while. Wait a minute, then try that statement again."
+        StatementReadFailure.KeyRefused -> "Statement reading isn't available in this copy of the app right now. It's a setup problem on our side."
+        StatementReadFailure.Blocked -> "Google declined to read that statement. Try exporting it again, or a shorter date range."
         StatementReadFailure.Truncated -> "That statement has more rows than fit in one read. Export a shorter date range and try again."
         StatementReadFailure.NothingFound -> "No transactions found in that PDF. Scanned or image-only statements can't be read."
         StatementReadFailure.Unreadable -> "Couldn't read that statement. Try again, or export it again from your bank or UPI app."
@@ -1416,14 +1434,16 @@ class MainViewModel(
                 AiPrompt.TripReview -> ""
             }
 
-            val answer = geminiRepo.ask(prompt, MonthNames.possessive(month, today), data)
-            settings.recordAiAsk(today)
+            val result = geminiRepo.askForAnswer(prompt, MonthNames.possessive(month, today), data)
+            // A request that never reached Google doesn't spend one of the day's asks.
+            if (result.spendsAnAsk()) settings.recordAiAsk(today)
             // Dropped if another month was picked while it was being written: that month's board
             // was already cleared, and this answer is about the previous one.
             if (month != _insightsMonth.value) return@launch
-            _askBoard.value = answer
-                ?.let { _askBoard.value.answered(prompt, it) }
-                ?: _askBoard.value.failed(prompt)
+            _askBoard.value = when (result) {
+                is AiAskResult.Answer -> _askBoard.value.answered(prompt, result.text)
+                is AiAskResult.Failed -> _askBoard.value.failed(prompt, result.reason)
+            }
         }
     }
 
@@ -1438,7 +1458,7 @@ class MainViewModel(
         val previous = AiContext.trailingMonths(month, earliest).associateWith { past ->
             ledgerRepo.monthlyAnalyticsFor(past).first().categorySummaries
         }
-        return AiContext.trailingComparison(insightsAnalytics.value.categorySummaries, previous, month)
+        return AiContext.trailingComparison(insightsAnalytics.value.categorySummaries, previous, month, today = today)
     }
 
     /** The trip read for the open group sheet. Its own state, not the Insights board's. */
@@ -1465,7 +1485,7 @@ class MainViewModel(
             // where it is rather than flashing an error at someone who tapped a live button.
             val details = groups.value.firstOrNull { it.group.id == groupId } ?: return@launch
             if (!settings.aiUsage.first().canAsk(LocalDate.now())) {
-                _tripReview.value = AskState.Failed
+                _tripReview.value = AskState.Failed()
                 return@launch
             }
             _tripReview.value = AskState.Asking
@@ -1480,9 +1500,12 @@ class MainViewModel(
                 members = details.members,
                 zone = zone,
             )
-            val answer = geminiRepo.ask(AiPrompt.TripReview, "this group's", data)
-            settings.recordAiAsk(LocalDate.now())
-            _tripReview.value = answer?.let(AskState::Answered) ?: AskState.Failed
+            val result = geminiRepo.askForAnswer(AiPrompt.TripReview, "this group's", data)
+            if (result.spendsAnAsk()) settings.recordAiAsk(LocalDate.now())
+            _tripReview.value = when (result) {
+                is AiAskResult.Answer -> AskState.Answered(result.text)
+                is AiAskResult.Failed -> AskState.Failed(result.reason)
+            }
         }
     }
 
@@ -1627,3 +1650,7 @@ class MainViewModel(
             viewModelFactory { initializer { MainViewModel(application, db, userId) } }
     }
 }
+
+/** Offline and no-key failures never reached Google, so they don't count against the daily cap. */
+private fun AiAskResult.spendsAnAsk(): Boolean =
+    this !is AiAskResult.Failed || reason !in setOf(AiFailure.NoKey, AiFailure.Offline)

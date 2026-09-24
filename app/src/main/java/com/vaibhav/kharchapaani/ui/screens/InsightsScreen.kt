@@ -1,5 +1,6 @@
 package com.vaibhav.kharchapaani.ui.screens
 
+import com.vaibhav.kharchapaani.domain.AskState
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -232,6 +233,7 @@ fun InsightsScreen(
                     asksLeft = aiAsksLeft,
                     possessive = possessive,
                     onAsk = onAsk,
+                    failureOf = { (askBoard.stateOf(it) as? AskState.Failed)?.reason },
                     modifier = Modifier.padding(top = Spacing.xxl),
                 )
             }

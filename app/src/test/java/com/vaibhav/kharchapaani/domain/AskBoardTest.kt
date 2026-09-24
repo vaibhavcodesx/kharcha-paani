@@ -25,7 +25,7 @@ class AskBoardTest {
             .asking(change).failed(change)
 
         assertEquals(AskState.Answered("August was steady."), board.stateOf(month))
-        assertEquals(AskState.Failed, board.stateOf(change))
+        assertEquals(AskState.Failed(), board.stateOf(change))
         assertEquals(AskState.Idle, board.stateOf(over))
     }
 

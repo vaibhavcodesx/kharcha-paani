@@ -5,7 +5,6 @@ import android.util.Base64
 import android.util.Log
 import com.vaibhav.kharchapaani.BuildConfig
 import com.vaibhav.kharchapaani.data.remote.AppIdentity
-import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
 import com.vaibhav.kharchapaani.data.model.ParsedTransactionResult
 import com.vaibhav.kharchapaani.data.model.StatementParseResult
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
@@ -15,6 +14,9 @@ import com.vaibhav.kharchapaani.domain.CategoryPrefs
 import com.vaibhav.kharchapaani.domain.LocalStatementParser
 import com.vaibhav.kharchapaani.domain.AI_VOICE
 import com.vaibhav.kharchapaani.domain.AiAnswerText
+import com.vaibhav.kharchapaani.domain.AiAskResult
+import com.vaibhav.kharchapaani.domain.AiFailure
+import com.vaibhav.kharchapaani.domain.AiParse
 import com.vaibhav.kharchapaani.domain.AiPrompt
 import com.vaibhav.kharchapaani.domain.instruction
 import com.vaibhav.kharchapaani.domain.StatementPdf
@@ -32,6 +34,9 @@ import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InterruptedIOException
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 
 /**
@@ -62,197 +67,157 @@ class GeminiRepository(
         rawText: String,
         knownFriends: List<String> = emptyList(),
         choices: ParseChoices = ParseChoices.defaults,
-    ): ParsedTransactionResult = withContext(Dispatchers.IO) {
+    ): ParsedTransactionResult = parseText(rawText, knownFriends, choices).result
+
+    /**
+     * Reads a typed or spoken line ("dinner 1,299 with Rohan yesterday gpay") into an entry.
+     *
+     * Never fails outright: without the AI it falls back to [LocalHeuristicParser], flagged
+     * [ParsedTransactionResult.guessedOnPhone] so the sheet can say so, and [TextParseOutcome.failure]
+     * says why the AI wasn't used (offline and out-of-quota want different notices).
+     */
+    suspend fun parseText(
+        rawText: String,
+        knownFriends: List<String> = emptyList(),
+        choices: ParseChoices = ParseChoices.defaults,
+        now: Long = System.currentTimeMillis(),
+        zone: ZoneId = ZoneId.systemDefault(),
+    ): TextParseOutcome = withContext(Dispatchers.IO) {
+        val onPhone = LocalHeuristicParser.parse(rawText, knownFriends).copy(date = now)
         val apiKey = getApiKey()
-        if (apiKey.isBlank()) {
-            return@withContext LocalHeuristicParser.parse(rawText, knownFriends)
-        }
+        // No key is this build's normal, not a failure, so no notice.
+        if (apiKey.isBlank()) return@withContext TextParseOutcome(onPhone, failure = null)
 
-        val prompt = """
-            You are a smart expense transaction parser for a personal finance app.
-            Analyze the following user input and extract structured financial transaction information.
-            
-            Known teammates / friends: ${knownFriends.joinToString(", ")}
-            
-            Input text: "$rawText"
-            
-            Rules:
-            - type: "expense" (default) or "income" (if money received, salary, client payout, etc.)
-            - amount: total numeric value in standard currency (e.g. 370.0)
-            - merchant: Clean merchant or description (e.g. "McDonald's", "Uber", "Priya (Loan)", "Client X")
-            - category: Pick the best match among [${choices.categoryList}]
-            - paymentMethod: Pick best among [${choices.paymentList}]
-            - splitWith: Array of friends' names mentioned in input to split with (e.g. ["Rahul", "Priya"])
-            - note: Short summary or original memo
-            
-            Return ONLY valid JSON matching this schema:
-            {
-              "type": "expense",
-              "amount": 370.0,
-              "merchant": "McDonald's",
-              "category": "Food",
-              "paymentMethod": "GPay",
-              "splitWith": [],
-              "note": "burger 370 mcd gpay"
-            }
-        """.trimIndent()
-
-        try {
-            val requestJson = JSONObject().apply {
-                val contents = JSONArray().apply {
-                    val contentObj = JSONObject().apply {
-                        val parts = JSONArray().apply {
-                            put(JSONObject().put("text", prompt))
-                        }
-                        put("parts", parts)
-                    }
-                    put(contentObj)
-                }
-                put("contents", contents)
-                put("generationConfig", JSONObject().apply {
-                    put("responseMimeType", "application/json")
-                    put("temperature", 0.1)
-                })
-            }
-
-            val requestBody = requestJson.toString().toRequestBody(jsonMediaType)
-            val request = Request.Builder()
-                .url("${endpoint(MODEL)}?key=$apiKey")
-                .post(requestBody)
-                .build()
-
-            val response = client.newCall(request).execute()
-            val responseBody = response.body?.string() ?: ""
-            if (!response.isSuccessful) Log.e(TAG, "Gemini HTTP ${response.code}: ${responseBody.take(400)}")
-
-            if (response.isSuccessful && responseBody.isNotBlank()) {
-                val candidate = JSONObject(responseBody).optJSONArray("candidates")?.optJSONObject(0)
-                val textOutput = candidate?.let(::answerText).orEmpty()
-
-                if (textOutput.isNotBlank()) {
-                    val parsed = JSONObject(textOutput)
-                    val splitArray = parsed.optJSONArray("splitWith")
-                    val splitList = mutableListOf<String>()
-                    if (splitArray != null) {
-                        for (i in 0 until splitArray.length()) {
-                            splitList.add(splitArray.getString(i))
-                        }
-                    }
-
-                    return@withContext ParsedTransactionResult(
-                        type = parsed.optString("type", "expense"),
-                        amount = parsed.optDouble("amount", 0.0),
-                        merchant = parsed.optString("merchant", "Expense"),
+        val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+        val body = jsonRequest(listOf(textPart(textPrompt(rawText, knownFriends, choices, today))), temperature = 0.1, json = true)
+        when (val outcome = call(body, apiKey, TEXT_TIMEOUT_SECONDS, "text")) {
+            is CallOutcome.Failed -> TextParseOutcome(onPhone.copy(guessedOnPhone = true), outcome.reason)
+            is CallOutcome.Ok -> {
+                val parsed = outcome.json()
+                    ?: return@withContext TextParseOutcome(onPhone.copy(guessedOnPhone = true), AiFailure.Unreadable)
+                // The model missing a figure that plainly is in the line is worse than the phone's guess.
+                val amount = AiParse.amountField(parsed.opt("amount")).takeIf { it > 0 } ?: onPhone.amount
+                val splitWith = parsed.optJSONArray("splitWith")
+                    ?.let { arr -> (0 until arr.length()).mapNotNull { i -> arr.optString(i).trim().takeIf { it.isNotEmpty() } } }
+                    .orEmpty()
+                TextParseOutcome(
+                    ParsedTransactionResult(
+                        type = if (parsed.optString("type").equals("income", ignoreCase = true)) "income" else "expense",
+                        amount = amount,
+                        merchant = parsed.optString("merchant").trim().ifEmpty { onPhone.merchant },
                         category = parsed.optString("category", "Other"),
-                        paymentMethod = parsed.optString("paymentMethod", "GPay"),
-                        date = System.currentTimeMillis(),
-                        note = parsed.optString("note", rawText),
-                        splitWithPersonNames = splitList,
-                        confidence = 0.95f
-                    )
-                }
+                        paymentMethod = parsed.optString("paymentMethod").trim().ifEmpty { choices.paymentMethods.firstOrNull() ?: "Other" },
+                        date = AiParse.dateOrNow(parsed.optString("date"), now, zone),
+                        note = parsed.optString("note").trim().ifEmpty { rawText.trim() },
+                        splitWithPersonNames = splitWith,
+                        confidence = 0.95f,
+                    ),
+                    failure = null,
+                )
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error parsing with Gemini: ${e.message}", e)
         }
-
-        // Fallback to local heuristic parser. Said out loud: the sheet looked identical either way,
-        // so a failed AI call passed for a confident reading.
-        LocalHeuristicParser.parse(rawText, knownFriends).copy(guessedOnPhone = true)
     }
+
+    private fun textPrompt(rawText: String, knownFriends: List<String>, choices: ParseChoices, today: LocalDate): String = """
+        You turn one line a person typed or said into an entry for an Indian expense app. Amounts are
+        in rupees.
+
+        Today is $today. Friends on this account: ${knownFriends.joinToString(", ").ifEmpty { "none" }}.
+
+        The line: ${JSONObject.quote(rawText)}
+
+        Fill in:
+        - type: "income" only if money came in (salary, refund, client paid, received); otherwise "expense".
+        - amount: the total as a plain number. "1,299" is 1299, "1.2k" is 1200, "2 lakh" is 200000. If
+          several numbers appear, it is the money, not a count ("2 coffees 300" is 300). 0 if there is
+          no amount.
+        - merchant: the place or thing, short and properly capitalised ("Swiggy", "Auto to office",
+          "Rohan (loan)"). Never include the amount or the payment method.
+        - category: exactly one of [${choices.categoryList}].
+        - paymentMethod: exactly one of [${choices.paymentList}]. If the line doesn't say, use the first
+          one in that list.
+        - date: "YYYY-MM-DD" only if the line says when ("yesterday", "on 12 Sep", "last Friday"),
+          worked out from today's date; otherwise "".
+        - splitWith: names from the friends list that the line says to split with, spelled exactly as
+          in the list; [] if none.
+        - note: the original line.
+
+        Return only this JSON:
+        {"type":"expense","amount":370,"merchant":"McDonald's","category":"Food","paymentMethod":"GPay","date":"","splitWith":[],"note":"burger 370 mcd gpay"}
+    """.trimIndent()
 
     suspend fun parseReceiptOrScreenshot(
         bitmap: Bitmap,
-        knownFriends: List<String> = emptyList(),
+        @Suppress("UNUSED_PARAMETER") knownFriends: List<String> = emptyList(),
         choices: ParseChoices = ParseChoices.defaults,
-    ): ParsedTransactionResult = withContext(Dispatchers.IO) {
-        val apiKey = getApiKey()
-        if (apiKey.isBlank()) {
-            return@withContext unreadReceipt()
-        }
-
-        val base64Image = bitmapToBase64(bitmap)
-        val prompt = """
-            You are an expert OCR and financial document parser.
-            This image is a receipt, invoice, or payment app screenshot (e.g. GPay, PhonePe, Paytm, Apple Pay, Bank confirmation).
-            
-            Extract the structured transaction data:
-            - type: "expense" (paid to merchant/friend) or "income" (received money)
-            - amount: total transaction amount as a float number
-            - merchant: receiver/merchant name or payment destination (e.g. "Starbucks", "Uber", "Swiggy", "PhonePe Merchant")
-            - category: Pick the best fit among [${choices.categoryList}]
-            - paymentMethod: Pick best among [${choices.paymentList}]
-            - note: short description or reference ID
-            
-            Return ONLY valid JSON matching this schema:
-            {
-              "type": "expense",
-              "amount": 250.0,
-              "merchant": "Swiggy",
-              "category": "Food",
-              "paymentMethod": "GPay",
-              "note": "Payment to Swiggy UPI"
-            }
-        """.trimIndent()
-
-        try {
-            val requestJson = JSONObject().apply {
-                val contents = JSONArray().apply {
-                    val contentObj = JSONObject().apply {
-                        val parts = JSONArray().apply {
-                            put(JSONObject().put("text", prompt))
-                            put(JSONObject().apply {
-                                put("inlineData", JSONObject().apply {
-                                    put("mimeType", "image/jpeg")
-                                    put("data", base64Image)
-                                })
-                            })
-                        }
-                        put("parts", parts)
-                    }
-                    put(contentObj)
-                }
-                put("contents", contents)
-                put("generationConfig", JSONObject().apply {
-                    put("responseMimeType", "application/json")
-                    put("temperature", 0.1)
-                })
-            }
-
-            val requestBody = requestJson.toString().toRequestBody(jsonMediaType)
-            val request = Request.Builder()
-                .url("${endpoint(MODEL)}?key=$apiKey")
-                .post(requestBody)
-                .build()
-
-            val response = client.newCall(request).execute()
-            val responseBody = response.body?.string() ?: ""
-            if (!response.isSuccessful) Log.e(TAG, "Gemini HTTP ${response.code}: ${responseBody.take(400)}")
-
-            if (response.isSuccessful && responseBody.isNotBlank()) {
-                val candidate = JSONObject(responseBody).optJSONArray("candidates")?.optJSONObject(0)
-                val textOutput = candidate?.let(::answerText).orEmpty()
-
-                if (textOutput.isNotBlank()) {
-                    val parsed = JSONObject(textOutput)
-                    return@withContext ParsedTransactionResult(
-                        type = parsed.optString("type", "expense"),
-                        amount = parsed.optDouble("amount", 0.0),
-                        merchant = parsed.optString("merchant", "Receipt"),
-                        category = parsed.optString("category", "Food"),
-                        paymentMethod = parsed.optString("paymentMethod", "GPay"),
-                        date = System.currentTimeMillis(),
-                        note = parsed.optString("note", "Scanned from receipt"),
-                        confidence = 0.98f
-                    )
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error parsing receipt: ${e.message}", e)
-        }
-
-        unreadReceipt()
+    ): ParsedTransactionResult = when (val result = readReceipt(bitmap, choices)) {
+        // Kept for existing callers: a bill with no total still reads as a failed read here.
+        is ReceiptReadResult.Read -> if (result.missingAmount) result.entry.copy(readFailed = true) else result.entry
+        is ReceiptReadResult.Failed -> unreadReceipt()
     }
+
+    /**
+     * Reads a bill, receipt or payment screenshot. Says why when it can't ([ReceiptReadResult.Failed]),
+     * and says when it read the bill but found no total ([ReceiptReadResult.Read.missingAmount]):
+     * "try a clearer photo" is the wrong advice for someone who is simply offline.
+     */
+    suspend fun readReceipt(
+        bitmap: Bitmap,
+        choices: ParseChoices = ParseChoices.defaults,
+        now: Long = System.currentTimeMillis(),
+        zone: ZoneId = ZoneId.systemDefault(),
+    ): ReceiptReadResult = withContext(Dispatchers.IO) {
+        val apiKey = getApiKey()
+        if (apiKey.isBlank()) return@withContext ReceiptReadResult.Failed(AiFailure.NoKey)
+
+        val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+        val parts = listOf(
+            textPart(receiptPrompt(choices, today)),
+            JSONObject().put("inlineData", JSONObject().put("mimeType", "image/jpeg").put("data", bitmapToBase64(bitmap))),
+        )
+        when (val outcome = call(jsonRequest(parts, temperature = 0.1, json = true), apiKey, RECEIPT_TIMEOUT_SECONDS, "receipt")) {
+            is CallOutcome.Failed -> ReceiptReadResult.Failed(outcome.reason)
+            is CallOutcome.Ok -> {
+                val parsed = outcome.json() ?: return@withContext ReceiptReadResult.Failed(AiFailure.Unreadable)
+                val amount = AiParse.amountField(parsed.opt("amount"))
+                ReceiptReadResult.Read(
+                    ParsedTransactionResult(
+                        type = if (parsed.optString("type").equals("income", ignoreCase = true)) "income" else "expense",
+                        amount = amount,
+                        merchant = parsed.optString("merchant").trim(),
+                        category = parsed.optString("category", "Other"),
+                        paymentMethod = parsed.optString("paymentMethod").trim().ifEmpty { "Other" },
+                        date = AiParse.dateOrNow(parsed.optString("date"), now, zone),
+                        note = parsed.optString("note").trim(),
+                        confidence = 0.98f,
+                    ),
+                    missingAmount = amount <= 0,
+                )
+            }
+        }
+    }
+
+    private fun receiptPrompt(choices: ParseChoices, today: LocalDate): String = """
+        This image is a bill, receipt, invoice or payment-app screenshot (GPay, PhonePe, Paytm, a bank
+        SMS or confirmation) from India. Today is $today.
+
+        Fill in:
+        - type: "income" if this shows money received; otherwise "expense".
+        - amount: the total actually paid, as a plain number: the grand total after tax, discounts and
+          tip, not a subtotal or one line item. For a payment screenshot, the amount paid. 0 if you
+          can't find it, or if this isn't a bill or payment at all. Never guess.
+        - merchant: who was paid, as a person would say it ("Starbucks", "Swiggy", "Ramesh Kumar"),
+          not a UPI handle or reference number.
+        - category: exactly one of [${choices.categoryList}].
+        - paymentMethod: exactly one of [${choices.paymentList}] if the image shows how it was paid,
+          otherwise "".
+        - date: when it was paid, "YYYY-MM-DD", or "YYYY-MM-DDTHH:mm" if a time is shown; "" if no date
+          is visible. Indian receipts write dates day first (05/09 is 5 September).
+        - note: a short description, or the order or reference number if that's all there is.
+
+        Return only this JSON:
+        {"type":"expense","amount":250,"merchant":"Swiggy","category":"Food","paymentMethod":"GPay","date":"2026-09-24T13:05","note":"Order 4412"}
+    """.trimIndent()
 
     /**
      * An unread bill fills in nothing. The old fallback invented a merchant ("Scanned Receipt"), a
@@ -260,19 +225,22 @@ class GeminiRepository(
      */
     private fun unreadReceipt() = ParsedTransactionResult(type = "expense", amount = 0.0, merchant = "", category = "Other", paymentMethod = "Other", note = "", readFailed = true)
 
+    /** Asks one of the [AiPrompt]s; null when it couldn't be answered. [askForAnswer] also says why. */
+    suspend fun ask(prompt: AiPrompt, possessive: String, data: String): String? =
+        askForAnswer(prompt, possessive, data).answerOrNull
+
     /**
-     * Asks one of the [AiPrompt]s and returns the answer, or null when it couldn't be generated.
+     * Asks one of the [AiPrompt]s and returns the answer, or why there isn't one.
      *
      * One method for all four rather than four near-identical ones: what differs between them is
      * the instruction and the data block, and both are built in the domain layer where they can be
-     * tested without a network. These are short calls, so they keep the default timeout — unlike a
-     * statement, which is why that one has its own.
+     * tested without a network.
      */
-    suspend fun ask(prompt: AiPrompt, possessive: String, data: String): String? = withContext(Dispatchers.IO) {
+    suspend fun askForAnswer(prompt: AiPrompt, possessive: String, data: String): AiAskResult = withContext(Dispatchers.IO) {
         val apiKey = getApiKey()
-        if (apiKey.isBlank()) return@withContext null
+        if (apiKey.isBlank()) return@withContext AiAskResult.Failed(AiFailure.NoKey)
 
-        val body = """
+        val text = """
             ${AI_VOICE.trim()}
 
             ${prompt.instruction(possessive)}
@@ -280,108 +248,95 @@ class GeminiRepository(
             The data, and the only figures you may use:
             $data
         """.trimIndent()
-
-        try {
-            val requestJson = JSONObject().apply {
-                put("contents", JSONArray().apply {
-                    put(JSONObject().put("parts", JSONArray().apply { put(JSONObject().put("text", body)) }))
-                })
-                put("generationConfig", JSONObject().apply {
-                    // Low, not zero: these are sentences, and zero makes them read like a form letter.
-                    put("temperature", 0.35)
-                    put("maxOutputTokens", ASK_MAX_OUTPUT_TOKENS)
-                })
-            }
-            val request = Request.Builder()
-                .url("${endpoint(MODEL)}?key=$apiKey")
-                .post(requestJson.toString().toRequestBody(jsonMediaType))
-                .build()
-
-            client.newCall(request).execute().use { response ->
-                val responseBody = response.body?.string().orEmpty()
-                if (!response.isSuccessful) {
-                    Log.e(TAG, "Gemini HTTP ${response.code}: ${responseBody.take(400)}")
-                    return@withContext null
-                }
-                val candidate = JSONObject(responseBody).optJSONArray("candidates")?.optJSONObject(0)
-                    ?: run {
-                        Log.e(TAG, "No candidate for ${prompt.name}: ${responseBody.take(400)}")
-                        return@withContext null
-                    }
-                val truncated = candidate.optString("finishReason") == "MAX_TOKENS"
+        // Low, not zero: these are sentences, and zero makes them read like a form letter.
+        val body = jsonRequest(listOf(textPart(text)), temperature = 0.35, json = false, maxOutputTokens = ASK_MAX_OUTPUT_TOKENS)
+        when (val outcome = call(body, apiKey, ASK_TIMEOUT_SECONDS, prompt.name)) {
+            is CallOutcome.Failed -> AiAskResult.Failed(outcome.reason)
+            is CallOutcome.Ok -> {
+                val truncated = outcome.finishReason == "MAX_TOKENS"
                 if (truncated) Log.w(TAG, "${prompt.name} hit the output cap of $ASK_MAX_OUTPUT_TOKENS tokens")
-                AiAnswerText.tidy(answerText(candidate), truncated)
+                AiAnswerText.tidy(outcome.text, truncated)?.let { AiAskResult.Answer(it) }
+                    ?: AiAskResult.Failed(if (truncated) AiFailure.Truncated else AiFailure.Unreadable)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error asking ${prompt.name}: ${e.message}", e)
-            null
         }
     }
 
-    /** A short read of the month, or null when it couldn't be generated (the screen says so). */
-    suspend fun generateFinancialSummary(analytics: MonthlyAnalytics): String? = withContext(Dispatchers.IO) {
-        val apiKey = getApiKey()
-        if (apiKey.isBlank()) {
-            return@withContext null
+    private fun textPart(text: String): JSONObject = JSONObject().put("text", text)
+
+    private fun jsonRequest(parts: List<JSONObject>, temperature: Double, json: Boolean, maxOutputTokens: Int? = null): JSONObject =
+        JSONObject().apply {
+            put("contents", JSONArray().put(JSONObject().put("parts", JSONArray().apply { parts.forEach { put(it) } })))
+            put("generationConfig", JSONObject().apply {
+                if (json) put("responseMimeType", "application/json")
+                put("temperature", temperature)
+                maxOutputTokens?.let { put("maxOutputTokens", it) }
+            })
         }
 
-        val categoryBreakdown = analytics.categorySummaries.joinToString(", ") {
-            "${it.category}: ₹${String.format("%.0f", it.amount)} (${String.format("%.1f", it.percentage)}%)"
-        }
-
-        val prompt = """
-            You are a helpful personal finance advisor.
-            Write a short, engaging, 2-3 sentence plain-language summary of the user's finances based on this aggregated data.
-            Do not use generic financial jargon. Be encouraging and provide 1 practical observation.
-            
-            Data:
-            - Monthly Total Spending: ₹${String.format("%.2f", analytics.totalExpense)}
-            - Monthly Total Income: ₹${String.format("%.2f", analytics.totalIncome)}
-            - Net Cashflow: ₹${String.format("%.2f", analytics.netCashflow)}
-            - Category Breakdown: $categoryBreakdown
-            - Top Spending Category/Merchant: ${analytics.topMerchant}
-            - Consecutive Logging Streak: ${analytics.dailyStreak} days
-        """.trimIndent()
-
-        try {
-            val requestJson = JSONObject().apply {
-                val contents = JSONArray().apply {
-                    val contentObj = JSONObject().apply {
-                        val parts = JSONArray().apply {
-                            put(JSONObject().put("text", prompt))
-                        }
-                        put("parts", parts)
-                    }
-                    put(contentObj)
-                }
-                put("contents", contents)
-                put("generationConfig", JSONObject().apply {
-                    put("temperature", 0.4)
-                })
+    /** One request's outcome: the first candidate's answer, or why there isn't a usable one. */
+    private sealed interface CallOutcome {
+        data class Ok(val text: String, val finishReason: String) : CallOutcome {
+            /** The answer as the JSON object asked for, or null when it isn't one. */
+            fun json(): JSONObject? = try {
+                JSONObject(stripFence(text))
+            } catch (e: JSONException) {
+                null
             }
-
-            val requestBody = requestJson.toString().toRequestBody(jsonMediaType)
-            val request = Request.Builder()
-                .url("${endpoint(MODEL)}?key=$apiKey")
-                .post(requestBody)
-                .build()
-
-            val response = client.newCall(request).execute()
-            val responseBody = response.body?.string() ?: ""
-            if (!response.isSuccessful) Log.e(TAG, "Gemini HTTP ${response.code}: ${responseBody.take(400)}")
-
-            if (response.isSuccessful && responseBody.isNotBlank()) {
-                val candidate = JSONObject(responseBody).optJSONArray("candidates")?.optJSONObject(0)
-                val text = candidate?.let(::answerText).orEmpty()
-                if (text.isNotBlank()) {
-                    return@withContext text
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error generating summary: ${e.message}", e)
         }
 
-        null
+        data class Failed(val reason: AiFailure) : CallOutcome
+    }
+
+    /**
+     * Sends one generateContent request and classifies what came back. Every AI path goes through
+     * here, so every one of them tells offline from out-of-quota from a refused key from a block,
+     * instead of each catching `Exception` and landing on the same vague message.
+     */
+    private fun call(body: JSONObject, apiKey: String, timeoutSeconds: Long, label: String): CallOutcome {
+        val request = Request.Builder()
+            .url("${endpoint(MODEL)}?key=$apiKey")
+            .post(body.toString().toRequestBody(jsonMediaType))
+            .build()
+        val timed = client.newBuilder()
+            .readTimeout(timeoutSeconds, TimeUnit.SECONDS)
+            .writeTimeout(timeoutSeconds, TimeUnit.SECONDS)
+            .callTimeout(timeoutSeconds + 15, TimeUnit.SECONDS)
+            .build()
+        val (code, text) = try {
+            timed.newCall(request).execute().use { response -> response.code to response.body?.string().orEmpty() }
+        } catch (e: InterruptedIOException) {
+            return failedCall(label, AiFailure.Timeout, e.message)
+        } catch (e: IOException) {
+            return failedCall(label, AiFailure.Offline, e.message)
+        }
+        if (code !in 200..299) return failedCall(label, AiFailure.fromHttp(code, text), "HTTP $code: ${text.take(400)}")
+
+        val envelope = try {
+            JSONObject(text)
+        } catch (e: JSONException) {
+            return failedCall(label, AiFailure.Unreadable, "envelope: ${e.message}")
+        }
+        val candidate = envelope.optJSONArray("candidates")?.optJSONObject(0)
+        if (candidate == null) {
+            val blocked = envelope.optJSONObject("promptFeedback")?.optString("blockReason").orEmpty()
+            return failedCall(label, if (blocked.isNotEmpty()) AiFailure.Blocked else AiFailure.Unreadable, "no candidate: ${text.take(400)}")
+        }
+        val finishReason = candidate.optString("finishReason")
+        val answer = answerText(candidate)
+        if (answer.isBlank()) {
+            val reason = when {
+                AiFailure.isBlockReason(finishReason) -> AiFailure.Blocked
+                finishReason == "MAX_TOKENS" -> AiFailure.Truncated
+                else -> AiFailure.Unreadable
+            }
+            return failedCall(label, reason, "empty answer, finishReason=$finishReason")
+        }
+        return CallOutcome.Ok(answer, finishReason)
+    }
+
+    private fun failedCall(label: String, reason: AiFailure, detail: String?): CallOutcome.Failed {
+        Log.e(TAG, "$label failed: $reason${detail?.let { " - $it" } ?: ""}")
+        return CallOutcome.Failed(reason)
     }
 
     /**
@@ -459,7 +414,12 @@ class GeminiRepository(
                 if (!response.isSuccessful) {
                     // Google's error body says which of these it is (bad key, quota, a file it
                     // won't take). Dropping it on the floor is what made this undiagnosable.
-                    return@withContext failed(StatementReadFailure.Rejected, "HTTP ${response.code}: ${text.take(400)}")
+                    val reason = when (AiFailure.fromHttp(response.code, text)) {
+                        AiFailure.RateLimited -> StatementReadFailure.RateLimited
+                        AiFailure.KeyRefused -> StatementReadFailure.KeyRefused
+                        else -> StatementReadFailure.Rejected
+                    }
+                    return@withContext failed(reason, "HTTP ${response.code}: ${text.take(400)}")
                 }
                 text
             }
@@ -472,20 +432,28 @@ class GeminiRepository(
             return@withContext failed(StatementReadFailure.Unreadable, e.message)
         }
 
-        val candidate = try {
-            JSONObject(body).optJSONArray("candidates")?.optJSONObject(0)
+        val envelope = try {
+            JSONObject(body)
         } catch (e: JSONException) {
             return@withContext failed(StatementReadFailure.Unreadable, "envelope: ${e.message}")
-        } ?: return@withContext failed(StatementReadFailure.Rejected, "no candidate: ${body.take(400)}")
+        }
+        val candidate = envelope.optJSONArray("candidates")?.optJSONObject(0)
+            ?: return@withContext failed(
+                if (envelope.optJSONObject("promptFeedback")?.optString("blockReason").isNullOrEmpty()) StatementReadFailure.Rejected
+                else StatementReadFailure.Blocked,
+                "no candidate: ${body.take(400)}",
+            )
 
         val finishReason = candidate.optString("finishReason")
         val textOutput = answerText(candidate)
         if (textOutput.isBlank()) {
-            return@withContext failed(truncatedOr(finishReason, StatementReadFailure.Unreadable), "empty answer, finishReason=$finishReason")
+            val reason = if (AiFailure.isBlockReason(finishReason)) StatementReadFailure.Blocked
+            else truncatedOr(finishReason, StatementReadFailure.Unreadable)
+            return@withContext failed(reason, "empty answer, finishReason=$finishReason")
         }
 
         val parsed = try {
-            JSONObject(textOutput)
+            JSONObject(stripFence(textOutput))
         } catch (e: JSONException) {
             // A cut-off answer is invalid JSON; say that, rather than calling the statement unreadable.
             return@withContext failed(truncatedOr(finishReason, StatementReadFailure.Unreadable), "answer: ${e.message}")
@@ -508,6 +476,10 @@ class GeminiRepository(
         val items = mutableListOf<StatementTransactionItem>()
         for (i in 0 until (txArray?.length() ?: 0)) {
             val itemObj = txArray?.optJSONObject(i) ?: continue
+            // A string amount ("1,299.00") used to become 0 through optDouble and still be listed,
+            // pre-ticked, as a ₹0 row. Read it properly, and leave out a row with no money in it.
+            val amount = AiParse.amountField(itemObj.opt("amount"))
+            if (amount <= 0) continue
             val (timestamp, formattedDate, monthName) = LocalStatementParser.parseDateToTimestamp(itemObj.optString("date", ""))
             val cal = java.util.Calendar.getInstance().apply { timeInMillis = timestamp }
             val monthSortKey = String.format(java.util.Locale.US, "%04d%02d", cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH) + 1)
@@ -519,8 +491,8 @@ class GeminiRepository(
                     dateFormatted = formattedDate,
                     monthYearKey = monthName,
                     monthSortKey = monthSortKey,
-                    type = type,
-                    amount = kotlin.math.abs(itemObj.optDouble("amount", 0.0)),
+                    type = if (type.equals("income", ignoreCase = true)) "income" else "expense",
+                    amount = amount,
                     merchant = itemObj.optString("merchant", "Merchant"),
                     category = choices.categoryFor(type, itemObj.optString("category")),
                     paymentMethod = choices.paymentFor(itemObj.optString("paymentMethod", "UPI")),
@@ -545,6 +517,9 @@ class GeminiRepository(
         The provided document is a financial statement PDF / document (e.g. PhonePe, Google Pay, Paytm, HDFC, SBI, ICICI, Axis, Kotak, Bank of Baroda, etc.).
 
         Extract EVERY SINGLE transaction row / line item across all months and pages in this statement.
+        Do not include opening or closing balances, running-balance columns, page totals or summary
+        rows, and never merge two rows into one or split one into two. If a row's date has no year,
+        take it from the statement period.
 
         For each row, provide:
         - date: ISO date string "YYYY-MM-DD" or "YYYY-MM-DDTHH:mm:ss" matching the exact date in the statement
@@ -576,9 +551,11 @@ class GeminiRepository(
     private fun bitmapToBase64(bitmap: Bitmap): String {
         val outputStream = ByteArrayOutputStream()
         // Resize bitmap if very large to prevent memory overhead
-        val scaled = if (bitmap.width > 1200 || bitmap.height > 1200) {
+        // 1600, not 1200: a tall payment screenshot or a long receipt scaled to 1200 on its long side
+        // shrank the small print (the total, the date) past what reads reliably.
+        val scaled = if (bitmap.width > 1600 || bitmap.height > 1600) {
             val maxDim = maxOf(bitmap.width, bitmap.height)
-            val scale = 1200f / maxDim
+            val scale = 1600f / maxDim
             Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
         } else {
             bitmap
@@ -604,6 +581,15 @@ class GeminiRepository(
     }
 
     companion object {
+        /** Short text lines: an entry should be back in seconds or not at all (the phone guesses). */
+        internal const val TEXT_TIMEOUT_SECONDS = 25L
+
+        /** One photo up and a short answer back, on a phone network. */
+        internal const val RECEIPT_TIMEOUT_SECONDS = 45L
+
+        /** An Insights or trip answer: a thinking model writing a paragraph. */
+        internal const val ASK_TIMEOUT_SECONDS = 60L
+
         /** Google's current legacy Flash model; every call in this class uses the same one. */
         private const val MODEL = "gemini-3.5-flash"
         private const val TAG = "GeminiRepository"
@@ -682,4 +668,24 @@ data class ParseChoices(val expenseCategories: List<String>, val incomeCategorie
             Categories.paymentMethods(prefs),
         )
     }
+}
+
+/** What reading a typed or spoken line produced. [failure] is set only when the AI was tried and not used. */
+data class TextParseOutcome(val result: ParsedTransactionResult, val failure: AiFailure?)
+
+/** What reading a bill or payment screenshot produced. */
+sealed interface ReceiptReadResult {
+    /** [missingAmount]: it read the image but found no total, so the amount needs filling in. */
+    data class Read(val entry: ParsedTransactionResult, val missingAmount: Boolean) : ReceiptReadResult
+    data class Failed(val reason: AiFailure) : ReceiptReadResult
+}
+
+/**
+ * JSON inside a Markdown fence ("```json ... ```"). responseMimeType asks for bare JSON, but a
+ * model can still wrap it, and a fenced answer failed to parse and read as a broken one.
+ */
+internal fun stripFence(text: String): String {
+    val t = text.trim()
+    if (!t.startsWith("```")) return t
+    return t.removePrefix("```json").removePrefix("```JSON").removePrefix("```").removeSuffix("```").trim()
 }

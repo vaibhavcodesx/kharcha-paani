@@ -41,6 +41,10 @@ object AiContext {
     internal fun spokenDate(date: LocalDate): String =
         "${date.dayOfMonth} ${date.month.name.lowercase().replaceFirstChar { it.uppercase() }}"
 
+    /** "September 2026". A model quotes "2026-09" back verbatim; nobody says a month that way. */
+    internal fun spokenMonth(month: YearMonth): String =
+        "${month.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${month.year}"
+
     fun monthInReview(
         analytics: MonthlyAnalytics,
         days: List<DaySpend>,
@@ -67,7 +71,9 @@ object AiContext {
             appendLine("Days with nothing spent: ${elapsed.count { it.amount <= 0.0 }} of ${elapsed.size}")
             appendLine()
             appendLine("Spending per day:")
-            elapsed.filter { it.amount > 0.0 }.forEach { appendLine("- ${it.date}: ${rupees(it.amount)}") }
+            // Spoken for the same reason as the busiest day: these lines were ISO, and answers
+            // quoted them back as "2026-09-09".
+            elapsed.filter { it.amount > 0.0 }.forEach { appendLine("- ${spokenDate(it.date)}: ${rupees(it.amount)}") }
         }
     }
 
@@ -81,9 +87,18 @@ object AiContext {
         thisMonth: List<CategorySummary>,
         previous: Map<YearMonth, List<CategorySummary>>,
         month: YearMonth,
+        /**
+         * Today, so a month still in progress can say so. Without it an answer compared 23 days of
+         * September against three whole months and called categories "down" that simply hadn't
+         * happened yet. Null leaves the line out.
+         */
+        today: LocalDate? = null,
     ): String = buildString {
         val months = previous.keys.sorted()
-        appendLine("This month (${month}):")
+        appendLine("The month being read (${spokenMonth(month)}):")
+        if (today != null && YearMonth.from(today) == month && today.dayOfMonth < month.lengthOfMonth()) {
+            appendLine("This month is still in progress: day ${today.dayOfMonth} of ${month.lengthOfMonth()}. Its figures cover only the days so far.")
+        }
         if (thisMonth.isEmpty()) appendLine("- nothing spent")
         thisMonth.forEach { appendLine("- ${it.category}: ${rupees(it.amount)}") }
         appendLine()
@@ -93,7 +108,7 @@ object AiContext {
         } else {
             months.forEach { m ->
                 val summaries = previous[m].orEmpty()
-                appendLine("$m:")
+                appendLine("${spokenMonth(m)}:")
                 if (summaries.isEmpty()) appendLine("- nothing spent") else summaries.forEach { appendLine("- ${it.category}: ${rupees(it.amount)}") }
             }
             appendLine()
@@ -189,12 +204,22 @@ object AiContext {
             val first = dates.min()
             val last = dates.max()
             val days = ChronoUnit.DAYS.between(first, last) + 1
-            appendLine("Ran from $first to $last, which is $days day(s).")
+            appendLine("Ran from ${spokenDate(first)} to ${spokenDate(last)}, which is $days day(s).")
             if (days > 0) appendLine("That is ${rupees(details.totalExpenses / days)} a day across everyone.")
         }
 
+        // Two different questions, kept apart: "who carried the cost" is who paid up front, and the
+        // block used to have only each person's share, under a heading ("Who spent what") that read
+        // as either. Answers credited whoever ate most with paying for everything.
+        val paid = paidBy(details.transactions, members)
+        if (paid.isNotEmpty()) {
+            appendLine()
+            appendLine("Who paid up front:")
+            paid.forEach { (name, amount) -> appendLine("- $name: ${rupees(amount)}") }
+        }
+
         appendLine()
-        appendLine("Who spent what:")
+        appendLine("Each person's share of the spending (what their part came to):")
         shares.forEach { appendLine("- ${it.name}: ${rupees(it.amount)}") }
 
         appendLine()
@@ -215,6 +240,24 @@ object AiContext {
     }
 
     private fun entries(count: Int) = if (count == 1) "entry" else "entries"
+
+    /**
+     * Who paid for the group's expenses, by name, largest first. "You" for this account. An expense
+     * with no split was paid by whoever added it, which on this phone is only knowable for mine;
+     * a groupmate's unsplit one is left out rather than guessed.
+     */
+    fun paidBy(transactions: List<FullTransaction>, members: List<PersonEntity>): List<Pair<String, Double>> {
+        val names = members.associate { it.id to it.name }
+        val totals = linkedMapOf<String, Double>()
+        for (full in transactions) {
+            val tx = full.transaction
+            if (tx.type.equals("income", ignoreCase = true)) continue
+            val payerId = full.split?.paidByPersonId ?: if (tx.isOwnedByMe) -1L else continue
+            val name = if (payerId == -1L) "You" else names[payerId] ?: continue
+            totals[name] = (totals[name] ?: 0.0) + tx.amount
+        }
+        return totals.mapValues { roundPaisa(it.value) }.toList().sortedByDescending { it.second }
+    }
 
     /** Whether [Overspending] and [WhatToChange] have enough history to say anything. */
     fun hasEnoughHistory(previous: Map<YearMonth, List<CategorySummary>>): Boolean =

@@ -10,8 +10,8 @@ sealed interface AskState {
 
     data class Answered(val text: String) : AskState
 
-    /** No answer came back. The question is still there to try again. */
-    data object Failed : AskState
+    /** No answer came back, and why when it's known. The question is still there to try again. */
+    data class Failed(val reason: AiFailure? = null) : AskState
 }
 
 /**
@@ -42,7 +42,7 @@ data class AskBoard(
 
     fun answered(prompt: AiPrompt, text: String): AskBoard = copy(states = states + (prompt to AskState.Answered(text)))
 
-    fun failed(prompt: AiPrompt): AskBoard = copy(states = states + (prompt to AskState.Failed))
+    fun failed(prompt: AiPrompt, reason: AiFailure? = null): AskBoard = copy(states = states + (prompt to AskState.Failed(reason)))
 
     /** Shows what this question already has, without asking again. */
     fun select(prompt: AiPrompt): AskBoard = copy(selected = prompt)

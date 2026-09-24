@@ -13,13 +13,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.vaibhav.kharchapaani.domain.AiFailure
 import com.vaibhav.kharchapaani.domain.AiPrompt
+import com.vaibhav.kharchapaani.domain.askMessage
 import com.vaibhav.kharchapaani.domain.AskBoard
 import com.vaibhav.kharchapaani.domain.AskState
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -48,6 +51,8 @@ fun AskSection(
     possessive: String,
     onAsk: (AiPrompt) -> Unit,
     modifier: Modifier = Modifier,
+    /** Why a question failed, when known, so the line under it can say what to do about it. */
+    failureOf: (AiPrompt) -> AiFailure? = { null },
 ) {
     Column(
         modifier
@@ -85,6 +90,7 @@ fun AskSection(
                 hasSpending = hasSpending,
                 asksLeft = asksLeft,
                 onRetry = { board.selected?.let(onAsk) },
+                failure = board.selected?.let(failureOf),
             )
         }
     }
@@ -106,6 +112,11 @@ fun AskAnswer(
     modifier: Modifier = Modifier,
     /** What the empty state says. The group sheet has one button, not a row of questions. */
     idleMessage: String = "Pick a question. Nothing runs until you tap one.",
+    /**
+     * Why it failed, when known. "Couldn't get an answer just now" covered being offline, being out
+     * of the day's free quota and the key being refused alike, and each wants something different.
+     */
+    failure: AiFailure? = null,
 ) {
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         when {
@@ -142,7 +153,11 @@ fun AskAnswer(
                 style = MaterialTheme.typography.bodyMedium,
             )
 
-            state is AskState.Failed -> RetryLine("Couldn't get an answer just now.", onRetry)
+            // No retry where retrying can't help: a build with no key, or a key Google refuses.
+            state is AskState.Failed && (failure == AiFailure.NoKey || failure == AiFailure.KeyRefused) ->
+                Text(failure?.askMessage().orEmpty(), style = MaterialTheme.typography.bodyMedium, color = WarmAmberLight)
+
+            state is AskState.Failed -> RetryLine(failure?.askMessage() ?: "Couldn't get an answer just now.", onRetry)
 
             else -> Text(idleMessage, style = MaterialTheme.typography.bodyMedium)
         }
@@ -151,8 +166,10 @@ fun AskAnswer(
 
 @Composable
 private fun RetryLine(message: String, onRetry: () -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        Text(message, style = MaterialTheme.typography.bodyMedium, color = WarmAmberLight)
+    // The message takes what's left, so a longer, specific reason wraps instead of pushing
+    // "Try again" off the card.
+    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
+        Text(message, style = MaterialTheme.typography.bodyMedium, color = WarmAmberLight, modifier = Modifier.weight(1f, fill = false))
         KpButton(
             label = "Try again",
             onClick = onRetry,
