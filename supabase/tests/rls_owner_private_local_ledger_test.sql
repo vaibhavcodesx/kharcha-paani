@@ -1,6 +1,6 @@
--- Checks for STAGED migration supabase/staged/20260923000000_owner_private_local_ledger.sql.
--- Not applied to live. Run with the staged file copied into a migrations directory (see
--- docs/local-friend-sync-v2.md for the one-liner).
+-- Checks for migration 20260923000000_owner_private_local_ledger, applied to live on 2026-09-24.
+-- 33/33 on the local harness and 33/33 against live (run so that it could only roll back: the
+-- final statement raises with the results), leaving nothing behind.
 --
 -- Same conventions as the other suites: one transaction ending in ROLLBACK, one result row per
 -- check, nothing left behind.
@@ -53,10 +53,19 @@ exception when others then
   perform public._record(p_test, false, sqlstate || ': ' || sqlerrm);
 end $$;
 
+create function public._expect_state(p_test text, p_sql text, p_state text) returns void language plpgsql as $$
+begin
+  execute p_sql;
+  perform public._record(p_test, false, 'succeeded, but should have failed with ' || p_state);
+exception when others then
+  perform public._record(p_test, sqlstate = p_state, sqlstate || ': ' || sqlerrm);
+end $$;
+
 grant all on public._rls_results to authenticated, anon;
 grant usage on sequence public._rls_results_n_seq to authenticated, anon;
 grant execute on function public._as(uuid), public._record(text, boolean, text),
-  public._expect_error(text, text), public._expect_ok(text, text), public._expect_value(text, text, bigint)
+  public._expect_error(text, text), public._expect_ok(text, text), public._expect_value(text, text, bigint),
+  public._expect_state(text, text, text)
   to authenticated, anon;
 
 insert into auth.users (id, email, raw_user_meta_data) values
@@ -207,6 +216,18 @@ select public._as('00000000-0000-4000-8000-00000000d001');
 
 select public._expect_value('a stranger sees nothing',
   $q$ select (select count(*) from public.local_splits) + (select count(*) from public.local_settlements) $q$, 0);
+
+-- TRUNCATE ignores RLS entirely, and this project's default privileges grant it on every new table
+-- to anon and authenticated (see 20260914033124). Either would wipe every account's private
+-- ledger at once. DELETE too: there's no delete policy, but the privilege shouldn't exist either.
+select public._expect_state('a signed-in user cannot truncate everyone''s local splits',
+  $q$ truncate public.local_splits $q$, '42501');
+select public._expect_state('or everyone''s local settlements',
+  $q$ truncate public.local_settlements $q$, '42501');
+select public._expect_state('nor hard-delete a local split',
+  $q$ delete from public.local_splits $q$, '42501');
+select public._expect_state('nor hard-delete a local settlement',
+  $q$ delete from public.local_settlements $q$, '42501');
 
 set local role anon;
 select public._expect_error('and anon cannot even ask',

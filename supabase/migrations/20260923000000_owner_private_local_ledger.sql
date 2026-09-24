@@ -1,6 +1,5 @@
--- STAGED, NOT APPLIED. Adds new tables with new RLS policies, which is a hard stop under this
--- project's rules: it waits for owner review. Kept out of supabase/migrations/ on purpose so no
--- `db push` can apply it by accident; move it there once approved.
+-- APPLIED to the live project on 2026-09-24, after owner review (new tables with new RLS
+-- policies, a hard stop under this project's rules). 29/29 on the local harness before applying.
 --
 -- Tested on the local harness: supabase/tests/rls_owner_private_local_ledger_test.sql.
 -- See docs/local-friend-sync-v2.md for the why.
@@ -138,8 +137,13 @@ create policy local_splits_update on public.local_splits
   );
 
 -- No delete policy: removal is a soft delete (deleted_at), like every other synced table.
+--
+-- Privileges are revoked from *both* client roles before granting back: this project's default
+-- privileges give anon and authenticated ALL on every new table, and TRUNCATE ignores RLS, so a
+-- grant alone would have left any signed-in user able to wipe every account's private ledger.
+-- Caught before applying, 2026-09-24 (the same gap 20260914033124 closed on the older tables).
 
-revoke all on public.local_splits from anon;
+revoke all on public.local_splits from anon, authenticated;
 grant select, insert, update on public.local_splits to authenticated;
 
 -- ------------------------------------------------------------
@@ -261,7 +265,7 @@ create policy local_settlements_update on public.local_settlements
   using (owner_id = (select auth.uid()))
   with check (owner_id = (select auth.uid()));
 
-revoke all on public.local_settlements from anon;
+revoke all on public.local_settlements from anon, authenticated;
 grant select, insert, update on public.local_settlements to authenticated;
 
 commit;
