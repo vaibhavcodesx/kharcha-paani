@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import com.vaibhav.kharchapaani.ui.shell.AppTab
 import com.vaibhav.kharchapaani.ui.shell.KpDock
+import com.vaibhav.kharchapaani.ui.shell.tabSwipe
 import com.vaibhav.kharchapaani.ui.theme.KpMotion
 import com.vaibhav.kharchapaani.ui.theme.LocalHazeState
 import dev.chrisbanes.haze.hazeSource
@@ -403,6 +404,8 @@ fun SplitFlowApp(
                 .fillMaxSize()
                 .hazeSource(hazeState)
                 .statusBarsPadding()
+                // Sideways between tabs, only where nothing on screen wanted the drag (see TabSwipe).
+                .tabSwipe(current = currentTab, count = AppTab.entries.size, onSelect = { viewModel.setTab(it) })
         ) {
             // On tablets and unfolded phones, full-width rows and figures are hard to read.
             AnimatedContent(

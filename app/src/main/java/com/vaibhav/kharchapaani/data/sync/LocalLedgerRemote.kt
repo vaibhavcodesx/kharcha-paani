@@ -17,13 +17,13 @@ import kotlin.time.ExperimentalTime
 /**
  * Whether splits and IOUs with friends who have no account sync to the owner's private tables.
  *
- * **Off** until `supabase/staged/20260923000000_owner_private_local_ledger.sql` is reviewed and
- * applied (docs/local-friend-sync-v2.md). With it off nothing here is ever called, and every request
- * the app makes is exactly what it was before: the tables it talks to don't exist yet, and asking
- * for them would fail every sync.
+ * **On since 1.3.0** (owner decision, after `20260923000000_owner_private_local_ledger` was applied
+ * and verified on 2026-09-24). Only records made from then on sync: anything already on a phone as
+ * LOCAL_ONLY stays there, even when edited (see LedgerRepository.syncStateFor). Turning this off
+ * again stops new records syncing and leaves the tables untouched. docs/local-friend-sync-v2.md.
  */
 object LocalFriendSync {
-    const val ENABLED = false
+    const val ENABLED = true
 }
 
 private const val LOCAL_SPLIT_TOMBSTONE = "local_split:"

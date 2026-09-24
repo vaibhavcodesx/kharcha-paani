@@ -1,5 +1,13 @@
 package com.vaibhav.kharchapaani.ui.screens
 
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.FocusRequester
 import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -242,19 +250,41 @@ private fun FeedHeader(
                     .padding(horizontal = Spacing.l),
             ) {
                 Icon(KpIcons.Search, contentDescription = null, tint = SubMutedWarmGray, modifier = Modifier.size(18.dp))
-                Column(Modifier.weight(1f).padding(start = Spacing.m)) {
-                    if (searchQuery.isEmpty()) {
-                        Text("Merchant, category or note", style = MaterialTheme.typography.bodyLarge, color = SubMutedWarmGray)
-                    }
-                    BasicTextField(
-                        value = searchQuery,
-                        onValueChange = onSearchChange,
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = OffWhiteText),
-                        cursorBrush = SolidColor(WarmAmberPrimary),
-                        modifier = Modifier.fillMaxWidth().testTag("search_activity_input"),
-                    )
-                }
+                // The placeholder is drawn inside the field, in the same box. It used to sit in a
+                // Column above the field, so it floated a line higher than the text you typed and
+                // tapping it didn't focus anything.
+                val focus = remember { FocusRequester() }
+                val focusManager = LocalFocusManager.current
+                LaunchedEffect(Unit) { focus.requestFocus() }
+                BasicTextField(
+                    value = searchQuery,
+                    onValueChange = onSearchChange,
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = OffWhiteText),
+                    cursorBrush = SolidColor(WarmAmberPrimary),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    // Results filter as you type; the key just puts the keyboard away to show them.
+                    keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = Spacing.m)
+                        .focusRequester(focus)
+                        .testTag("search_activity_input"),
+                    decorationBox = { field ->
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (searchQuery.isEmpty()) {
+                                Text(
+                                    "Merchant, category or note",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = SubMutedWarmGray,
+                                    maxLines = 1,
+                                    modifier = Modifier.testTag("search_activity_placeholder"),
+                                )
+                            }
+                            field()
+                        }
+                    },
+                )
             }
         }
         FilterRow(selected = selectedFilter, onSelect = onFilterChange, modifier = Modifier.padding(top = Spacing.m))

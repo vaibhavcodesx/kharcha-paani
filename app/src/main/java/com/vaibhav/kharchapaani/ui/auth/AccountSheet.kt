@@ -275,9 +275,11 @@ fun AccountSheetContent(
         Text(
             // Said precisely: "your expenses back up" was true only of unsplit ones, and a split or IOU
             // with a friend who isn't on the app never leaves the phone. The last line is the remedy.
-            text = "Your own expenses back up to your account and keep working offline. Shared groups sync " +
-                "with everyone in them. Splits and IOUs with friends who aren't on the app stay on this " +
-                "phone only, so back them up below. Signing out keeps everything already here.",
+            // Since 1.3.0 new splits and IOUs with friends who aren't on the app back up too; the
+            // ones recorded before that stay on this phone (owner rule), so the backup still matters.
+            text = "Your expenses back up to your account and keep working offline, including splits and " +
+                "IOUs with friends who aren't on the app. Ones from before version 1.3 stay on this " +
+                "phone only, so back those up below. Shared groups sync with everyone in them.",
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = Spacing.s, bottom = Spacing.xl),
         )
