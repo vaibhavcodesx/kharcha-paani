@@ -116,7 +116,7 @@ class SupabaseGroupRemote(private val supabase: SupabaseClient) : GroupRemote {
 
     override suspend fun groupExpensesChangedSince(since: String?, limit: Int): List<RemoteGroupTransaction> =
         supabase.from("transactions").select(
-            Columns.raw("*, splits(id, paid_by, split_type, total_amount, split_shares(id, profile_id, share_amount, percentage, deleted_at))")
+            Columns.raw("*, splits(id, paid_by, split_type, total_amount, split_shares(id, profile_id, local_name, share_amount, percentage, deleted_at))")
         ) {
             filter {
                 filterNot("group_id", FilterOperator.IS, null)

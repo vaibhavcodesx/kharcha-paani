@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.vaibhav.kharchapaani.data.model.ShareInput
 import com.vaibhav.kharchapaani.data.model.SplitMode
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
 import org.junit.Assert.assertEquals
@@ -37,13 +38,16 @@ class ConfirmSheetContentTest {
         onIsSplitChange: (Boolean) -> Unit = {},
         onSave: () -> Unit = {},
         categories: List<String> = com.vaibhav.kharchapaani.domain.Categories.expenseCategories(com.vaibhav.kharchapaani.domain.CategoryPrefs()),
+        isSplit: Boolean = false,
+        splitMode: SplitMode = SplitMode.EQUAL,
+        shares: List<ShareInput> = emptyList(),
     ) {
         SplitFlowTheme {
             ConfirmSheetContent(
                 isParsing = false, isEditing = false, notice = notice, type = "expense", amount = amount, merchant = "McDonald's",
                 category = category, paymentMethod = "GPay", note = "", date = 0L, groupId = null,
-                availableGroups = emptyList(), isSplit = false, splitMode = SplitMode.EQUAL, paidByPersonId = -1L,
-                shares = emptyList(), onTypeChange = {}, onAmountChange = {}, onMerchantChange = {},
+                availableGroups = emptyList(), isSplit = isSplit, splitMode = splitMode, paidByPersonId = -1L,
+                shares = shares, onTypeChange = {}, onAmountChange = {}, onMerchantChange = {},
                 onCategoryChange = onCategoryChange, onPaymentMethodChange = {}, onNoteChange = {}, onDateChange = {},
                 onGroupIdChange = {}, onIsSplitChange = onIsSplitChange, onSplitModeChange = {}, onPaidByPersonIdChange = {},
                 onTogglePersonShare = {}, onExactAmountChange = { _, _ -> }, onPercentageChange = { _, _ -> },
@@ -72,6 +76,26 @@ class ConfirmSheetContentTest {
 
         composeTestRule.onNodeWithTag("confirm_save_button").assertIsNotEnabled()
         composeTestRule.onNodeWithText("Add an amount").assertExists()
+    }
+
+    @Test
+    fun `a split that doesn't add up can't be saved, and the button says why`() {
+        // It used to save anyway: a shared-group sync that could only fail, or in a local split,
+        // money that silently fell out of everyone's balance.
+        var saves = 0
+        composeTestRule.setContent {
+            Sheet(
+                amount = "1000", isSplit = true, splitMode = SplitMode.EXACT, onSave = { saves++ },
+                shares = listOf(
+                    ShareInput(personId = -1L, personName = "You", amount = 300.0),
+                    ShareInput(personId = 2L, personName = "Rohan", amount = 500.0),
+                ),
+            )
+        }
+
+        composeTestRule.onNodeWithTag("confirm_save_button").assertIsNotEnabled()
+        composeTestRule.onAllNodesWithText("₹200 still to assign").fetchSemanticsNodes().let { assertEquals(true, it.isNotEmpty()) }
+        assertEquals(0, saves)
     }
 
     @Test

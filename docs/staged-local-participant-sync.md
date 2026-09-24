@@ -1,7 +1,10 @@
 # Splits with a friend who has no account
 
-**Status: the schema is APPLIED to live (2026-09-20, after review). The client half is not
-written — see PRD.md, "Local-friend splits: the client half".**
+**Status: the schema is APPLIED to live (2026-09-20, after review).**
+
+> **Superseded in part, 2026-09-23.** This design only covers a *group* expense: a personal
+> expense can't have a `splits` row at all, so the common case still had nowhere to go. See
+> [`local-friend-sync-v2.md`](local-friend-sync-v2.md) for why, and for the staged fix.
 
 So the database can hold this today and nothing writes it yet. That is deliberate: turning it on
 means `SyncDao.pendingPersonalTransactions` stops filtering `isSplit = 0`, which changes what

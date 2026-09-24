@@ -33,6 +33,18 @@ class RemoteGroupsDecodingTest {
     }
 
     @Test
+    fun `a share for someone with no account decodes, named instead of profiled`() {
+        val withLocal = split.replace(
+            """{"id":"b","profile_id":"p2",""",
+            """{"id":"b","profile_id":null,"local_name":"Rohan",""",
+        )
+        val row = json.decodeFromString(RemoteGroupTransaction.serializer(), transaction(withLocal))
+
+        assertEquals(listOf("p1", null), row.activeShares.map { it.profileId })
+        assertEquals("Rohan", row.activeShares[1].localName)
+    }
+
+    @Test
     fun `an array embed and a missing split both decode`() {
         assertEquals("s1", json.decodeFromString(RemoteGroupTransaction.serializer(), transaction("[$split]")).split?.id)
         assertNull(json.decodeFromString(RemoteGroupTransaction.serializer(), transaction("null")).split)

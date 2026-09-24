@@ -135,6 +135,12 @@ data class PendingRemoteDeleteEntity(
     companion object {
         const val TYPE_TRANSACTION = "transaction"
         const val TYPE_SETTLEMENT = "settlement"
+
+        /** Keyed by the personal expense's remoteId: its private split, not the expense. */
+        const val TYPE_LOCAL_SPLIT = "local_split"
+
+        /** A settlement or IOU with a friend who has no account (`local_settlements`). */
+        const val TYPE_LOCAL_SETTLEMENT = "local_settlement"
     }
 }
 

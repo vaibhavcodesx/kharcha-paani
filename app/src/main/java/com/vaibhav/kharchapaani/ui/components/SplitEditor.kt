@@ -133,23 +133,7 @@ fun SplitEditor(
             }
         }
 
-        val total = amount.toDoubleOrNull() ?: 0.0
-        val selected = shares.filter { it.isSelected }
-        val problem = when (splitMode) {
-            SplitMode.EXACT -> {
-                val left = total - selected.sumOf { it.amount }
-                when {
-                    abs(left) <= 0.005 -> null
-                    left > 0 -> "${Money.format(left)} still to assign"
-                    else -> "${Money.format(-left)} more than the total"
-                }
-            }
-            SplitMode.PERCENTAGE -> {
-                val sum = selected.sumOf { it.percentage }
-                if (abs(100.0 - sum) > 0.1) "Percentages add up to ${String.format(Locale.US, "%.1f", sum)}%, not 100%" else null
-            }
-            SplitMode.EQUAL -> null
-        }
+        val problem = splitProblem(amount, splitMode, shares)
         if (problem != null) {
             Text(problem, style = MaterialTheme.typography.bodyMedium, color = WarmAmberLight)
         }
@@ -253,3 +237,32 @@ private fun NumberBox(value: String, prefix: String, suffix: String, onValueChan
 private val SquircleCheck = SquircleShape(7.dp)
 
 private const val ME = -1L
+
+/**
+ * What stops this split from adding up, or null when it does. The same text shows under the
+ * shares and on the disabled Save button: a split that didn't add up used to save anyway, which in
+ * a shared group meant a sync that could only ever fail, and in a local one meant the unassigned
+ * money silently fell out of everyone's balance.
+ */
+internal fun splitProblem(amount: String, splitMode: SplitMode, shares: List<ShareInput>): String? {
+    val total = amount.toDoubleOrNull() ?: 0.0
+    val selected = shares.filter { it.isSelected }
+    if (selected.isEmpty()) return "Pick who's in the split"
+    return when (splitMode) {
+        SplitMode.EXACT -> {
+            val left = total - selected.sumOf { it.amount }
+            when {
+                abs(left) <= 0.005 -> null
+                left > 0 -> "${Money.format(left)} still to assign"
+                else -> "${Money.format(-left)} more than the total"
+            }
+        }
+        SplitMode.PERCENTAGE -> {
+            val sum = selected.sumOf { it.percentage }
+            // Each share is rounded to 0.1%, so an even split of 3 is 33.3 x 3 = 99.9 (and 99.899...
+            // in floating point, which a flat 0.1 tolerance refused). Allow half a step per person.
+            if (abs(100.0 - sum) > 0.05 * selected.size + 1e-9) "Percentages add up to ${String.format(Locale.US, "%.1f", sum)}%, not 100%" else null
+        }
+        SplitMode.EQUAL -> null
+    }
+}

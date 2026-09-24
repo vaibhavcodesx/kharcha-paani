@@ -32,5 +32,5 @@ Scope" section.
 
 Confirm with me before starting each numbered priority area in the PRD.
 
-
-
+Record what changed in CHANGELOG.md (Keep a Changelog format), not in PRD.md.
+PRD.md is the stable spec: update it only when a spec or decision changes.

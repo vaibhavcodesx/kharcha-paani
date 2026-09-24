@@ -101,7 +101,20 @@ class SubscriptionsContentTest {
         // The date itself is formatted for the phone's locale, so just that a next charge is named.
         composeTestRule.onNodeWithText("Monthly · next", substring = true).performScrollTo()
         composeTestRule.onNodeWithTag("cancel_subscription_4").performScrollTo().performClick()
+        // Nothing yet: it asks first, because it can't be undone.
+        assertEquals(null, cancelled)
+        composeTestRule.onNodeWithTag("cancel_subscription_confirm").performClick()
 
         assertEquals(4L, cancelled)
+    }
+
+    @Test
+    fun `keeping it from the question cancels nothing`() {
+        show(listOf(netflix()))
+
+        composeTestRule.onNodeWithTag("cancel_subscription_4").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Keep it").performClick()
+
+        assertEquals(null, cancelled)
     }
 }

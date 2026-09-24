@@ -332,10 +332,11 @@ class GroupSyncEngine(
                 remoteId = it.id,
             )
         }
-        val pulledShares = row.activeShares.map { share ->
+        val pulledShares = row.activeShares.mapNotNull { share ->
+            val personId = sharePersonId(share, ownedByMe = row.ownerId == selfProfileId) ?: return@mapNotNull null
             SplitShareEntity(
                 splitId = 0L,
-                personId = personIdFor(share.profileId),
+                personId = personId,
                 shareAmount = share.shareAmount,
                 percentage = share.percentage,
             )
@@ -442,6 +443,19 @@ class GroupSyncEngine(
         if (personId == ME) selfProfileId else dao.personById(personId)?.profileId
 
     /** Someone who has left the group can still appear on old expenses; they get a placeholder row. */
+    /**
+     * A share for a friend with no account belongs to whoever added the expense: on their phone it
+     * is that friend, found by name or re-created, which is how it comes back after a reinstall.
+     * On anyone else's phone the name means nothing and would only plant a stranger in their
+     * friends list, so the share is left out; their own balance never depended on it.
+     */
+    private suspend fun sharePersonId(share: RemoteShare, ownedByMe: Boolean): Long? {
+        share.profileId?.let { return personIdFor(it) }
+        val name = share.localName?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        if (!ownedByMe) return null
+        return LocalPeople.idFor(dao, name)
+    }
+
     private suspend fun personIdFor(profileId: String): Long =
         if (profileId == selfProfileId) ME else dao.personByProfileId(profileId)?.id ?: upsertPerson(profileId, null)
 

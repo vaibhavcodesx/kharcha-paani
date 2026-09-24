@@ -45,7 +45,13 @@ data class RemoteGroup(
 @Serializable
 data class RemoteShare(
     val id: String,
-    @SerialName("profile_id") val profileId: String,
+    /**
+     * Null for a friend with no account, who is named in [localName] instead; the server's
+     * `split_shares_participant_is_one_of_two` constraint guarantees exactly one is set. Was
+     * non-null here, so one such share anywhere in a group would fail every member's pull.
+     */
+    @SerialName("profile_id") val profileId: String? = null,
+    @SerialName("local_name") val localName: String? = null,
     @SerialName("share_amount") val shareAmount: Double,
     val percentage: Double? = null,
     @SerialName("deleted_at") val deletedAt: String? = null,

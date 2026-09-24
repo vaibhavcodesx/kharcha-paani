@@ -35,6 +35,7 @@ import com.vaibhav.kharchapaani.data.model.SplitMode
 import com.vaibhav.kharchapaani.data.model.StatementParseResult
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
 import com.vaibhav.kharchapaani.data.repository.ArchivedGroupException
+import com.vaibhav.kharchapaani.ui.components.splitProblem
 import com.vaibhav.kharchapaani.data.remote.AppIdentity
 import com.vaibhav.kharchapaani.data.repository.GeminiRepository
 import com.vaibhav.kharchapaani.data.repository.LocalBackupRepository
@@ -509,14 +510,27 @@ class MainViewModel(
         _selectedFilter.value = filter
     }
 
+    // The first of this account's own choices, not a hardcoded name: hiding "PopUPI" or "Food" in
+    // Categories & payment methods used to leave every new entry defaulting to the hidden one.
+    private fun defaultCategory(type: String): String {
+        val preferred = if (type == "income") "Income (Client)" else "Food"
+        val choices = Categories.categoriesFor(type, categoryPrefs.value)
+        return preferred.takeIf { it in choices } ?: choices.firstOrNull() ?: preferred
+    }
+
+    private fun defaultPaymentMethod(): String {
+        val choices = Categories.paymentMethods(categoryPrefs.value)
+        return "PopUPI".takeIf { it in choices } ?: choices.firstOrNull() ?: "PopUPI"
+    }
+
     fun openManualAdd(defaultType: String = "expense") {
         _parseNotice.value = null
         _editingTransactionId.value = null
         _type.value = defaultType
         _amount.value = ""
         _merchant.value = ""
-        _category.value = if (defaultType == "income") "Income (Client)" else "Food"
-        _paymentMethod.value = "PopUPI"
+        _category.value = defaultCategory(defaultType)
+        _paymentMethod.value = defaultPaymentMethod()
         _note.value = ""
         _date.value = System.currentTimeMillis()
         _groupId.value = null
@@ -528,12 +542,14 @@ class MainViewModel(
     }
 
     fun openManualAddForGroup(targetGroupId: Long) {
+        // A notice left from an earlier bill that couldn't be read doesn't belong on a fresh entry.
+        _parseNotice.value = null
         _editingTransactionId.value = null
         _type.value = "expense"
         _amount.value = ""
         _merchant.value = ""
-        _category.value = "Food"
-        _paymentMethod.value = "PopUPI"
+        _category.value = defaultCategory("expense")
+        _paymentMethod.value = defaultPaymentMethod()
         _note.value = ""
         _date.value = System.currentTimeMillis()
         _groupId.value = targetGroupId
@@ -659,6 +675,7 @@ class MainViewModel(
             val friendNames = people.value.map { it.name }
             val parsed = geminiRepo.parseMessyText(rawText, friendNames, parseChoices())
             applyParsedResult(parsed)
+            if (parsed.guessedOnPhone) _parseNotice.value = "Couldn't reach the AI, so this is a best guess from your words. Check it before saving."
             _isParsing.value = false
             _isConfirmSheetOpen.value = true
         }
@@ -1042,6 +1059,11 @@ class MainViewModel(
     fun saveCurrentTransaction(askForGroup: Boolean = true) {
         val total = _amount.value.toDoubleOrNull() ?: 0.0
         if (total <= 0) return
+        // The sheet disables Save and says why; this keeps any other caller from saving it anyway.
+        if (_isSplit.value) splitProblem(_amount.value, _splitMode.value, _shares.value)?.let {
+            _statusMessage.value = it
+            return
+        }
 
         // A split with groupmates outside a shared group never reaches them (decision 1): ask first.
         if (askForGroup && _isSplit.value && !isSharedGroup(_groupId.value)) {

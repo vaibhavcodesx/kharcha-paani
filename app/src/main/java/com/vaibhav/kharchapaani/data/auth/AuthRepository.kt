@@ -31,6 +31,7 @@ import java.io.IOException
 class AuthRepository(
     private val supabase: SupabaseClient,
     private val googleWebClientId: String,
+    private val clock: () -> Long = System::currentTimeMillis,
 ) {
     private val auth get() = supabase.auth
 
@@ -70,23 +71,54 @@ class AuthRepository(
         nonce: GoogleNonce,
     ): GoogleTokenResult {
         val credentialManager = CredentialManager.create(activityContext)
+        suspend fun ask(request: GetCredentialRequest): Credential =
+            credentialManager.getCredential(activityContext, request).credential
+
+        val started = clock()
         val credential = try {
-            credentialManager.getCredential(activityContext, accountPickerRequest(nonce)).credential
+            ask(accountPickerRequest(nonce))
         } catch (e: NoCredentialException) {
             // No Google account on the device yet. The Sign in with Google flow can add one,
             // which the account picker above can't.
-            try {
-                credentialManager.getCredential(activityContext, addAccountRequest(nonce)).credential
-            } catch (e: GetCredentialException) {
-                return GoogleTokenResult.Done(mapCredentialFailure(e, hadNoAccount = true))
+            return askButtonFlow(::ask, nonce, hadNoAccount = true)
+        } catch (e: GetCredentialCancellationException) {
+            if (!PickerCancellation.wasSilent(clock() - started, e.message)) {
+                return GoogleTokenResult.Done(GoogleSignInResult.Cancelled)
             }
+            // Nobody saw a picker: Google is holding the bottom sheet back after earlier
+            // dismissals. The button flow is Google's own dialog and isn't under that cooldown.
+            Log.w(TAG, "Account picker cancelled without being shown (${e.message}); trying the button flow")
+            return askButtonFlow(::ask, nonce, hadNoAccount = false)
         } catch (e: GetCredentialException) {
             return GoogleTokenResult.Done(mapCredentialFailure(e, hadNoAccount = false))
         }
 
-        return extractIdToken(credential)
+        return tokenFrom(credential)
+    }
+
+    private fun tokenFrom(credential: Credential): GoogleTokenResult =
+        extractIdToken(credential)
             ?.let { GoogleTokenResult.Token(it) }
             ?: GoogleTokenResult.Done(GoogleSignInResult.Failure(GoogleSignInFailure.GoogleUnavailable))
+
+    private suspend fun askButtonFlow(
+        ask: suspend (GetCredentialRequest) -> Credential,
+        nonce: GoogleNonce,
+        hadNoAccount: Boolean,
+    ): GoogleTokenResult {
+        val started = clock()
+        return try {
+            tokenFrom(ask(addAccountRequest(nonce)))
+        } catch (e: GetCredentialCancellationException) {
+            val silent = PickerCancellation.wasSilent(clock() - started, e.message)
+            if (silent) Log.w(TAG, "Sign in with Google dialog also cancelled unseen: ${e.message}")
+            GoogleTokenResult.Done(
+                if (silent) GoogleSignInResult.Failure(GoogleSignInFailure.PickerBlocked)
+                else GoogleSignInResult.Cancelled
+            )
+        } catch (e: GetCredentialException) {
+            GoogleTokenResult.Done(mapCredentialFailure(e, hadNoAccount))
+        }
     }
 
     private fun accountPickerRequest(nonce: GoogleNonce) = GetCredentialRequest.Builder()

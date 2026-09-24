@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -402,6 +403,10 @@ fun DailyFlowChart(
             }
         }
 
+        // The chart's own axis. Without it the strip below sat exactly where an axis would, scrolled
+        // to the last six days, and read as one: a spike on the 20th looked like it was on the 23rd.
+        FlowAxis(elapsed.map { it.date.dayOfMonth })
+
         // The exact numbers, because the chart only answers "was that a lot".
         //
         // Scrolled to the end, not the start: a month opens on the 1st, and early in the month the
@@ -428,6 +433,23 @@ fun DailyFlowChart(
                     onClick = { onSelectDay(if (index == selectedDay) null else index) },
                 )
             }
+        }
+    }
+}
+
+/** First day, last day and two between, placed where those days fall on the chart above. */
+@Composable
+private fun FlowAxis(days: List<Int>) {
+    if (days.size < 2) return
+    val ticks = listOf(0, days.lastIndex / 3, days.lastIndex * 2 / 3, days.lastIndex).distinct()
+    Box(Modifier.fillMaxWidth().padding(top = Spacing.xs).height(16.dp)) {
+        ticks.forEach { index ->
+            Text(
+                text = days[index].toString(),
+                style = MaterialTheme.typography.labelSmall,
+                color = SubMutedWarmGray,
+                modifier = Modifier.align(BiasAlignment(horizontalBias = -1f + 2f * index / days.lastIndex, verticalBias = 0f)),
+            )
         }
     }
 }

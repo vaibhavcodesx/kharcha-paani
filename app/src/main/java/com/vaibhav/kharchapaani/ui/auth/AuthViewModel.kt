@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.vaibhav.kharchapaani.BuildConfig
 import com.vaibhav.kharchapaani.data.auth.AuthRepository
 import com.vaibhav.kharchapaani.data.auth.AuthState
+import com.vaibhav.kharchapaani.data.auth.GoogleSignInFailure
 import com.vaibhav.kharchapaani.data.auth.GoogleSignInResult
 import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
 import io.github.jan.supabase.exceptions.RestException
@@ -64,7 +65,11 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             _uiState.update {
                 it.copy(
                     isSigningIn = false,
-                    signInFailure = (result as? GoogleSignInResult.Failure)?.reason,
+                    signInFailure = when (result) {
+                        is GoogleSignInResult.Failure -> result.reason
+                        GoogleSignInResult.Cancelled -> GoogleSignInFailure.Dismissed
+                        GoogleSignInResult.Success -> null
+                    },
                 )
             }
         }
