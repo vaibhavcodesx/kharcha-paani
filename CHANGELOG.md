@@ -17,12 +17,19 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
-- Signing back in after signing out could do nothing at all: no account picker, no message, and
-  no request reaching the server. Google's Credential Manager holds its bottom-sheet picker back
-  for a while after it has been dismissed a few times and reports that as "cancelled", which the
-  app treated as the person changing their mind. A cancel that arrives faster than anyone could
-  react, or carries Google's cooldown message, now retries with Google's own sign-in dialog, which
-  is not under that cooldown, and says so plainly if that is refused too.
+- Release builds couldn't sign in with Google at all: Google refuses any build whose signing
+  certificate isn't registered as an Android OAuth client, and only the debug certificate was.
+  That is set up in Google Cloud, not in the app (docs/distribution.md, step 4b), and fixes every
+  copy already installed once done. The app used to report this as "No account picked"; it now
+  says Google didn't accept this copy of the app.
+- Pressing Back on the account picker was taken for Google's own cooldown and told the person
+  the picker had never opened. Found on the release build before publishing.
+
+- No sign-in attempt ends in silence any more. Every way Google can decline (a person closing the
+  picker, Google holding the picker back after repeated dismissals, or Google refusing the app)
+  now leaves a specific message, and a cancel that arrives faster than anyone could react is
+  retried once with Google's own sign-in dialog. The cooldown case is handled but was never
+  reproduced: about 17 dismissals on an emulator didn't trigger it.
 - A group's sync could stop for every member if any expense in it had a share naming a friend
   with no account. The server has allowed such shares since the 2026-09-20 migration, but the app
   still required every share to have a profile and failed to decode the whole page.
