@@ -1,11 +1,18 @@
 # Local-friend splits and IOUs in the cloud (v2)
 
-**Status (2026-09-24): server half staged, not applied, waiting for owner review. Client half built
-and tested behind `LocalFriendSync.ENABLED = false`.**
+**Status (2026-09-24): server half APPLIED to live after owner review. Client half built and
+tested, still switched off (`LocalFriendSync.ENABLED = false`); turning it on is a separate
+decision the owner takes.**
 
-- Migration: `supabase/staged/20260923000000_owner_private_local_ledger.sql`. It's kept out of
-  `supabase/migrations/` so nothing can apply it by accident.
-- Test: `supabase/tests/rls_owner_private_local_ledger_test.sql`, **29/29 on the local harness**.
+- Migration: `supabase/migrations/20260923000000_owner_private_local_ledger.sql`, applied
+  2026-09-24.
+- **Caught just before applying:** the reviewed version granted privileges to `authenticated`
+  without revoking first. This project's default privileges give `authenticated` ALL on new
+  tables, TRUNCATE included, and TRUNCATE ignores RLS: any signed-in user could have wiped every
+  account's private ledger. Reproduced on the harness (the truncate succeeded), fixed by revoking
+  from both client roles before granting back, and pinned by four new checks.
+- Against live: **33/33**, rolled back leaving nothing behind; advisors unchanged from before.
+- Test: `supabase/tests/rls_owner_private_local_ledger_test.sql`, **33/33 on the local harness**.
   Each refusal was checked to fail for the intended reason (constraint `23514` vs RLS `42501`).
 - The existing suites still pass with it in place: `rls_local_participant_shares_test` 12/12,
   `rls_groups_test` 100/100, `rls_payer_edit_test` 28/28, `rls_leave_and_immutability_test` 51/51.

@@ -13,6 +13,19 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- **(server)** `local_splits`, `local_settlements` and `save_local_split`, applied 2026-09-24
+  after review: a private, owner-only place for splits and IOUs with friends who have no account.
+  33/33 against live. The app's sync for them is built but still switched off.
+
+### Security
+
+- **(server)** Those two tables revoke every privilege from `anon` and `authenticated` before
+  granting back select, insert and update. The reviewed draft only granted, which under this
+  project's default privileges would have left TRUNCATE (which ignores RLS) available to every
+  signed-in user. Caught on the harness before it reached live.
+
 ## [1.2.0] - 2026-09-24
 
 ### Fixed
@@ -48,13 +61,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - `PRD.md` is back to being the spec: vision, architecture and decisions. What changed and when
   now lives here.
 
-### Staged, not applied
+### Built, switched off
 
-- **(server)** `supabase/staged/20260923000000_owner_private_local_ledger.sql`: owner-private
-  `local_splits` and `local_settlements` tables and an atomic `save_local_split` function, so a
-  personal split or IOU with a friend who has no account can be kept in the cloud. New tables
-  with new RLS policies, so it waits for owner review. 29/29 on the local harness. See
-  [`docs/local-friend-sync-v2.md`](docs/local-friend-sync-v2.md).
 - The app side of that sync, built and tested but switched off (`LocalFriendSync.ENABLED`) until
   the migration is applied: new personal splits and IOUs with friends who have no account go up
   with their split in one call, come back by name on a reinstall, and never take history with
