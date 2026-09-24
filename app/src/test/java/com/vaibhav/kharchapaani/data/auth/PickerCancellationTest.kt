@@ -34,4 +34,13 @@ class PickerCancellationTest {
         assertFalse(PickerCancellation.wasSilent(elapsedMs = 4_000, message = "activity is cancelled by the user."))
         assertFalse(PickerCancellation.wasSilent(elapsedMs = 4_000, message = null))
     }
+
+    @Test
+    fun `Google refusing the app is recognised, and is not mistaken for either kind of cancel`() {
+        // Logged verbatim by the 1.2.0 release build after an account was picked.
+        val message = "[16] Account reauth failed."
+        assertTrue(PickerCancellation.wasRefusedByGoogle(message))
+        assertFalse(PickerCancellation.wasSilent(elapsedMs = 58_799, message = message))
+        assertFalse(PickerCancellation.wasRefusedByGoogle("[16] Cancelled by user."))
+    }
 }

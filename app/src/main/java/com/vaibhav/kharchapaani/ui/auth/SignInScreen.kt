@@ -254,6 +254,9 @@ internal fun GoogleSignInFailure.message(): String = when (this) {
     GoogleSignInFailure.PickerBlocked ->
         "Google didn't open the account picker. It holds it back for a few minutes after it's " +
             "been closed several times — wait a moment and try again."
+    GoogleSignInFailure.AppNotAccepted ->
+        "Google didn't accept this copy of the app for sign-in. That's a setup problem on our side, " +
+            "not your account. Try again later, or ask whoever sent you the app."
     GoogleSignInFailure.Dismissed -> "No account picked. Tap Continue with Google when you're ready."
 }
 

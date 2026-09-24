@@ -111,6 +111,28 @@ versionName = "1.1.0"  // what people see; match the git tag, minus the "v"
 Rough guide: bug fixes `1.0.0 → 1.0.1`, new features `1.0.0 → 1.1.0`, something
 that breaks or resets data `1.0.0 → 2.0.0`.
 
+## 4b. Google Sign-In: register the release certificate (required)
+
+**Without this, no release build can sign in.** Found on 2026-09-24 smoke-testing 1.2.0:
+every release-signed build (1.0.0, 1.1.0, 1.2.0) failed Google sign-in with
+`[16] Account reauth failed.` after an account was picked, while debug builds worked. The Android
+OAuth client in Google Cloud was registered in step 2 of the migration with the **debug**
+keystore's SHA-1 only, and Google only issues ID tokens to a package + certificate it knows.
+
+In [Google Cloud Console](https://console.cloud.google.com/) → the project that owns the Web
+client ID in `.env` → **APIs & Services → Credentials → Create credentials → OAuth client ID**:
+
+| Field | Value |
+|---|---|
+| Application type | Android |
+| Package name | `com.vaibhav.kharchapaani` |
+| SHA-1 certificate fingerprint | `1F:29:43:41:59:3E:45:87:11:9B:8B:51:BB:69:94:CF:B3:74:70:37` (the release keystore; confirm with `apksigner verify --print-certs` as in step 3) |
+
+Keep the existing debug client; add this one beside it. No app change and no new release are
+needed for existing installs: Google checks the certificate at sign-in time, so it starts working
+on every copy already installed (allow a few minutes to propagate). If you ever change keystores,
+this has to be done again.
+
 ## 5. The Gemini API key
 
 **The problem.** The key is compiled into `BuildConfig` from `.env` by the

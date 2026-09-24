@@ -28,4 +28,14 @@ internal object PickerCancellation {
         val text = message?.lowercase() ?: return false
         return systemMarkers.any { it in text }
     }
+
+    /**
+     * "[16] Account reauth failed." is what Credential Manager says when Google won't vouch for this
+     * app: most often its package and signing certificate aren't registered as an Android OAuth
+     * client, which is exactly why every release-signed build failed to sign in while debug builds
+     * worked (found on the 1.2.0 release build, 2026-09-24). It arrives as a *cancel*, after the
+     * person has picked an account, so without this it read as "No account picked".
+     */
+    fun wasRefusedByGoogle(message: String?): Boolean =
+        message?.contains("reauth failed", ignoreCase = true) == true
 }
