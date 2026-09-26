@@ -2,10 +2,9 @@ package com.vaibhav.kharchapaani.widget
 
 import android.content.Context
 import com.vaibhav.kharchapaani.data.db.LedgerDatabases
-import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
+import com.vaibhav.kharchapaani.data.remote.BackgroundAuth
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.domain.DailySpend
-import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.YearMonth
@@ -19,9 +18,8 @@ import java.time.ZoneId
 internal object WidgetData {
 
     suspend fun load(context: Context): WidgetSummary {
-        val auth = SupabaseClientProvider.get(context).auth
-        auth.awaitInitialization()
-        val userId = auth.currentUserOrNull()?.id ?: return WidgetSummary.signedOut()
+        // Not auth.awaitInitialization(): in the background that waits until the app is next opened.
+        val userId = BackgroundAuth.signedInUserId(context) ?: return WidgetSummary.signedOut()
 
         val repository = LedgerRepository(LedgerDatabases.open(context, userId))
         val analytics = repository.monthlyAnalytics.first()

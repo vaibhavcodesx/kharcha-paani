@@ -8,10 +8,9 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.vaibhav.kharchapaani.data.db.LedgerDatabases
-import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
+import com.vaibhav.kharchapaani.data.remote.BackgroundAuth
 import com.vaibhav.kharchapaani.data.settings.AppSettings
 import com.vaibhav.kharchapaani.util.NotificationHelper
-import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
@@ -47,10 +46,9 @@ class DailyReminderWorker(context: Context, params: WorkerParameters) : Coroutin
 
     private suspend fun remindIfNothingLogged() {
         if (!NotificationHelper.canNotify(applicationContext)) return
-        val auth = SupabaseClientProvider.get(applicationContext).auth
-        auth.awaitInitialization()
-        // Signed out: there's no one's day to remind about.
-        val userId = auth.currentUserOrNull()?.id ?: return
+        // Signed out: there's no one's day to remind about. Not auth.awaitInitialization(): in the
+        // background that waits until the app is next opened, which is exactly when this isn't needed.
+        val userId = BackgroundAuth.signedInUserId(applicationContext) ?: return
         // The same instance the app uses when it's open; never closed here.
         val database = LedgerDatabases.open(applicationContext, userId)
         val zone = ZoneId.systemDefault()

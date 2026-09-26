@@ -89,7 +89,7 @@ class GeminiRepository(
         if (apiKey.isBlank()) return@withContext TextParseOutcome(onPhone, failure = null)
 
         val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
-        val body = jsonRequest(listOf(textPart(textPrompt(rawText, knownFriends, choices, today))), temperature = 0.1, json = true)
+        val body = jsonRequest(listOf(textPart(textPrompt(rawText, knownFriends, choices, today))), temperature = 0.1, json = true, thinking = QUICK_THINKING)
         when (val outcome = call(body, apiKey, TEXT_TIMEOUT_SECONDS, "text")) {
             is CallOutcome.Failed -> TextParseOutcome(onPhone.copy(guessedOnPhone = true), outcome.reason)
             is CallOutcome.Ok -> {
@@ -175,7 +175,7 @@ class GeminiRepository(
             textPart(receiptPrompt(choices, today)),
             JSONObject().put("inlineData", JSONObject().put("mimeType", "image/jpeg").put("data", bitmapToBase64(bitmap))),
         )
-        when (val outcome = call(jsonRequest(parts, temperature = 0.1, json = true), apiKey, RECEIPT_TIMEOUT_SECONDS, "receipt")) {
+        when (val outcome = call(jsonRequest(parts, temperature = 0.1, json = true, thinking = QUICK_THINKING), apiKey, RECEIPT_TIMEOUT_SECONDS, "receipt")) {
             is CallOutcome.Failed -> ReceiptReadResult.Failed(outcome.reason)
             is CallOutcome.Ok -> {
                 val parsed = outcome.json() ?: return@withContext ReceiptReadResult.Failed(AiFailure.Unreadable)
@@ -263,13 +263,25 @@ class GeminiRepository(
 
     private fun textPart(text: String): JSONObject = JSONObject().put("text", text)
 
-    private fun jsonRequest(parts: List<JSONObject>, temperature: Double, json: Boolean, maxOutputTokens: Int? = null): JSONObject =
+    /**
+     * @param thinking a Gemini `thinkingLevel`, or null for the model's own default. Reading one line
+     *   or one receipt doesn't need the default's long think: measured on gemini-3.6-flash, "low"
+     *   answered a receipt in 2 s instead of 5 with the same fields.
+     */
+    private fun jsonRequest(
+        parts: List<JSONObject>,
+        temperature: Double,
+        json: Boolean,
+        maxOutputTokens: Int? = null,
+        thinking: String? = null,
+    ): JSONObject =
         JSONObject().apply {
             put("contents", JSONArray().put(JSONObject().put("parts", JSONArray().apply { parts.forEach { put(it) } })))
             put("generationConfig", JSONObject().apply {
                 if (json) put("responseMimeType", "application/json")
                 put("temperature", temperature)
                 maxOutputTokens?.let { put("maxOutputTokens", it) }
+                thinking?.let { put("thinkingConfig", JSONObject().put("thinkingLevel", it)) }
             })
         }
 
@@ -293,8 +305,20 @@ class GeminiRepository(
      * instead of each catching `Exception` and landing on the same vague message.
      */
     private fun call(body: JSONObject, apiKey: String, timeoutSeconds: Long, label: String): CallOutcome {
+        val first = callModel(MODEL, body, apiKey, timeoutSeconds, label)
+        // Google's "high demand" 503s and per-model rate limits come and go by the minute and are
+        // per model. One retry on the lighter model turns most of them into an answer instead of a
+        // notice. Anything else (offline, a refused key, a block) would fail the same way again.
+        if (first !is CallOutcome.Failed || first.reason !in RETRY_ON_FALLBACK) return first
+        Log.w(TAG, "$label: $MODEL unavailable (${first.reason}); retrying on $FALLBACK_MODEL")
+        // The fallback gets its own default thinking: it may not take the same levels.
+        val plain = JSONObject(body.toString()).apply { optJSONObject("generationConfig")?.remove("thinkingConfig") }
+        return callModel(FALLBACK_MODEL, plain, apiKey, timeoutSeconds, "$label (fallback)")
+    }
+
+    private fun callModel(model: String, body: JSONObject, apiKey: String, timeoutSeconds: Long, label: String): CallOutcome {
         val request = Request.Builder()
-            .url("${endpoint(MODEL)}?key=$apiKey")
+            .url("${endpoint(model)}?key=$apiKey")
             .post(body.toString().toRequestBody(jsonMediaType))
             .build()
         val timed = client.newBuilder()
@@ -590,8 +614,21 @@ class GeminiRepository(
         /** An Insights or trip answer: a thinking model writing a paragraph. */
         internal const val ASK_TIMEOUT_SECONDS = 60L
 
-        /** Google's current legacy Flash model; every call in this class uses the same one. */
-        private const val MODEL = "gemini-3.5-flash"
+        /**
+         * The model every call uses. Was gemini-3.5-flash, which Google now lists as legacy: on
+         * 2026-09-27 it took 15-18 s to parse "dinner 1,299 with Hist yesterday gpay" even with
+         * thinking off, and 20 s for a receipt, when it answered at all (503 "high demand" was
+         * common). gemini-3.6-flash answered the same in 3-5 s and the receipt in 2 s.
+         */
+        private const val MODEL = "gemini-3.6-flash"
+
+        /** Where a call goes when [MODEL] is overloaded or rate-limited: 1-3 s, separate quota. */
+        private const val FALLBACK_MODEL = "gemini-3.5-flash-lite"
+
+        private val RETRY_ON_FALLBACK = setOf(AiFailure.ServerError, AiFailure.RateLimited)
+
+        /** Thinking for quick reads (a typed line, a receipt): enough to get dates and splits right. */
+        private const val QUICK_THINKING = "low"
         private const val TAG = "GeminiRepository"
 
         /** Short calls: one line of text, or one photo. */

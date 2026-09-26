@@ -87,6 +87,42 @@ class GeminiAiPathsTest {
     }
 
     @Test
+    fun `an overloaded model gets one retry on the lighter one, which answers`() = runTest {
+        val models = mutableListOf<String>()
+        val result = askWith { chain ->
+            models += chain.request().url.encodedPath.substringAfter("models/").substringBefore(":")
+            if (models.size == 1) respond(503, """{"error":{"status":"UNAVAILABLE"}}""")(chain)
+            else respond(200, answer("Food was ₹900."))(chain)
+        }
+
+        assertEquals("Food was ₹900.", (result as AiAskResult.Answer).text)
+        assertEquals(listOf("gemini-3.6-flash", "gemini-3.5-flash-lite"), models)
+    }
+
+    @Test
+    fun `quick reads ask for low thinking, and the fallback goes without it`() = runTest {
+        val bodies = mutableListOf<JSONObject>()
+        repo { chain ->
+            val buffer = okio.Buffer().also { chain.request().body!!.writeTo(it) }
+            bodies += JSONObject(buffer.readUtf8())
+            respond(429, """{"error":{"status":"RESOURCE_EXHAUSTED"}}""")(chain)
+        }.parseText("chai 60 cash", now = now, zone = zone)
+
+        assertEquals(2, bodies.size)
+        assertEquals("low", bodies[0].getJSONObject("generationConfig").getJSONObject("thinkingConfig").getString("thinkingLevel"))
+        assertFalse(bodies[1].getJSONObject("generationConfig").has("thinkingConfig"))
+    }
+
+    @Test
+    fun `a refused key isn't retried on another model`() = runTest {
+        var calls = 0
+        val result = askWith { chain -> calls++; respond(403, """{"error":{"status":"PERMISSION_DENIED"}}""")(chain) }
+
+        assertEquals(AiFailure.KeyRefused, reasonOf(result))
+        assertEquals(1, calls)
+    }
+
+    @Test
     fun `a build without a key says so and never calls out`() = runTest {
         var called = false
         val repo = GeminiRepository(
