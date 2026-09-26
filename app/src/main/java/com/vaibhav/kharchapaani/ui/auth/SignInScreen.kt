@@ -3,6 +3,7 @@ package com.vaibhav.kharchapaani.ui.auth
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -33,13 +34,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -51,6 +51,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.data.auth.GoogleSignInFailure
+import com.vaibhav.kharchapaani.ui.components.pressBounce
+import com.vaibhav.kharchapaani.ui.theme.BrandGradient
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -58,6 +60,7 @@ import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
+import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
@@ -66,6 +69,25 @@ import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 private val GoogleButtonFill = Color(0xFFF2F2F2)
 private val GoogleButtonText = Color(0xFF1F1F1F)
 
+/**
+ * Below this height the preview of the app would push the sign-in button off the first screen, so
+ * it's left out; the sentence under the title already says the same thing.
+ */
+private val PreviewMinHeight = 720.dp
+
+/** Past this the text alone fills the screen, and the preview would only add scrolling. */
+private const val PreviewMaxFontScale = 1.3f
+
+/**
+ * The first thing anyone sees, in the app's own language rather than a one-off style:
+ * - the brand gradient on the wordmark, which is this screen's hero the way the month's spend is
+ *   Home's (BrandGradient is reserved for heroes and the primary action);
+ * - the amber/lime glow the screen always had in its corner, now drifting slowly (SignInBackdrop);
+ * - a preview of two real-looking activity rows, split then settled;
+ * - the action on a glass pane at thumb reach, like the dock and sheet chrome.
+ * Everything arrives once, staggered, on the app's emphasized decelerate curve; nothing moves with
+ * system animations turned off.
+ */
 @Composable
 fun SignInScreen(
     isSigningIn: Boolean,
@@ -74,51 +96,55 @@ fun SignInScreen(
     onDismissFailure: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    BoxWithConstraints(
-        modifier = modifier
-            .fillMaxSize()
-            .background(CharcoalBg)
-            .drawBehind {
-                // Radius scales with the window so the glow reads the same on any density/size.
-                drawRect(
-                    Brush.radialGradient(
-                        colors = listOf(WarmAmberPrimary.copy(alpha = 0.16f), Color.Transparent),
-                        center = Offset.Zero,
-                        radius = size.maxDimension,
-                    )
+    val reducedMotion = rememberReducedMotion()
+    val progress = rememberEntranceProgress(reducedMotion)
+
+    Box(modifier.fillMaxSize().background(CharcoalBg)) {
+        // Edge to edge, under the status and navigation bars; the content below is inset.
+        SignInBackdrop(reducedMotion = reducedMotion, modifier = Modifier.matchParentSize())
+
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding(),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            val showPreview = maxHeight >= PreviewMinHeight && LocalDensity.current.fontScale <= PreviewMaxFontScale
+            // Pins the intro to the top and the action to the bottom (thumb reach), but scrolls
+            // instead of overlapping when a short screen or large font scale can't fit both.
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 480.dp)
+                    .verticalScroll(rememberScrollState())
+                    .heightIn(min = maxHeight)
+                    .padding(horizontal = Spacing.xl),
+                verticalArrangement = Arrangement.SpaceBetween,
+            ) {
+                SignInIntro(progress = progress, modifier = Modifier.padding(top = 72.dp))
+                if (showPreview) {
+                    LedgerPreview(progress = progress, modifier = Modifier.padding(top = Spacing.xxl))
+                }
+                SignInActions(
+                    isSigningIn = isSigningIn,
+                    failure = failure,
+                    onSignInWithGoogle = onSignInWithGoogle,
+                    onDismissFailure = onDismissFailure,
+                    modifier = Modifier
+                        .padding(top = 40.dp, bottom = Spacing.l)
+                        .entrance(progress, EntranceDelay.ACTIONS),
                 )
             }
-            .statusBarsPadding()
-            .navigationBarsPadding(),
-        contentAlignment = Alignment.TopCenter,
-    ) {
-        // Pins the intro to the top and the CTA to the bottom (thumb reach), but scrolls instead
-        // of overlapping when a short screen or large font scale can't fit both.
-        Column(
-            modifier = Modifier
-                .widthIn(max = 480.dp)
-                .verticalScroll(rememberScrollState())
-                .heightIn(min = maxHeight)
-                .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-        ) {
-            SignInIntro(modifier = Modifier.padding(top = 72.dp))
-            SignInActions(
-                isSigningIn = isSigningIn,
-                failure = failure,
-                onSignInWithGoogle = onSignInWithGoogle,
-                onDismissFailure = onDismissFailure,
-                modifier = Modifier.padding(top = 40.dp, bottom = 24.dp),
-            )
         }
     }
 }
 
 @Composable
-private fun SignInIntro(modifier: Modifier = Modifier) {
+private fun SignInIntro(progress: () -> Float, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
         Box(
             modifier = Modifier
+                .entrance(progress, EntranceDelay.LOGO)
                 .size(64.dp)
                 .clip(KpShapes.medium)
                 .background(CharcoalElevated)
@@ -134,13 +160,16 @@ private fun SignInIntro(modifier: Modifier = Modifier) {
         Spacer(Modifier.height(28.dp))
         Text(
             text = "Kharcha Paani",
-            style = MaterialTheme.typography.displayLarge,
-            modifier = Modifier.semantics { heading() },
+            style = BrandGradient.text(MaterialTheme.typography.displayLarge),
+            modifier = Modifier
+                .entrance(progress, EntranceDelay.TITLE)
+                .semantics { heading() },
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(Spacing.m))
         Text(
             text = "Log what you spend, split it with friends, and settle up without the awkward maths.",
             style = MaterialTheme.typography.bodyLarge.copy(color = MutedWarmGray),
+            modifier = Modifier.entrance(progress, EntranceDelay.LINE),
         )
     }
 }
@@ -153,9 +182,13 @@ private fun SignInActions(
     onDismissFailure: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
     Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .signInGlass(KpShapes.large)
+            .padding(Spacing.l),
+        verticalArrangement = Arrangement.spacedBy(Spacing.l),
     ) {
         if (failure != null) {
             SignInFailureNotice(failure = failure, onDismiss = onDismissFailure)
@@ -169,6 +202,7 @@ private fun SignInActions(
             onClick = onSignInWithGoogle,
             enabled = !isSigningIn,
             shape = KpShapes.medium,
+            interactionSource = interactionSource,
             colors = ButtonDefaults.buttonColors(
                 containerColor = GoogleButtonFill,
                 contentColor = GoogleButtonText,
@@ -178,6 +212,8 @@ private fun SignInActions(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 56.dp)
+                // The same press spring and haptic as every other primary control in the app.
+                .pressBounce(interactionSource, scaleDown = 0.97f)
                 .testTag("sign_in_google_button"),
         ) {
             if (isSigningIn) {
@@ -193,7 +229,7 @@ private fun SignInActions(
                     modifier = Modifier.size(20.dp),
                 )
             }
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(Spacing.m))
             Text(
                 text = if (isSigningIn) "Signing in…" else "Continue with Google",
                 style = MaterialTheme.typography.titleMedium.copy(
@@ -227,7 +263,7 @@ private fun SignInFailureNotice(
             tint = WarmAmberLight,
             modifier = Modifier.size(20.dp),
         )
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(Spacing.m))
         Text(
             text = failure.message(),
             style = MaterialTheme.typography.bodyMedium.copy(color = OffWhiteText),
@@ -260,7 +296,7 @@ internal fun GoogleSignInFailure.message(): String = when (this) {
     GoogleSignInFailure.Dismissed -> "No account picked. Tap Continue with Google when you're ready."
 }
 
-@Preview
+@Preview(heightDp = 891, widthDp = 411)
 @Composable
 private fun SignInScreenPreview() {
     SplitFlowTheme {

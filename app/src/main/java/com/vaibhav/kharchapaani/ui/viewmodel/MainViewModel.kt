@@ -82,6 +82,10 @@ import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.ui.components.NewSubscription
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.format.Money
+import com.vaibhav.kharchapaani.reminder.ReminderRule
+import com.vaibhav.kharchapaani.reminder.ReminderScheduler
+import com.vaibhav.kharchapaani.reminder.ReminderSettings
+import com.vaibhav.kharchapaani.util.NotificationHelper
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 import java.io.File
 import java.time.LocalDate
@@ -170,6 +174,47 @@ class MainViewModel(
 
     fun updateCategoryPrefs(change: (CategoryPrefs) -> CategoryPrefs) {
         viewModelScope.launch { settings.updateCategoryPrefs(userId, change) }
+    }
+
+    /** The daily "nothing logged today" reminder (on at 9 PM unless changed). See DailyReminderWorker. */
+    val reminder: StateFlow<ReminderSettings> = settings.reminder
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ReminderSettings())
+
+    /** Whether the app has already asked for notification permission by itself (it does so once). */
+    val notificationPermissionAsked: StateFlow<Boolean> = settings.notificationPermissionAsked
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    fun setReminderEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settings.setReminderEnabled(enabled)
+            ReminderScheduler.apply(getApplication(), settings.reminder.first(), replace = true)
+        }
+    }
+
+    fun setReminderTime(minuteOfDay: Int) {
+        viewModelScope.launch {
+            settings.setReminderMinute(minuteOfDay)
+            ReminderScheduler.apply(getApplication(), settings.reminder.first(), replace = true)
+        }
+    }
+
+    fun markNotificationPermissionAsked() {
+        viewModelScope.launch { settings.markNotificationPermissionAsked() }
+    }
+
+    init {
+        // Books the reminder if nothing is booked yet (first run, or after it was switched back on
+        // elsewhere); KEEP leaves an existing booking alone, so opening the app never moves it.
+        viewModelScope.launch { ReminderScheduler.apply(getApplication(), settings.reminder.first(), replace = false) }
+        // A reminder still in the shade after something has been logged today would be wrong.
+        viewModelScope.launch {
+            ledgerRepo.allTransactions.collect { transactions ->
+                val zone = ZoneId.systemDefault()
+                if (!ReminderRule.nothingLoggedToday(transactions, LocalDate.now(zone), zone)) {
+                    NotificationHelper.clearDailyReminder(getApplication())
+                }
+            }
+        }
     }
 
     val subscriptions: StateFlow<List<SubscriptionEntity>> = ledgerRepo.subscriptions
@@ -515,18 +560,11 @@ class MainViewModel(
         _selectedFilter.value = filter
     }
 
-    // The first of this account's own choices, not a hardcoded name: hiding "PopUPI" or "Food" in
-    // Categories & payment methods used to leave every new entry defaulting to the hidden one.
-    private fun defaultCategory(type: String): String {
-        val preferred = if (type == "income") "Income (Client)" else "Food"
-        val choices = Categories.categoriesFor(type, categoryPrefs.value)
-        return preferred.takeIf { it in choices } ?: choices.firstOrNull() ?: preferred
-    }
+    // The defaults chosen in Categories & payment methods (UPI and Food out of the box), falling back
+    // to the first choice still offered if the chosen one has since been hidden. See Categories.
+    private fun defaultCategory(type: String): String = Categories.defaultCategory(type, categoryPrefs.value)
 
-    private fun defaultPaymentMethod(): String {
-        val choices = Categories.paymentMethods(categoryPrefs.value)
-        return "PopUPI".takeIf { it in choices } ?: choices.firstOrNull() ?: "PopUPI"
-    }
+    private fun defaultPaymentMethod(): String = Categories.defaultPaymentMethod(categoryPrefs.value)
 
     fun openManualAdd(defaultType: String = "expense") {
         _parseNotice.value = null
@@ -893,7 +931,8 @@ class MainViewModel(
         if (newType == "income" && !isIncomeCategory) {
             _category.value = Categories.incomeCategories(prefs).first()
         } else if (newType == "expense" && isIncomeCategory) {
-            _category.value = Categories.expenseCategories(prefs).first()
+            // Back to spending: the chosen default, not whatever happens to be first in the list.
+            _category.value = defaultCategory("expense")
         }
     }
 

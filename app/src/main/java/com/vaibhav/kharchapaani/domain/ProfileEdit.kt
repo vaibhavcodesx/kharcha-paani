@@ -8,13 +8,25 @@ object ProfileEdit {
     /**
      * Friendly faces and things, picked to read at 30dp in a member stack. Null means initials. All are
      * Emoji 3.0 or older, so they draw on Android 7 (minSdk 24) without a downloaded emoji font; 🧋 and
-     * 🥳 didn't.
+     * 🥳 didn't. That rule is also why the obvious Indian picks aren't here: 🛺, 🪔, 🦚, 🥭 and 🪁 are
+     * Emoji 11 or later and show as boxes on older phones.
+     *
+     * Order is the order of the grid: faces, animals, food, then play and travel. Adding is safe
+     * (the server only limits length); removing one would turn a saved avatar back into initials.
      */
     val avatarEmoji: List<String> = listOf(
-        "😎", "🤓", "😜", "😇", "🤠", "🙃", "😺", "🐶",
-        "🦊", "🐼", "🐯", "🦁", "🐸", "🐵", "🦄", "🐙",
-        "🌻", "🌈", "🔥", "⚡", "🍕", "🍩", "☕", "🍉",
-        "⚽", "🏏", "🎸", "🎮", "✈️", "🏍️", "🚀", "🌍",
+        // Faces
+        "😎", "🤓", "😜", "😇", "🤠", "🙃", "😁", "😂",
+        "🤗", "🤔", "😴", "🤑", "😺", "🤖", "👻", "🐵",
+        // Animals
+        "🐶", "🦊", "🐼", "🐯", "🦁", "🐸", "🦄", "🐙",
+        "🐘", "🐒", "🦉", "🐢", "🐧", "🐰", "🦋", "🐝",
+        // Food and drink
+        "🍛", "🍚", "🍵", "☕", "🌶️", "🍕", "🍔", "🍩",
+        "🍉", "🍌", "🍦", "🍿", "🌻", "🌈", "🔥", "⚡",
+        // Play, travel and things
+        "⚽", "🏏", "🏸", "🎸", "🎧", "🎮", "🎨", "📚",
+        "✈️", "🚆", "🚗", "🏍️", "🚀", "🏖️", "🏔️", "🌍",
     )
 
     /** The name as it will be saved (spaces tidied), or null when it can't be saved. */

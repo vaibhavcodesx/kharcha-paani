@@ -82,6 +82,19 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/splitflow_widget_info" />
         </receiver>
+
+        <!-- The quick-add bar (widget/QuickAddWidgetProvider). -->
+        <receiver
+            android:name=".widget.QuickAddWidgetProvider"
+            android:exported="true"
+            android:label="Quick add">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_add_widget_info" />
+        </receiver>
     </application>
 
 </manifest>

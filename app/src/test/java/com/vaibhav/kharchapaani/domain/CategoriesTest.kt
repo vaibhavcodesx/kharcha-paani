@@ -68,6 +68,27 @@ class CategoriesTest {
     }
 
     @Test
+    fun `new entries start on UPI and Food unless another default is chosen`() {
+        assertEquals("UPI", Categories.defaultPaymentMethod(CategoryPrefs()))
+        assertEquals("Food", Categories.defaultCategory("expense", CategoryPrefs()))
+        val chosen = CategoryPrefs(defaultCategory = "Transport", defaultPaymentMethod = "Cash")
+        assertEquals("Cash", Categories.defaultPaymentMethod(chosen))
+        assertEquals("Transport", Categories.defaultCategory("expense", chosen))
+    }
+
+    @Test
+    fun `a chosen default that is later hidden gives way to the first one still offered`() {
+        val prefs = CategoryPrefs(defaultPaymentMethod = "Cash", hiddenPaymentMethods = setOf("Cash"), defaultCategory = "Transport", hiddenCategories = setOf("Transport"))
+        assertEquals(Categories.paymentMethods(prefs).first(), Categories.defaultPaymentMethod(prefs))
+        assertEquals(Categories.expenseCategories(prefs).first(), Categories.defaultCategory("expense", prefs))
+    }
+
+    @Test
+    fun `income never starts on the spending default`() {
+        assertEquals("Income (Client)", Categories.defaultCategory("income", CategoryPrefs(defaultCategory = "Transport")))
+    }
+
+    @Test
     fun `income categories are the income defaults and your own income ones`() {
         val prefs = CategoryPrefs(customIncome = listOf("Tutoring"), customExpense = listOf("Pets"))
 

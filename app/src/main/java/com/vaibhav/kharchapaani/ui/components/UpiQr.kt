@@ -85,9 +85,21 @@ fun QrCode(text: String, contentDescription: String, modifier: Modifier = Modifi
     }
 }
 
-/** What a friend scans to pay this account, with the ID to copy for anyone who'd rather type it. */
+/**
+ * What a friend scans to pay [payee], with the ID to copy for anyone who'd rather type it.
+ *
+ * [payingFromThisPhone] is true only when the person holding this phone is the one sending the
+ * money; only then is there a "Pay in a UPI app" button. It used to show every time, so on your
+ * own code ("they paid you", or your UPI card in settings) it opened a payment to yourself.
+ */
 @Composable
-fun UpiPaymentCard(payee: UpiPayee, modifier: Modifier = Modifier, amount: Double? = null, note: String? = null) {
+fun UpiPaymentCard(
+    payee: UpiPayee,
+    modifier: Modifier = Modifier,
+    amount: Double? = null,
+    note: String? = null,
+    payingFromThisPhone: Boolean = false,
+) {
     // Two codes, because both get used: the exact one settles the debt in a tap, and the open one
     // is what you want when the amount on screen isn't the amount being handed over — a part
     // payment, or a round number. Scanning the wrong one silently pays the wrong amount, so the
@@ -140,14 +152,21 @@ fun UpiPaymentCard(payee: UpiPayee, modifier: Modifier = Modifier, amount: Doubl
                 Text("Copy", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
             }
         }
-        // The same link the QR encodes, as something to tap. A QR needs a second device or a
-        // screenshot; on the phone that is already holding the debt, handing the link straight to a
-        // UPI app is both faster and one less thing that has to render correctly to work at all.
+        // A payment link to tap, for the phone that is sending the money. It always carries the
+        // amount being recorded, whichever code is showing: "Any amount" is for someone *scanning*
+        // a different figure, and that path works everywhere. An open-amount link launched as an
+        // intent is what UPI apps disagree on (the NPCI spec makes the amount editable, but apps
+        // treat intent launches their own way), and the person here has already typed what they're
+        // paying, so there is nothing for the UPI app to ask.
+        val payAmount = amount?.takeIf { it > 0 }
+        val payLink = remember(payee, payAmount, note) {
+            payAmount?.let { UpiLink.buildOrNull(payee.upiId, payee.name, it, note) }
+        }
         val context = LocalContext.current
-        KpButton(
-            label = if (shownAmount != null) "Pay ${Money.format(shownAmount)} in a UPI app" else "Open in a UPI app",
+        if (payingFromThisPhone && payLink != null && payAmount != null) KpButton(
+            label = "Pay ${Money.format(payAmount)} in a UPI app",
             onClick = {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(payLink))
                 try {
                     // A chooser rather than the default handler: most phones have several UPI apps
                     // and only one of them has the money in it.

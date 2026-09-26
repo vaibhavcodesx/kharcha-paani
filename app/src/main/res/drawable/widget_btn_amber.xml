@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- The primary action. Launchers can't draw the app's asymmetric leaf, so a plain 16dp radius. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="#FF7A3D" />
-    <corners android:radius="16dp" />
-</shape>

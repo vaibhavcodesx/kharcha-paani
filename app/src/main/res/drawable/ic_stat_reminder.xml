@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar icon for the daily reminder: a plain rupee sign. Android draws notification small
+     icons from the alpha channel only, so the colour logo would show as a white blob. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M7,4H17M7,8.5H17M7,4H10C12.9,4 14.6,5.9 14.6,8.2C14.6,10.6 12.9,12.4 10,12.4H7.5L15.5,20.5" />
+</vector>

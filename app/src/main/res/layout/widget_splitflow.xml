@@ -1,17 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Kharcha Paani's home-screen widget. Colours and type follow the app's tokens (CharcoalSurface,
-  OffWhiteText, the warm greys, amber and lime); no emoji. Text is 12sp or larger, amounts use
-  tabular figures, and every button is at least 48dp tall.
+  Kharcha Paani's main home-screen widget (4x2 by default, resizable).
+
+  Home in miniature: the month's spend in the brand gradient (rendered by GradientFigure, since a
+  TextView can't paint a gradient), today's spend beside it, the net balance as a chip, and the
+  brand-gradient "Log expense" with voice and Splits beside it. Glass card (widget_background),
+  the app's fonts via widget_styles, nothing below 12sp, every button at least 48dp.
+
+  Placeholders are dashes, not ₹0: the launcher shows this layout before the first update lands,
+  and a zero would read as a real figure.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
+    android:contentDescription="Open Kharcha Paani"
     android:orientation="vertical"
-    android:paddingHorizontal="16dp"
-    android:paddingVertical="14dp">
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="14dp"
+    android:paddingBottom="14dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -27,102 +36,84 @@
 
         <TextView
             android:id="@+id/widget_title"
+            style="@style/KpWidgetTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_weight="1"
-            android:fontFamily="sans-serif-medium"
-            android:maxLines="1"
-            android:text="Kharcha Paani"
-            android:textColor="#A09A8F"
-            android:textSize="13sp" />
+            android:text="Kharcha Paani" />
 
         <TextView
             android:id="@+id/widget_net_owed_badge"
+            style="@style/KpWidgetChip"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/widget_chip"
-            android:fontFamily="sans-serif-medium"
-            android:fontFeatureSettings="tnum"
-            android:maxLines="1"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="4dp"
-            android:text="All square"
-            android:textColor="#A09A8F"
-            android:textSize="12sp" />
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:text="—" />
     </LinearLayout>
 
-    <!-- The two figures sit centred in the space, with their labels on one baseline (centring each
-         column on its own put CAME IN lower than SPENT THIS MONTH). -->
+    <!-- The figures, centred in whatever height the launcher gives. -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:baselineAligned="true"
-        android:gravity="top"
-        android:orientation="horizontal">
-
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:baselineAlignedChildIndex="0"
-            android:orientation="vertical">
+            android:layout_gravity="center_vertical"
+            android:gravity="bottom"
+            android:orientation="horizontal">
 
-            <TextView
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/KpWidgetEyebrow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Spent this month" />
+
+                <!-- Scales down to fit when the widget is narrow or the figure is long. -->
+                <ImageView
+                    android:id="@+id/widget_month_spent_figure"
+                    android:layout_width="match_parent"
+                    android:layout_height="42dp"
+                    android:layout_marginTop="2dp"
+                    android:adjustViewBounds="true"
+                    android:contentDescription="Spent this month"
+                    android:scaleType="fitStart" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:letterSpacing="0.1"
-                android:text="SPENT THIS MONTH"
-                android:textColor="#8D887E"
-                android:textSize="12sp" />
+                android:layout_marginStart="12dp"
+                android:gravity="end"
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/widget_month_spent"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:fontFeatureSettings="tnum"
-                android:maxLines="1"
-                android:text="₹0"
-                android:textColor="#F4F0E8"
-                android:textSize="26sp" />
+                <TextView
+                    style="@style/KpWidgetEyebrow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Today" />
+
+                <TextView
+                    android:id="@+id/widget_today"
+                    style="@style/KpWidgetFigure"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="—" />
+            </LinearLayout>
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:baselineAlignedChildIndex="0"
-            android:gravity="end"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:letterSpacing="0.1"
-                android:text="CAME IN"
-                android:textColor="#8D887E"
-                android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/widget_month_income"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:fontFeatureSettings="tnum"
-                android:maxLines="1"
-                android:text="₹0"
-                android:textColor="#C6F24C"
-                android:textSize="18sp" />
-        </LinearLayout>
-    </LinearLayout>
     </FrameLayout>
 
     <LinearLayout
@@ -136,7 +127,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:background="@drawable/widget_btn_amber"
+            android:background="@drawable/widget_btn_brand"
             android:contentDescription="Log an expense"
             android:gravity="center"
             android:orientation="horizontal">
@@ -148,14 +139,12 @@
                 android:src="@drawable/ic_widget_add" />
 
             <TextView
+                style="@style/KpWidgetButtonLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
-                android:fontFamily="sans-serif-medium"
                 android:importantForAccessibility="no"
-                android:text="Log expense"
-                android:textColor="#0E0D0C"
-                android:textSize="14sp" />
+                android:text="Log expense" />
         </LinearLayout>
 
         <FrameLayout

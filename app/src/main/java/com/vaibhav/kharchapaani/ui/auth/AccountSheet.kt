@@ -1,5 +1,6 @@
 package com.vaibhav.kharchapaani.ui.auth
 
+import android.app.TimePickerDialog
 import android.text.format.DateUtils
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -41,6 +42,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -49,6 +51,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -64,6 +67,8 @@ import androidx.compose.ui.unit.sp
 import com.vaibhav.kharchapaani.data.auth.AuthState
 import com.vaibhav.kharchapaani.data.auth.Profile
 import com.vaibhav.kharchapaani.domain.ProfileEdit
+import com.vaibhav.kharchapaani.reminder.ReminderSchedule
+import com.vaibhav.kharchapaani.reminder.ReminderSettings
 import com.vaibhav.kharchapaani.ui.components.GlassActionBar
 import com.vaibhav.kharchapaani.ui.components.KpModalSheet
 import com.vaibhav.kharchapaani.ui.components.RowPosition
@@ -110,6 +115,11 @@ fun AccountSheet(
     onOpenUpi: () -> Unit = {},
     onOpenCategories: () -> Unit = {},
     onOpenSubscriptions: () -> Unit = {},
+    reminder: ReminderSettings = ReminderSettings(),
+    notificationsAllowed: Boolean = true,
+    onReminderEnabledChange: (Boolean) -> Unit = {},
+    onReminderTimeChange: (minuteOfDay: Int) -> Unit = {},
+    onAllowNotifications: () -> Unit = {},
 ) {
     KpModalSheet(onDismiss = onDismiss) {
         AccountSheetContent(
@@ -128,6 +138,11 @@ fun AccountSheet(
             onOpenUpi = onOpenUpi,
             onOpenCategories = onOpenCategories,
             onOpenSubscriptions = onOpenSubscriptions,
+            reminder = reminder,
+            notificationsAllowed = notificationsAllowed,
+            onReminderEnabledChange = onReminderEnabledChange,
+            onReminderTimeChange = onReminderTimeChange,
+            onAllowNotifications = onAllowNotifications,
         )
     }
 }
@@ -151,6 +166,11 @@ fun AccountSheetContent(
     onOpenUpi: () -> Unit = {},
     onOpenCategories: () -> Unit = {},
     onOpenSubscriptions: () -> Unit = {},
+    reminder: ReminderSettings = ReminderSettings(),
+    notificationsAllowed: Boolean = true,
+    onReminderEnabledChange: (Boolean) -> Unit = {},
+    onReminderTimeChange: (minuteOfDay: Int) -> Unit = {},
+    onAllowNotifications: () -> Unit = {},
 ) {
     val saved = (state.profile as? ProfileState.Loaded)?.profile
     // Keyed on what's saved, so a successful save (or a reload) resets the fields to it.
@@ -330,6 +350,17 @@ fun AccountSheetContent(
                     ),
                 )
             }
+            ReminderRows(
+                reminder = reminder,
+                notificationsAllowed = notificationsAllowed,
+                onEnabledChange = { enabled ->
+                    onReminderEnabledChange(enabled)
+                    // Turning it on is the moment to ask, if the phone won't show it yet.
+                    if (enabled && !notificationsAllowed) onAllowNotifications()
+                },
+                onTimeChange = onReminderTimeChange,
+                onAllowNotifications = onAllowNotifications,
+            )
             SettingRow(
                 title = "Export to a spreadsheet",
                 detail = "A month, dates or everything, as CSV",
@@ -460,6 +491,76 @@ private fun SettingRow(
             Text(detail, style = MaterialTheme.typography.bodySmall)
         }
         trailing()
+    }
+}
+
+/**
+ * The daily reminder: a switch, and when it's on, the time. When the phone won't show notifications
+ * the row says so and offers to fix it — a reminder that's "on" but can never appear would be the
+ * kind of silent failure this app has been removing everywhere else.
+ */
+@Composable
+private fun ReminderRows(
+    reminder: ReminderSettings,
+    notificationsAllowed: Boolean,
+    onEnabledChange: (Boolean) -> Unit,
+    onTimeChange: (minuteOfDay: Int) -> Unit,
+    onAllowNotifications: () -> Unit,
+) {
+    val context = LocalContext.current
+    val is24Hour = remember(context) { android.text.format.DateFormat.is24HourFormat(context) }
+    val time = ReminderSchedule.label(reminder.minuteOfDay, is24Hour)
+    SettingRow(
+        title = "Daily reminder",
+        detail = when {
+            !reminder.enabled -> "Off"
+            !notificationsAllowed -> "Notifications are off for Kharcha Paani, so it can't appear"
+            else -> "At $time if nothing's logged that day"
+        },
+        position = RowPosition.Middle,
+        modifier = Modifier
+            .toggleable(value = reminder.enabled, role = Role.Switch, onValueChange = onEnabledChange)
+            .testTag("setting_reminder"),
+    ) {
+        if (reminder.enabled && !notificationsAllowed) {
+            TextButton(onClick = onAllowNotifications, modifier = Modifier.testTag("setting_reminder_allow")) {
+                Text(
+                    "Allow",
+                    style = MaterialTheme.typography.labelLarge.copy(color = WarmAmberPrimary, fontWeight = FontWeight.Bold),
+                )
+            }
+        }
+        Switch(
+            checked = reminder.enabled,
+            onCheckedChange = null,
+            colors = SwitchDefaults.colors(
+                checkedTrackColor = WarmAmberPrimary,
+                checkedThumbColor = CharcoalBg,
+                uncheckedTrackColor = CharcoalElevated,
+                uncheckedThumbColor = MutedWarmGray,
+                uncheckedBorderColor = OutlineInteractive,
+            ),
+        )
+    }
+    if (reminder.enabled) {
+        SettingRow(
+            title = "Reminder time",
+            detail = time,
+            position = RowPosition.Middle,
+            modifier = Modifier
+                .clickable(onClickLabel = "Change the reminder time") {
+                    TimePickerDialog(
+                        context,
+                        { _, hour, minute -> onTimeChange(hour * 60 + minute) },
+                        reminder.minuteOfDay / 60,
+                        reminder.minuteOfDay % 60,
+                        is24Hour,
+                    ).show()
+                }
+                .testTag("setting_reminder_time"),
+        ) {
+            Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
+        }
     }
 }
 

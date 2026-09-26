@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The quick-add bar (4x1, resizable across). Home's capture field on the home screen: the whole
+  bar opens a new expense, the round brand button says so, the mic logs by voice, and today's
+  spend sits at the end so you can see a log land without opening the app.
+
+  Placeholders are dashes, not ₹0: the launcher shows this before the first update.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/quick_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bar_background"
+    android:contentDescription="Log an expense"
+    android:gravity="center_vertical"
+    android:minHeight="56dp"
+    android:orientation="horizontal"
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp">
+
+    <FrameLayout
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="@drawable/widget_circle_brand"
+        android:importantForAccessibility="no">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_add" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/quick_hint"
+        style="@style/KpWidgetPrompt"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:importantForAccessibility="no"
+        android:text="What did you spend on?" />
+
+    <LinearLayout
+        android:id="@+id/quick_today_block"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:gravity="end"
+        android:orientation="vertical">
+
+        <TextView
+            style="@style/KpWidgetEyebrow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Today" />
+
+        <TextView
+            android:id="@+id/quick_today"
+            style="@style/KpWidgetFigure"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:text="—" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/quick_btn_voice"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="10dp"
+        android:background="@drawable/widget_circle_surface"
+        android:contentDescription="Say an expense">
+
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_mic" />
+    </FrameLayout>
+
+</LinearLayout>

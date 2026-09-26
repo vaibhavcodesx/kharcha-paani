@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Type for the home-screen widgets. The font styles below are the API 24-25 fallback (system sans);
+  values-v26/widget_styles.xml swaps in the app's own families (Outfit, Plus Jakarta Sans, Space
+  Grotesk) where a launcher can load font resources. Everything else lives here once.
+  Nothing below 12sp, as in the app.
+-->
+<resources>
+
+    <style name="KpWidgetFontTitle">
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="KpWidgetFontLabel">
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="KpWidgetFontNumeric">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:fontFeatureSettings">tnum</item>
+    </style>
+
+    <!-- "Kharcha Paani" beside the mark: MutedWarmGray. -->
+    <style name="KpWidgetTitle" parent="KpWidgetFontTitle">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">#A09A8F</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
+    <!-- EyebrowText: 12sp caps with wide tracking, SubMutedWarmGray. -->
+    <style name="KpWidgetEyebrow" parent="KpWidgetFontLabel">
+        <item name="android:textSize">12sp</item>
+        <item name="android:letterSpacing">0.1</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textColor">#8D887E</item>
+        <item name="android:maxLines">1</item>
+    </style>
+
+    <!-- A secondary figure (MoneyText.title): OffWhiteText. -->
+    <style name="KpWidgetFigure" parent="KpWidgetFontNumeric">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">#F4F0E8</item>
+        <item name="android:maxLines">1</item>
+    </style>
+
+    <!-- The chip's balance line; the provider sets its colour (lime, coral or grey). -->
+    <style name="KpWidgetChip" parent="KpWidgetFontNumeric">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">#A09A8F</item>
+        <item name="android:maxLines">1</item>
+    </style>
+
+    <!-- The quick-add prompt, like Home's capture field. -->
+    <style name="KpWidgetPrompt" parent="KpWidgetFontLabel">
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">#A09A8F</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
+    <!-- Label on the brand-gradient button: CharcoalBg, which clears 4.5:1 on every stop. -->
+    <style name="KpWidgetButtonLabel" parent="KpWidgetFontLabel">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">#0E0D0C</item>
+        <item name="android:maxLines">1</item>
+    </style>
+
+</resources>
