@@ -13,11 +13,56 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Staged (not applied; waiting for owner review, on the `v1.4-proposals` branch)
+
+- **(server)** Settlement confirmation (pending / confirmed / rejected, answered only by the
+  other party) and group expenses with friends who have no account ("guests" of the member who
+  added them), with an RLS fix the harness found. Design: `docs/design-v1.4-groups-settlements-colours.md`.
+
+## [1.3.0] - 2026-09-27
+
 ### Added
 
+- Splits and IOUs with friends who aren't on the app now back up to your account and come back
+  on a new phone. Only ones added from 1.3 on; older ones stay on the phone, as the account
+  screen says. Private to you: nobody else can read them.
+- Swipe left and right to move between Activity, Splits and Insights. Swiping a row to delete it
+  still works and never changes tab.
+- Two home-screen widgets in the app's look: a balance card (this month's spend, today, what's
+  owed, Log expense / voice / Splits) and a one-line quick-add bar.
+- A daily reminder at 9 PM if nothing of your own was logged that day. Change the time or turn
+  it off in settings. It asks for notification permission only after your first entry, and
+  tapping it opens a new expense.
+- Choose what a new entry starts on: payment method (plain "UPI", now first in the list) and
+  category (Food), in Categories & payment methods.
+- Twice as many avatar emoji (64), all of them drawable on Android 7.
 - **(server)** `local_splits`, `local_settlements` and `save_local_split`, applied 2026-09-24
-  after review: a private, owner-only place for splits and IOUs with friends who have no account.
-  33/33 against live. The app's sync for them is built but still switched off.
+  after review; used from this release.
+
+### Changed
+
+- AI features use gemini-3.6-flash. The old model (now listed by Google as legacy) took 15-18 s
+  to read one typed line and often answered "high demand" instead. Quick-add now takes about
+  6 s and a receipt about 8 s on a phone. If the main model is overloaded, the app tries a
+  lighter one once before giving up.
+- Every AI failure says what went wrong (offline, out of quota, a refused key, Google busy, a
+  blocked answer) instead of a generic "couldn't". A typed or spoken line that the AI couldn't
+  read still fills in from the phone's own guess, marked as a guess.
+- A redesigned, animated sign-in screen (motion is reduced when the phone asks for less).
+- UPI: the "Pay in a UPI app" button appears only when you're the one paying, and always carries
+  the amount you're recording. "Any amount" now changes only the QR code.
+
+### Fixed
+
+- Anything running with the app in the background waited for the app to be opened again:
+  background sync did nothing, a widget never filled in, and a reminder would have arrived the
+  next time the app was opened. The sign-in library marks the session as "starting up" whenever
+  the app is backgrounded; background work no longer waits on that.
+- Widgets now refresh after every sync, so changes from groupmates and restores reach them.
+- The search box's placeholder sat below where you type.
+- The "pay" button under your own QR code (when a friend pays you, and in UPI settings) opened a
+  payment to yourself.
+- New subscriptions started on the first payment method in the list rather than your default.
 
 ### Security
 
@@ -157,7 +202,8 @@ and redesigned.
   silently deleted splits, shares and members through cascades.
 - The file provider narrowed to exported files only.
 
-[Unreleased]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/vaibhavcodesx/kharcha-paani/releases/tag/v1.0.0
