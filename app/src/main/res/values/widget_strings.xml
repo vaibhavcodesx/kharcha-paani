@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_quick_add_description">One tap to log an expense, with today’s spending beside it</string>
+</resources>

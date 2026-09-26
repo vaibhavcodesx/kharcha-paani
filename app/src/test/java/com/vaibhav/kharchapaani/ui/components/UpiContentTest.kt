@@ -78,11 +78,11 @@ class SettleUpUpiTest {
 
     private val rohan = PersonEntity(id = 2, name = "Rohan Mehta", avatarColor = "#70C1FF")
 
-    private fun show(payee: UpiPayee?, owed: Double) {
+    private fun show(payee: UpiPayee?, owed: Double, person: PersonEntity = rohan) {
         composeTestRule.setContent {
             SplitFlowTheme {
                 SettleUpContent(
-                    person = rohan, suggestedAmount = owed, groupOptions = com.vaibhav.kharchapaani.domain.SharedRecordGroups.Options(emptyList(), emptyList(), false),
+                    person = person, suggestedAmount = owed, groupOptions = com.vaibhav.kharchapaani.domain.SharedRecordGroups.Options(emptyList(), emptyList(), false),
                     onCreateGroup = {}, onConfirm = { _, _, _, _, _ -> }, upiPayee = payee,
                 )
             }
@@ -102,6 +102,29 @@ class SettleUpUpiTest {
         show(UpiPayee("priya@okaxis", "Priya"), owed = -450.0)
 
         composeTestRule.onNodeWithTag("upi_payment_card").assertDoesNotExist()
+    }
+
+    @Test
+    fun `your own code never offers to pay yourself`() {
+        // "They paid you" shows your code for them to scan. The button under it used to open a UPI
+        // payment to your own ID.
+        show(UpiPayee("priya@okaxis", "Priya"), owed = 450.0)
+
+        composeTestRule.onNodeWithTag("upi_payment_card").performScrollTo()
+        composeTestRule.onNodeWithTag("upi_deep_link_button").assertDoesNotExist()
+    }
+
+    @Test
+    fun `paying them, the link carries the amount you're recording even with the open code showing`() {
+        // An open-amount link opened as an intent is what UPI apps disagree on; the scanned open
+        // code works. So "Any amount" changes the code, never the link, which pays what you typed.
+        show(UpiPayee("priya@okaxis", "Priya"), owed = -450.0, person = rohan.copy(upiId = "rohan@okhdfc"))
+
+        composeTestRule.onNodeWithTag("upi_payment_card").performScrollTo()
+        composeTestRule.onNodeWithText("Pay ₹450 in a UPI app").assertExists()
+        composeTestRule.onNodeWithTag("upi_qr_open").performClick()
+        composeTestRule.onNodeWithText("Scan to pay Rohan Mehta").assertExists()
+        composeTestRule.onNodeWithText("Pay ₹450 in a UPI app").assertExists()
     }
 
     @Test

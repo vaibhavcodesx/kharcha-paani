@@ -69,7 +69,10 @@ fun AiPrompt.instruction(possessive: String): String = when (this) {
         against the same category across the previous three months. 2-4 sentences. Name the
         categories that are genuinely up and the ones that are in line. If nothing is meaningfully
         up, say so plainly rather than inventing a concern. If there is less than one full previous
-        month of data, say that this is too little history to compare against, and stop.
+        month of data, say that this is too little history to compare against, and stop. If the
+        data says this month is still in progress, remember its figures cover only the days so far:
+        a category below its average may simply not have happened yet, so never call it "down" for
+        that reason alone, and say that the month isn't over when it matters to the comparison.
         """.trimIndent()
 
     AiPrompt.WhatToChange ->
@@ -84,7 +87,8 @@ fun AiPrompt.instruction(possessive: String): String = when (this) {
         """
         Write 3-5 sentences on how this group went, the way a friend who has seen the receipts
         would: whether it was run cheaply or expensively for its length, what stood out, and who
-        carried the cost. Use people's names, they are in the data. Say plainly if it was good value
+        carried the cost — who paid up front is in the data, separately from what each person's
+        share came to; do not confuse the two. Use people's names, they are in the data. Say plainly if it was good value
         or if one day or category blew it. Do not moralise about anyone's spending — it is their
         trip. If the group has settled up, say where everyone landed.
         """.trimIndent()
@@ -112,4 +116,100 @@ data class AiUsage(val day: LocalDate, val used: Int) {
     companion object {
         val none = AiUsage(LocalDate.MIN, 0)
     }
+}
+
+/**
+ * Why an AI call produced no answer. One "couldn't get an answer" covered all of these, and they
+ * need different things from the person: waiting, reconnecting, or nothing at all because the
+ * problem is on our side.
+ */
+enum class AiFailure {
+    /** This build has no Gemini key. */
+    NoKey,
+
+    /** No connection, or it dropped mid-call. */
+    Offline,
+
+    /** The call didn't finish in time. */
+    Timeout,
+
+    /** HTTP 429 / RESOURCE_EXHAUSTED: per-minute rate or the key's free quota. */
+    RateLimited,
+
+    /** Google refused the key itself (invalid, or restricted to another app / API). */
+    KeyRefused,
+
+    /** Google's side failed (5xx). */
+    ServerError,
+
+    /** The model declined: a safety or policy block on the prompt or the answer. */
+    Blocked,
+
+    /** The answer ran out of room before any usable text. */
+    Truncated,
+
+    /** It answered, but with nothing usable (empty, or not the JSON asked for). */
+    Unreadable,
+    ;
+
+    companion object {
+        /**
+         * An unsuccessful HTTP response, by status and Google's error body. Google puts the useful
+         * part in `error.status` / `error.message`: API_KEY_INVALID arrives as a 400, a key
+         * restricted to another app as a 403, quota as 429 RESOURCE_EXHAUSTED.
+         */
+        fun fromHttp(code: Int, body: String): AiFailure {
+            val text = body.uppercase()
+            return when {
+                code == 429 || "RESOURCE_EXHAUSTED" in text -> RateLimited
+                code == 401 || code == 403 || "API_KEY" in text || "PERMISSION_DENIED" in text -> KeyRefused
+                code >= 500 -> ServerError
+                else -> Unreadable
+            }
+        }
+
+        /** A candidate's `finishReason` that means the model declined rather than finished. */
+        fun isBlockReason(finishReason: String): Boolean =
+            finishReason in setOf("SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII", "IMAGE_SAFETY")
+    }
+}
+
+/** What asking one question produced. */
+sealed interface AiAskResult {
+    data class Answer(val text: String) : AiAskResult
+    data class Failed(val reason: AiFailure) : AiAskResult
+
+    val answerOrNull: String? get() = (this as? Answer)?.text
+}
+
+/** The line an Insights or trip answer shows instead of an answer. */
+fun AiFailure.askMessage(): String = when (this) {
+    AiFailure.NoKey -> "AI answers aren't set up in this copy of the app."
+    AiFailure.Offline -> "You're offline. Connect and try again."
+    AiFailure.Timeout -> "That took too long to answer. Try again."
+    AiFailure.RateLimited -> "The AI is busy or out of free answers for now. Try again in a few minutes."
+    AiFailure.KeyRefused -> "The AI service turned this copy of the app away. That's on our side, not yours."
+    AiFailure.ServerError -> "The AI service is having trouble. Try again in a minute."
+    AiFailure.Blocked -> "The AI wouldn't answer that one."
+    AiFailure.Truncated -> "The answer came back cut off. Try again."
+    AiFailure.Unreadable -> "The answer didn't come back readable. Try again."
+}
+
+/** The notice above the quick-add sheet when typed text had to be read on the phone instead. */
+fun AiFailure.quickAddNotice(): String = when (this) {
+    AiFailure.Offline -> "You're offline, so this is a best guess from your words. Check it before saving."
+    AiFailure.RateLimited -> "The AI is busy right now, so this is a best guess from your words. Check it before saving."
+    AiFailure.KeyRefused, AiFailure.NoKey -> "The AI isn't available in this copy, so this is a best guess from your words. Check it before saving."
+    else -> "Couldn't reach the AI, so this is a best guess from your words. Check it before saving."
+}
+
+/** The notice above the quick-add sheet when a bill or screenshot couldn't be read. */
+fun AiFailure.receiptNotice(): String = when (this) {
+    AiFailure.NoKey, AiFailure.KeyRefused -> "Bill reading isn't available in this copy of the app. Fill in the details."
+    AiFailure.Offline -> "You're offline, so the bill wasn't read. Fill in the details, or try again when you're connected."
+    AiFailure.Timeout -> "Reading the bill took too long. Fill in the details, or try again."
+    AiFailure.RateLimited -> "The AI is busy right now, so the bill wasn't read. Fill in the details, or try again in a few minutes."
+    AiFailure.ServerError -> "The AI service is having trouble, so the bill wasn't read. Fill in the details, or try again."
+    AiFailure.Blocked, AiFailure.Truncated, AiFailure.Unreadable ->
+        "Couldn't read that bill. Fill in the details, or try a clearer photo."
 }

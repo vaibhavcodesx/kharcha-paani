@@ -79,7 +79,7 @@ class SubscriptionsContentTest {
         composeTestRule.onNodeWithTag("add_subscription_button").performClick()
 
         composeTestRule.onNodeWithTag("backdate_dialog").assertDoesNotExist()
-        assertEquals(NewSubscription("Netflix", 649.0, "Bills", "PopUPI", SubscriptionCycle.MONTHLY, today) to true, added)
+        assertEquals(NewSubscription("Netflix", 649.0, "Bills", "UPI", SubscriptionCycle.MONTHLY, today) to true, added)
     }
 
     @Test

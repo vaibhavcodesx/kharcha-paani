@@ -11,6 +11,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.vaibhav.kharchapaani.domain.AiUsage
 import com.vaibhav.kharchapaani.domain.CategoryPrefs
 import com.vaibhav.kharchapaani.domain.UpiPayee
+import com.vaibhav.kharchapaani.reminder.ReminderSettings
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -28,6 +29,33 @@ class AppSettings(context: Context) {
 
     suspend fun setAskBeforeDiscarding(ask: Boolean) {
         store.edit { it[ASK_BEFORE_DISCARDING] = ask }
+    }
+
+    /** The daily "nothing logged today" reminder. On at 9 PM unless changed; see ReminderSettings. */
+    val reminder: Flow<ReminderSettings> = store.data.map { prefs ->
+        ReminderSettings(
+            enabled = prefs[REMINDER_ENABLED] ?: true,
+            minuteOfDay = ReminderSettings.clampMinute(prefs[REMINDER_MINUTE] ?: ReminderSettings.DEFAULT_MINUTE_OF_DAY),
+        )
+    }
+
+    suspend fun setReminderEnabled(enabled: Boolean) {
+        store.edit { it[REMINDER_ENABLED] = enabled }
+    }
+
+    suspend fun setReminderMinute(minuteOfDay: Int) {
+        store.edit { it[REMINDER_MINUTE] = ReminderSettings.clampMinute(minuteOfDay) }
+    }
+
+    /**
+     * Whether the app has already asked for notification permission on its own. It asks once, after
+     * the first entry; after that only the settings row asks, so a "no" isn't met with the same
+     * dialog on every launch.
+     */
+    val notificationPermissionAsked: Flow<Boolean> = store.data.map { it[NOTIFICATION_PERMISSION_ASKED] ?: false }
+
+    suspend fun markNotificationPermissionAsked() {
+        store.edit { it[NOTIFICATION_PERMISSION_ASKED] = true }
     }
 
     /** This account's UPI ID and payee name (backlog item 9). Per account, since it's theirs to be paid on. */
@@ -89,6 +117,9 @@ class AppSettings(context: Context) {
         val AI_USAGE_COUNT = intPreferencesKey("ai_usage_count")
         fun categoryPrefsKey(userId: String) = stringPreferencesKey("category_prefs_$userId")
         val ASK_BEFORE_DISCARDING = booleanPreferencesKey("ask_before_discarding")
+        val REMINDER_ENABLED = booleanPreferencesKey("reminder_enabled")
+        val REMINDER_MINUTE = intPreferencesKey("reminder_minute_of_day")
+        val NOTIFICATION_PERMISSION_ASKED = booleanPreferencesKey("notification_permission_asked")
         fun upiIdKey(userId: String) = stringPreferencesKey("upi_id_$userId")
         fun upiNameKey(userId: String) = stringPreferencesKey("upi_name_$userId")
     }

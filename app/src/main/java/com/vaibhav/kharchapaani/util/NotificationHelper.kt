@@ -5,116 +5,79 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import com.vaibhav.kharchapaani.MainActivity
 import com.vaibhav.kharchapaani.R
-import java.text.NumberFormat
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 
+/**
+ * The app's notifications. There is one: the daily reminder.
+ *
+ * This file used to hold an AI-Studio-era "monthly spending digest" that nothing ever called, on a
+ * high-importance channel with lights and vibration — the wrong weight for anything this app says.
+ */
 object NotificationHelper {
 
-    const val CHANNEL_ID_MONTHLY_INSIGHTS = "kharcha_paani_monthly_insights"
-    const val CHANNEL_NAME_MONTHLY_INSIGHTS = "Monthly Spending Insights & Alerts"
-    const val NOTIFICATION_ID_MONTHLY = 1001
+    const val CHANNEL_DAILY_REMINDER = "daily_reminder"
+    private const val NOTIFICATION_ID_DAILY_REMINDER = 2001
 
-    fun createNotificationChannels(context: Context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID_MONTHLY_INSIGHTS,
-                CHANNEL_NAME_MONTHLY_INSIGHTS,
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Monthly spending breakdown, top category alerts, and budget insights"
-                enableLights(true)
-                enableVibration(true)
-            }
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+    fun createChannels(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val channel = NotificationChannel(
+            CHANNEL_DAILY_REMINDER,
+            "Daily reminder",
+            // Default, not high: it can make a sound, but it never pops over whatever someone is doing.
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply {
+            description = "A nudge in the evening if nothing's been logged that day"
         }
+        context.getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
     }
 
-    fun showMonthlySpendingNotification(
-        context: Context,
-        totalExpense: Double,
-        topCategory: String,
-        topCategoryAmount: Double
-    ): Boolean {
-        val currentMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(Date())
-        return sendMonthlySpendingAlert(
-            context = context,
-            monthName = currentMonth,
-            topCategory = topCategory,
-            topCategoryAmount = topCategoryAmount,
-            totalExpense = totalExpense
-        )
-    }
+    /** False when notifications are off for the app: not granted on Android 13+, or turned off. */
+    fun canNotify(context: Context): Boolean = NotificationManagerCompat.from(context).areNotificationsEnabled()
 
-    fun sendMonthlySpendingAlert(
-        context: Context,
-        monthName: String,
-        topCategory: String,
-        topCategoryAmount: Double,
-        totalExpense: Double
-    ): Boolean {
-        createNotificationChannels(context)
+    /** Posts the reminder; tapping it opens straight into adding an expense. Returns whether it posted. */
+    fun showDailyReminder(context: Context): Boolean {
+        if (!canNotify(context)) return false
+        createChannels(context)
 
-        // Check POST_NOTIFICATIONS permission on Android 13+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
-                    context,
-                    android.Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                return false
-            }
-        }
-
-        val formattedTotal = "₹${String.format(Locale.US, "%.0f", totalExpense)}"
-        val formattedTop = "₹${String.format(Locale.US, "%.0f", topCategoryAmount)}"
-        val percentage = if (totalExpense > 0) ((topCategoryAmount / totalExpense) * 100).toInt() else 0
-
-        val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        // The widget's quick-add action: MainActivity already routes it to a new expense on Home.
+        val open = Intent(context, MainActivity::class.java).apply {
+            action = SplitFlowWidgetProvider.ACTION_QUICK_ADD
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         val pendingIntent = PendingIntent.getActivity(
             context,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            NOTIFICATION_ID_DAILY_REMINDER,
+            open,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val title = "📊 $monthName Spending Digest • Kharcha Paani"
-        val message = "You spent $formattedTotal this month. Top category was $topCategory at $formattedTop ($percentage% of total)."
-
-        val bigText = """
-            Monthly Financial Summary ($monthName):
-            • Total Spent: $formattedTotal
-            • Highest Expense: $topCategory ($formattedTop - $percentage%)
-            • Tap to view your complete category breakdown and settle pending group splits!
-        """.trimIndent()
-
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID_MONTHLY_INSIGHTS)
-            .setSmallIcon(R.drawable.ic_kharcha_logo)
-            .setContentTitle(title)
-            .setContentText(message)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+        val notification = NotificationCompat.Builder(context, CHANNEL_DAILY_REMINDER)
+            .setSmallIcon(R.drawable.ic_stat_reminder)
+            .setColor(0xFFFF7A3D.toInt())
+            .setContentTitle("Nothing logged today")
+            .setContentText("Add today's spending before it slips your mind.")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
-            .setColor(0xFFFF7A3D.toInt())
             .build()
 
         return try {
-            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID_MONTHLY, notification)
+            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID_DAILY_REMINDER, notification)
             true
         } catch (e: SecurityException) {
+            // Permission withdrawn between the check and the post.
             false
         }
+    }
+
+    /** Takes the reminder down once something has been logged, so it doesn't sit there stale. */
+    fun clearDailyReminder(context: Context) {
+        NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID_DAILY_REMINDER)
     }
 }

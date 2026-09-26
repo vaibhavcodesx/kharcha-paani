@@ -98,7 +98,7 @@ fun SubscriptionsContent(
     var category by rememberSaveable {
         mutableStateOf(Categories.expenseCategories(prefs).firstOrNull { it == "Bills" } ?: Categories.expenseCategories(prefs).firstOrNull() ?: Categories.OTHER)
     }
-    var method by rememberSaveable { mutableStateOf(Categories.paymentMethods(prefs).firstOrNull() ?: Categories.OTHER) }
+    var method by rememberSaveable { mutableStateOf(Categories.defaultPaymentMethod(prefs)) }
     var cycle by rememberSaveable { mutableStateOf(SubscriptionCycle.MONTHLY) }
     var start by rememberSaveable { mutableStateOf(today) }
     var askBackdate by rememberSaveable { mutableStateOf(false) }

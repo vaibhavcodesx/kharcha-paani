@@ -1,127 +1,25 @@
 package com.vaibhav.kharchapaani.widget
 
-import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
-import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.util.Log
+import android.view.View
 import android.widget.RemoteViews
-import com.vaibhav.kharchapaani.MainActivity
 import com.vaibhav.kharchapaani.R
-import com.vaibhav.kharchapaani.data.db.LedgerDatabases
-import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
-import com.vaibhav.kharchapaani.data.repository.LedgerRepository
-import io.github.jan.supabase.auth.auth
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 
-class SplitFlowWidgetProvider : AppWidgetProvider() {
+/**
+ * The main widget (4x2): the month's spend in the brand gradient, today's spend, the net balance,
+ * and Log expense / voice / Splits. The class name stays as it is: widgets already placed on home
+ * screens are bound to it.
+ */
+class SplitFlowWidgetProvider : KpWidgetProvider() {
 
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    override val layoutId: Int = R.layout.widget_splitflow
 
-    override fun onUpdate(
-        context: Context,
-        appWidgetManager: AppWidgetManager,
-        appWidgetIds: IntArray
-    ) {
-        for (appWidgetId in appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId)
-        }
-    }
-
-    private fun updateAppWidget(
-        context: Context,
-        appWidgetManager: AppWidgetManager,
-        appWidgetId: Int
-    ) {
-        scope.launch {
-            try {
-                val auth = SupabaseClientProvider.get(context).auth
-                auth.awaitInitialization()
-                val userId = auth.currentUserOrNull()?.id
-                if (userId == null) {
-                    // Signed out: never show a previous account's numbers on the home screen.
-                    val views = RemoteViews(context.packageName, R.layout.widget_splitflow).apply {
-                        apply(WidgetSummary.signedOut())
-                        bindClickIntents(context)
-                    }
-                    appWidgetManager.updateAppWidget(appWidgetId, views)
-                    return@launch
-                }
-                val db = LedgerDatabases.open(context, userId)
-                // The same numbers the app shows (Home's monthly spend and net balance), from the
-                // same code, instead of a second copy of the ledger math that could drift.
-                val repository = LedgerRepository(db)
-                val analytics = repository.monthlyAnalytics.first()
-                val netOwedToMe = repository.personBalances.first().sumOf { it.netBalance }
-                val summary = WidgetSummary.of(analytics.totalExpense, analytics.totalIncome, netOwedToMe)
-
-                val views = RemoteViews(context.packageName, R.layout.widget_splitflow).apply {
-                    apply(summary)
-                    bindClickIntents(context)
-                }
-
-                appWidgetManager.updateAppWidget(appWidgetId, views)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    private fun RemoteViews.apply(summary: WidgetSummary) {
-        setTextViewText(R.id.widget_month_spent, summary.spent)
-        setTextViewText(R.id.widget_month_income, summary.income)
-        setTextViewText(R.id.widget_net_owed_badge, summary.balance)
-        setTextColor(R.id.widget_net_owed_badge, summary.balanceColor)
-    }
-
-    private fun RemoteViews.bindClickIntents(context: Context) {
-        // PendingIntent: Main Root Click
-        val rootIntent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val rootPendingIntent = PendingIntent.getActivity(
-            context, 0, rootIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        setOnClickPendingIntent(R.id.widget_root, rootPendingIntent)
-
-        // PendingIntent: Quick Add
-        val addIntent = Intent(context, MainActivity::class.java).apply {
-            action = ACTION_QUICK_ADD
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val addPendingIntent = PendingIntent.getActivity(
-            context, 1, addIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        setOnClickPendingIntent(R.id.widget_btn_add, addPendingIntent)
-
-        // PendingIntent: Voice Log
-        val voiceIntent = Intent(context, MainActivity::class.java).apply {
-            action = ACTION_VOICE_LOG
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val voicePendingIntent = PendingIntent.getActivity(
-            context, 2, voiceIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        setOnClickPendingIntent(R.id.widget_btn_voice, voicePendingIntent)
-
-        // PendingIntent: Splits Tab
-        val splitsIntent = Intent(context, MainActivity::class.java).apply {
-            action = ACTION_VIEW_SPLITS
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val splitsPendingIntent = PendingIntent.getActivity(
-            context, 3, splitsIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        setOnClickPendingIntent(R.id.widget_btn_splits, splitsPendingIntent)
+    override fun RemoteViews.bind(context: Context, summary: WidgetSummary) {
+        bindCard(context, summary)
     }
 
     companion object {
@@ -129,20 +27,52 @@ class SplitFlowWidgetProvider : AppWidgetProvider() {
         const val ACTION_VOICE_LOG = "com.vaibhav.kharchapaani.ACTION_VOICE_LOG"
         const val ACTION_VIEW_SPLITS = "com.vaibhav.kharchapaani.ACTION_VIEW_SPLITS"
 
+        /** Home's hero is 48sp; a 4x2 card has room for about two-thirds of that. */
+        private const val FIGURE_SP = 32f
+
+        /** The card for [summary], exactly as the launcher gets it. Also what the tests render. */
+        internal fun render(context: Context, summary: WidgetSummary): RemoteViews =
+            RemoteViews(context.packageName, R.layout.widget_splitflow).apply { bindCard(context, summary) }
+
+        private fun RemoteViews.bindCard(context: Context, summary: WidgetSummary) {
+            setTextViewText(R.id.widget_net_owed_badge, summary.balance)
+            setTextColor(R.id.widget_net_owed_badge, summary.balanceColor)
+
+            setImageViewBitmap(R.id.widget_month_spent_figure, GradientFigure.render(context, summary.spent, FIGURE_SP))
+            setContentDescription(R.id.widget_month_spent_figure, "Spent this month: ${summary.spent}")
+            setTextViewText(R.id.widget_today, summary.today)
+            setContentDescription(R.id.widget_today, "Spent today: ${summary.today}")
+
+            setOnClickPendingIntent(R.id.widget_root, WidgetIntents.openApp(context))
+            setOnClickPendingIntent(R.id.widget_btn_add, WidgetIntents.quickAdd(context))
+            setOnClickPendingIntent(R.id.widget_btn_voice, WidgetIntents.voice(context))
+            setOnClickPendingIntent(R.id.widget_btn_splits, WidgetIntents.splits(context))
+            // Signed out there are no splits to open; the card itself leads to sign-in.
+            setViewVisibility(R.id.widget_btn_splits, if (summary.signedIn) View.VISIBLE else View.GONE)
+        }
+
+        /**
+         * Redraws every placed Kharcha Paani widget, both kinds. Called after anything that changes
+         * the figures (a save, a delete, a settle-up, signing in or out).
+         */
         fun notifyWidgetUpdate(context: Context) {
+            refresh(context, SplitFlowWidgetProvider::class.java)
+            refresh(context, QuickAddWidgetProvider::class.java)
+        }
+
+        private fun refresh(context: Context, provider: Class<*>) {
             try {
-                val appWidgetManager = AppWidgetManager.getInstance(context)
-                val componentName = ComponentName(context, SplitFlowWidgetProvider::class.java)
-                val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
-                if (appWidgetIds.isNotEmpty()) {
-                    val intent = Intent(context, SplitFlowWidgetProvider::class.java).apply {
+                val manager = AppWidgetManager.getInstance(context)
+                val ids = manager.getAppWidgetIds(ComponentName(context, provider))
+                if (ids.isEmpty()) return
+                context.sendBroadcast(
+                    Intent(context, provider).apply {
                         action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                        putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
+                        putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
                     }
-                    context.sendBroadcast(intent)
-                }
+                )
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w("KpWidget", "Couldn't ask ${provider.simpleName} to refresh", e)
             }
         }
     }

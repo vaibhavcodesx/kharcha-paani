@@ -3,6 +3,8 @@ package com.vaibhav.kharchapaani.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -38,6 +40,7 @@ import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
+import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 
 @Composable
 fun CategoriesSheet(isOpen: Boolean, prefs: CategoryPrefs, onChange: ((CategoryPrefs) -> CategoryPrefs) -> Unit, onDismiss: () -> Unit) {
@@ -71,6 +74,14 @@ fun CategoriesContent(prefs: CategoryPrefs, onChange: ((CategoryPrefs) -> Catego
 
         when (kind) {
             ListKind.Categories -> {
+                DefaultChoice(
+                    title = "Category",
+                    value = Categories.defaultCategory("expense", prefs),
+                    choices = Categories.expenseCategories(prefs),
+                    withIcons = true,
+                    tag = "default_category",
+                    onPick = { picked -> onChange { it.copy(defaultCategory = picked) } },
+                )
                 ChoiceSection(
                     title = "Spending",
                     defaults = Categories.defaultExpense,
@@ -101,21 +112,83 @@ fun CategoriesContent(prefs: CategoryPrefs, onChange: ((CategoryPrefs) -> Catego
                     modifier = Modifier.padding(top = Spacing.xl),
                 )
             }
-            ListKind.PaymentMethods -> ChoiceSection(
-                title = "Payment methods",
-                defaults = Categories.defaultPaymentMethods,
-                custom = prefs.customPaymentMethods,
-                hidden = prefs.hiddenPaymentMethods,
-                locked = setOf(Categories.OTHER),
-                showBadge = false,
-                addLabel = "New payment method",
-                tag = "payment",
-                existing = Categories.defaultPaymentMethods + prefs.customPaymentMethods,
-                onToggleHidden = { name, hide -> onChange { it.copy(hiddenPaymentMethods = if (hide) it.hiddenPaymentMethods + name else it.hiddenPaymentMethods - name) } },
-                onAdd = { name -> onChange { it.copy(customPaymentMethods = it.customPaymentMethods + name) } },
-                onRemove = { name -> onChange { it.copy(customPaymentMethods = it.customPaymentMethods - name) } },
-            )
+            ListKind.PaymentMethods -> {
+                DefaultChoice(
+                    title = "Paid with",
+                    value = Categories.defaultPaymentMethod(prefs),
+                    choices = Categories.paymentMethods(prefs),
+                    withIcons = false,
+                    tag = "default_payment",
+                    onPick = { picked -> onChange { it.copy(defaultPaymentMethod = picked) } },
+                )
+                ChoiceSection(
+                    title = "Payment methods",
+                    defaults = Categories.defaultPaymentMethods,
+                    custom = prefs.customPaymentMethods,
+                    hidden = prefs.hiddenPaymentMethods,
+                    locked = setOf(Categories.OTHER),
+                    showBadge = false,
+                    addLabel = "New payment method",
+                    tag = "payment",
+                    existing = Categories.defaultPaymentMethods + prefs.customPaymentMethods,
+                    onToggleHidden = { name, hide -> onChange { it.copy(hiddenPaymentMethods = if (hide) it.hiddenPaymentMethods + name else it.hiddenPaymentMethods - name) } },
+                    onAdd = { name -> onChange { it.copy(customPaymentMethods = it.customPaymentMethods + name) } },
+                    onRemove = { name -> onChange { it.copy(customPaymentMethods = it.customPaymentMethods - name) } },
+                )
+            }
         }
+    }
+}
+
+/**
+ * What a new entry starts on. Only the choices still offered can be picked, and the value shown is
+ * what a new entry will actually get: if the chosen one is hidden later, that's the first one left.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DefaultChoice(
+    title: String,
+    value: String,
+    choices: List<String>,
+    withIcons: Boolean,
+    tag: String,
+    onPick: (String) -> Unit,
+) {
+    var open by rememberSaveable(tag) { mutableStateOf(false) }
+    Column(Modifier.padding(bottom = Spacing.xl).testTag(tag)) {
+        Text("New entries".uppercase(), style = EyebrowText, modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() })
+        ExpandableDetail(
+            label = title,
+            value = value,
+            icon = if (withIcons) CategoryHelper.getCategoryIcon(value) else KpIcons.Card,
+            iconTint = if (withIcons) CategoryHelper.getCategoryColor(value) else MutedWarmGray,
+            expanded = open,
+            onToggle = { open = !open },
+            position = RowPosition.Single,
+        ) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                choices.forEach { choice ->
+                    ChoiceChip(
+                        label = choice,
+                        selected = choice == value,
+                        icon = if (withIcons) CategoryHelper.getCategoryIcon(choice) else null,
+                        iconTint = if (withIcons) CategoryHelper.getCategoryColor(choice) else MutedWarmGray,
+                        accent = if (withIcons) CategoryHelper.getCategoryColor(choice) else WarmAmberPrimary,
+                        onClick = {
+                            onPick(choice)
+                            open = false
+                        },
+                        modifier = Modifier.testTag("${tag}_$choice"),
+                    )
+                }
+            }
+        }
+        Text(
+            text = "What a new entry starts on. Entries you've logged keep theirs.",
+            style = MaterialTheme.typography.bodySmall,
+            color = SubMutedWarmGray,
+            modifier = Modifier.padding(top = Spacing.s),
+        )
     }
 }
 

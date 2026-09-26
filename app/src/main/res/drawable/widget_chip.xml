@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- The balance chip: a lighter pane on the glass, with the same hairline edge as the card. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="#22201D" />
-    <corners android:radius="10dp" />
+    <solid android:color="#CC22201D" />
+    <corners android:radius="12dp" />
+    <stroke
+        android:width="1dp"
+        android:color="#1FFFFFFF" />
 </shape>

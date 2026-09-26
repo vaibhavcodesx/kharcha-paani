@@ -1,8 +1,10 @@
 # Local-friend splits and IOUs in the cloud (v2)
 
-**Status (2026-09-24): server half APPLIED to live after owner review. Client half built and
-tested, still switched off (`LocalFriendSync.ENABLED = false`); turning it on is a separate
-decision the owner takes.**
+**Status (2026-09-27): LIVE in 1.3.0.** Server half applied 2026-09-24 after owner review; the
+client half is switched on (`LocalFriendSync.ENABLED = true`) at the owner's request. Verified on
+the 1.3.0 release build: a pre-1.3 split and IOU stayed on the phone through the upgrade and a
+sync; a new split and IOU reached the server, came back after clearing the app's data and signing
+in (balance exact), and are invisible to another account under RLS.
 
 - Migration: `supabase/migrations/20260923000000_owner_private_local_ledger.sql`, applied
   2026-09-24.

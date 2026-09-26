@@ -1,5 +1,12 @@
 package com.vaibhav.kharchapaani
 
+import android.Manifest
+import android.app.Activity
+import android.content.pm.PackageManager
+import android.provider.Settings
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import com.vaibhav.kharchapaani.util.NotificationHelper
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -45,6 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import com.vaibhav.kharchapaani.ui.shell.AppTab
 import com.vaibhav.kharchapaani.ui.shell.KpDock
+import com.vaibhav.kharchapaani.ui.shell.tabSwipe
 import com.vaibhav.kharchapaani.ui.theme.KpMotion
 import com.vaibhav.kharchapaani.ui.theme.LocalHazeState
 import dev.chrisbanes.haze.hazeSource
@@ -353,6 +361,51 @@ fun SplitFlowApp(
     val sharedGroupsState by sharedGroups.state.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
+
+    // The daily reminder needs notifications. Asked for once by the app itself, the first time
+    // there's an entry of the person's own — never on a first launch before they've seen the app —
+    // and after that only from the reminder's row in settings.
+    val reminder by viewModel.reminder.collectAsStateWithLifecycle()
+    val notificationPermissionAsked by viewModel.notificationPermissionAsked.collectAsStateWithLifecycle()
+    var notificationsAllowed by remember { mutableStateOf(NotificationHelper.canNotify(context)) }
+    LifecycleResumeEffect(Unit) {
+        // Back from the system's notification settings, or the permission dialog.
+        notificationsAllowed = NotificationHelper.canNotify(context)
+        onPauseOrDispose { }
+    }
+    val askForNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        notificationsAllowed = NotificationHelper.canNotify(context)
+    }
+    val hasOwnEntry = rawTransactions.any { it.transaction.isOwnedByMe }
+    LaunchedEffect(hasOwnEntry, notificationPermissionAsked, reminder.enabled) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && hasOwnEntry && reminder.enabled &&
+            !notificationPermissionAsked && !NotificationHelper.canNotify(context)
+        ) {
+            viewModel.markNotificationPermissionAsked()
+            askForNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+    val allowNotifications: () -> Unit = {
+        val activity = context as? Activity
+        val permission = Manifest.permission.POST_NOTIFICATIONS
+        val canStillAsk = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED &&
+            // Never asked, or declined once (Android shows the dialog a second time, then stops).
+            (!notificationPermissionAsked || activity?.shouldShowRequestPermissionRationale(permission) == true)
+        if (canStillAsk) {
+            viewModel.markNotificationPermissionAsked()
+            askForNotifications.launch(permission)
+        } else {
+            // Declined for good, or turned off in system settings: only the settings page can fix it.
+            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            } else {
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
+            }
+            context.startActivity(intent)
+        }
+    }
+
     val snackbarHostState = remember { SnackbarHostState() }
     val messageScope = rememberCoroutineScope()
     // Shown from a separate scope: clearing the message changes these keys, which would cancel a
@@ -403,6 +456,8 @@ fun SplitFlowApp(
                 .fillMaxSize()
                 .hazeSource(hazeState)
                 .statusBarsPadding()
+                // Sideways between tabs, only where nothing on screen wanted the drag (see TabSwipe).
+                .tabSwipe(current = currentTab, count = AppTab.entries.size, onSelect = { viewModel.setTab(it) })
         ) {
             // On tablets and unfolded phones, full-width rows and figures are hard to read.
             AnimatedContent(
@@ -536,7 +591,12 @@ fun SplitFlowApp(
                 isAccountSheetOpen = false
                 onSignOut()
             },
-            onDismiss = { isAccountSheetOpen = false }
+            onDismiss = { isAccountSheetOpen = false },
+            reminder = reminder,
+            notificationsAllowed = notificationsAllowed,
+            onReminderEnabledChange = viewModel::setReminderEnabled,
+            onReminderTimeChange = viewModel::setReminderTime,
+            onAllowNotifications = allowNotifications,
         )
     }
 

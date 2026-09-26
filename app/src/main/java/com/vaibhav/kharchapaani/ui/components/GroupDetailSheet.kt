@@ -241,6 +241,7 @@ fun GroupDetailContent(
                     // The Insights wording told you to pick a question, above a card with no
                     // questions on it and a single button.
                     idleMessage = "A read of the whole group: who carried it, what it cost, how it went.",
+                    failure = (tripReview as? AskState.Failed)?.reason,
                 )
                 if (tripReview !is AskState.Answered && tripReview !is AskState.Asking) {
                     KpButton(

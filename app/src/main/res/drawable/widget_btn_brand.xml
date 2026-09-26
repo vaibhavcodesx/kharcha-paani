@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The primary action, in the brand gradient the app's add button and Save bar use
+     (amber, gold, lime; BrandGradient). Dark text on it clears 4.5:1 at every stop. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="0"
+        android:startColor="#FF7A3D"
+        android:centerColor="#FFB547"
+        android:endColor="#C6F24C" />
+    <corners android:radius="16dp" />
+</shape>

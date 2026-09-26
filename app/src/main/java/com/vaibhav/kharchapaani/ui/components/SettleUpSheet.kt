@@ -121,6 +121,8 @@ fun SettleUpContent(
                 payee = payee,
                 amount = value,
                 note = note.ifBlank { "Kharcha Paani settle up" },
+                // Their code: you're sending, so a link to pay them. Yours: they scan it on their phone.
+                payingFromThisPhone = payingThem,
                 modifier = Modifier.padding(top = Spacing.m),
             )
         } else if (payingThem && value > 0) {

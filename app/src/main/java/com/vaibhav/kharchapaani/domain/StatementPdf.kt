@@ -24,8 +24,17 @@ enum class StatementReadFailure {
     /** The network went away mid-call. */
     Offline,
 
-    /** Gemini answered with an error: bad key, quota, rate limit, a PDF it wouldn't accept. */
+    /** Gemini answered with an error it didn't explain further, e.g. a PDF it wouldn't accept. */
     Rejected,
+
+    /** HTTP 429: the per-minute rate or the key's free quota. Waiting fixes it; retrying now won't. */
+    RateLimited,
+
+    /** Google refused the key itself. Nothing the person can do. */
+    KeyRefused,
+
+    /** The model declined to read it (a safety or policy block). */
+    Blocked,
 
     /** The answer was cut off part-way, so the JSON doesn't parse. */
     Truncated,

@@ -402,14 +402,9 @@ class ScreenRenderCapture {
         val context: android.content.Context = org.robolectric.RuntimeEnvironment.getApplication()
         val density = context.resources.displayMetrics.density
         val parent = android.widget.FrameLayout(context)
-        val widget = android.view.LayoutInflater.from(context).inflate(com.vaibhav.kharchapaani.R.layout.widget_splitflow, parent, false)
-        val summary = com.vaibhav.kharchapaani.widget.WidgetSummary.of(18420.25, 42000.0, 2450.5)
-        widget.findViewById<android.widget.TextView>(com.vaibhav.kharchapaani.R.id.widget_month_spent).text = summary.spent
-        widget.findViewById<android.widget.TextView>(com.vaibhav.kharchapaani.R.id.widget_month_income).text = summary.income
-        widget.findViewById<android.widget.TextView>(com.vaibhav.kharchapaani.R.id.widget_net_owed_badge).apply {
-            text = summary.balance
-            setTextColor(summary.balanceColor)
-        }
+        val widget = com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider.render(
+            context, com.vaibhav.kharchapaani.widget.WidgetSummary.of(18420.25, 42000.0, 2450.5, todaySpent = 412.0),
+        ).apply(context, parent)
         val width = (340 * density).toInt()
         val height = (170 * density).toInt()
         val backdrop = (16 * density).toInt()

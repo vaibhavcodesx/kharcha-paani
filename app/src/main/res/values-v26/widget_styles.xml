@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The app's own typefaces for the widgets, where a launcher can load font resources (API 26+).
+  Only the font styles are redefined; the text styles in values/widget_styles.xml inherit from these
+  by name, so they pick up this version on 26+ and system sans below. The weights match the app's
+  type scale (ui/theme/Type.kt): Outfit SemiBold titles, Plus Jakarta SemiBold labels, Space
+  Grotesk Medium figures.
+-->
+<resources>
+
+    <style name="KpWidgetFontTitle">
+        <item name="android:fontFamily">@font/outfit_variable</item>
+        <item name="android:fontVariationSettings">"'wght' 600"</item>
+    </style>
+
+    <style name="KpWidgetFontLabel">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_variable</item>
+        <item name="android:fontVariationSettings">"'wght' 600"</item>
+    </style>
+
+    <style name="KpWidgetFontNumeric">
+        <item name="android:fontFamily">@font/space_grotesk_variable</item>
+        <item name="android:fontVariationSettings">"'wght' 500"</item>
+        <item name="android:fontFeatureSettings">tnum</item>
+    </style>
+
+</resources>

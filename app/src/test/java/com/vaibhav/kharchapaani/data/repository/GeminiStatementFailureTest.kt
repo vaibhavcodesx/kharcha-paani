@@ -102,9 +102,54 @@ class GeminiStatementFailureTest {
         }.readStatementPdf(pdf)
 
         val failure = result as StatementReadResult.Failed
-        assertEquals(StatementReadFailure.Rejected, failure.reason)
+        // Named for what it is: waiting fixes quota, and "try again in a minute" for a refused key
+        // was advice that could never work.
+        assertEquals(StatementReadFailure.RateLimited, failure.reason)
         assertTrue(failure.detail.orEmpty().contains("429"))
         assertTrue(failure.detail.orEmpty().contains("Quota exceeded"))
+    }
+
+    private fun httpError(code: Int, body: String): (okhttp3.Interceptor.Chain) -> Response = { chain ->
+        Response.Builder()
+            .request(chain.request())
+            .protocol(Protocol.HTTP_1_1)
+            .code(code)
+            .message("Error")
+            .body(body.toResponseBody("application/json".toMediaType()))
+            .build()
+    }
+
+    @Test
+    fun `a refused key is named as one, and an unexplained 400 stays a rejection`() = runTest {
+        val refused = repo(httpError(400, """{"error":{"status":"INVALID_ARGUMENT","details":[{"reason":"API_KEY_INVALID"}]}}""")).readStatementPdf(pdf)
+        val restricted = repo(httpError(403, """{"error":{"status":"PERMISSION_DENIED"}}""")).readStatementPdf(pdf)
+        val other = repo(httpError(400, """{"error":{"status":"INVALID_ARGUMENT","message":"Unsupported file"}}""")).readStatementPdf(pdf)
+
+        assertEquals(StatementReadFailure.KeyRefused, failureOf(refused))
+        assertEquals(StatementReadFailure.KeyRefused, failureOf(restricted))
+        assertEquals(StatementReadFailure.Rejected, failureOf(other))
+    }
+
+    @Test
+    fun `a statement the model declines to read says it was blocked`() = runTest {
+        val result = repo(ok("""{"promptFeedback":{"blockReason":"OTHER"}}""")).readStatementPdf(pdf)
+
+        assertEquals(StatementReadFailure.Blocked, failureOf(result))
+    }
+
+    @Test
+    fun `amounts written as strings are read, and a row with no money in it is left out`() = runTest {
+        // optDouble turned "1,299.00" into 0, and that row was still listed, pre-ticked, at ₹0.
+        val rows = """
+            {"bankOrApp":"HDFC","statementPeriod":"Aug 2024","transactions":[
+              {"date":"2024-08-14","type":"expense","amount":"1,299.00","merchant":"Croma","category":"Shopping","paymentMethod":"Debit Card","note":""},
+              {"date":"2024-08-15","type":"expense","amount":0,"merchant":"Balance b/f","category":"Other","paymentMethod":"UPI","note":""}]}
+        """.trimIndent()
+        val result = repo(ok(answer("```json\n$rows\n```"))).readStatementPdf(pdf)
+
+        val items = (result as StatementReadResult.Success).statement.allItems
+        assertEquals(1, items.size)
+        assertEquals(1299.0, items.single().amount, 0.001)
     }
 
     @Test

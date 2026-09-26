@@ -7,8 +7,9 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
 import com.vaibhav.kharchapaani.data.db.LedgerDatabases
 import com.vaibhav.kharchapaani.data.db.entity.SyncMetaEntity
+import com.vaibhav.kharchapaani.data.remote.BackgroundAuth
 import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
-import io.github.jan.supabase.auth.auth
+import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 import io.github.jan.supabase.exceptions.RestException
 import java.io.IOException
 
@@ -21,10 +22,10 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
     override suspend fun doWork(): Result {
         val userId = inputData.getString(KEY_USER_ID) ?: return Result.failure()
         val supabase = SupabaseClientProvider.get(applicationContext)
-        val auth = supabase.auth
-        auth.awaitInitialization()
+        // Not auth.awaitInitialization(): in the background that waits until the app is next opened.
+        val signedInUserId = BackgroundAuth.sessionForNetwork(applicationContext)
 
-        return syncIfSignedIn(requestedUserId = userId, signedInUserId = auth.currentUserOrNull()?.id) {
+        return syncIfSignedIn(requestedUserId = userId, signedInUserId = signedInUserId) {
             val database = LedgerDatabases.open(applicationContext, userId)
             TransactionSyncEngine(
                 store = RoomTransactionSyncStore(database),
@@ -36,6 +37,9 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             if (LocalFriendSync.ENABLED) LocalLedgerSyncEngine(database, SupabaseLocalLedgerRemote(supabase, userId)).sync()
             // Only a pass that got through both engines counts as "last synced".
             database.syncDao().putMeta(SyncMetaEntity(TransactionSyncEngine.LAST_SYNCED_AT, System.currentTimeMillis().toString()))
+            // A pull can change the figures (a groupmate's expense, a restore after reinstalling),
+            // and nothing else would tell the home-screen widgets: they'd keep the old numbers.
+            SplitFlowWidgetProvider.notifyWidgetUpdate(applicationContext)
         }
     }
 
