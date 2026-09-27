@@ -339,6 +339,7 @@ fun SplitFlowApp(
     val isIouOpen by viewModel.isIouOpen.collectAsState()
     val isSimplifyDebtsOpen by viewModel.isSimplifyDebtsOpen.collectAsState()
     val simplifiedDebts by viewModel.simplifiedDebts.collectAsState()
+    val splitLocked by viewModel.splitLocked.collectAsStateWithLifecycle()
     val isAddFriendOpen by viewModel.isAddFriendOpen.collectAsState()
 
     // Group Modals
@@ -621,6 +622,7 @@ fun SplitFlowApp(
         shares = shares,
         isEditing = editingTxId != null,
         addedBy = editingAddedBy,
+        splitLocked = splitLocked,
         onTypeChange = { viewModel.updateType(it) },
         onAmountChange = { viewModel.updateAmount(it) },
         onMerchantChange = { viewModel.updateMerchant(it) },

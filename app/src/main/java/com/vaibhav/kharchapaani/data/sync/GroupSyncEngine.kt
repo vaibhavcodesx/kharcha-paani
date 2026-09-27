@@ -8,6 +8,7 @@ import com.vaibhav.kharchapaani.data.db.entity.GroupMemberEntity
 import com.vaibhav.kharchapaani.data.db.entity.PendingRemoteDeleteEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
+import com.vaibhav.kharchapaani.data.db.entity.SettlementStatus
 import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncMetaEntity
@@ -44,6 +45,7 @@ class GroupSyncEngine(
         pushGroupExpenses()
         pushSettlements()
         pushSettlementDeletes()
+        pushSettlementAnswers()
         pullGroups()
         pullGroupExpenses()
         pullSettlements()
@@ -107,23 +109,29 @@ class GroupSyncEngine(
         val payerId = split?.paidByPersonId ?: ME
 
         val payerProfile = profileIdOf(payerId) ?: return null.also { Log.w(TAG, "${tx.remoteId}: payer has no profile") }
-        val sharesByPerson = if (shares.isEmpty()) {
+        // One key per row: a member's own share is keyed by who they are, each guest by its row, so
+        // a host with guests (several rows under one person, design item 9) rounds correctly.
+        val rows = shares.ifEmpty {
             // An unsplit group expense is the payer's own spending: one share, all theirs.
-            mapOf(payerId to tx.amount)
-        } else {
-            if (shares.map { it.personId }.toSet().size != shares.size) return null
-            shares.associate { it.personId to it.shareAmount }
+            listOf(SplitShareEntity(splitId = 0, personId = payerId, shareAmount = tx.amount))
         }
+        val members = rows.filterNot { it.isGuest }
+        if (members.map { it.personId }.toSet().size != members.size) return null
+        val keyed = rows.mapIndexed { index, row -> (if (row.isGuest) GUEST_KEY_BASE - index else row.personId) to row }.toMap()
         val normalized = try {
-            SplitRounding.normalize(tx.amount, sharesByPerson, payerId)
+            SplitRounding.normalize(tx.amount, keyed.mapValues { it.value.shareAmount }, payerId)
         } catch (e: IllegalArgumentException) {
             Log.w(TAG, "${tx.remoteId}: ${e.message}")
             return null
         }
-        val percentages = shares.associate { it.personId to it.percentage }
-        val sharePayloads = normalized.map { (personId, amount) ->
-            val profileId = profileIdOf(personId) ?: return null.also { Log.w(TAG, "${tx.remoteId}: a share holder has no profile") }
-            SharePayload(profileId, money(amount), percentages[personId])
+        val sharePayloads = normalized.map { (key, amount) ->
+            val row = keyed.getValue(key)
+            if (row.isGuest) {
+                SharePayload(profileId = null, shareAmount = money(amount), percentage = row.percentage, localName = row.guestName)
+            } else {
+                val profileId = profileIdOf(row.personId) ?: return null.also { Log.w(TAG, "${tx.remoteId}: a share holder has no profile") }
+                SharePayload(profileId, money(amount), row.percentage)
+            }
         }
 
         return GroupExpenseUpload(
@@ -214,6 +222,27 @@ class GroupSyncEngine(
             }
             syncDao.clearPendingDeletes(ids)
             if (ids.size < BATCH_SIZE) return
+        }
+    }
+
+    /**
+     * My confirmations and rejections (design item 10), saved on the phone at once and sent here.
+     * One call each: the server checks every answer on its own (the other party, once, while
+     * pending). A refusal is final — it was already answered or withdrawn elsewhere — so the answer
+     * is dropped and settlements are pulled again from the start to show what really happened.
+     */
+    internal suspend fun pushSettlementAnswers() {
+        for (settlement in dao.settlementsWithUnsentAnswers(BATCH_SIZE)) {
+            val answer = settlement.pendingResponse ?: continue
+            try {
+                remote.respondToSettlement(settlement.remoteId, confirm = answer == SettlementStatus.CONFIRMED, note = settlement.responseNote)
+                dao.clearPendingResponse(settlement.id)
+            } catch (e: RowsRejectedException) {
+                Log.w(TAG, "Server refused the answer to settlement ${settlement.remoteId} (${e.statusCode}): ${e.message}")
+                dao.clearPendingResponse(settlement.id)
+                dao.updateSettlement(settlement.copy(pendingResponse = null, status = SettlementStatus.PENDING, respondedAt = null, responseNote = null))
+                syncDao.deleteMeta(SETTLEMENTS_PULL_CURSOR)
+            }
         }
     }
 
@@ -332,13 +361,21 @@ class GroupSyncEngine(
                 remoteId = it.id,
             )
         }
+        val ownedByMe = row.ownerId == selfProfileId
         val pulledShares = row.activeShares.mapNotNull { share ->
-            val personId = sharePersonId(share, ownedByMe = row.ownerId == selfProfileId) ?: return@mapNotNull null
+            share.profileId?.let { profileId ->
+                return@mapNotNull SplitShareEntity(splitId = 0L, personId = personIdFor(profileId), shareAmount = share.shareAmount, percentage = share.percentage)
+            }
+            // A guest of whoever added the expense: their share is the host's to cover, on every
+            // phone (design item 9). Only the host's own phone knows which friend it is.
+            val name = share.localName?.trim()?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
             SplitShareEntity(
                 splitId = 0L,
-                personId = personId,
+                personId = personIdFor(row.ownerId),
                 shareAmount = share.shareAmount,
                 percentage = share.percentage,
+                guestName = name,
+                guestPersonId = if (ownedByMe) LocalPeople.idFor(dao, name) else null,
             )
         }
 
@@ -371,7 +408,7 @@ class GroupSyncEngine(
         val localSplit = dao.splitForTransaction(local.id)
         if (pulledSplit == null || localSplit == null) return pulledSplit == null && localSplit == null
         if (pulledSplit.copy(id = localSplit.id, transactionId = localSplit.transactionId) != localSplit) return false
-        fun key(share: SplitShareEntity) = Triple(share.personId, share.shareAmount, share.percentage)
+        fun key(share: SplitShareEntity) = listOf(share.personId, share.shareAmount, share.percentage, share.guestName, share.guestPersonId)
         return dao.sharesForSplit(localSplit.id).groupingBy(::key).eachCount() == pulledShares.groupingBy(::key).eachCount()
     }
 
@@ -384,6 +421,8 @@ class GroupSyncEngine(
         }
         if (local != null && local.syncState != SyncState.SYNCED) return
         if (local == null && syncDao.hasPendingDelete(row.id)) return
+        // My answer is saved here but not sent yet: it wins until the server has it.
+        if (local?.pendingResponse != null) return
 
         val pulled = SettlementEntity(
             fromPersonId = personIdFor(row.fromProfileId),
@@ -397,6 +436,16 @@ class GroupSyncEngine(
             remoteId = row.id,
             updatedAt = parseTimestamp(row.updatedAt),
             syncState = SyncState.SYNCED,
+            status = when (row.status.lowercase()) {
+                "pending" -> SettlementStatus.PENDING
+                "rejected" -> SettlementStatus.REJECTED
+                else -> SettlementStatus.CONFIRMED
+            },
+            recordedByPersonId = row.recordedBy?.let { personIdFor(it) },
+            respondedAt = row.respondedAt?.let { parseTimestamp(it) },
+            responseNote = row.responseNote,
+            // Reminders already shown for it stay shown.
+            remindedStage = local?.remindedStage ?: -1,
         )
         when {
             local == null -> dao.insertSettlement(pulled)
@@ -443,19 +492,6 @@ class GroupSyncEngine(
         if (personId == ME) selfProfileId else dao.personById(personId)?.profileId
 
     /** Someone who has left the group can still appear on old expenses; they get a placeholder row. */
-    /**
-     * A share for a friend with no account belongs to whoever added the expense: on their phone it
-     * is that friend, found by name or re-created, which is how it comes back after a reinstall.
-     * On anyone else's phone the name means nothing and would only plant a stranger in their
-     * friends list, so the share is left out; their own balance never depended on it.
-     */
-    private suspend fun sharePersonId(share: RemoteShare, ownedByMe: Boolean): Long? {
-        share.profileId?.let { return personIdFor(it) }
-        val name = share.localName?.trim()?.takeIf { it.isNotEmpty() } ?: return null
-        if (!ownedByMe) return null
-        return LocalPeople.idFor(dao, name)
-    }
-
     private suspend fun personIdFor(profileId: String): Long =
         if (profileId == selfProfileId) ME else dao.personByProfileId(profileId)?.id ?: upsertPerson(profileId, null)
 
@@ -494,6 +530,8 @@ class GroupSyncEngine(
         const val SETTLEMENTS_PULL_CURSOR = "settlements_pull_cursor"
 
         private const val ME = -1L
+        /** Rounding keys for guest rows, far below any person id and below ME. */
+        private const val GUEST_KEY_BASE = -1_000_000L
         internal const val BATCH_SIZE = 200
         internal const val PULL_PAGE_SIZE = 1000
         private const val MAX_BATCHES = 50

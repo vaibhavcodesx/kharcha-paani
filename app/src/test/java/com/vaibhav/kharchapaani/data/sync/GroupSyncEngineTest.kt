@@ -199,8 +199,9 @@ class GroupSyncEngineTest {
         assertNotNull("the friend is re-created from the name", rohan)
         assertNull(rohan!!.profileId)
         val split = groupDao.splitForTransaction(transaction("tx-mine")!!.id)!!
-        val shares = groupDao.sharesForSplit(split.id).associate { it.personId to it.shareAmount }
-        assertEquals(mapOf(-1L to 30.0, person(bob).id to 30.0, rohan.id to 30.0), shares)
+        // Rohan is my guest (design item 9): his share is mine to cover, and he owes it to me.
+        val shares = groupDao.sharesForSplit(split.id).map { listOf(it.personId, it.shareAmount, it.guestName, it.guestPersonId) }.toSet()
+        assertEquals(setOf(listOf(-1L, 30.0, null, null), listOf(person(bob).id, 30.0, null, null), listOf(-1L, 30.0, "Rohan", rohan.id)), shares)
     }
 
     @Test
@@ -215,7 +216,7 @@ class GroupSyncEngineTest {
         engine.sync()
 
         val split = groupDao.splitForTransaction(transaction("tx-mine")!!.id)!!
-        assertTrue(groupDao.sharesForSplit(split.id).any { it.personId == existing })
+        assertTrue(groupDao.sharesForSplit(split.id).any { it.guestPersonId == existing })
         assertEquals(1, db.personDao().getAllPeopleDirect().count { it.profileId == null })
     }
 
@@ -231,8 +232,9 @@ class GroupSyncEngineTest {
         engine.sync()
 
         val split = groupDao.splitForTransaction(transaction("tx-bob")!!.id)!!
-        val shares = groupDao.sharesForSplit(split.id).associate { it.personId to it.shareAmount }
-        assertEquals(mapOf(-1L to 30.0, person(bob).id to 30.0), shares)
+        // The cousin is Bob's guest: Bob's to cover, shown by name, never a person on my phone.
+        val shares = groupDao.sharesForSplit(split.id).map { listOf(it.personId, it.shareAmount, it.guestName, it.guestPersonId) }.toSet()
+        assertEquals(setOf(listOf(-1L, 30.0, null, null), listOf(person(bob).id, 30.0, null, null), listOf(person(bob).id, 30.0, "Bob's cousin", null)), shares)
         assertNull(groupDao.localPersonByName("Bob's cousin"))
     }
 

@@ -130,4 +130,20 @@ interface GroupSyncDao {
 
     @Query("DELETE FROM settlements WHERE id = :id AND syncState = 'SYNCED'")
     suspend fun deleteSettlementIfSynced(id: Long): Int
+
+    // ---- Settlement confirmation (design item 10) ----
+
+    /** My answers saved on this phone and not yet sent. */
+    @Query("SELECT * FROM settlements WHERE pendingResponse IS NOT NULL ORDER BY id LIMIT :limit")
+    suspend fun settlementsWithUnsentAnswers(limit: Int): List<SettlementEntity>
+
+    @Query("UPDATE settlements SET pendingResponse = NULL WHERE id = :id")
+    suspend fun clearPendingResponse(id: Long)
+
+    /** Shared-group settlements someone else recorded that I still have to answer. */
+    @Query("SELECT * FROM settlements WHERE status = 'PENDING' AND recordedByPersonId IS NOT NULL AND recordedByPersonId != -1 AND pendingResponse IS NULL AND (fromPersonId = -1 OR toPersonId = -1)")
+    suspend fun settlementsAwaitingMyAnswer(): List<SettlementEntity>
+
+    @Query("UPDATE settlements SET remindedStage = :stage WHERE id = :id")
+    suspend fun setRemindedStage(id: Long, stage: Int)
 }

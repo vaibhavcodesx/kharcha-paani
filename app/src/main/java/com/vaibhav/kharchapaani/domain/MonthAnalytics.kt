@@ -44,11 +44,11 @@ object MonthAnalytics {
             val split = splitMap[tx.id]
             val personalExpenseAmount = if (split != null) {
                 val splitShares = shareMap[split.id].orEmpty()
-                val myShare = splitShares.find { it.personId == ME }?.shareAmount
+                val myShare = splitShares.ownShareOf(ME)
                 when {
                     split.paidByPersonId != ME -> myShare ?: 0.0
                     myShare != null -> myShare
-                    else -> (tx.amount - splitShares.filter { it.personId != ME }.sumOf { it.shareAmount }).coerceAtLeast(0.0)
+                    else -> (tx.amount - splitShares.allButOwnShareOf(ME)).coerceAtLeast(0.0)
                 }
             } else {
                 tx.amount
