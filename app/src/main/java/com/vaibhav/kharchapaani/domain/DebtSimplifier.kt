@@ -14,38 +14,58 @@ object DebtSimplifier {
     )
 
     /**
-     * Calculates simplified debt settlements across all participants using
-     * greedy min-cash-flow reduction.
+     * The fewest payments that clear every friend's balance with you, where a friend may be asked to
+     * pay another friend directly only if the two are in at least one group together.
      *
-     * @param people List of all friends / teammates in the group
-     * @param netBalances Map of personId -> net amount relative to Me (positive = person owes Me, negative = I owe person)
-     * @param externalDebts Optional list of direct peer-to-peer debts among teammates (e.g. from multi-person splits)
+     * Every balance here is between you and one friend, so the only way to save a payment is to route
+     * one friend's debt straight to someone you owe. Doing that across people who have never met used
+     * to produce suggestions like "Hist pays Shubham" for a friend of yours and a groupmate from a
+     * different trip (owner decision, 2026-09-27: only between people who share a group). Payments
+     * with you are always fine: you know everyone.
+     *
+     * @param netBalances personId -> balance with you (positive = they owe you, negative = you owe them)
+     * @param groups each group's members by person id, local and shared groups alike; "you" (-1) may
+     *   be included or left out
      */
     fun simplify(
         people: List<PersonEntity>,
-        netBalances: Map<Long, Double>
+        netBalances: Map<Long, Double>,
+        groups: List<Set<Long>>,
     ): List<SimplifiedDebt> {
-        val peopleMap = people.associateBy { it.id }
-        val meId = -1L
+        val names = people.associate { it.id to it.name }
+        fun nameOf(id: Long) = if (id == ME) "You" else names[id] ?: "Friend"
+        fun shareAGroup(a: Long, b: Long) = groups.any { a in it && b in it }
 
-        // Net position: positive = overall creditor, negative = overall debtor
-        val netPositions = mutableMapOf<Long, Double>()
+        // Both lists hold what's still unpaid, as positive amounts.
+        val oweMe = netBalances.filterValues { it >= HALF_PAISA }.mapValues { roundPaisa(it.value) }.toMutableMap()
+        val iOwe = netBalances.filterValues { it <= -HALF_PAISA }.mapValues { roundPaisa(-it.value) }.toMutableMap()
 
-        // For each person, their net balance with 'Me':
-        // netBalances[personId] > 0 means Person owes Me (Person is debtor, Me is creditor)
-        // netBalances[personId] < 0 means I owe Person (Me is debtor, Person is creditor)
-        var myNet = 0.0
-        for ((personId, balance) in netBalances) {
-            if (abs(balance) >= HALF_PAISA) {
-                // balance > 0 => Person owes Me => Person net -= balance, My net += balance
-                netPositions[personId] = (netPositions[personId] ?: 0.0) - balance
-                myNet += balance
-            }
+        val payments = mutableListOf<SimplifiedDebt>()
+        fun pay(from: Long, to: Long, amount: Double) {
+            val rounded = roundPaisa(amount)
+            if (rounded >= ONE_PAISA) payments += SimplifiedDebt(from, nameOf(from), to, nameOf(to), rounded)
         }
-        netPositions[meId] = myNet
 
-        return simplifyPositions(netPositions) { id -> peopleMap[id]?.name ?: "Friend" }
+        // Friend to friend, biggest first, only inside a shared group. Each one saves a payment.
+        while (true) {
+            val (debtor, creditor) = oweMe.entries.flatMap { d -> iOwe.entries.map { c -> d to c } }
+                .filter { (d, c) -> d.value >= ONE_PAISA && c.value >= ONE_PAISA && shareAGroup(d.key, c.key) }
+                .maxWithOrNull(compareBy<Pair<Map.Entry<Long, Double>, Map.Entry<Long, Double>>> { (d, c) -> min(d.value, c.value) }
+                    .thenBy { (d, c) -> -d.key }.thenBy { (d, c) -> -c.key })
+                ?: break
+            val amount = min(debtor.value, creditor.value)
+            pay(debtor.key, creditor.key, amount)
+            oweMe[debtor.key] = roundPaisa(debtor.value - amount)
+            iOwe[creditor.key] = roundPaisa(creditor.value - amount)
+        }
+
+        // Whatever is left is settled with you directly.
+        oweMe.entries.sortedByDescending { it.value }.forEach { pay(it.key, ME, it.value) }
+        iOwe.entries.sortedByDescending { it.value }.forEach { pay(ME, it.key, it.value) }
+        return payments
     }
+
+    private const val ME = -1L
 
     /**
      * Simplifies positions that already cover everyone, such as [GroupBalances.netPositions] for a

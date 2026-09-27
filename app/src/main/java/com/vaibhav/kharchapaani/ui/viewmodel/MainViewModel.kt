@@ -1368,7 +1368,8 @@ class MainViewModel(
 
     fun openSimplifyDebts() {
         val currentBalances = personBalances.value.associate { it.person.id to it.netBalance }
-        val simplified = DebtSimplifier.simplify(people.value, currentBalances)
+        val groupMembers = groups.value.map { details -> details.members.map { it.id }.toSet() }
+        val simplified = DebtSimplifier.simplify(people.value, currentBalances, groupMembers)
         _simplifiedDebts.value = simplified
         _isSimplifyDebtsOpen.value = true
     }

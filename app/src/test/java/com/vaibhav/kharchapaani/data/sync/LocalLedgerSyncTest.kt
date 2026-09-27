@@ -166,6 +166,23 @@ class LocalLedgerSyncTest {
     }
 
     @Test
+    fun `deleting a synced split's expense takes its split down on the server too`() = runTest {
+        val a = repo(phoneA, enabled = true)
+        val rohan = a.addPerson("Rohan", "#70C1FF")
+        val id = a.saveTransactionWithSplits(dinner(600.0), paidByPersonId = -1L, shares = shares(-1L to 300.0, rohan to 300.0), splitType = "equal")
+        syncAll(phoneA)
+        assertNull(server.splits.values.single().deletedAt)
+
+        a.deleteTransaction(id)
+        syncAll(phoneA)
+
+        // The 1.3 audit found the split row left live after its expense was deleted.
+        assertTrue(server.splits.values.single().deletedAt != null)
+        syncAll(phoneB)
+        assertTrue(phoneB.transactionDao().getAllTransactionsDirect().isEmpty())
+    }
+
+    @Test
     fun `a retracted IOU is retracted on the other phone too`() = runTest {
         val a = repo(phoneA, enabled = true)
         val rohan = a.addPerson("Rohan", "#70C1FF")

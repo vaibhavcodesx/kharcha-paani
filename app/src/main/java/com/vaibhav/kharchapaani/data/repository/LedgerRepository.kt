@@ -421,10 +421,15 @@ class LedgerRepository(
     suspend fun deleteTransaction(txId: Long) = withContext(Dispatchers.IO) {
         db.withTransaction {
             val existing = db.transactionDao().getTransactionByIdDirect(txId) ?: return@withTransaction
-            if (!FullTransaction(existing, db.groupSyncDao().splitForTransaction(txId)).canEdit) return@withTransaction
+            val split = db.groupSyncDao().splitForTransaction(txId)
+            if (!FullTransaction(existing, split).canEdit) return@withTransaction
             requireWritableGroup(existing.groupId)
             if (existing.syncState != SyncState.LOCAL_ONLY) {
                 db.syncDao().insertPendingDelete(PendingRemoteDeleteEntity(existing.remoteId))
+                // A synced personal split lives in local_splits beside its expense. Retracting only
+                // the expense left the split's row live on the server (harmless, since a restore
+                // skips a split whose expense is gone, but still a leftover).
+                if (existing.groupId == null && split != null) queueSplitRetraction(existing.remoteId)
             }
             db.transactionDao().deleteTransactionById(txId)
         }
