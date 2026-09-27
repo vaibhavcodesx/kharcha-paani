@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import com.vaibhav.kharchapaani.ui.components.ExportSheet
+import com.vaibhav.kharchapaani.ui.components.SettlementAnswerSheet
 import com.vaibhav.kharchapaani.ui.components.UpiSheet
 import com.vaibhav.kharchapaani.ui.components.CategoriesSheet
 import com.vaibhav.kharchapaani.ui.components.SubscriptionsSheet
@@ -73,6 +74,9 @@ import com.vaibhav.kharchapaani.ui.session.AccountSessionState
 import com.vaibhav.kharchapaani.ui.session.LedgerOpenFailedScreen
 import com.vaibhav.kharchapaani.data.auth.AuthState
 import com.vaibhav.kharchapaani.ui.auth.AccountSheet
+import com.vaibhav.kharchapaani.ui.auth.ProfileState
+import com.vaibhav.kharchapaani.ui.auth.ColourChoice
+import com.vaibhav.kharchapaani.domain.Hues
 import com.vaibhav.kharchapaani.ui.auth.AuthUiState
 import com.vaibhav.kharchapaani.ui.auth.AuthViewModel
 import com.vaibhav.kharchapaani.ui.auth.SignInScreen
@@ -222,6 +226,7 @@ class MainActivity : ComponentActivity() {
                     onRetryProfile = authViewModel::retryProfileLoad,
                     onSaveProfile = authViewModel::saveProfile,
                     onSignOut = { authViewModel.signOut(this@MainActivity) },
+                    onSaveHue = authViewModel::saveHue,
                 )
             }
         }
@@ -272,6 +277,9 @@ class MainActivity : ComponentActivity() {
         } else if (intent.action == SplitFlowWidgetProvider.ACTION_VOICE_LOG) {
             viewModel.setTab(0)
             viewModel.requestVoiceCapture()
+        } else if (intent.action == NotificationHelper.ACTION_ANSWER_SETTLEMENT) {
+            viewModel.setTab(1)
+            intent.getLongExtra(NotificationHelper.EXTRA_SETTLEMENT_ID, -1L).takeIf { it > 0 }?.let(viewModel::openSettlementAnswer)
         } else if (intent.action == SplitFlowWidgetProvider.ACTION_VIEW_SPLITS) {
             viewModel.setTab(1)
         }
@@ -289,6 +297,7 @@ fun SplitFlowApp(
     onRetryProfile: () -> Unit,
     onSaveProfile: (name: String, emoji: String?) -> Unit,
     onSignOut: () -> Unit,
+    onSaveHue: (hue: Int, automatic: Boolean) -> Unit = { _, _ -> },
 ) {
     var isAccountSheetOpen by rememberSaveable { mutableStateOf(false) }
     val askBeforeDiscarding by viewModel.askBeforeDiscarding.collectAsStateWithLifecycle()
@@ -308,6 +317,20 @@ fun SplitFlowApp(
     val earliestInsightsMonth by viewModel.earliestInsightsMonth.collectAsState()
     val personBalances by viewModel.personBalances.collectAsState()
     val people by viewModel.people.collectAsState()
+
+    // One colour per person (design item 11). Groupmates' chosen colours are what mine keeps clear
+    // of; everyone on this phone is what a new friend's colour keeps clear of.
+    val groupmateHues = remember(people) { people.filter { it.profileId != null }.mapNotNull { it.hue } }
+    val phoneHues = remember(people) { people.mapNotNull { it.hue ?: Hues.hueOf(it.avatarColor) } }
+    val myHue = authUiState.hue
+    val colourClash = remember(people, myHue) {
+        myHue?.let { mine -> people.firstOrNull { it.profileId != null && it.hue != null && Hues.distance(it.hue, mine) < Hues.MIN_GAP }?.name }
+    }
+    // Someone who never chose gets one, picked clear of their groupmates, once their profile loads.
+    val profileLoaded = authUiState.profile is ProfileState.Loaded
+    LaunchedEffect(profileLoaded, myHue == null, groupmateHues) {
+        if (profileLoaded && myHue == null) Hues.firstPick(selfProfileId, groupmateHues)?.let { onSaveHue(it, true) }
+    }
     val groups by viewModel.groups.collectAsState()
     val rawGroups by viewModel.rawGroups.collectAsState()
     val isParsing by viewModel.isParsing.collectAsState()
@@ -340,6 +363,9 @@ fun SplitFlowApp(
     val isSimplifyDebtsOpen by viewModel.isSimplifyDebtsOpen.collectAsState()
     val simplifiedDebts by viewModel.simplifiedDebts.collectAsState()
     val splitLocked by viewModel.splitLocked.collectAsStateWithLifecycle()
+    val settlementsAwaitingMe by viewModel.settlementsAwaitingMe.collectAsStateWithLifecycle()
+    val settlementsAwaitingThem by viewModel.settlementsAwaitingThem.collectAsStateWithLifecycle()
+    val answeringSettlement by viewModel.answeringSettlement.collectAsStateWithLifecycle()
     val isAddFriendOpen by viewModel.isAddFriendOpen.collectAsState()
 
     // Group Modals
@@ -484,6 +510,7 @@ fun SplitFlowApp(
                         onEditTransaction = { viewModel.openEditTransaction(it) },
                         onDeleteTransaction = { viewModel.deleteTransaction(it) },
                         onRetractSettlement = { viewModel.retractSettlement(it) },
+                        onAnswerSettlement = { viewModel.openSettlementAnswer(it) },
                         onOpenIouDialog = { viewModel.openIouDialog() },
                         onOpenSimplifyDebts = { viewModel.openSimplifyDebts() },
                         accountAvatar = authUiState.accountAvatar,
@@ -509,7 +536,11 @@ fun SplitFlowApp(
                         onOpenSimplifyDebts = { viewModel.openSimplifyDebts() },
                         onOpenIouDialog = { viewModel.openIouDialog() },
                         onSettleUp = { viewModel.openSettleUp(it) },
-                        onViewHistory = { viewModel.openPersonLedger(it) }
+                        onViewHistory = { viewModel.openPersonLedger(it) },
+                        awaitingMe = settlementsAwaitingMe,
+                        awaitingThem = settlementsAwaitingThem,
+                        onAnswerSettlement = { viewModel.openSettlementAnswer(it) },
+                        onWithdrawSettlement = { viewModel.retractSettlement(it) },
                     )
 
                     2 -> InsightsScreen(
@@ -559,6 +590,8 @@ fun SplitFlowApp(
 
     if (isAccountSheetOpen) {
         AccountSheet(
+            colour = ColourChoice(taken = groupmateHues, clashWith = colourClash),
+            onSaveHue = { onSaveHue(it, false) },
             state = authUiState,
             syncStatus = syncStatus,
             askBeforeDiscarding = askBeforeDiscarding,
@@ -600,6 +633,13 @@ fun SplitFlowApp(
             onAllowNotifications = allowNotifications,
         )
     }
+
+    SettlementAnswerSheet(
+        item = answeringSettlement,
+        onConfirm = { viewModel.answerSettlement(confirm = true) },
+        onReject = { note -> viewModel.answerSettlement(confirm = false, note = note) },
+        onDismiss = { viewModel.dismissSettlementAnswer() },
+    )
 
     // Confirm & Edit Bottom Sheet
     ConfirmBottomSheet(
@@ -807,7 +847,8 @@ fun SplitFlowApp(
         onAdd = { name, colorHex ->
             viewModel.addNewFriend(name, colorHex)
         },
-        onDismiss = { viewModel.dismissAddFriend() }
+        onDismiss = { viewModel.dismissAddFriend() },
+        takenHues = phoneHues,
     )
 
     // Bank & UPI Statement Parsing Loading Overlay

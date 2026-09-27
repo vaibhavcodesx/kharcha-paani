@@ -52,12 +52,25 @@ object PersonColours {
         val changes = mutableMapOf<Long, String>()
         val taken = mutableSetOf(MINE)
 
+        // Chosen colours first, exactly as chosen: they're what every other phone shows too.
+        val chosen = people.filter { it.chosenHue != null }
+        val chosenHues = chosen.map { it.chosenHue!! }
+        for (person in chosen) {
+            val hex = Hues.hex(person.chosenHue!!)
+            taken.add(hex)
+            if (hex != person.colorHex) changes[person.id] = hex
+        }
+        // A palette colour too close to someone's chosen one counts as taken.
+        palette.filter { candidate -> Hues.hueOf(candidate)?.let { hue -> chosenHues.any { Hues.distance(it, hue) < Hues.MIN_GAP } } == true }
+            .forEach { taken.add(it) }
+
         // Oldest first, so the person who has had a colour longest is the one who keeps it and a
         // new arrival is the one who moves. Ties on id, so the result never depends on input order.
-        for (person in people.sortedWith(compareBy({ it.createdAt }, { it.id }))) {
+        for (person in people.filter { it.chosenHue == null }.sortedWith(compareBy({ it.createdAt }, { it.id }))) {
             val current = person.colorHex.takeIf { isValid(it) && it != MINE }
             val wanted = current ?: stable(person.key)
-            val settled = if (taken.add(wanted)) wanted else firstFree(taken, person.key)
+            val nearAChosenOne = Hues.hueOf(wanted)?.let { hue -> chosenHues.any { Hues.distance(it, hue) < Hues.MIN_GAP } } == true
+            val settled = if (!nearAChosenOne && taken.add(wanted)) wanted else firstFree(taken, person.key)
             taken.add(settled)
             if (settled != person.colorHex) changes[person.id] = settled
         }
@@ -90,4 +103,9 @@ data class PersonColour(
     val key: String,
     val colorHex: String,
     val createdAt: Long,
+    /**
+     * Their own chosen colour, as a hue (design item 11): the same on every phone, so it's never
+     * moved here. Everyone else fits around it.
+     */
+    val chosenHue: Int? = null,
 )

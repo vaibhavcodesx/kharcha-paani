@@ -9,6 +9,8 @@ import com.vaibhav.kharchapaani.data.db.LedgerDatabases
 import com.vaibhav.kharchapaani.data.db.entity.SyncMetaEntity
 import com.vaibhav.kharchapaani.data.remote.BackgroundAuth
 import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
+import com.vaibhav.kharchapaani.data.repository.LedgerRepository
+import com.vaibhav.kharchapaani.reminder.SettlementReminders
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 import io.github.jan.supabase.exceptions.RestException
 import java.io.IOException
@@ -40,6 +42,10 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             // A pull can change the figures (a groupmate's expense, a restore after reinstalling),
             // and nothing else would tell the home-screen widgets: they'd keep the old numbers.
             SplitFlowWidgetProvider.notifyWidgetUpdate(applicationContext)
+            // A groupmate may have chosen a new colour: fit everyone else on this phone around it.
+            LedgerRepository(database, selfProfileId = userId).repairPersonColours()
+            // Payments a groupmate recorded that wait for my answer: the first nudge, then day 3, 6…
+            SettlementReminders.remind(applicationContext, database)
         }
     }
 

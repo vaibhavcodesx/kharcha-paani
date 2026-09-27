@@ -17,6 +17,9 @@ import com.vaibhav.kharchapaani.data.model.PersonBalance
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.performTouchInput
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -77,13 +80,13 @@ class SplitsSheetsTest {
         composeTestRule.onNodeWithTag("confirm_add_friend_button").assertIsNotEnabled()
         composeTestRule.onNodeWithText("Type their name").assertExists()
         composeTestRule.onNodeWithTag("add_friend_name_input").performTextReplacement("  Rohan  ")
-        composeTestRule.onNodeWithContentDescription("Mint").performScrollTo().performClick()
+        // The middle of the spectrum bar is hue 180, which is free with nobody else around.
+        composeTestRule.onNodeWithTag("hue_picker").performScrollTo().performTouchInput { click(center) }
         composeTestRule.onNodeWithTag("confirm_add_friend_button").assertIsEnabled().performClick()
 
-        // The hex comes from the palette rather than being repeated here, so respacing the
-        // palette's hues doesn't break a test about names and colour selection.
-        val mint = FriendColours.first { it.second == "Mint" }.first
-        assertEquals("Rohan" to mint, added)
+        assertEquals("Rohan", added?.first)
+        val picked = com.vaibhav.kharchapaani.domain.Hues.hueOf(added!!.second)!!
+        assertTrue("picked hue $picked, tapped the middle (180)", com.vaibhav.kharchapaani.domain.Hues.distance(picked, 180) <= 3)
     }
 
     @Test

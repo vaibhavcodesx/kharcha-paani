@@ -13,6 +13,7 @@ import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncMetaEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
+import com.vaibhav.kharchapaani.domain.Hues
 import com.vaibhav.kharchapaani.domain.PersonColours
 import com.vaibhav.kharchapaani.domain.UpiLink
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
@@ -502,7 +503,9 @@ class GroupSyncEngine(
             return dao.insertPerson(
                 PersonEntity(
                     name = name ?: FALLBACK_NAME,
-                    avatarColor = PersonColours.stable(profileId),
+                    // Their own colour when they've chosen one (design item 11), the same as everywhere.
+                    avatarColor = profile?.hue?.let(Hues::hex) ?: PersonColours.stable(profileId),
+                    hue = profile?.hue,
                     profileId = profileId,
                     avatarUrl = profile?.avatarUrl,
                     avatarEmoji = profile?.avatarEmoji,
@@ -514,10 +517,15 @@ class GroupSyncEngine(
         }
         // A hidden profile (null) keeps the name we already know rather than blanking it.
         val upiId = profile?.upiId?.let(UpiLink::cleanId)
+        // A chosen colour replaces whatever this phone had picked; clearing it leaves the colour
+        // they have, which the phone's own repair then treats like anyone else's.
+        val hue = profile?.hue
+        val colour = hue?.let(Hues::hex) ?: existing.avatarColor
         val changed = name != existing.name || profile?.avatarUrl != existing.avatarUrl ||
-            profile?.avatarEmoji != existing.avatarEmoji || upiId != existing.upiId
+            profile?.avatarEmoji != existing.avatarEmoji || upiId != existing.upiId ||
+            hue != existing.hue || colour != existing.avatarColor
         if (name != null && changed) {
-            dao.updatePersonProfile(existing.id, name, profile?.avatarUrl, profile?.avatarEmoji, upiId)
+            dao.updatePersonProfile(existing.id, name, profile?.avatarUrl, profile?.avatarEmoji, upiId, hue, colour)
         }
         return existing.id
     }

@@ -187,6 +187,6 @@ class SupabaseGroupRemote(private val supabase: SupabaseClient) : GroupRemote {
          * field is ever added to either without being added here.
          */
         internal const val VISIBLE_GROUPS_COLUMNS =
-            "*, group_members(profile_id, profiles(id, display_name, avatar_url, avatar_emoji, upi_id))"
+            "*, group_members(profile_id, profiles(id, display_name, avatar_url, avatar_emoji, upi_id, hue))"
     }
 }

@@ -36,9 +36,10 @@ guest of the member who added the expense.
 
 - The host covers their guests' shares within the group. Groupmates settle only with members, so
   nobody else deals with someone who can't sign in, confirm a payment or be notified.
-- The guest's debt to the host lives in the host's own ledger, as an ordinary split with a local
-  friend. Since 1.3 that syncs owner-private, so the host sees "Ravi owes you ₹225" on every phone
-  of theirs and groupmates never see Ravi's balance, only his name on the expense.
+- The guest's debt to the host comes from the guest's line on the expense. On the host's phone
+  that line is linked to the friend, so "Ravi owes you ₹225" appears under Friends. After a
+  reinstall the link is found again by name. Groupmates see only the name on the expense, never
+  Ravi's balance.
 - Everyone in the group sees the guest's line on the expense ("Ravi · Lal's guest · ₹225"), so the
   total visibly adds up.
 - Only the host adds, changes or removes guests. The payer can still edit a groupmate's expense
@@ -59,8 +60,12 @@ guest of the member who added the expense.
 
 - A group expense's split picker offers the group's members plus your friends who aren't on the
   app. Picking one makes them your guest.
-- Group balances count a guest's share as the host's. The host's ledger records the guest's
-  share as a split with that friend, so "Ravi owes you" appears under Friends.
+- On every phone a guest's share is stored under the host, with the guest's name. Every group
+  balance and "who owes whom" therefore counts it as the host's to cover.
+- Spending totals count only the host's own share: covering a friend is lending, not spending.
+- A groupmate editing the host's expense (the payer) can change the details but not the split
+  or the amount while guests are in it. The server needs the guests sent back unchanged, and the
+  editor says why.
 
 ---
 
@@ -113,6 +118,14 @@ it, which is the rule this migration introduces.
 - Distinct feed states, a prompt card for the person who has to answer, and Withdraw and Clear
   for the recorder.
 - The reminder notifications above.
+
+### Rollout order (applies to all three migrations)
+
+A phone still on 1.3 treats every settlement as final and can't answer one, and can't show
+guests or chosen colours. The migrations and 1.4.0 should go out together. Apply the migrations,
+then publish 1.4.0 the same day, and ask the group (you and your testers) to update. Nothing on
+live breaks for a 1.3 phone in between: it just shows pending settlements as settled until it
+updates.
 
 ---
 

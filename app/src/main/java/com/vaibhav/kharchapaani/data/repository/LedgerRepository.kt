@@ -585,7 +585,7 @@ class LedgerRepository(
     suspend fun repairPersonColours() = withContext(Dispatchers.IO) {
         val people = db.personDao().getAllPeopleDirect()
         val changes = PersonColours.respace(
-            people.map { PersonColour(id = it.id, key = it.profileId ?: it.name, colorHex = it.avatarColor, createdAt = it.createdAt) }
+            people.map { PersonColour(id = it.id, key = it.profileId ?: it.name, colorHex = it.avatarColor, createdAt = it.createdAt, chosenHue = it.hue) }
         )
         if (changes.isEmpty()) return@withContext
         db.withTransaction { changes.forEach { (id, hex) -> db.personDao().updatePersonColour(id, hex) } }

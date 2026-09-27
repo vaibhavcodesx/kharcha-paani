@@ -74,8 +74,8 @@ interface GroupSyncDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertPerson(person: PersonEntity): Long
 
-    @Query("UPDATE people SET name = :name, avatarUrl = :avatarUrl, avatarEmoji = :avatarEmoji, upiId = :upiId WHERE id = :id")
-    suspend fun updatePersonProfile(id: Long, name: String, avatarUrl: String?, avatarEmoji: String?, upiId: String?)
+    @Query("UPDATE people SET name = :name, avatarUrl = :avatarUrl, avatarEmoji = :avatarEmoji, upiId = :upiId, hue = :hue, avatarColor = :avatarColor WHERE id = :id")
+    suspend fun updatePersonProfile(id: Long, name: String, avatarUrl: String?, avatarEmoji: String?, upiId: String?, hue: Int?, avatarColor: String)
 
     @Query(
         "SELECT t.* FROM transactions t JOIN groups g ON g.id = t.groupId " +

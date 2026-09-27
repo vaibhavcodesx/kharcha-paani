@@ -47,6 +47,8 @@ import com.vaibhav.kharchapaani.data.repository.LocalBackupRepository
 import com.vaibhav.kharchapaani.data.repository.toBackup
 import com.vaibhav.kharchapaani.data.repository.ParseChoices
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
+import com.vaibhav.kharchapaani.data.db.entity.SettlementStatus
+import com.vaibhav.kharchapaani.data.repository.NotYoursToWithdrawException
 import com.vaibhav.kharchapaani.data.settings.AppSettings
 import com.vaibhav.kharchapaani.data.sync.SyncScheduler
 import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
@@ -422,7 +424,68 @@ class MainViewModel(
             } catch (e: ArchivedGroupException) {
                 _statusMessage.value = archivedMessage(e)
                 return@launch
+            } catch (e: NotYoursToWithdrawException) {
+                // Theirs to withdraw; mine to answer (design item 10).
+                openSettlementAnswer(settlementId)
+                return@launch
             }
+            SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
+        }
+    }
+
+    // ---- Settlement confirmation (design item 10) ----
+
+    /** Settlements between members, as feed items, for the ones waiting on my answer. */
+    private val settlementItems: StateFlow<List<ActivityItem.Settlement>> = combine(
+        ledgerRepo.allSettlements, people, rawGroups,
+    ) { settlements, people, groups ->
+        val names = people.associate { it.id to it.name }
+        val groupNames = groups.associate { it.id to it.name }
+        settlements.filter { it.groupId != null }.map { settlement ->
+            ActivityItem.Settlement(
+                settlement,
+                fromName = if (settlement.fromPersonId == -1L) "You" else names[settlement.fromPersonId] ?: "Someone",
+                toName = if (settlement.toPersonId == -1L) "You" else names[settlement.toPersonId] ?: "Someone",
+                groupName = settlement.groupId?.let(groupNames::get),
+            )
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** What groupmates say changed hands with me, waiting for me to confirm or dispute. */
+    val settlementsAwaitingMe: StateFlow<List<ActivityItem.Settlement>> = settlementItems
+        .map { items -> items.filter { it.awaitsMyAnswer }.sortedBy { it.settlement.createdAt } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Mine, still waiting for the other person: shown so I know, with how long it's waited. */
+    val settlementsAwaitingThem: StateFlow<List<ActivityItem.Settlement>> = settlementItems
+        .map { items -> items.filter { it.recordedByMe && it.settlement.status == SettlementStatus.PENDING }.sortedBy { it.settlement.createdAt } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _answeringSettlementId = MutableStateFlow<Long?>(null)
+    val answeringSettlement: StateFlow<ActivityItem.Settlement?> = combine(_answeringSettlementId, settlementItems) { id, items ->
+        id?.let { wanted -> items.firstOrNull { it.settlement.id == wanted && it.awaitsMyAnswer } }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    fun openSettlementAnswer(settlementId: Long) {
+        _answeringSettlementId.value = settlementId
+    }
+
+    fun dismissSettlementAnswer() {
+        _answeringSettlementId.value = null
+    }
+
+    fun answerSettlement(confirm: Boolean, note: String = "") {
+        val id = _answeringSettlementId.value ?: return
+        _answeringSettlementId.value = null
+        viewModelScope.launch {
+            try {
+                ledgerRepo.respondToSettlement(id, confirm, note)
+            } catch (e: ArchivedGroupException) {
+                _statusMessage.value = archivedMessage(e)
+                return@launch
+            }
+            NotificationHelper.clearSettlementReminder(getApplication(), id)
+            _statusMessage.value = if (confirm) "Confirmed. It counts for both of you now." else "Marked not right. It won't count."
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
     }

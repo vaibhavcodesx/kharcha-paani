@@ -24,8 +24,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.vaibhav.kharchapaani.data.db.entity.SettlementStatus
 import com.vaibhav.kharchapaani.data.model.ActivityItem
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
@@ -53,6 +55,8 @@ fun SettlementItemCard(
     onRetract: () -> Unit,
     modifier: Modifier = Modifier,
     position: RowPosition = RowPosition.Single,
+    // Opens the confirm / "that's not right" sheet for one a groupmate recorded (design item 10).
+    onAnswer: () -> Unit = {},
 ) {
     val settlement = item.settlement
     var showMenu by remember { mutableStateOf(false) }
@@ -67,6 +71,10 @@ fun SettlementItemCard(
     ).joinToString(" · ")
 
     val accent = if (incoming) ChartreuseSecondary else WarmAmberLight
+    val settled = settlement.status == SettlementStatus.CONFIRMED
+    val rejected = settlement.status == SettlementStatus.REJECTED
+    // Pending or rejected ones never moved a balance, so their amount doesn't wear the money colours.
+    val statusLine = item.statusLine
 
     // The row itself opens the menu, so its amount lines up with every other row's instead of
     // sitting left of a ⋯ button.
@@ -89,7 +97,9 @@ fun SettlementItemCard(
                 .heightIn(min = 64.dp)
                 .background(CharcoalCard)
                 .then(
-                    if (item.involvesMe) {
+                    if (item.awaitsMyAnswer) {
+                        Modifier.clickable(onClickLabel = "Confirm or say this isn't right") { onAnswer() }
+                    } else if (item.involvesMe && (settled || item.recordedByMe)) {
                         Modifier.clickable(onClickLabel = "More options for ${item.title}") { showMenu = true }
                     } else {
                         Modifier.semantics(mergeDescendants = true) {}
@@ -115,11 +125,22 @@ fun SettlementItemCard(
             Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
                 Text(text = item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(text = detail, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (statusLine != null) {
+                    Text(
+                        text = statusLine,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (item.awaitsMyAnswer) WarmAmberLight else MutedWarmGray,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.testTag("settlement_status_${settlement.id}"),
+                    )
+                }
             }
             Text(
                 text = (if (outgoing) "-" else if (incoming) "+" else "") + Money.format(settlement.amount),
-                style = MoneyText.row,
+                style = if (rejected) MoneyText.row.copy(textDecoration = TextDecoration.LineThrough) else MoneyText.row,
                 color = when {
+                    !settled -> MutedWarmGray
                     incoming -> ChartreuseSecondary
                     outgoing -> OffWhiteText
                     else -> MutedWarmGray
@@ -134,7 +155,18 @@ fun SettlementItemCard(
             modifier = Modifier.align(Alignment.TopEnd),
         ) {
             DropdownMenuItem(
-                text = { Text(if (settlement.isIou) "Delete IOU" else "Retract settlement", color = OffWhiteText) },
+                text = {
+                    Text(
+                        when {
+                            // Mine, not yet answered: nothing has counted, so it's withdrawn, not retracted.
+                            settlement.status == SettlementStatus.PENDING -> "Withdraw"
+                            rejected -> "Clear it away"
+                            settlement.isIou -> "Delete IOU"
+                            else -> "Retract settlement"
+                        },
+                        color = OffWhiteText,
+                    )
+                },
                 onClick = {
                     showMenu = false
                     onRetract()

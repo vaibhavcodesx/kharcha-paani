@@ -108,6 +108,29 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Saves this account's colour. [automatic] is the app picking one for someone who never chose:
+     * a refusal then just waits for the next try instead of showing an error they didn't cause.
+     */
+    fun saveHue(hue: Int?, automatic: Boolean = false) {
+        val userId = (_uiState.value.authState as? AuthState.SignedIn)?.userId ?: return
+        _uiState.update { it.copy(hueSaveError = null) }
+        viewModelScope.launch {
+            val error: String? = try {
+                val saved = repository.updateHue(userId, hue)
+                _uiState.update { it.copy(profile = ProfileState.Loaded(saved)) }
+                null
+            } catch (e: IOException) {
+                "You're offline, so your colour wasn't saved. Try again when you're connected."
+            } catch (e: RestException) {
+                Log.w(TAG, "Colour rejected: ${e.error}")
+                // 23514: the server's rule (too close to a groupmate's colour, or the amber kept for You).
+                "Someone in your groups has a colour too close to that one. Pick one further away."
+            }
+            if (!automatic) _uiState.update { it.copy(hueSaveError = error) }
+        }
+    }
+
     fun signOut(context: Context) {
         viewModelScope.launch { repository.signOut(context) }
     }

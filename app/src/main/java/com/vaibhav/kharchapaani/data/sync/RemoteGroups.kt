@@ -18,6 +18,8 @@ data class RemoteProfile(
     @SerialName("avatar_emoji") val avatarEmoji: String? = null,
     /** Where to pay them, for settle-up. Format-checked by the server and re-checked before use. */
     @SerialName("upi_id") val upiId: String? = null,
+    /** Their own colour as an OKLCH hue (migration profile_hue), the same on every phone. */
+    val hue: Int? = null,
 )
 
 @Serializable
