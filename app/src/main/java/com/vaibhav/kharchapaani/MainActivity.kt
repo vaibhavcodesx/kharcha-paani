@@ -221,6 +221,10 @@ class MainActivity : ComponentActivity() {
                         onIntentHandled()
                     }
                 }
+                // Your own colour, everywhere the app draws "you" (design item 11). Provided around
+                // the whole app: the screens, the sheets and the dock all read it.
+                val myColour = authUiState.hue?.let { MyColour(hueColour(it), Hues.hex(it)) } ?: LocalMyColour.current
+                CompositionLocalProvider(LocalMyColour provides myColour) {
                 SplitFlowApp(
                     viewModel = viewModel,
                     sharedGroups = sharedGroups.controller,
@@ -231,6 +235,7 @@ class MainActivity : ComponentActivity() {
                     onSignOut = { authViewModel.signOut(this@MainActivity) },
                     onSaveHue = authViewModel::saveHue,
                 )
+                }
             }
         }
     }
@@ -325,7 +330,7 @@ fun SplitFlowApp(
     // of; everyone on this phone is what a new friend's colour keeps clear of.
     val groupmateHues = remember(people) { people.filter { it.profileId != null }.mapNotNull { it.hue } }
     val myHue = authUiState.hue
-    val phoneHues = remember(people, myHue) { people.mapNotNull { it.hue ?: Hues.hueOf(it.avatarColor) } + listOfNotNull(myHue) }
+    val phoneColours = remember(people, myHue) { people.map { it.avatarColor } + listOfNotNull(myHue?.let(Hues::hex)) }
     LaunchedEffect(myHue) { viewModel.fitColoursAround(myHue) }
     val colourClash = remember(people, myHue) {
         myHue?.let { mine -> people.firstOrNull { it.profileId != null && it.hue != null && Hues.distance(it.hue, mine) < Hues.MIN_GAP }?.name }
@@ -568,10 +573,7 @@ fun SplitFlowApp(
             }
         }
         // Only the dock samples the content: sheets and dialogs are other windows (see LocalHazeState).
-        CompositionLocalProvider(
-            LocalHazeState provides hazeState,
-            LocalMyColour provides (myHue?.let { MyColour(hueColour(it), Hues.hex(it)) } ?: LocalMyColour.current),
-        ) {
+        CompositionLocalProvider(LocalHazeState provides hazeState) {
             KpSnackbarHost(
                 state = snackbarHostState,
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = snackbarClearance()),
@@ -756,7 +758,8 @@ fun SplitFlowApp(
         onConfirm = { fromId, toId, amt, note, groupId ->
             viewModel.recordIou(fromId, toId, amt, note, groupId)
         },
-        onDismiss = { viewModel.dismissIouDialog() }
+        onDismiss = { viewModel.dismissIouDialog() },
+        upiPayee = upiPayee,
     )
 
     // Simplify Debts Dialog
@@ -855,7 +858,7 @@ fun SplitFlowApp(
             viewModel.addNewFriend(name, colorHex)
         },
         onDismiss = { viewModel.dismissAddFriend() },
-        takenHues = phoneHues,
+        takenColours = phoneColours,
     )
 
     // Bank & UPI Statement Parsing Loading Overlay

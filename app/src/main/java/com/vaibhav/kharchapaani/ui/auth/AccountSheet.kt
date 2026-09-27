@@ -213,24 +213,26 @@ fun AccountSheetContent(
         // No brand mark appeared anywhere in the app, which is a real part of why a settings page
         // reads as generic (backlog item 19).
         BrandMark(Modifier.padding(bottom = Spacing.l))
+        // Your own colour once you have one (design item 11): the same one groupmates see you in.
+        val mine = state.hue?.let(::hueColour)
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.xl)) {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(64.dp)
                     .clip(CircleShape)
-                    .background(WarmAmberPrimary.copy(alpha = 0.18f))
+                    .background((mine ?: WarmAmberPrimary).copy(alpha = 0.18f))
                     // The brand gradient as a ring. It is the app's one distinctive mark and it
                     // was used only as a fill — on the add button and the hero figure — never as
                     // an edge. This is the one avatar in the app that is *yours*, which is the
                     // right place for it and the reason it goes nowhere else.
-                    .border(2.dp, BrandGradient.diagonal(), CircleShape)
+                    .then(if (mine != null) Modifier.border(2.dp, mine, CircleShape) else Modifier.border(2.dp, BrandGradient.diagonal(), CircleShape))
                     .semantics { contentDescription = "Your avatar" },
             ) {
                 Text(
                     text = previewAvatar,
                     fontSize = if (emoji != null) 34.sp else 28.sp,
-                    color = WarmAmberLight,
+                    color = mine ?: WarmAmberLight,
                     fontWeight = FontWeight.SemiBold,
                 )
             }

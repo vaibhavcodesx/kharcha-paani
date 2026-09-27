@@ -46,6 +46,24 @@ class HuesTest {
     }
 
     @Test
+    fun `the friend field holds well over 50 friends, each clear of the others`() {
+        // Owner, 2026-09-27: the one-row bar ran out after about ten friends.
+        val placed = mutableListOf<Hues.Slot>()
+        repeat(60) { i -> placed += Hues.firstFreeSlot("friend-$i", placed) ?: error("no room for friend ${i + 1}") }
+        for (i in placed.indices) for (j in placed.indices) if (i != j) assertFalse("${placed[i]} vs ${placed[j]}", Hues.clashes(placed[i], placed[j]))
+        assertTrue(Hues.roomFor(placed) >= 10)
+    }
+
+    @Test
+    fun `a stored colour finds its way back to its slot`() {
+        for (slot in listOf(Hues.Slot(120, 0), Hues.Slot(200, 1), Hues.Slot(300, 2))) {
+            val back = Hues.slotOf(slot.hex)!!
+            assertEquals(slot.shade, back.shade)
+            assertTrue(Hues.distance(slot.hue, back.hue) <= 3)
+        }
+    }
+
+    @Test
     fun `the old palette's colours have hues where expected`() {
         assertEquals(243, Hues.hueOf("#70C1FF"))
         assertEquals(43, Hues.hueOf("#FF7A3D"))

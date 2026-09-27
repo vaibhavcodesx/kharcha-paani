@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
+import com.vaibhav.kharchapaani.domain.UpiPayee
 import com.vaibhav.kharchapaani.ui.groups.RecordInGroupSection
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
 import com.vaibhav.kharchapaani.ui.theme.EyebrowText
@@ -31,10 +32,11 @@ fun IouSheet(
     onCreateGroup: () -> Unit,
     onConfirm: (fromPersonId: Long, toPersonId: Long, amount: Double, note: String, groupId: Long?) -> Unit,
     onDismiss: () -> Unit,
+    upiPayee: UpiPayee? = null,
 ) {
     if (!isOpen) return
     KpModalSheet(onDismiss = onDismiss) {
-        IouContent(people, groupOptionsFor, onCreateGroup, onConfirm)
+        IouContent(people, groupOptionsFor, onCreateGroup, onConfirm, upiPayee = upiPayee)
     }
 }
 
@@ -50,6 +52,8 @@ fun IouContent(
     onCreateGroup: () -> Unit,
     onConfirm: (fromPersonId: Long, toPersonId: Long, amount: Double, note: String, groupId: Long?) -> Unit,
     modifier: Modifier = Modifier,
+    // This account's UPI ID, for the code a friend scans when you borrow from them.
+    upiPayee: UpiPayee? = null,
 ) {
     var lent by rememberSaveable { mutableStateOf(true) }
     var personId by rememberSaveable { mutableStateOf(people.singleOrNull()?.id ?: NOBODY) }
@@ -120,6 +124,18 @@ fun IouContent(
         )
         SheetRow(label = "For") {
             SheetTextInput(value = reason, onValueChange = { reason = it }, placeholder = "Optional, like “hackathon food”")
+        }
+        // The same code as settling up, either way round: lend and pay into theirs (or show yours),
+        // borrow and they scan yours.
+        if (person != null) {
+            MoneyQrSection(
+                person = person,
+                myPayee = upiPayee,
+                amount = value,
+                note = reason.ifBlank { "Kharcha Paani IOU" },
+                moneyComesToMe = !lent,
+                modifier = Modifier.padding(top = Spacing.m),
+            )
         }
         RecordInGroupSection(
             otherPersonName = person?.name ?: "them",

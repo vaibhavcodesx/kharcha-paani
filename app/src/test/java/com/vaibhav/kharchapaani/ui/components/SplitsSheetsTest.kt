@@ -80,8 +80,8 @@ class SplitsSheetsTest {
         composeTestRule.onNodeWithTag("confirm_add_friend_button").assertIsNotEnabled()
         composeTestRule.onNodeWithText("Type their name").assertExists()
         composeTestRule.onNodeWithTag("add_friend_name_input").performTextReplacement("  Rohan  ")
-        // The middle of the spectrum bar is hue 180, which is free with nobody else around.
-        composeTestRule.onNodeWithTag("hue_picker").performScrollTo().performTouchInput { click(center) }
+        // The middle of the field is hue 180 in the middle shade, free with nobody else around.
+        composeTestRule.onNodeWithTag("friend_colour_field").performScrollTo().performTouchInput { click(center) }
         composeTestRule.onNodeWithTag("confirm_add_friend_button").assertIsEnabled().performClick()
 
         assertEquals("Rohan", added?.first)

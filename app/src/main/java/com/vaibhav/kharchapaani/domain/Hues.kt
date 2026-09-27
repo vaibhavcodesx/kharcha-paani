@@ -63,15 +63,120 @@ object Hues {
     }
 
     /** The colour for [hue], as #RRGGBB. Chroma is lowered, never the hue, where sRGB can't show it. */
-    fun hex(hue: Int): String {
+    fun hex(hue: Int): String = hex(hue, LIGHTNESS)
+
+    /** The colour for [hue] at [lightness], as #RRGGBB, lowering chroma where sRGB can't show it. */
+    fun hex(hue: Int, lightness: Double): String {
         var chroma = CHROMA
         while (chroma > 0.0) {
-            srgb(LIGHTNESS, chroma, norm(hue).toDouble())?.let { (r, g, b) ->
+            srgb(lightness, chroma, norm(hue).toDouble())?.let { (r, g, b) ->
                 return "#%02X%02X%02X".format((r * 255).roundToInt(), (g * 255).roundToInt(), (b * 255).roundToInt())
             }
             chroma -= 0.005
         }
         return "#CCCCCC"
+    }
+
+    // ---- Friends on this phone (not on the app): a bigger field, hue across and shade down ----
+    //
+    // One row of 25-degree slots holds about 13 people, which ran out after ten friends (owner,
+    // 2026-09-27: "capable of handling at least 50 local friends"). Friends who aren't on the app
+    // only ever meet on this phone, so they get three shades of every hue and a tighter gap within a
+    // shade: about 90 distinct colours, all still readable on the dark background. A groupmate's own
+    // colour keeps the stricter one-row rule, because the server checks that one.
+
+    /** Lightness of each shade row, lightest first. The middle one is the groupmate row. */
+    val SHADES = listOf(0.88, LIGHTNESS, 0.70)
+
+    /** Within one shade, colours closer than this look alike. */
+    const val FRIEND_GAP = 12
+
+    /** Across neighbouring shades the lightness already tells them apart, bar nearly equal hues. */
+    const val FRIEND_GAP_NEXT_SHADE = 5
+
+    data class Slot(val hue: Int, val shade: Int) {
+        val hex: String get() = hex(hue, SHADES[shade])
+    }
+
+    /** Where a stored colour sits in the field: its hue and the nearest shade row. */
+    fun slotOf(hex: String): Slot? {
+        val hue = hueOf(hex) ?: return null
+        val l = lightnessOf(hex) ?: return null
+        return Slot(hue, SHADES.indices.minBy { abs(SHADES[it] - l) })
+    }
+
+    /**
+     * Whether two friends' colours are too alike. Two degrees of slack under the spacing new friends
+     * get: a colour is stored as hex, and reading its hue back can land a degree or two away, which
+     * must not make two neighbours on the grid suddenly count as clashing.
+     */
+    fun clashes(a: Slot, b: Slot): Boolean = when (abs(a.shade - b.shade)) {
+        0 -> distance(a.hue, b.hue) < FRIEND_GAP - 2
+        1 -> distance(a.hue, b.hue) < FRIEND_GAP_NEXT_SHADE - 1
+        else -> false
+    }
+
+    fun isFreeSlot(slot: Slot, taken: Collection<Slot>): Boolean =
+        norm(slot.hue) !in RESERVED && taken.none { clashes(it, slot) }
+
+    /** The free slot nearest [wanted], its own row first; null only when all ~90 are taken. */
+    fun nearestFreeSlot(wanted: Slot, taken: Collection<Slot>): Slot? {
+        val rows = SHADES.indices.sortedBy { abs(it - wanted.shade) }
+        for (row in rows) {
+            for (step in 0..180) {
+                for (hue in listOf(norm(wanted.hue + step), norm(wanted.hue - step))) {
+                    val slot = Slot(hue, row)
+                    if (isFreeSlot(slot, taken)) return slot
+                }
+            }
+        }
+        return null
+    }
+
+    /**
+     * The grid new friends are placed on: every [FRIEND_GAP] degrees in each shade, the middle shade
+     * offset by half a step so neighbouring shades never sit on the same hue. It packs about 80 into
+     * the field; placing each friend as far as possible from the rest instead left scattered gaps
+     * and ran out at 55.
+     */
+    private val GRID: List<Slot> = SHADES.indices.sortedBy { abs(it - 1) }.flatMap { row ->
+        val offset = if (row == 1) FRIEND_GAP / 2 else 0
+        (0 until 360 step FRIEND_GAP).map { Slot(norm(it + offset), row) }
+    }
+
+    /**
+     * A new friend's first colour: a free grid spot, the one furthest from everyone (middle shade
+     * first), starting where [key] points so it depends on them. When existing colours block the
+     * whole grid, any free spot at all.
+     */
+    fun firstFreeSlot(key: String, taken: Collection<Slot>): Slot? {
+        fun spread(slot: Slot) = if (taken.isEmpty()) 0 else taken.minOf { distance(it.hue, slot.hue) + 20 * abs(it.shade - slot.shade) }
+        val start = Math.floorMod(key.hashCode(), 360)
+        GRID.filter { isFreeSlot(it, taken) }
+            .maxWithOrNull(compareBy<Slot> { spread(it) }.thenBy { -abs(it.shade - 1) }.thenBy { -distance(it.hue, start) })
+            ?.let { return it }
+        return SHADES.indices.flatMap { row -> (0 until 360).map { Slot(norm(start + it), row) } }.firstOrNull { isFreeSlot(it, taken) }
+    }
+
+    /** How many more friends fit with [taken] already placed: filled greedily, as new friends are. */
+    fun roomFor(taken: Collection<Slot>): Int {
+        val placed = taken.toMutableList()
+        var room = 0
+        while (room < 200) {
+            placed += firstFreeSlot("room-$room", placed) ?: break
+            room++
+        }
+        return room
+    }
+
+    private fun lightnessOf(hex: String): Double? {
+        if (!Regex("^#[0-9A-Fa-f]{6}$").matches(hex)) return null
+        fun lin(c: Int): Double { val v = c / 255.0; return if (v <= 0.04045) v / 12.92 else ((v + 0.055) / 1.055).pow(2.4) }
+        val r = lin(hex.substring(1, 3).toInt(16)); val g = lin(hex.substring(3, 5).toInt(16)); val b = lin(hex.substring(5, 7).toInt(16))
+        val l = cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
+        val m = cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
+        val s = cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
+        return 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s
     }
 
     /** A colour's OKLCH hue, for fitting colours stored as hex (friends not on the app) into the rules. */

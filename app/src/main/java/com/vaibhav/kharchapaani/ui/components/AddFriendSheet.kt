@@ -16,6 +16,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -51,9 +52,9 @@ private val ColourNames = listOf("Sand", "Lime", "Green", "Mint", "Sky", "Violet
 val FriendColours: List<Pair<String, String>> = PersonColours.palette.zip(ColourNames)
 
 @Composable
-fun AddFriendSheet(isOpen: Boolean, onAdd: (name: String, colorHex: String) -> Unit, onDismiss: () -> Unit, takenHues: List<Int> = emptyList()) {
+fun AddFriendSheet(isOpen: Boolean, onAdd: (name: String, colorHex: String) -> Unit, onDismiss: () -> Unit, takenColours: List<String> = emptyList()) {
     if (!isOpen) return
-    KpModalSheet(onDismiss = onDismiss) { AddFriendContent(onAdd, takenHues = takenHues) }
+    KpModalSheet(onDismiss = onDismiss) { AddFriendContent(onAdd, takenColours = takenColours) }
 }
 
 /** A friend is just a name and a colour; the avatar previews both as you type. */
@@ -62,12 +63,16 @@ fun AddFriendSheet(isOpen: Boolean, onAdd: (name: String, colorHex: String) -> U
 fun AddFriendContent(
     onAdd: (name: String, colorHex: String) -> Unit,
     modifier: Modifier = Modifier,
-    // The colours of everyone already on this phone, as hues: the picker keeps clear of them.
-    takenHues: List<Int> = emptyList(),
+    // The colours of everyone already on this phone, you included: the field keeps clear of them.
+    takenColours: List<String> = emptyList(),
 ) {
+    val taken = remember(takenColours) { takenColours.mapNotNull(Hues::slotOf) }
     var name by rememberSaveable { mutableStateOf("") }
-    var hue by rememberSaveable { mutableStateOf(Hues.firstPick("new-friend", takenHues) ?: 243) }
-    val colour = Hues.hex(hue)
+    var hue by rememberSaveable { mutableStateOf(-1) }
+    var shade by rememberSaveable { mutableStateOf(1) }
+    if (hue < 0) (Hues.firstFreeSlot("new-friend", taken) ?: Hues.Slot(243, 1)).let { hue = it.hue; shade = it.shade }
+    val slot = Hues.Slot(hue, shade)
+    val colour = slot.hex
 
     SheetScaffold(
         modifier = modifier,
@@ -93,6 +98,11 @@ fun AddFriendContent(
         }
         Text("COLOUR", style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s))
         // Any colour along the spectrum, kept clear of everyone else's (design item 11).
-        HuePicker(hue = hue, taken = takenHues, onHueChange = { hue = it }, whose = "${name.trim().ifBlank { "Their" }}'s".replace("Their's", "Their"))
+        FriendColourField(
+            selected = slot,
+            taken = taken,
+            onPick = { hue = it.hue; shade = it.shade },
+            whose = name.trim().takeIf { it.isNotEmpty() }?.let { "$it's" } ?: "Their",
+        )
     }
 }

@@ -98,10 +98,26 @@ class SettleUpUpiTest {
     }
 
     @Test
-    fun `no code when you're the one paying`() {
+    fun `paying a friend with no UPI ID shows your own code, with no button to pay yourself`() {
+        // Owner, 2026-09-27: a code on both sides. Someone who isn't on the app has no UPI ID here,
+        // so your code is what they scan when the money is really coming your way.
         show(UpiPayee("priya@okaxis", "Priya"), owed = -450.0)
 
-        composeTestRule.onNodeWithTag("upi_payment_card").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("upi_payment_card").performScrollTo()
+        composeTestRule.onNodeWithText("Scan to pay ₹450").assertExists()
+        composeTestRule.onNodeWithTag("upi_deep_link_button").assertDoesNotExist()
+    }
+
+    @Test
+    fun `with both codes available, either can be shown and only theirs offers to pay`() {
+        show(UpiPayee("priya@okaxis", "Priya"), owed = 450.0, person = rohan.copy(upiId = "rohan@okhdfc"))
+
+        // They're paying me: my code first.
+        composeTestRule.onNodeWithTag("qr_mine").performScrollTo()
+        composeTestRule.onNodeWithTag("upi_deep_link_button").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("qr_theirs").performClick()
+        composeTestRule.onNodeWithTag("upi_id_text").performScrollTo().assertTextContains("rohan@okhdfc")
+        composeTestRule.onNodeWithTag("upi_deep_link_button").assertExists()
     }
 
     @Test
