@@ -21,7 +21,12 @@ import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 object NotificationHelper {
 
     const val CHANNEL_DAILY_REMINDER = "daily_reminder"
+    const val CHANNEL_SETTLEMENTS = "settlements_to_confirm"
     private const val NOTIFICATION_ID_DAILY_REMINDER = 2001
+    /** One notification per settlement, so a newer stage replaces the older one for the same payment. */
+    private const val NOTIFICATION_ID_SETTLEMENT_BASE = 30_000
+    const val ACTION_ANSWER_SETTLEMENT = "com.vaibhav.kharchapaani.ACTION_ANSWER_SETTLEMENT"
+    const val EXTRA_SETTLEMENT_ID = "settlement_id"
 
     fun createChannels(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -33,7 +38,51 @@ object NotificationHelper {
         ).apply {
             description = "A nudge in the evening if nothing's been logged that day"
         }
-        context.getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
+        val settlements = NotificationChannel(
+            CHANNEL_SETTLEMENTS,
+            "Payments to confirm",
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply {
+            description = "When a groupmate says money changed hands with you, until you confirm it or say it isn't right"
+        }
+        context.getSystemService(NotificationManager::class.java)?.let {
+            it.createNotificationChannel(channel)
+            it.createNotificationChannel(settlements)
+        }
+    }
+
+    /** A settlement waiting for my answer (design item 10); tapping it opens the answer sheet. */
+    fun showSettlementReminder(context: Context, settlementId: Long, title: String, text: String): Boolean {
+        if (!canNotify(context)) return false
+        createChannels(context)
+        val open = Intent(context, MainActivity::class.java).apply {
+            action = ACTION_ANSWER_SETTLEMENT
+            putExtra(EXTRA_SETTLEMENT_ID, settlementId)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val id = NOTIFICATION_ID_SETTLEMENT_BASE + (settlementId % 100_000).toInt()
+        val pendingIntent = PendingIntent.getActivity(context, id, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val notification = NotificationCompat.Builder(context, CHANNEL_SETTLEMENTS)
+            .setSmallIcon(R.drawable.ic_stat_reminder)
+            .setColor(0xFFFF7A3D.toInt())
+            .setContentTitle(title)
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
+        return try {
+            NotificationManagerCompat.from(context).notify(id, notification)
+            true
+        } catch (e: SecurityException) {
+            false
+        }
+    }
+
+    /** Takes a settlement's reminder down once it's answered here. */
+    fun clearSettlementReminder(context: Context, settlementId: Long) {
+        NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID_SETTLEMENT_BASE + (settlementId % 100_000).toInt())
     }
 
     /** False when notifications are off for the app: not granted on Android 13+, or turned off. */

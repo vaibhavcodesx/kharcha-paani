@@ -50,7 +50,8 @@ class PersonColoursTest {
 
         assertFalse("the one who had it first keeps it", changes.containsKey(1))
         assertNotEquals("#5BD6B0", changes[2])
-        assertTrue(changes.getValue(2) in PersonColours.palette)
+        // Moved somewhere in the friend field, clear of the first one (no longer only the palette).
+        assertFalse(Hues.clashes(Hues.slotOf("#5BD6B0")!!, Hues.slotOf(changes.getValue(2))!!))
     }
 
     @Test
@@ -109,7 +110,18 @@ class PersonColoursTest {
         val changes = PersonColours.respace(crowd)
 
         assertEquals("everyone is given something", 20, changes.size)
-        assertTrue(changes.values.all { it in PersonColours.palette })
+        // Twenty fit in the friend field with nobody sharing (the eight-colour palette forced repeats).
+        val slots = changes.values.map { Hues.slotOf(it)!! }
+        for (i in slots.indices) for (j in slots.indices) if (i != j) assertFalse(Hues.clashes(slots[i], slots[j]))
+    }
+
+    @Test
+    fun `sixty friends settle into the field and stay put`() {
+        val crowd = (1L..60L).map { person(it, "friend-$it", createdAt = it) }
+        val first = PersonColours.respace(crowd)
+        val settled = crowd.map { it.copy(colorHex = first[it.id] ?: it.colorHex) }
+
+        assertTrue("stored as hex and read back, nobody moves again", PersonColours.respace(settled).isEmpty())
     }
 
     @Test

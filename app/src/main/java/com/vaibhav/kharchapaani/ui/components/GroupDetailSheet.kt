@@ -1,5 +1,6 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import com.vaibhav.kharchapaani.ui.theme.LocalMyColour
 import androidx.compose.foundation.background
 import kotlin.math.roundToInt
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
@@ -140,7 +141,8 @@ fun GroupDetailContent(
     val dateFormat = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
     val accent = remember(group.colorHex) { parseColor(group.colorHex) }
     val net = groupDetails.netBalanceForMe
-    val shares = remember(groupDetails) { GroupInsights.memberShares(groupDetails.transactions, groupDetails.members) }
+    val myColour = LocalMyColour.current.hex
+    val shares = remember(groupDetails, myColour) { GroupInsights.memberShares(groupDetails.transactions, groupDetails.members, myColor = myColour) }
     val debts = remember(groupDetails) { GroupInsights.owesWhom(groupDetails.transactions, groupDetails.settlements, groupDetails.members) }
     val categories = remember(groupDetails) { GroupInsights.categoryTotals(groupDetails.transactions) }
 

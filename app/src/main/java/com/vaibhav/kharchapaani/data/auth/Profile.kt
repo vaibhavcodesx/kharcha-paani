@@ -17,4 +17,6 @@ data class Profile(
      * payment handle — a UPI ID is not secret, but it is not public either.
      */
     @SerialName("upi_id") val upiId: String? = null,
+    /** This account's colour as an OKLCH hue, the same on every phone (design item 11). */
+    val hue: Int? = null,
 )

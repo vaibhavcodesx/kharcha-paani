@@ -11,7 +11,13 @@ data class AuthUiState(
     val profile: ProfileState = ProfileState.Idle,
     val isSavingProfile: Boolean = false,
     val profileSaveFailed: Boolean = false,
+    /** Why the last colour couldn't be saved, in plain words; null when it saved or nothing's tried. */
+    val hueSaveError: String? = null,
 ) {
+    /** This account's own colour (design item 11), or null when it hasn't got one yet. */
+    val hue: Int?
+        get() = (profile as? ProfileState.Loaded)?.profile?.hue
+
     val displayName: String?
         get() = (profile as? ProfileState.Loaded)?.profile?.displayName?.takeIf { it.isNotBlank() }
 

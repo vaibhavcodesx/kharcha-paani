@@ -232,6 +232,19 @@ class AuthRepository(
             }
             .decodeSingle<Profile>()
 
+    /**
+     * Sets this account's colour (profiles_update_own; migration profile_hue checks it). The server
+     * refuses (23514) a hue within 25 degrees of someone this account shares a group with, or in the
+     * amber kept for "You". Null lets the app choose.
+     */
+    suspend fun updateHue(userId: String, hue: Int?): Profile =
+        supabase.from("profiles")
+            .update(buildJsonObject { put("hue", hue) }) {
+                select()
+                filter { eq("id", userId) }
+            }
+            .decodeSingle<Profile>()
+
     private sealed interface GoogleTokenResult {
         data class Token(val idToken: String) : GoogleTokenResult
         data class Done(val result: GoogleSignInResult) : GoogleTokenResult

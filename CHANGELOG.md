@@ -13,11 +13,41 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
-### Staged (not applied; waiting for owner review, on the `v1.4-proposals` branch)
+## [1.4.0] - 2026-09-27
 
-- **(server)** Settlement confirmation (pending / confirmed / rejected, answered only by the
-  other party) and group expenses with friends who have no account ("guests" of the member who
-  added them), with an RLS fix the harness found. Design: `docs/design-v1.4-groups-settlements-colours.md`.
+### Added
+
+- Payments between groupmates now need both people. A settle-up or IOU someone records is
+  "waiting" until the other person confirms it or says it isn't right, and only a confirmed one
+  moves anyone's balance. There's no deadline and nothing confirms itself. The person who has to
+  answer gets a notification when it arrives, then reminders on day 3, 6, 9 and so on. Whoever
+  recorded it can withdraw it while it waits, or clear it away after it's disputed. A "Waiting for
+  you" section on Splits and distinct looks in the feed show where each one stands.
+- Friends who aren't on the app can be in a group expense. Split a dinner with Shubham (on the
+  app) and Hist (not on it), pick the group, and it syncs to Shubham with Hist on it as your guest.
+  You cover Hist's share in the group, and Hist owes it to you. If Hist paid, it stays on your
+  phone.
+- One colour per person, the same on every phone. Pick yours from the whole spectrum in your
+  account. You see yourself in it too: avatar, the ring that turns while it syncs, "You" in groups.
+  Nobody can take a colour too close to someone they share a group with. Anyone who hasn't chosen
+  gets one automatically.
+- A much bigger colour picker for friends not on the app: the whole spectrum in three shades, with
+  room for about 80 friends. It used to run out after about ten.
+- A payment QR code on both sides of settling up and in IOUs. Whoever is receiving the money comes
+  first, and both codes are offered when both people have a UPI ID. With a friend who isn't on the
+  app, your code is always there for them to scan.
+- **(server)** Migrations `settlement_confirmation`, `group_expense_guests` (including an RLS
+  change: only the member who added an expense can change their guests) and `profile_hue`,
+  applied 2026-09-27 after owner review. Each suite also passed against live in rolled-back
+  transactions (35/35, 23/23, 25/25).
+
+### Fixed
+
+- "Who pays whom" suggested payments between people who don't know each other (a friend not on
+  the app paying a groupmate from another trip). It now only suggests a payment between two people
+  who share a group; everything else settles with you.
+- Deleting a synced split with a friend not on the app left its split row on the server. The
+  split is now retracted with it.
 
 ## [1.3.0] - 2026-09-27
 
@@ -202,7 +232,8 @@ and redesigned.
   silently deleted splits, shares and members through cascades.
 - The file provider narrowed to exported files only.
 
-[Unreleased]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.0.0...v1.1.0

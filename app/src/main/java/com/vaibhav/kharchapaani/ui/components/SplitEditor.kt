@@ -72,6 +72,8 @@ fun SplitEditor(
     modifier: Modifier = Modifier,
     // Who added the expense, when only they can change who paid.
     payerLockedBy: String? = null,
+    // Who added the expense, when their guests are in it and only they can change the split.
+    splitLockedBy: String? = null,
 ) {
     Column(
         modifier = modifier
@@ -91,10 +93,26 @@ fun SplitEditor(
         } else {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 ChoiceChip(label = "You", selected = paidByPersonId == ME, onClick = { onPaidByPersonIdChange(ME) })
-                shares.filter { it.personId != ME }.forEach { share ->
+                // A guest has no account and can't be anyone's payer in a shared group.
+                shares.filter { it.personId != ME && !it.isGuest }.forEach { share ->
                     ChoiceChip(label = share.personName, selected = paidByPersonId == share.personId, onClick = { onPaidByPersonIdChange(share.personId) })
                 }
             }
+        }
+
+        if (splitLockedBy != null) {
+            Text(
+                "$splitLockedBy's guests are in this split, so only $splitLockedBy can change who's in it or the amounts.",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.testTag("split_locked_note"),
+            )
+            shares.filter { it.isSelected }.forEach { share ->
+                Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(share.personName, style = MaterialTheme.typography.bodyLarge, color = OffWhiteText, modifier = Modifier.weight(1f))
+                    Text(Money.format(share.amount), style = MoneyText.row, color = OffWhiteText)
+                }
+            }
+            return@Column
         }
 
         SegmentedControl(
@@ -167,12 +185,17 @@ private fun ShareRow(
             ) {
                 if (share.isSelected) Icon(KpIcons.Check, contentDescription = null, tint = CharcoalBg, modifier = Modifier.size(16.dp))
             }
-            Text(
-                text = share.personName,
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (share.isSelected) OffWhiteText else SubMutedWarmGray,
-                modifier = Modifier.padding(start = Spacing.m),
-            )
+            Column(Modifier.padding(start = Spacing.m)) {
+                Text(
+                    text = share.personName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (share.isSelected) OffWhiteText else SubMutedWarmGray,
+                )
+                if (share.isGuest) {
+                    // Not in the group: their share is yours to cover, and they owe it to you.
+                    Text("Your guest · you cover their share", style = MaterialTheme.typography.bodySmall, color = SubMutedWarmGray)
+                }
+            }
         }
         if (share.isSelected) {
             when (splitMode) {

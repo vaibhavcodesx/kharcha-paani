@@ -110,3 +110,21 @@ internal val MIGRATION_6_7 = object : Migration(6, 7) {
         db.execSQL("ALTER TABLE `people` ADD COLUMN `upiId` TEXT")
     }
 }
+
+/**
+ * v8 (1.4): settlement confirmation, guests in shared-group expenses, and a groupmate's own colour.
+ * Additive only. Every settlement already on the phone is CONFIRMED, as it is on the server.
+ */
+internal val MIGRATION_7_8 = object : Migration(7, 8) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `settlements` ADD COLUMN `status` TEXT NOT NULL DEFAULT 'CONFIRMED'")
+        db.execSQL("ALTER TABLE `settlements` ADD COLUMN `recordedByPersonId` INTEGER")
+        db.execSQL("ALTER TABLE `settlements` ADD COLUMN `respondedAt` INTEGER")
+        db.execSQL("ALTER TABLE `settlements` ADD COLUMN `responseNote` TEXT")
+        db.execSQL("ALTER TABLE `settlements` ADD COLUMN `pendingResponse` TEXT")
+        db.execSQL("ALTER TABLE `settlements` ADD COLUMN `remindedStage` INTEGER NOT NULL DEFAULT -1")
+        db.execSQL("ALTER TABLE `split_shares` ADD COLUMN `guestName` TEXT")
+        db.execSQL("ALTER TABLE `split_shares` ADD COLUMN `guestPersonId` INTEGER")
+        db.execSQL("ALTER TABLE `people` ADD COLUMN `hue` INTEGER")
+    }
+}

@@ -242,8 +242,13 @@ class SharedGroupRepositoryTest {
             paidByPersonId = -1L,
             shares = listOf(-1L, bob).map { SplitShareEntity(splitId = 0, personId = it, shareAmount = 50.0) },
         )
-        repository.recordSettlement(fromPersonId = bob, toPersonId = -1L, amount = 30.0, groupId = groupId)
+        val settlementId = repository.recordSettlement(fromPersonId = bob, toPersonId = -1L, amount = 30.0, groupId = groupId)
 
+        // Recorded here, it waits for Bob to confirm (design item 10) and doesn't count yet.
+        assertEquals(50.0, repository.groupsWithDetails.first().single { it.group.id == groupId }.netBalanceForMe, 0.0)
+
+        val settlement = db.groupSyncDao().settlementById(settlementId)!!
+        db.groupSyncDao().updateSettlement(settlement.copy(status = com.vaibhav.kharchapaani.data.db.entity.SettlementStatus.CONFIRMED))
         val details = repository.groupsWithDetails.first().single { it.group.id == groupId }
 
         assertEquals(20.0, details.netBalanceForMe, 0.0)

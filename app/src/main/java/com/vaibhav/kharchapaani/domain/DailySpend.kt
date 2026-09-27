@@ -57,11 +57,11 @@ object DailySpend {
     /** The same split arithmetic [MonthAnalytics] uses, so the two always agree. */
     private fun myShareOf(full: FullTransaction): Double {
         val split = full.split ?: return full.transaction.amount
-        val myShare = full.shares.find { it.personId == ME }?.shareAmount
+        val myShare = full.shares.ownShareOf(ME)
         return when {
             split.paidByPersonId != ME -> myShare ?: 0.0
             myShare != null -> myShare
-            else -> (full.transaction.amount - full.shares.filter { it.personId != ME }.sumOf { it.shareAmount }).coerceAtLeast(0.0)
+            else -> (full.transaction.amount - full.shares.allButOwnShareOf(ME)).coerceAtLeast(0.0)
         }
     }
 

@@ -33,6 +33,12 @@ data class PersonEntity(
      * matching check constraint; neither layer is relied on alone.
      */
     val upiId: String? = null,
+    /**
+     * A groupmate's own colour, as the OKLCH hue they chose on their profile (v1.4, design item
+     * 11): the same on every phone. When set, [avatarColor] is derived from it and never moved by
+     * PersonColours.respace. Null for friends not on the app and for anyone who hasn't chosen.
+     */
+    val hue: Int? = null,
 )
 
 @Entity(
@@ -189,8 +195,21 @@ data class SplitShareEntity(
     val splitId: Long,
     val personId: Long, // -1 means "Me", otherwise PersonEntity.id
     val shareAmount: Double,
-    val percentage: Double? = null
-)
+    val percentage: Double? = null,
+    /**
+     * Set when this share is a guest's: a friend with no account in a shared-group expense, covered
+     * by the member who added it (design item 9). [personId] is then the host, so every group
+     * balance already treats the share as theirs; this is the guest's name, shown on the expense.
+     */
+    val guestName: String? = null,
+    /**
+     * On the host's own phone only: which of their friends the guest is, so the friend owes the
+     * host their share. Null on every other phone (they don't know the host's friends).
+     */
+    val guestPersonId: Long? = null,
+) {
+    val isGuest: Boolean get() = guestName != null
+}
 
 @Entity(
     tableName = "settlements",
@@ -217,7 +236,24 @@ data class SettlementEntity(
     @ColumnInfo(defaultValue = "0") val updatedAt: Long = System.currentTimeMillis(),
     /** PENDING/SYNCED only inside shared groups; everything else stays LOCAL_ONLY (decision 1). */
     @ColumnInfo(defaultValue = "LOCAL_ONLY") val syncState: SyncState = SyncState.LOCAL_ONLY,
-)
+    /**
+     * v1.4 settlement confirmation (design item 10). Only a shared-group settlement can be anything
+     * but CONFIRMED: it is PENDING until the other party answers, and only CONFIRMED moves balances.
+     */
+    @ColumnInfo(defaultValue = "CONFIRMED") val status: SettlementStatus = SettlementStatus.CONFIRMED,
+    /** Who recorded it (-1 = me). Null for anything from before confirmation, and local ones. */
+    val recordedByPersonId: Long? = null,
+    val respondedAt: Long? = null,
+    val responseNote: String? = null,
+    /** My answer, saved here at once and sent by the next sync (respond_to_settlement). */
+    val pendingResponse: SettlementStatus? = null,
+    /** The last reminder stage already shown for this one (0 = when it arrived, 1 = day 3, …). */
+    @ColumnInfo(defaultValue = "-1") val remindedStage: Int = -1,
+) {
+    val isConfirmed: Boolean get() = status == SettlementStatus.CONFIRMED
+}
+
+enum class SettlementStatus { PENDING, CONFIRMED, REJECTED }
 
 /**
  * A fixed charge on a fixed rhythm (backlog item 8). It's a rule, not money: the ledger only gets a

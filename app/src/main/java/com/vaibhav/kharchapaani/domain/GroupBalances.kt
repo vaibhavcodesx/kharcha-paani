@@ -26,13 +26,16 @@ object GroupBalances {
         for (expense in expenses) {
             val split = expense.split ?: continue
             if (expense.transaction.type.equals("income", ignoreCase = true)) continue
-            val shares = expense.shares.associate { it.personId to SplitRounding.toPaisa(it.shareAmount) }
+            // Summed per person: a host's guests are separate rows under the host (design item 9),
+            // and each is theirs to cover.
+            val shares = expense.shares.groupBy { it.personId }.mapValues { (_, rows) -> rows.sumOf { SplitRounding.toPaisa(it.shareAmount) } }
             // The payer is credited what the shares actually cover, so the positions stay balanced
             // even for a legacy local split whose shares don't add up to its total.
             add(split.paidByPersonId, shares.values.sum())
             shares.forEach { (id, share) -> add(id, -share) }
         }
-        for (settlement in settlements) {
+        // Only a confirmed settlement moves anyone's position; a pending or rejected one is a claim.
+        for (settlement in settlements.filter { it.isConfirmed }) {
             val amount = SplitRounding.toPaisa(settlement.amount)
             add(settlement.fromPersonId, amount)
             add(settlement.toPersonId, -amount)

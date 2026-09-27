@@ -104,6 +104,7 @@ fun HomeScreen(
     onEditTransaction: (FullTransaction) -> Unit,
     onDeleteTransaction: (Long) -> Unit,
     onRetractSettlement: (Long) -> Unit,
+    onAnswerSettlement: (Long) -> Unit = {},
     onOpenIouDialog: () -> Unit,
     onOpenSimplifyDebts: () -> Unit,
     accountAvatar: String,
@@ -203,6 +204,7 @@ fun HomeScreen(
                     is ActivityItem.Settlement -> SettlementItemCard(
                         item = item,
                         onRetract = { onRetractSettlement(item.settlement.id) },
+                        onAnswer = { onAnswerSettlement(item.settlement.id) },
                         position = position,
                         modifier = rowModifier,
                     )

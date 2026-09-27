@@ -8,6 +8,7 @@ import com.vaibhav.kharchapaani.data.db.entity.GroupMemberEntity
 import com.vaibhav.kharchapaani.data.db.entity.PendingRemoteDeleteEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
+import com.vaibhav.kharchapaani.data.db.entity.SettlementStatus
 import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.SubscriptionEntity
@@ -25,6 +26,9 @@ import com.vaibhav.kharchapaani.domain.CsvExport
 import com.vaibhav.kharchapaani.domain.CsvFile
 import com.vaibhav.kharchapaani.domain.ExportRange
 import com.vaibhav.kharchapaani.domain.GroupBalances
+import com.vaibhav.kharchapaani.domain.coveredBy
+import com.vaibhav.kharchapaani.domain.ownShareOf
+import com.vaibhav.kharchapaani.domain.owedAsGuestBy
 import com.vaibhav.kharchapaani.domain.MonthAnalytics
 import com.vaibhav.kharchapaani.domain.PersonColour
 import com.vaibhav.kharchapaani.domain.PersonColours
@@ -98,22 +102,19 @@ class LedgerRepository(
             for (split in splits) {
                 val splitShares = sharesBySplit[split.id] ?: emptyList()
                 if (split.paidByPersonId == -1L) {
-                    // I paid for the split -> everyone else owes me their share
-                    val personShare = splitShares.find { it.personId == person.id }
-                    if (personShare != null) {
-                        theyOweMe += personShare.shareAmount
-                    }
+                    // I paid for the split -> everyone else owes me their share (and their guests')
+                    theyOweMe += splitShares.coveredBy(person.id) ?: 0.0
                 } else if (split.paidByPersonId == person.id) {
-                    // Person paid for the split -> I owe them my share
-                    val myShare = splitShares.find { it.personId == -1L }
-                    if (myShare != null) {
-                        iOweThem += myShare.shareAmount
-                    }
+                    // Person paid for the split -> I owe them my share, and my guests'
+                    iOweThem += splitShares.coveredBy(-1L) ?: 0.0
                 }
+                // A friend of mine who came along as my guest owes me their share, whoever paid.
+                theyOweMe += splitShares.owedAsGuestBy(person.id)
             }
 
-            // 2. Calculate from settlements / IOUs
-            for (settlement in settlements) {
+            // 2. Calculate from settlements / IOUs. Only confirmed ones: a pending one is a claim
+            // the other person hasn't agreed to yet (design item 10).
+            for (settlement in settlements.filter { it.isConfirmed }) {
                 if (settlement.fromPersonId == -1L && settlement.toPersonId == person.id) {
                     // I paid money to person
                     theyOweMe += settlement.amount
@@ -165,14 +166,14 @@ class LedgerRepository(
                     if (split.paidByPersonId == -1L) {
                         // I paid
                         myPaidAmount += tx.transaction.amount
-                        val meShareAmount = shares.find { it.personId == -1L }?.shareAmount ?: 0.0
-                        myShare += meShareAmount
-                        othersOweMeInGroup += (tx.transaction.amount - meShareAmount)
+                        // "Your share" is what I consumed; guests I cover are mine to collect, not
+                        // the group's to owe me (design item 9).
+                        myShare += shares.ownShareOf(-1L) ?: 0.0
+                        othersOweMeInGroup += (tx.transaction.amount - (shares.coveredBy(-1L) ?: 0.0))
                     } else {
-                        // Someone else paid
-                        val meShareAmount = shares.find { it.personId == -1L }?.shareAmount ?: 0.0
-                        myShare += meShareAmount
-                        iOweOthersInGroup += meShareAmount
+                        // Someone else paid: I owe them my share and my guests'
+                        myShare += shares.ownShareOf(-1L) ?: 0.0
+                        iOweOthersInGroup += shares.coveredBy(-1L) ?: 0.0
                     }
                 } else {
                     myPaidAmount += tx.transaction.amount
@@ -225,7 +226,7 @@ class LedgerRepository(
 
             if (split.paidByPersonId == -1L) {
                 // I paid
-                val personShare = splitShares.find { it.personId == personId }
+                val personShare = splitShares.coveredBy(personId)
                 if (personShare != null) {
                     items.add(
                         PersonLedgerItem(
@@ -234,29 +235,44 @@ class LedgerRepository(
                             title = tx.merchant.ifBlank { tx.category },
                             // "You paid ₹150 (Their share)" read as their share being ₹150, and %.0f turned ₹150.50
                             // into ₹151. Both figures, said separately, to the paisa.
-                            subtitle = "You paid ${Money.format(split.totalAmount)} · their share ${Money.format(personShare.shareAmount)}",
-                            amount = personShare.shareAmount,
-                            netChange = personShare.shareAmount, // they owe me more (+)
+                            subtitle = "You paid ${Money.format(split.totalAmount)} · their share ${Money.format(personShare)}",
+                            amount = personShare,
+                            netChange = personShare, // they owe me more (+)
                             isSettlement = false
                         )
                     )
                 }
             } else if (split.paidByPersonId == personId) {
                 // Person paid
-                val myShare = splitShares.find { it.personId == -1L }
+                val myShare = splitShares.coveredBy(-1L)
                 if (myShare != null) {
                     items.add(
                         PersonLedgerItem(
                             id = "split_${split.id}",
                             date = tx.date,
                             title = tx.merchant.ifBlank { tx.category },
-                            subtitle = "They paid ${Money.format(split.totalAmount)} · your share ${Money.format(myShare.shareAmount)}",
-                            amount = myShare.shareAmount,
-                            netChange = -myShare.shareAmount, // I owe them more (-)
+                            subtitle = "They paid ${Money.format(split.totalAmount)} · your share ${Money.format(myShare)}",
+                            amount = myShare,
+                            netChange = -myShare, // I owe them more (-)
                             isSettlement = false
                         )
                     )
                 }
+            }
+            // This friend came along as my guest on a group expense: they owe me their share.
+            val asGuest = splitShares.owedAsGuestBy(personId)
+            if (asGuest > 0.0) {
+                items.add(
+                    PersonLedgerItem(
+                        id = "guest_${split.id}",
+                        date = tx.date,
+                        title = tx.merchant.ifBlank { tx.category },
+                        subtitle = "Your guest in a group · their share ${Money.format(asGuest)}",
+                        amount = asGuest,
+                        netChange = asGuest,
+                        isSettlement = false
+                    )
+                )
             }
         }
 
@@ -270,9 +286,9 @@ class LedgerRepository(
                         date = settlement.date,
                         // Worded the way the group feed words it (GroupFeed.describe), from your side.
                         title = if (settlement.isIou) "You lent them" else "You paid them",
-                        subtitle = settlement.note.ifBlank { if (settlement.isIou) "IOU" else "Settled up" },
+                        subtitle = settlementSubtitle(settlement),
                         amount = settlement.amount,
-                        netChange = settlement.amount,
+                        netChange = if (settlement.isConfirmed) settlement.amount else 0.0,
                         isSettlement = true
                     )
                 )
@@ -283,9 +299,9 @@ class LedgerRepository(
                         id = "settlement_${settlement.id}",
                         date = settlement.date,
                         title = if (settlement.isIou) "They lent you" else "They paid you",
-                        subtitle = settlement.note.ifBlank { if (settlement.isIou) "IOU" else "Settled up" },
+                        subtitle = settlementSubtitle(settlement),
                         amount = settlement.amount,
-                        netChange = -settlement.amount,
+                        netChange = if (settlement.isConfirmed) -settlement.amount else 0.0,
                         isSettlement = true
                     )
                 )
@@ -294,6 +310,16 @@ class LedgerRepository(
 
         items.sortedByDescending { it.date }
     }.flowOn(Dispatchers.IO)
+
+    /** A settlement's line in a friend's history, saying when it hasn't counted yet. */
+    private fun settlementSubtitle(settlement: SettlementEntity): String {
+        val base = settlement.note.ifBlank { if (settlement.isIou) "IOU" else "Settled up" }
+        return when (settlement.status) {
+            SettlementStatus.PENDING -> "$base · waiting to be confirmed"
+            SettlementStatus.REJECTED -> "$base · marked not right"
+            SettlementStatus.CONFIRMED -> base
+        }
+    }
 
     /** This month, for Home and the widget. */
     val monthlyAnalytics: Flow<MonthlyAnalytics> = analyticsFor { YearMonth.now(it) }
@@ -421,10 +447,15 @@ class LedgerRepository(
     suspend fun deleteTransaction(txId: Long) = withContext(Dispatchers.IO) {
         db.withTransaction {
             val existing = db.transactionDao().getTransactionByIdDirect(txId) ?: return@withTransaction
-            if (!FullTransaction(existing, db.groupSyncDao().splitForTransaction(txId)).canEdit) return@withTransaction
+            val split = db.groupSyncDao().splitForTransaction(txId)
+            if (!FullTransaction(existing, split).canEdit) return@withTransaction
             requireWritableGroup(existing.groupId)
             if (existing.syncState != SyncState.LOCAL_ONLY) {
                 db.syncDao().insertPendingDelete(PendingRemoteDeleteEntity(existing.remoteId))
+                // A synced personal split lives in local_splits beside its expense. Retracting only
+                // the expense left the split's row live on the server (harmless, since a restore
+                // skips a split whose expense is gone, but still a leftover).
+                if (existing.groupId == null && split != null) queueSplitRetraction(existing.remoteId)
             }
             db.transactionDao().deleteTransactionById(txId)
         }
@@ -475,6 +506,10 @@ class LedgerRepository(
             // Decision 3: either party records it; inside a shared group it syncs to every member, and
             // outside one, with a friend who has no account, to this account's private table.
             syncState = if (shared) SyncState.PENDING else SyncState.LOCAL_ONLY,
+            // Between two members it counts only once the other one confirms (design item 10). The
+            // server stamps the same; this is so the phone shows it that way before the first sync.
+            status = if (groupId != null && isSharedGroup(groupId)) SettlementStatus.PENDING else SettlementStatus.CONFIRMED,
+            recordedByPersonId = if (groupId != null && isSharedGroup(groupId)) -1L else null,
         )
         val id = db.settlementDao().insertSettlement(settlement)
         if (shared) onLocalTransactionChange()
@@ -495,6 +530,11 @@ class LedgerRepository(
             } else if (existing.syncState != SyncState.LOCAL_ONLY) {
                 // Only the two parties can retract a shared settlement (RLS); others see it read-only.
                 if (existing.fromPersonId != -1L && existing.toPersonId != -1L) return@withTransaction
+                // Pending or rejected: only whoever recorded it takes it away. The other party answers
+                // instead, so a disagreement stays visible rather than vanishing (design item 10).
+                if (!existing.isConfirmed && existing.recordedByPersonId != null && existing.recordedByPersonId != -1L) {
+                    throw NotYoursToWithdrawException(existing)
+                }
                 db.syncDao().insertPendingDelete(
                     PendingRemoteDeleteEntity(existing.remoteId, entityType = PendingRemoteDeleteEntity.TYPE_SETTLEMENT)
                 )
@@ -503,6 +543,29 @@ class LedgerRepository(
             db.settlementDao().deleteSettlementById(settlementId)
         }
         if (queued) onLocalTransactionChange()
+    }
+
+    /**
+     * My answer to a settlement a groupmate recorded: confirm it, or say it isn't right (with an
+     * optional note). Takes effect here at once and is sent by the next sync.
+     */
+    suspend fun respondToSettlement(settlementId: Long, confirm: Boolean, note: String? = null) = withContext(Dispatchers.IO) {
+        val changed = db.withTransaction {
+            val existing = db.groupSyncDao().settlementById(settlementId) ?: return@withTransaction false
+            if (existing.status != SettlementStatus.PENDING || existing.recordedByPersonId == -1L) return@withTransaction false
+            requireWritableGroup(existing.groupId)
+            val answer = if (confirm) SettlementStatus.CONFIRMED else SettlementStatus.REJECTED
+            db.groupSyncDao().updateSettlement(
+                existing.copy(
+                    status = answer,
+                    respondedAt = System.currentTimeMillis(),
+                    responseNote = note?.trim()?.takeIf { it.isNotEmpty() }?.take(200),
+                    pendingResponse = answer,
+                )
+            )
+            true
+        }
+        if (changed) onLocalTransactionChange()
     }
 
     suspend fun addPerson(name: String, avatarColor: String): Long = withContext(Dispatchers.IO) {
@@ -519,10 +582,10 @@ class LedgerRepository(
      * Runs at startup, writes only the rows that actually have to change, and does nothing at all
      * on a phone where nobody clashes — so it costs one read on every launch after the first.
      */
-    suspend fun repairPersonColours() = withContext(Dispatchers.IO) {
+    suspend fun repairPersonColours(myHue: Int? = null) = withContext(Dispatchers.IO) {
         val people = db.personDao().getAllPeopleDirect()
-        val changes = PersonColours.respace(
-            people.map { PersonColour(id = it.id, key = it.profileId ?: it.name, colorHex = it.avatarColor, createdAt = it.createdAt) }
+        val changes = PersonColours.respace(myHue = myHue, people = 
+            people.map { PersonColour(id = it.id, key = it.profileId ?: it.name, colorHex = it.avatarColor, createdAt = it.createdAt, chosenHue = it.hue) }
         )
         if (changes.isEmpty()) return@withContext
         db.withTransaction { changes.forEach { (id, hex) -> db.personDao().updatePersonColour(id, hex) } }
@@ -784,13 +847,16 @@ class LedgerRepository(
     ): List<SplitShareEntity> {
         // Shared-group and private splits both have to add up to the paisa for the server.
         if (syncState != SyncState.PENDING || shares.isEmpty()) return shares
-        if (shares.map { it.personId }.toSet().size != shares.size) return shares
+        // One key per row, so a host's guests (rows under the host, design item 9) round too.
+        val members = shares.filterNot { it.isGuest }
+        if (members.map { it.personId }.toSet().size != members.size) return shares
+        val keys = shares.mapIndexed { index, share -> if (share.isGuest) -1_000_000L - index else share.personId }
         val rounded = try {
-            SplitRounding.normalize(amount, shares.associate { it.personId to it.shareAmount }, paidByPersonId)
+            SplitRounding.normalize(amount, keys.zip(shares).associate { (key, share) -> key to share.shareAmount }, paidByPersonId)
         } catch (e: IllegalArgumentException) {
             return shares
         }
-        return shares.map { it.copy(shareAmount = rounded.getValue(it.personId)) }
+        return shares.mapIndexed { index, share -> share.copy(shareAmount = rounded.getValue(keys[index])) }
     }
 
     // ============================================================
@@ -887,3 +953,6 @@ class LedgerRepository(
 
 /** A write into an archived shared group, which is read-only for everyone (decision 4). */
 class ArchivedGroupException(val groupName: String) : IllegalStateException("$groupName is archived and read-only")
+
+/** The other party recorded this settlement: it's theirs to withdraw, mine to answer. */
+class NotYoursToWithdrawException(val settlement: SettlementEntity) : IllegalStateException("only whoever recorded this settlement can withdraw it")

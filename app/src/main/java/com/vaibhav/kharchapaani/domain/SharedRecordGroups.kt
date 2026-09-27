@@ -18,6 +18,11 @@ object SharedRecordGroups {
         val withoutAccount: List<PersonEntity>,
         /** At least one other participant has an account, so a group decides whether this syncs. */
         val involvesGroupmates: Boolean,
+        /**
+         * For a split: friends with no account who come along as my guests (design item 9). Their
+         * shares are mine to cover in the group and they owe them to me; they don't block syncing.
+         */
+        val guests: List<PersonEntity> = emptyList(),
     ) {
         val canSync: Boolean get() = withoutAccount.isEmpty() && groups.isNotEmpty()
 
@@ -25,18 +30,34 @@ object SharedRecordGroups {
         val onlyGroup: GroupEntity? get() = groups.singleOrNull()
     }
 
-    fun optionsFor(participantIds: Collection<Long>, people: List<PersonEntity>, groups: List<GroupWithDetails>): Options {
+    /**
+     * @param splitPayerId set for a split: friends with no account may then come along as my guests,
+     *   so only the members with an account need to be in the group. The payer is the exception: a
+     *   guest can't have paid, so a split someone not on the app paid for stays on this phone.
+     *   Settlements and IOUs pass null: they're between two people, and both must be members.
+     */
+    fun optionsFor(
+        participantIds: Collection<Long>,
+        people: List<PersonEntity>,
+        groups: List<GroupWithDetails>,
+        splitPayerId: Long? = null,
+    ): Options {
         val others = participantIds.filter { it != ME }.toSet()
         val byId = people.associateBy { it.id }
+        val withoutAccount = others.mapNotNull { byId[it] }.filter { it.profileId == null }
+        val guestsAllowed = splitPayerId != null && byId[splitPayerId]?.profileId != null || splitPayerId == ME
+        val guests = if (guestsAllowed) withoutAccount else emptyList()
+        val mustBeMembers = others - guests.map { it.id }.toSet()
         val eligible = groups
             .filter { it.group.isShared && !it.group.isArchived }
-            .filter { details -> others.all { id -> details.members.any { it.id == id } } }
+            .filter { details -> mustBeMembers.all { id -> details.members.any { it.id == id } } }
             .map { it.group }
             .sortedByDescending { it.createdAt }
         return Options(
-            groups = if (others.isEmpty()) emptyList() else eligible,
-            withoutAccount = others.mapNotNull { byId[it] }.filter { it.profileId == null },
+            groups = if (mustBeMembers.isEmpty()) emptyList() else eligible,
+            withoutAccount = withoutAccount - guests.toSet(),
             involvesGroupmates = others.any { byId[it]?.profileId != null },
+            guests = guests,
         )
     }
 

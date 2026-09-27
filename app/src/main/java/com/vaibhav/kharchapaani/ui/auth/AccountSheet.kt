@@ -70,6 +70,8 @@ import com.vaibhav.kharchapaani.domain.ProfileEdit
 import com.vaibhav.kharchapaani.reminder.ReminderSchedule
 import com.vaibhav.kharchapaani.reminder.ReminderSettings
 import com.vaibhav.kharchapaani.ui.components.GlassActionBar
+import com.vaibhav.kharchapaani.ui.components.hueColour
+import com.vaibhav.kharchapaani.ui.components.HuePicker
 import com.vaibhav.kharchapaani.ui.components.KpModalSheet
 import com.vaibhav.kharchapaani.ui.components.RowPosition
 import com.vaibhav.kharchapaani.ui.components.SheetRow
@@ -120,6 +122,8 @@ fun AccountSheet(
     onReminderEnabledChange: (Boolean) -> Unit = {},
     onReminderTimeChange: (minuteOfDay: Int) -> Unit = {},
     onAllowNotifications: () -> Unit = {},
+    colour: ColourChoice = ColourChoice(),
+    onSaveHue: (Int) -> Unit = {},
 ) {
     KpModalSheet(onDismiss = onDismiss) {
         AccountSheetContent(
@@ -143,6 +147,8 @@ fun AccountSheet(
             onReminderEnabledChange = onReminderEnabledChange,
             onReminderTimeChange = onReminderTimeChange,
             onAllowNotifications = onAllowNotifications,
+            colour = colour,
+            onSaveHue = onSaveHue,
         )
     }
 }
@@ -171,6 +177,8 @@ fun AccountSheetContent(
     onReminderEnabledChange: (Boolean) -> Unit = {},
     onReminderTimeChange: (minuteOfDay: Int) -> Unit = {},
     onAllowNotifications: () -> Unit = {},
+    colour: ColourChoice = ColourChoice(),
+    onSaveHue: (Int) -> Unit = {},
 ) {
     val saved = (state.profile as? ProfileState.Loaded)?.profile
     // Keyed on what's saved, so a successful save (or a reload) resets the fields to it.
@@ -205,24 +213,26 @@ fun AccountSheetContent(
         // No brand mark appeared anywhere in the app, which is a real part of why a settings page
         // reads as generic (backlog item 19).
         BrandMark(Modifier.padding(bottom = Spacing.l))
+        // Your own colour once you have one (design item 11): the same one groupmates see you in.
+        val mine = state.hue?.let(::hueColour)
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.xl)) {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(64.dp)
                     .clip(CircleShape)
-                    .background(WarmAmberPrimary.copy(alpha = 0.18f))
+                    .background((mine ?: WarmAmberPrimary).copy(alpha = 0.18f))
                     // The brand gradient as a ring. It is the app's one distinctive mark and it
                     // was used only as a fill — on the add button and the hero figure — never as
                     // an edge. This is the one avatar in the app that is *yours*, which is the
                     // right place for it and the reason it goes nowhere else.
-                    .border(2.dp, BrandGradient.diagonal(), CircleShape)
+                    .then(if (mine != null) Modifier.border(2.dp, mine, CircleShape) else Modifier.border(2.dp, BrandGradient.diagonal(), CircleShape))
                     .semantics { contentDescription = "Your avatar" },
             ) {
                 Text(
                     text = previewAvatar,
                     fontSize = if (emoji != null) 34.sp else 28.sp,
-                    color = WarmAmberLight,
+                    color = mine ?: WarmAmberLight,
                     fontWeight = FontWeight.SemiBold,
                 )
             }
@@ -279,6 +289,9 @@ fun AccountSheetContent(
                         onSelect = { emoji = it },
                     )
                 }
+            }
+            if (saved != null) {
+                ColourRow(colour = colour, saved = state.hue, onSave = onSaveHue, error = state.hueSaveError)
             }
             Spacer(Modifier.height(Spacing.xl))
         }
@@ -413,6 +426,55 @@ private fun Eyebrow(text: String) {
 }
 
 /** Initials, then every offered emoji, six to a row with the tiles sharing the width evenly. */
+/** What the colour row needs to know about everyone else (design item 11). */
+data class ColourChoice(
+    /** Hues of everyone this account shares a group with: the picker keeps clear of them. */
+    val taken: List<Int> = emptyList(),
+    /** A groupmate whose colour is too close to this account's (after joining a group), if any. */
+    val clashWith: String? = null,
+)
+
+/**
+ * This account's one colour, the same on every groupmate's phone. Collapsed to a swatch until
+ * opened; a clash after joining a group opens it with a note saying whose colour is too close.
+ */
+@Composable
+private fun ColourRow(colour: ColourChoice, saved: Int?, onSave: (Int) -> Unit, error: String?) {
+    var open by rememberSaveable { mutableStateOf(colour.clashWith != null) }
+    var picked by rememberSaveable(saved) { mutableStateOf(saved) }
+    Column(Modifier.padding(top = 2.dp).testTag("colour_row")) {
+        ExpandableDetail(
+            label = "Colour",
+            value = if (saved == null) "Choosing one" else "Yours everywhere",
+            expanded = open,
+            onToggle = { open = !open },
+            position = RowPosition.Single,
+        ) {
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.m)) {
+                    Box(Modifier.size(28.dp).clip(KpShapes.small).background(picked?.let(::hueColour) ?: CharcoalElevated))
+                    Text(
+                        "You wear this colour everywhere: on your phone and on every groupmate's.",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = Spacing.m),
+                    )
+                }
+                HuePicker(hue = picked, taken = colour.taken, onHueChange = { picked = it })
+                val current = picked
+                if (current != null && current != saved) {
+                    TextButton(onClick = { onSave(current) }, modifier = Modifier.testTag("colour_save")) {
+                        Text("Save colour", style = MaterialTheme.typography.labelLarge.copy(color = WarmAmberPrimary, fontWeight = FontWeight.Bold))
+                    }
+                }
+            }
+        }
+        val note = error ?: colour.clashWith?.let { "Your colour is close to $it's. Pick another so you're easy to tell apart." }
+        if (note != null) {
+            Text(note, style = MaterialTheme.typography.bodySmall, color = WarmAmberLight, modifier = Modifier.padding(top = Spacing.s).testTag("colour_note"))
+        }
+    }
+}
+
 @Composable
 private fun AvatarGrid(initial: String, selected: String?, onSelect: (String?) -> Unit) {
     val choices: List<String?> = listOf(null) + ProfileEdit.avatarEmoji

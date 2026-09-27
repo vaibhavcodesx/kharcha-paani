@@ -133,6 +133,7 @@ fun ConfirmBottomSheet(
     onDismiss: () -> Unit,
     hasUnsavedInput: () -> Boolean = { false },
     addedBy: String? = null,
+    splitLocked: Boolean = false,
     categories: List<String> = Categories.categoriesFor(type, CategoryPrefs()),
     paymentMethods: List<String> = Categories.paymentMethods(CategoryPrefs()),
 ) {
@@ -155,7 +156,7 @@ fun ConfirmBottomSheet(
             onSplitModeChange = onSplitModeChange, onPaidByPersonIdChange = onPaidByPersonIdChange,
             onTogglePersonShare = onTogglePersonShare, onExactAmountChange = onExactAmountChange,
             onPercentageChange = onPercentageChange, onOpenAddFriend = onOpenAddFriend, addedBy = addedBy,
-            categories = categories, paymentMethods = paymentMethods,
+            splitLocked = splitLocked, categories = categories, paymentMethods = paymentMethods,
             onSave = {
                 focusManager.clearFocus()
                 onSave()
@@ -213,6 +214,8 @@ fun ConfirmSheetContent(
     // Set when editing a groupmate's expense this account paid for: who added it. They alone can
     // change who paid, unsplit it or move it, so those controls aren't offered.
     addedBy: String? = null,
+    // A groupmate's expense with their guests in it: only they can change the split or amount.
+    splitLocked: Boolean = false,
     categories: List<String> = Categories.categoriesFor(type, CategoryPrefs()),
     paymentMethods: List<String> = Categories.paymentMethods(CategoryPrefs()),
 ) {
@@ -405,6 +408,7 @@ fun ConfirmSheetContent(
                 onTogglePersonShare = onTogglePersonShare, onExactAmountChange = onExactAmountChange,
                 onPercentageChange = onPercentageChange, onOpenAddFriend = onOpenAddFriend,
                 payerLockedBy = addedBy,
+                splitLockedBy = addedBy.takeIf { splitLocked },
                 modifier = Modifier.padding(top = Spacing.xl),
             )
         } else if (!isIncome) {

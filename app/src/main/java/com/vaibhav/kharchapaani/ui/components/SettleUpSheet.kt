@@ -107,31 +107,16 @@ fun SettleUpContent(
         SheetRow(label = "Note") {
             SheetTextInput(value = note, onValueChange = { note = it }, placeholder = "Optional, like “Goa hotel”")
         }
-        // Whose QR to show depends on which way the money is going, and this only ever showed one
-        // of the two. "They paid me" showed mine, which is right — but "I paid them" showed nothing
-        // at all, so the person who actually had to send money had no idea where to send it. Their
-        // handle now arrives with their profile.
-        val theirPayee = remember(person) {
-            person.upiId?.let(UpiLink::cleanId)?.let { UpiPayee(it, person.name) }
-        }
-        val payingThem = !theyPaid
-        val payee = if (payingThem) theirPayee else upiPayee
-        if (payee != null && value > 0) {
-            UpiPaymentCard(
-                payee = payee,
-                amount = value,
-                note = note.ifBlank { "Kharcha Paani settle up" },
-                // Their code: you're sending, so a link to pay them. Yours: they scan it on their phone.
-                payingFromThisPhone = payingThem,
-                modifier = Modifier.padding(top = Spacing.m),
-            )
-        } else if (payingThem && value > 0) {
-            Text(
-                text = "${firstName(person.name)} hasn't added a UPI ID yet, so there's nothing to scan. Record the payment here once you've sent it.",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = Spacing.m).testTag("no_payee_upi"),
-            )
-        }
+        // A code on both sides (owner, 2026-09-27): whoever is receiving the money first, and the
+        // other person's too when both have one. With a friend who isn't on the app it's your code.
+        MoneyQrSection(
+            person = person,
+            myPayee = upiPayee,
+            amount = value,
+            note = note.ifBlank { "Kharcha Paani settle up" },
+            moneyComesToMe = theyPaid,
+            modifier = Modifier.padding(top = Spacing.m),
+        )
         RecordInGroupSection(
             otherPersonName = person.name,
             options = groupOptions,

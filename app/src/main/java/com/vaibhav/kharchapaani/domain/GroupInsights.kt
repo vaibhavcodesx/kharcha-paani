@@ -34,7 +34,7 @@ object GroupInsights {
      * Each member's share of the group's spending, largest first. A member's share is what the
      * splits say is theirs; an expense with no split is all the payer's, as the balances treat it.
      */
-    fun memberShares(expenses: List<FullTransaction>, members: List<PersonEntity>, myName: String = "You"): List<MemberShare> {
+    fun memberShares(expenses: List<FullTransaction>, members: List<PersonEntity>, myName: String = "You", myColor: String = MY_COLOR): List<MemberShare> {
         val paisa = mutableMapOf<Long, Long>()
         for (expense in expenses) {
             if (expense.transaction.type.equals("income", ignoreCase = true)) continue
@@ -57,7 +57,7 @@ object GroupInsights {
                     personId = personId,
                     name = if (personId == ME) myName else names[personId]?.name ?: "Former member",
                     // A person whose row has gone still needs a colour, and it must not be MY_COLOR.
-                    colorHex = if (personId == ME) MY_COLOR else names[personId]?.avatarColor ?: FORMER_MEMBER_COLOR,
+                    colorHex = if (personId == ME) myColor else names[personId]?.avatarColor ?: FORMER_MEMBER_COLOR,
                     amount = amount / 100.0,
                     fraction = amount.toFloat() / total,
                 )

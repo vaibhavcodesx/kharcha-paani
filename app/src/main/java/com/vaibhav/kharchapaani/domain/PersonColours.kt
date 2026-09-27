@@ -48,36 +48,34 @@ object PersonColours {
      * @param people every person on this phone, in any order. Their [PersonColour.key] is what a
      *   colour is derived from when they have none worth keeping.
      */
-    fun respace(people: List<PersonColour>): Map<Long, String> {
+    fun respace(people: List<PersonColour>, myHue: Int? = null): Map<Long, String> {
         val changes = mutableMapOf<Long, String>()
-        val taken = mutableSetOf(MINE)
+        // Everyone is placed in the shade field (Hues.Slot): hue across, three shades down. A chosen
+        // colour sits in the middle row, exactly as chosen, since every other phone shows it too.
+        val taken = mutableListOf<Hues.Slot>()
+        myHue?.let { taken += Hues.Slot(it, 1) }
+        for (person in people.filter { it.chosenHue != null }) {
+            val hex = Hues.hex(person.chosenHue!!)
+            taken += Hues.Slot(person.chosenHue, 1)
+            if (hex != person.colorHex) changes[person.id] = hex
+        }
 
         // Oldest first, so the person who has had a colour longest is the one who keeps it and a
         // new arrival is the one who moves. Ties on id, so the result never depends on input order.
-        for (person in people.sortedWith(compareBy({ it.createdAt }, { it.id }))) {
+        for (person in people.filter { it.chosenHue == null }.sortedWith(compareBy({ it.createdAt }, { it.id }))) {
             val current = person.colorHex.takeIf { isValid(it) && it != MINE }
             val wanted = current ?: stable(person.key)
-            val settled = if (taken.add(wanted)) wanted else firstFree(taken, person.key)
-            taken.add(settled)
+            val slot = Hues.slotOf(wanted)
+            val settled = if (slot != null && Hues.isFreeSlot(slot, taken)) {
+                taken += slot
+                wanted
+            } else {
+                // The field holds about 90; past that someone has to share, and keeps what they had.
+                Hues.firstFreeSlot(person.key, taken)?.also { taken += it }?.hex ?: wanted
+            }
             if (settled != person.colorHex) changes[person.id] = settled
         }
         return changes
-    }
-
-    /**
-     * The next unused colour, starting from where this person's key points so the choice still
-     * depends on them rather than on how many people happen to be ahead in the list.
-     *
-     * With more people than colours somebody has to share; the wrap returns the key's own slot,
-     * which at least keeps it stable for that person rather than handing out an arbitrary one.
-     */
-    private fun firstFree(taken: Set<String>, key: String): String {
-        val start = Math.floorMod(key.hashCode(), palette.size)
-        for (step in 1 until palette.size) {
-            val candidate = palette[(start + step) % palette.size]
-            if (candidate !in taken) return candidate
-        }
-        return palette[start]
     }
 
     private val HEX = Regex("^#[0-9A-Fa-f]{6}$")
@@ -90,4 +88,9 @@ data class PersonColour(
     val key: String,
     val colorHex: String,
     val createdAt: Long,
+    /**
+     * Their own chosen colour, as a hue (design item 11): the same on every phone, so it's never
+     * moved here. Everyone else fits around it.
+     */
+    val chosenHue: Int? = null,
 )

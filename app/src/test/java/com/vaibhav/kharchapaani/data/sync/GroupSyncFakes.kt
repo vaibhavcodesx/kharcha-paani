@@ -80,16 +80,26 @@ class FakeGroupRemote(private val self: String) : GroupRemote {
         if (shareTotal.compareTo(tx.amount) != 0 || expense.split.totalAmount.compareTo(tx.amount) != 0) {
             throw RowsRejectedException(400, "shares ($shareTotal) must equal the amount (${tx.amount})")
         }
-        if (!isMember(tx.groupId, expense.split.paidBy) || expense.shares.any { !isMember(tx.groupId, it.profileId) }) {
+        // Staged migration group_expense_guests: each share is one member or one guest.
+        if (expense.shares.any { (it.profileId == null) == (it.localName.isNullOrBlank()) }) {
+            throw RowsRejectedException(400, "each share names one member or one guest")
+        }
+        if (!isMember(tx.groupId, expense.split.paidBy) || expense.shares.any { it.profileId != null && !isMember(tx.groupId, it.profileId) }) {
             throw RowsRejectedException(403, "row-level security")
         }
+        // Only the host (the expense's owner) changes guests; anyone else sends them back as they are.
+        fun guestKey(name: String?, amount: Double) = name!!.trim().lowercase() + "=" + BigDecimal.valueOf(amount).setScale(2)
+        val guestsNow = existing?.split?.shares.orEmpty().filter { it.deletedAt == null && it.localName != null }.map { guestKey(it.localName, it.shareAmount) }.sorted()
+        val guestsSent = expense.shares.filter { it.localName != null }.map { guestKey(it.localName, it.shareAmount.toDouble()) }.sorted()
+        if (guestsNow != guestsSent && (existing?.ownerId ?: self) != self) throw RowsRejectedException(403, "only the member who added this expense can change their guests")
         savedExpenses += expense
 
         val stamp = tick()
         val previous = existing?.split
-        val keptIds = expense.shares.map { it.profileId }.toSet()
+        val keptIds = expense.shares.mapNotNull { it.profileId }.toSet()
+        val keptGuests = guestsSent.toSet()
         val removed = previous?.shares.orEmpty()
-            .filter { it.deletedAt == null && it.profileId !in keptIds }
+            .filter { it.deletedAt == null && if (it.localName != null) guestKey(it.localName, it.shareAmount) !in keptGuests else it.profileId !in keptIds }
             .map { it.copy(deletedAt = stamp) }
         val history = previous?.shares.orEmpty().filter { it.deletedAt != null }
         val split = RemoteSplit(
@@ -97,10 +107,12 @@ class FakeGroupRemote(private val self: String) : GroupRemote {
             paidBy = expense.split.paidBy,
             splitType = expense.split.splitType,
             totalAmount = expense.split.totalAmount.toDouble(),
-            shares = history + removed + expense.shares.map { share ->
+            shares = history + removed + expense.shares.mapIndexed { index, share ->
                 RemoteShare(
-                    id = previous?.shares?.firstOrNull { it.profileId == share.profileId && it.deletedAt == null }?.id ?: "share-${share.profileId}-$stamp",
+                    id = previous?.shares?.firstOrNull { share.profileId != null && it.profileId == share.profileId && it.deletedAt == null }?.id
+                        ?: "share-${share.profileId ?: share.localName}-$stamp-$index",
                     profileId = share.profileId,
+                    localName = share.localName,
                     shareAmount = share.shareAmount.toDouble(),
                     percentage = share.percentage,
                 )
@@ -136,10 +148,17 @@ class FakeGroupRemote(private val self: String) : GroupRemote {
         }
         val stamp = tick()
         rows.forEach { row ->
+            val existing = settlements[row.id]
             settlements[row.id] = RemoteSettlement(
                 id = row.id, fromProfileId = row.fromProfileId, toProfileId = row.toProfileId, amount = row.amount,
                 date = row.date, note = row.note, isIou = row.isIou, groupId = row.groupId,
-                createdAt = settlements[row.id]?.createdAt ?: row.createdAt, updatedAt = stamp, deletedAt = row.deletedAt,
+                createdAt = existing?.createdAt ?: row.createdAt, updatedAt = stamp, deletedAt = row.deletedAt,
+                // Staged migration settlement_confirmation: a new one is pending, recorded by the
+                // caller; a re-send leaves its status and recorder as they are.
+                status = existing?.status ?: "pending",
+                recordedBy = existing?.recordedBy ?: self,
+                respondedAt = existing?.respondedAt,
+                responseNote = existing?.responseNote,
             )
         }
     }
@@ -151,12 +170,30 @@ class FakeGroupRemote(private val self: String) : GroupRemote {
         remoteIds.mapNotNull { settlements[it] }
             .filter { it.fromProfileId == self || it.toProfileId == self }
             .forEach { row -> row.groupId?.let { requireActiveMember(it) } }
+        // Pending or rejected: only the recorder may withdraw it; the other party answers instead.
+        remoteIds.mapNotNull { settlements[it] }
+            .filter { (it.fromProfileId == self || it.toProfileId == self) && it.status != "confirmed" && it.recordedBy != null && it.recordedBy != self }
+            .forEach { throw RowsRejectedException(403, "only the person who recorded this settlement can withdraw it") }
         remoteIds.forEach { id ->
             val row = settlements[id] ?: return@forEach
             if (row.fromProfileId == self || row.toProfileId == self) {
                 settlements[id] = row.copy(deletedAt = stamp, updatedAt = stamp)
             }
         }
+    }
+
+    val answers = mutableListOf<Pair<String, Boolean>>()
+
+    override suspend fun respondToSettlement(remoteId: String, confirm: Boolean, note: String?) {
+        checkOnline()
+        val row = settlements[remoteId]?.takeIf { it.deletedAt == null && (it.fromProfileId == self || it.toProfileId == self) }
+            ?: throw RowsRejectedException(404, "settlement not found")
+        if (row.status != "pending" || row.recordedBy == self) throw RowsRejectedException(400, "not yours to answer, or already answered")
+        answers += remoteId to confirm
+        val stamp = tick()
+        settlements[remoteId] = row.copy(
+            status = if (confirm) "confirmed" else "rejected", respondedAt = stamp, responseNote = note, updatedAt = stamp,
+        )
     }
 
     override suspend fun settlementsChangedSince(since: String?, limit: Int): List<RemoteSettlement> {
@@ -229,11 +266,21 @@ class FakeGroupRemote(private val self: String) : GroupRemote {
         expenses[id] = expenses.getValue(id).copy(deletedAt = stamp, updatedAt = stamp)
     }
 
-    fun settlementBy(id: String, groupId: String, from: String, to: String, amount: Double) {
+    /** A settlement someone else wrote. [recordedBy] set means a pending one waiting for an answer. */
+    fun settlementBy(id: String, groupId: String, from: String, to: String, amount: Double, recordedBy: String? = null) {
         val stamp = tick()
         settlements[id] = RemoteSettlement(
             id = id, fromProfileId = from, toProfileId = to, amount = amount, date = stamp, groupId = groupId,
             createdAt = stamp, updatedAt = stamp,
+            status = if (recordedBy != null) "pending" else "confirmed", recordedBy = recordedBy,
+        )
+    }
+
+    /** The other party answers on their phone. */
+    fun answeredBy(id: String, confirm: Boolean, note: String? = null) {
+        val stamp = tick()
+        settlements[id] = settlements.getValue(id).copy(
+            status = if (confirm) "confirmed" else "rejected", respondedAt = stamp, responseNote = note, updatedAt = stamp,
         )
     }
 

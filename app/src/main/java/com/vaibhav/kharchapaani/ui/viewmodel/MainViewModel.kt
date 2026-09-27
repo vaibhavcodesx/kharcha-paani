@@ -47,6 +47,8 @@ import com.vaibhav.kharchapaani.data.repository.LocalBackupRepository
 import com.vaibhav.kharchapaani.data.repository.toBackup
 import com.vaibhav.kharchapaani.data.repository.ParseChoices
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
+import com.vaibhav.kharchapaani.data.db.entity.SettlementStatus
+import com.vaibhav.kharchapaani.data.repository.NotYoursToWithdrawException
 import com.vaibhav.kharchapaani.data.settings.AppSettings
 import com.vaibhav.kharchapaani.data.sync.SyncScheduler
 import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
@@ -92,6 +94,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -421,7 +424,74 @@ class MainViewModel(
             } catch (e: ArchivedGroupException) {
                 _statusMessage.value = archivedMessage(e)
                 return@launch
+            } catch (e: NotYoursToWithdrawException) {
+                // Theirs to withdraw; mine to answer (design item 10).
+                openSettlementAnswer(settlementId)
+                return@launch
             }
+            SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
+        }
+    }
+
+    /** Once my own colour is known (or changes), friends on this phone move off it. */
+    fun fitColoursAround(myHue: Int?) {
+        if (myHue == null) return
+        viewModelScope.launch { ledgerRepo.repairPersonColours(myHue) }
+    }
+
+    // ---- Settlement confirmation (design item 10) ----
+
+    /** Settlements between members, as feed items, for the ones waiting on my answer. */
+    private val settlementItems: StateFlow<List<ActivityItem.Settlement>> = combine(
+        ledgerRepo.allSettlements, people, rawGroups,
+    ) { settlements, people, groups ->
+        val names = people.associate { it.id to it.name }
+        val groupNames = groups.associate { it.id to it.name }
+        settlements.filter { it.groupId != null }.map { settlement ->
+            ActivityItem.Settlement(
+                settlement,
+                fromName = if (settlement.fromPersonId == -1L) "You" else names[settlement.fromPersonId] ?: "Someone",
+                toName = if (settlement.toPersonId == -1L) "You" else names[settlement.toPersonId] ?: "Someone",
+                groupName = settlement.groupId?.let(groupNames::get),
+            )
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** What groupmates say changed hands with me, waiting for me to confirm or dispute. */
+    val settlementsAwaitingMe: StateFlow<List<ActivityItem.Settlement>> = settlementItems
+        .map { items -> items.filter { it.awaitsMyAnswer }.sortedBy { it.settlement.createdAt } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Mine, still waiting for the other person: shown so I know, with how long it's waited. */
+    val settlementsAwaitingThem: StateFlow<List<ActivityItem.Settlement>> = settlementItems
+        .map { items -> items.filter { it.recordedByMe && it.settlement.status == SettlementStatus.PENDING }.sortedBy { it.settlement.createdAt } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _answeringSettlementId = MutableStateFlow<Long?>(null)
+    val answeringSettlement: StateFlow<ActivityItem.Settlement?> = combine(_answeringSettlementId, settlementItems) { id, items ->
+        id?.let { wanted -> items.firstOrNull { it.settlement.id == wanted && it.awaitsMyAnswer } }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    fun openSettlementAnswer(settlementId: Long) {
+        _answeringSettlementId.value = settlementId
+    }
+
+    fun dismissSettlementAnswer() {
+        _answeringSettlementId.value = null
+    }
+
+    fun answerSettlement(confirm: Boolean, note: String = "") {
+        val id = _answeringSettlementId.value ?: return
+        _answeringSettlementId.value = null
+        viewModelScope.launch {
+            try {
+                ledgerRepo.respondToSettlement(id, confirm, note)
+            } catch (e: ArchivedGroupException) {
+                _statusMessage.value = archivedMessage(e)
+                return@launch
+            }
+            NotificationHelper.clearSettlementReminder(getApplication(), id)
+            _statusMessage.value = if (confirm) "Confirmed. It counts for both of you now." else "Marked not right. It won't count."
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
     }
@@ -569,6 +639,8 @@ class MainViewModel(
     fun openManualAdd(defaultType: String = "expense") {
         _parseNotice.value = null
         _editingTransactionId.value = null
+        lockedShares = null
+        _splitLocked.value = false
         _type.value = defaultType
         _amount.value = ""
         _merchant.value = ""
@@ -588,6 +660,8 @@ class MainViewModel(
         // A notice left from an earlier bill that couldn't be read doesn't belong on a fresh entry.
         _parseNotice.value = null
         _editingTransactionId.value = null
+        lockedShares = null
+        _splitLocked.value = false
         _type.value = "expense"
         _amount.value = ""
         _merchant.value = ""
@@ -607,7 +681,7 @@ class MainViewModel(
         shareInputs.add(ShareInput(personId = -1L, personName = "You", isSelected = true))
         candidatesFor(targetGroupId).forEach { person ->
             val isMember = memberIds.contains(person.id)
-            shareInputs.add(ShareInput(personId = person.id, personName = person.name, isSelected = isMember))
+            shareInputs.add(ShareInput(personId = person.id, personName = person.name, isSelected = isMember, isGuest = isGuestIn(targetGroupId, person)))
         }
         _shares.value = shareInputs
         recalculateShares()
@@ -616,6 +690,8 @@ class MainViewModel(
 
     fun openEditTransaction(fullTx: FullTransaction) {
         val tx = fullTx.transaction
+        lockedShares = null
+        _splitLocked.value = false
         // Whoever added a group expense or paid for it can edit it (item 11).
         if (!fullTx.canEdit) {
             val owner = people.value.firstOrNull { it.profileId == tx.ownerProfileId }?.name ?: "the member who added it"
@@ -650,8 +726,13 @@ class MainViewModel(
                 else -> SplitMode.EQUAL
             }
 
-            val currentPeople = candidatesFor(tx.groupId)
-            val existingShareMap = fullTx.shares.associateBy { it.personId }
+            // Guests I host come back as the friends they are; someone else's guests can't be
+            // changed here, so their split is kept exactly as it is (see lockedShares).
+            val currentPeople = candidatesFor(tx.groupId, includeGuests = tx.isOwnedByMe)
+            val existingShareMap = fullTx.shares.filterNot { it.isGuest && it.guestPersonId == null }
+                .associateBy { if (it.isGuest) it.guestPersonId!! else it.personId }
+            lockedShares = fullTx.shares.takeIf { shares -> !tx.isOwnedByMe && shares.any { it.isGuest } }
+            _splitLocked.value = lockedShares != null
 
             val shareInputs = mutableListOf<ShareInput>()
             val myShare = existingShareMap[-1L]
@@ -673,7 +754,8 @@ class MainViewModel(
                         personName = person.name,
                         amount = pShare?.shareAmount ?: 0.0,
                         percentage = pShare?.percentage ?: 0.0,
-                        isSelected = pShare != null
+                        isSelected = pShare != null,
+                        isGuest = isGuestIn(tx.groupId, person),
                     )
                 )
             }
@@ -856,6 +938,8 @@ class MainViewModel(
 
     private fun applyParsedResult(parsed: ParsedTransactionResult) {
         _editingTransactionId.value = null
+        lockedShares = null
+        _splitLocked.value = false
         _type.value = parsed.type
         // Money.input, not Double.toString, which writes ₹1,00,00,000 as "1.0E7".
         _amount.value = if (parsed.amount > 0) Money.input(parsed.amount) else ""
@@ -947,7 +1031,7 @@ class MainViewModel(
             // Participants of a shared group are its members, and only them.
             val selected = _shares.value.filter { it.isSelected }.map { it.personId }.toSet()
             _shares.value = listOf(ShareInput(personId = -1L, personName = "You", isSelected = -1L in selected)) +
-                candidatesFor(newGroupId).map { ShareInput(personId = it.id, personName = it.name, isSelected = it.id in selected) }
+                candidatesFor(newGroupId).map { ShareInput(personId = it.id, personName = it.name, isSelected = it.id in selected, isGuest = isGuestIn(newGroupId, it)) }
             if (_paidByPersonId.value != -1L && _shares.value.none { it.personId == _paidByPersonId.value }) {
                 _paidByPersonId.value = -1L
             }
@@ -962,11 +1046,22 @@ class MainViewModel(
      * Who can take part in a split: a shared group's members, since everyone in a synced split must
      * be a member (decision 1); otherwise everyone, as before.
      */
-    private fun candidatesFor(groupId: Long?): List<PersonEntity> {
+    private fun candidatesFor(groupId: Long?, includeGuests: Boolean = true): List<PersonEntity> {
         if (!isSharedGroup(groupId)) return people.value
         val memberIds = groups.value.firstOrNull { it.group.id == groupId }?.members?.map { it.id }?.toSet().orEmpty()
-        return people.value.filter { it.id in memberIds }
+        // Friends who aren't on the app can come along as my guests (design item 9), after the members.
+        val guests = if (includeGuests) people.value.filter { it.profileId == null && it.id !in memberIds } else emptyList()
+        return people.value.filter { it.id in memberIds } + guests
     }
+
+    /** A friend with no account, in a shared group's expense: my guest. */
+    private fun isGuestIn(groupId: Long?, person: PersonEntity): Boolean = isSharedGroup(groupId) && person.profileId == null
+
+    /** Someone else's expense with guests in it: its shares as they are, sent back unchanged. */
+    private var lockedShares: List<SplitShareEntity>? = null
+    private val _splitLocked = MutableStateFlow(false)
+    /** True while editing a groupmate's expense that has their guests in it: only they change the split. */
+    val splitLocked: StateFlow<Boolean> = _splitLocked.asStateFlow()
 
     fun setIsSplit(split: Boolean) {
         _isSplit.value = split
@@ -1125,7 +1220,8 @@ class MainViewModel(
         // A split with groupmates outside a shared group never reaches them (decision 1): ask first.
         if (askForGroup && _isSplit.value && !isSharedGroup(_groupId.value)) {
             val participants = _shares.value.filter { it.isSelected }.map { it.personId } + _paidByPersonId.value
-            val options = groupOptionsFor(participants)
+            // A split can bring friends who aren't on the app along as my guests (design item 9).
+            val options = SharedRecordGroups.optionsFor(participants, people.value, groups.value, splitPayerId = _paidByPersonId.value)
             if (options.involvesGroupmates) {
                 _splitGroupPrompt.value = options
                 return
@@ -1158,16 +1254,25 @@ class MainViewModel(
         ) {
             SplitRounding.byWeights(total, selectedShares.associate { it.personId to it.percentage }, _paidByPersonId.value)
         } else null
-        val splitShareEntities = if (_isSplit.value) {
-            selectedShares.map {
-                SplitShareEntity(
-                    splitId = 0,
-                    personId = it.personId,
-                    shareAmount = sharedPercentageAmounts?.get(it.personId) ?: it.amount,
-                    percentage = it.percentage
-                )
+        val locked = lockedShares
+        if (locked != null && abs(total - locked.sumOf { it.shareAmount }) >= 0.005) {
+            _statusMessage.value = "Guests are in this split, so only the member who added it can change the amount."
+            return
+        }
+        val splitShareEntities = when {
+            // Someone else's guests: the server only accepts them back exactly as they were.
+            locked != null -> locked.map { it.copy(id = 0, splitId = 0) }
+            _isSplit.value -> selectedShares.map {
+                val amount = sharedPercentageAmounts?.get(it.personId) ?: it.amount
+                if (it.isGuest) {
+                    // Stored under me, the host, so every group balance counts it as mine to cover.
+                    SplitShareEntity(splitId = 0, personId = -1L, shareAmount = amount, percentage = it.percentage, guestName = it.personName, guestPersonId = it.personId)
+                } else {
+                    SplitShareEntity(splitId = 0, personId = it.personId, shareAmount = amount, percentage = it.percentage)
+                }
             }
-        } else emptyList()
+            else -> emptyList()
+        }
 
         viewModelScope.launch {
             try {
@@ -1368,7 +1473,8 @@ class MainViewModel(
 
     fun openSimplifyDebts() {
         val currentBalances = personBalances.value.associate { it.person.id to it.netBalance }
-        val simplified = DebtSimplifier.simplify(people.value, currentBalances)
+        val groupMembers = groups.value.map { details -> details.members.map { it.id }.toSet() }
+        val simplified = DebtSimplifier.simplify(people.value, currentBalances, groupMembers)
         _simplifiedDebts.value = simplified
         _isSimplifyDebtsOpen.value = true
     }

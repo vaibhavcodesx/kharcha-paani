@@ -187,7 +187,11 @@ select public._expect_state('the other party cannot change the note',
   $q$ update public.settlements set note = 'never happened' where id = '40000000-0000-4000-8000-000000000001' $q$, '23514');
 select public._expect_state('the other party cannot flip it into an IOU',
   $q$ update public.settlements set is_iou = true where id = '40000000-0000-4000-8000-000000000001' $q$, '23514');
-select public._expect_rows('the other party can still retract it',
+-- Since settlement confirmation (20260926000000), a new settlement is pending and the other party
+-- answers it rather than deleting it. Once confirmed, either party can still retract it.
+select public._expect_ok('the other party confirms it',
+  $q$ select public.respond_to_settlement('40000000-0000-4000-8000-000000000001', true) $q$);
+select public._expect_rows('the other party can still retract it once confirmed',
   $q$ update public.settlements set deleted_at = now() where id = '40000000-0000-4000-8000-000000000001' $q$, 1);
 select public._as('00000000-0000-4000-8000-0000000000b1');
 select public._expect_rows('the recorder can revive it (a queued push after a retraction)',

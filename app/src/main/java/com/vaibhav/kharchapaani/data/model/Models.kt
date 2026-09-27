@@ -6,6 +6,8 @@ import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
+import com.vaibhav.kharchapaani.domain.allButOwnShareOf
+import com.vaibhav.kharchapaani.domain.ownShareOf
 
 data class ParsedTransactionResult(
     val type: String = "expense", // "expense" or "income"
@@ -45,13 +47,12 @@ data class FullTransaction(
         get() {
             if (transaction.type.equals("income", ignoreCase = true)) return transaction.amount
             if (split == null) return transaction.amount
+            // Own share only: a guest I cover (design item 9) is money lent, not spent.
             if (split.paidByPersonId == -1L) {
-                val myShare = shares.find { it.personId == -1L }?.shareAmount
-                if (myShare != null) return myShare
-                val friendsShare = shares.filter { it.personId != -1L }.sumOf { it.shareAmount }
-                return (transaction.amount - friendsShare).coerceAtLeast(0.0)
+                shares.ownShareOf(-1L)?.let { return it }
+                return (transaction.amount - shares.allButOwnShareOf(-1L)).coerceAtLeast(0.0)
             } else {
-                return shares.find { it.personId == -1L }?.shareAmount ?: 0.0
+                return shares.ownShareOf(-1L) ?: 0.0
             }
         }
 }
@@ -125,7 +126,12 @@ data class ShareInput(
     val personName: String,
     val amount: Double = 0.0,
     val percentage: Double = 0.0,
-    val isSelected: Boolean = true
+    val isSelected: Boolean = true,
+    /**
+     * A friend with no account in a shared-group expense: my guest, whose share I cover (design
+     * item 9). Saved under me with their name; never offered as the payer.
+     */
+    val isGuest: Boolean = false,
 )
 
 data class StatementTransactionItem(

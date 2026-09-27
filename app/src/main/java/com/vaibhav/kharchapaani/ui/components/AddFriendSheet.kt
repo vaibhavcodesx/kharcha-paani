@@ -16,6 +16,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -27,6 +28,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
+import com.vaibhav.kharchapaani.domain.Hues
 import com.vaibhav.kharchapaani.domain.PersonColours
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.EyebrowText
@@ -50,17 +52,27 @@ private val ColourNames = listOf("Sand", "Lime", "Green", "Mint", "Sky", "Violet
 val FriendColours: List<Pair<String, String>> = PersonColours.palette.zip(ColourNames)
 
 @Composable
-fun AddFriendSheet(isOpen: Boolean, onAdd: (name: String, colorHex: String) -> Unit, onDismiss: () -> Unit) {
+fun AddFriendSheet(isOpen: Boolean, onAdd: (name: String, colorHex: String) -> Unit, onDismiss: () -> Unit, takenColours: List<String> = emptyList()) {
     if (!isOpen) return
-    KpModalSheet(onDismiss = onDismiss) { AddFriendContent(onAdd) }
+    KpModalSheet(onDismiss = onDismiss) { AddFriendContent(onAdd, takenColours = takenColours) }
 }
 
 /** A friend is just a name and a colour; the avatar previews both as you type. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun AddFriendContent(onAdd: (name: String, colorHex: String) -> Unit, modifier: Modifier = Modifier) {
+fun AddFriendContent(
+    onAdd: (name: String, colorHex: String) -> Unit,
+    modifier: Modifier = Modifier,
+    // The colours of everyone already on this phone, you included: the field keeps clear of them.
+    takenColours: List<String> = emptyList(),
+) {
+    val taken = remember(takenColours) { takenColours.mapNotNull(Hues::slotOf) }
     var name by rememberSaveable { mutableStateOf("") }
-    var colour by rememberSaveable { mutableStateOf(FriendColours.first().first) }
+    var hue by rememberSaveable { mutableStateOf(-1) }
+    var shade by rememberSaveable { mutableStateOf(1) }
+    if (hue < 0) (Hues.firstFreeSlot("new-friend", taken) ?: Hues.Slot(243, 1)).let { hue = it.hue; shade = it.shade }
+    val slot = Hues.Slot(hue, shade)
+    val colour = slot.hex
 
     SheetScaffold(
         modifier = modifier,
@@ -85,25 +97,12 @@ fun AddFriendContent(onAdd: (name: String, colorHex: String) -> Unit, modifier: 
             }
         }
         Text("COLOUR", style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.fillMaxWidth().selectableGroup()) {
-            FriendColours.forEach { (hex, label) ->
-                val selected = hex == colour
-                val swatch = parseColor(hex)
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(SwatchShape)
-                        .background(swatch)
-                        .then(if (selected) Modifier.border(3.dp, OffWhiteText, SwatchShape) else Modifier)
-                        .selectable(selected = selected, role = Role.RadioButton, onClick = { colour = hex })
-                        .semantics { contentDescription = label },
-                ) {
-                    if (selected) Icon(KpIcons.Check, contentDescription = null, tint = CharcoalBg, modifier = Modifier.size(20.dp))
-                }
-            }
-        }
+        // Any colour along the spectrum, kept clear of everyone else's (design item 11).
+        FriendColourField(
+            selected = slot,
+            taken = taken,
+            onPick = { hue = it.hue; shade = it.shade },
+            whose = name.trim().takeIf { it.isNotEmpty() }?.let { "$it's" } ?: "Their",
+        )
     }
 }
-
-private val SwatchShape = SquircleShape(16.dp)

@@ -18,6 +18,8 @@ data class RemoteProfile(
     @SerialName("avatar_emoji") val avatarEmoji: String? = null,
     /** Where to pay them, for settle-up. Format-checked by the server and re-checked before use. */
     @SerialName("upi_id") val upiId: String? = null,
+    /** Their own colour as an OKLCH hue (migration profile_hue), the same on every phone. */
+    val hue: Int? = null,
 )
 
 @Serializable
@@ -113,6 +115,12 @@ data class RemoteSettlement(
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String,
     @SerialName("deleted_at") val deletedAt: String? = null,
+    // Settlement confirmation (migration settlement_confirmation). Defaults are what a server
+    // without it means: every settlement is final.
+    val status: String = "confirmed",
+    @SerialName("recorded_by") val recordedBy: String? = null,
+    @SerialName("responded_at") val respondedAt: String? = null,
+    @SerialName("response_note") val responseNote: String? = null,
 )
 
 /** The three arguments of `save_group_expense`. Amounts are sent as exact 2-decimal numbers. */
@@ -137,7 +145,13 @@ data class GroupTransactionPayload(
 
 data class SplitPayload(val id: String, val paidBy: String, val splitType: String, val totalAmount: BigDecimal)
 
-data class SharePayload(val profileId: String, val shareAmount: BigDecimal, val percentage: Double?)
+/** One share: a member's ([profileId]) or a host's guest's ([localName]), never both (design item 9). */
+data class SharePayload(
+    val profileId: String?,
+    val shareAmount: BigDecimal,
+    val percentage: Double?,
+    val localName: String? = null,
+)
 
 /**
  * What a settlement push sends. No updated_at (the trigger owns it); [deletedAt] is always an

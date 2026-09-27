@@ -1,5 +1,6 @@
 package com.vaibhav.kharchapaani.ui.groups
 
+import com.vaibhav.kharchapaani.ui.theme.LocalMyColour
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -109,7 +110,7 @@ fun SharedGroupPanel(
 
         Text("${members.size + 1} PEOPLE", style = EyebrowText)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            MemberChip(name = "You", colorHex = "#FF7A3D")
+            MemberChip(name = "You", colorHex = LocalMyColour.current.hex)
             members.forEach { MemberChip(name = it.name, colorHex = it.avatarColor, emoji = it.avatarEmoji) }
         }
 

@@ -61,6 +61,8 @@ import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
 import com.vaibhav.kharchapaani.ui.theme.MoneyIn
 import com.vaibhav.kharchapaani.ui.theme.MoneyOut
 import com.vaibhav.kharchapaani.ui.theme.EyebrowText
+import com.vaibhav.kharchapaani.data.model.ActivityItem
+import com.vaibhav.kharchapaani.ui.components.SettlementItemCard
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
@@ -88,7 +90,12 @@ fun SplitsScreen(
     onOpenIouDialog: () -> Unit,
     onSettleUp: (PersonEntity) -> Unit,
     onViewHistory: (PersonEntity) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Settlement confirmation (design item 10): what's waiting on me, and on them.
+    awaitingMe: List<ActivityItem.Settlement> = emptyList(),
+    awaitingThem: List<ActivityItem.Settlement> = emptyList(),
+    onAnswerSettlement: (Long) -> Unit = {},
+    onWithdrawSettlement: (Long) -> Unit = {},
 ) {
     val owedToMe = personBalances.filter { it.netBalance > 0 }.sumOf { it.netBalance }
     val iOwe = abs(personBalances.filter { it.netBalance < 0 }.sumOf { it.netBalance })
@@ -126,6 +133,33 @@ fun SplitsScreen(
                 onOpenIou = onOpenIouDialog,
                 modifier = Modifier.padding(top = Spacing.l),
             )
+        }
+        if (awaitingMe.isNotEmpty()) {
+            item(key = "awaiting_me_header") {
+                Text("WAITING FOR YOU", style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s).testTag("awaiting_me_header"))
+            }
+            itemsIndexed(awaitingMe, key = { _, it -> "awaiting_me_${it.settlement.id}" }) { index, item ->
+                SettlementItemCard(
+                    item = item,
+                    onRetract = {},
+                    onAnswer = { onAnswerSettlement(item.settlement.id) },
+                    position = RowPosition.of(index, awaitingMe.size),
+                    modifier = Modifier.animateItem().padding(top = if (index == 0) 0.dp else 2.dp),
+                )
+            }
+        }
+        if (awaitingThem.isNotEmpty()) {
+            item(key = "awaiting_them_header") {
+                Text("WAITING ON OTHERS", style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s))
+            }
+            itemsIndexed(awaitingThem, key = { _, it -> "awaiting_them_${it.settlement.id}" }) { index, item ->
+                SettlementItemCard(
+                    item = item,
+                    onRetract = { onWithdrawSettlement(item.settlement.id) },
+                    position = RowPosition.of(index, awaitingThem.size),
+                    modifier = Modifier.animateItem().padding(top = if (index == 0) 0.dp else 2.dp),
+                )
+            }
         }
         item(key = "sections") {
             SegmentedControl(

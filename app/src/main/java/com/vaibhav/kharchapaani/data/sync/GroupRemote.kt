@@ -36,6 +36,9 @@ interface GroupRemote {
     suspend fun softDeleteSettlements(remoteIds: List<String>)
 
     suspend fun settlementsChangedSince(since: String?, limit: Int): List<RemoteSettlement>
+
+    /** Confirms or rejects a settlement the other party recorded (`respond_to_settlement`). */
+    suspend fun respondToSettlement(remoteId: String, confirm: Boolean, note: String?)
 }
 
 class SupabaseGroupRemote(private val supabase: SupabaseClient) : GroupRemote {
@@ -103,7 +106,7 @@ class SupabaseGroupRemote(private val supabase: SupabaseClient) : GroupRemote {
                 put("p_shares", buildJsonArray {
                     expense.shares.forEach { share ->
                         add(buildJsonObject {
-                            put("profile_id", share.profileId)
+                            if (share.localName != null) put("local_name", share.localName) else put("profile_id", share.profileId)
                             put("share_amount", JsonPrimitive(share.shareAmount))
                             put("percentage", share.percentage?.let(::JsonPrimitive) ?: JsonNull)
                         })
@@ -125,6 +128,18 @@ class SupabaseGroupRemote(private val supabase: SupabaseClient) : GroupRemote {
             order("updated_at", Order.ASCENDING)
             limit(limit.toLong())
         }.decodeList()
+
+    override suspend fun respondToSettlement(remoteId: String, confirm: Boolean, note: String?) = rejectingContent {
+        supabase.postgrest.rpc(
+            "respond_to_settlement",
+            buildJsonObject {
+                put("p_settlement_id", remoteId)
+                put("p_confirm", confirm)
+                put("p_note", note?.let(::JsonPrimitive) ?: JsonNull)
+            },
+        )
+        Unit
+    }
 
     override suspend fun upsertSettlements(rows: List<SettlementUpload>) = rejectingContent {
         supabase.from("settlements").upsert(rows) { onConflict = "id" }
@@ -172,6 +187,6 @@ class SupabaseGroupRemote(private val supabase: SupabaseClient) : GroupRemote {
          * field is ever added to either without being added here.
          */
         internal const val VISIBLE_GROUPS_COLUMNS =
-            "*, group_members(profile_id, profiles(id, display_name, avatar_url, avatar_emoji, upi_id))"
+            "*, group_members(profile_id, profiles(id, display_name, avatar_url, avatar_emoji, upi_id, hue))"
     }
 }
