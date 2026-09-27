@@ -16,8 +16,11 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
@@ -103,12 +106,14 @@ fun FriendColourField(
             val corner = CornerRadius(12.dp.toPx())
             for (row in 0 until rows) {
                 val top = row * (rowPx + gapPx)
-                for (h in 0 until 360) {
-                    drawRect(colours[row][h], topLeft = Offset(h * slice, top), size = Size(slice + 1f, rowPx))
-                    if (!free[row][h]) drawRect(CharcoalBg.copy(alpha = 0.78f), topLeft = Offset(h * slice, top), size = Size(slice + 1f, rowPx))
+                // Each row clipped to a rounded bar, so its ends are true curves on any background.
+                val bar = Path().apply { addRoundRect(RoundRect(0f, top, size.width, top + rowPx, corner)) }
+                clipPath(bar) {
+                    for (h in 0 until 360) {
+                        drawRect(colours[row][h], topLeft = Offset(h * slice, top), size = Size(slice + 1f, rowPx))
+                        if (!free[row][h]) drawRect(CharcoalBg.copy(alpha = 0.78f), topLeft = Offset(h * slice, top), size = Size(slice + 1f, rowPx))
+                    }
                 }
-                // Softens the row's corners against the sheet.
-                drawRoundRect(CharcoalBg, topLeft = Offset(-1f, top - 1f), size = Size(size.width + 2f, rowPx + 2f), cornerRadius = corner, style = Stroke(3.dp.toPx()))
             }
             selected?.let {
                 val x = (it.hue + 0.5f) * slice
