@@ -21,8 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.ui.sync.SyncBadge
 import com.vaibhav.kharchapaani.ui.sync.SyncBadgeOverlay
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
-import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
-import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
+import com.vaibhav.kharchapaani.ui.theme.LocalMyColour
 
 /**
  * The way into the account, and where sync says how it is doing.
@@ -39,6 +38,7 @@ fun AccountAvatar(
     modifier: Modifier = Modifier,
 ) {
     val syncDescription = SyncBadge.describe(syncStatus)
+    val mine = LocalMyColour.current.color
     // One clickable rather than IconButton + bounceClick, so TalkBack sees a single "Account"
     // button. Compose expands the touch target to 48dp.
     Box(contentAlignment = Alignment.Center, modifier = modifier.size(48.dp)) {
@@ -47,7 +47,7 @@ fun AccountAvatar(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(WarmAmberPrimary.copy(alpha = 0.18f))
+                .background(mine.copy(alpha = 0.18f))
                 .bounceClick(onClick = onClick)
                 .semantics {
                     contentDescription = "Account"
@@ -59,7 +59,7 @@ fun AccountAvatar(
             Text(
                 text = avatar,
                 style = MaterialTheme.typography.titleLarge,
-                color = WarmAmberLight,
+                color = mine,
                 modifier = Modifier.clearAndSetSemantics {},
             )
         }

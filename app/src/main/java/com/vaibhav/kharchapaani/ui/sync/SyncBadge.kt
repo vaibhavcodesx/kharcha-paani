@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
+import com.vaibhav.kharchapaani.ui.theme.LocalMyColour
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 
 /** The one sync state worth showing at a glance, most urgent first (the same order as the account sheet). */
@@ -59,6 +60,8 @@ enum class SyncBadge {
 fun BoxScope.SyncBadgeOverlay(status: SyncStatus, avatarSize: Dp) {
     when (SyncBadge.of(status)) {
         SyncBadge.Syncing -> {
+            // The ring turns in the account's own colour, the same one the avatar wears.
+            val ringColour = LocalMyColour.current.color
             val turn by rememberInfiniteTransition(label = "sync_ring").animateFloat(
                 initialValue = 0f,
                 targetValue = 360f,
@@ -68,7 +71,7 @@ fun BoxScope.SyncBadgeOverlay(status: SyncStatus, avatarSize: Dp) {
             Canvas(Modifier.size(avatarSize + 8.dp).align(Alignment.Center)) {
                 rotate(turn) {
                     drawArc(
-                        color = WarmAmberPrimary,
+                        color = ringColour,
                         startAngle = 0f,
                         sweepAngle = 110f,
                         useCenter = false,

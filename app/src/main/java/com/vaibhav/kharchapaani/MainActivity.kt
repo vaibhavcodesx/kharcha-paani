@@ -56,6 +56,9 @@ import com.vaibhav.kharchapaani.ui.shell.KpDock
 import com.vaibhav.kharchapaani.ui.shell.tabSwipe
 import com.vaibhav.kharchapaani.ui.theme.KpMotion
 import com.vaibhav.kharchapaani.ui.theme.LocalHazeState
+import com.vaibhav.kharchapaani.ui.theme.LocalMyColour
+import com.vaibhav.kharchapaani.ui.theme.MyColour
+import com.vaibhav.kharchapaani.ui.components.hueColour
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import androidx.compose.ui.platform.LocalContext
@@ -321,8 +324,9 @@ fun SplitFlowApp(
     // One colour per person (design item 11). Groupmates' chosen colours are what mine keeps clear
     // of; everyone on this phone is what a new friend's colour keeps clear of.
     val groupmateHues = remember(people) { people.filter { it.profileId != null }.mapNotNull { it.hue } }
-    val phoneHues = remember(people) { people.mapNotNull { it.hue ?: Hues.hueOf(it.avatarColor) } }
     val myHue = authUiState.hue
+    val phoneHues = remember(people, myHue) { people.mapNotNull { it.hue ?: Hues.hueOf(it.avatarColor) } + listOfNotNull(myHue) }
+    LaunchedEffect(myHue) { viewModel.fitColoursAround(myHue) }
     val colourClash = remember(people, myHue) {
         myHue?.let { mine -> people.firstOrNull { it.profileId != null && it.hue != null && Hues.distance(it.hue, mine) < Hues.MIN_GAP }?.name }
     }
@@ -564,7 +568,10 @@ fun SplitFlowApp(
             }
         }
         // Only the dock samples the content: sheets and dialogs are other windows (see LocalHazeState).
-        CompositionLocalProvider(LocalHazeState provides hazeState) {
+        CompositionLocalProvider(
+            LocalHazeState provides hazeState,
+            LocalMyColour provides (myHue?.let { MyColour(hueColour(it), Hues.hex(it)) } ?: LocalMyColour.current),
+        ) {
             KpSnackbarHost(
                 state = snackbarHostState,
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = snackbarClearance()),

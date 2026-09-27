@@ -1,8 +1,5 @@
--- STAGED, NOT APPLIED. Replaces the body of public.save_group_expense, the only path the app uses
--- to write a group expense, and tightens split_shares_update for guest shares (see the end). That
--- is an RLS policy change, so under this project's rules it waits for owner review. The function
--- stays SECURITY INVOKER: every write is still checked by the caller's own policies. Kept out of
--- supabase/migrations/ on purpose.
+-- APPLIED to live on 2026-09-27 as version 20260927073436, after owner review and approval. Re-verified
+-- against live in rolled-back transactions the same day (its suite passed in full).
 --
 -- Tested on the local harness: supabase/tests/rls_group_guests_test.sql.
 -- Design: docs/design-v1.4-groups-settlements-colours.md, item 9.

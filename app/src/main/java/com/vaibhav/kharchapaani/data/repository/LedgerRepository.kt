@@ -582,9 +582,9 @@ class LedgerRepository(
      * Runs at startup, writes only the rows that actually have to change, and does nothing at all
      * on a phone where nobody clashes — so it costs one read on every launch after the first.
      */
-    suspend fun repairPersonColours() = withContext(Dispatchers.IO) {
+    suspend fun repairPersonColours(myHue: Int? = null) = withContext(Dispatchers.IO) {
         val people = db.personDao().getAllPeopleDirect()
-        val changes = PersonColours.respace(
+        val changes = PersonColours.respace(myHue = myHue, people = 
             people.map { PersonColour(id = it.id, key = it.profileId ?: it.name, colorHex = it.avatarColor, createdAt = it.createdAt, chosenHue = it.hue) }
         )
         if (changes.isEmpty()) return@withContext

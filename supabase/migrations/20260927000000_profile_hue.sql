@@ -1,6 +1,5 @@
--- STAGED, NOT APPLIED. Adds a server-enforced rule to how profiles are updated (a trigger that
--- refuses some writes), which is a hard stop under this project's rules: it waits for owner
--- review. Kept out of supabase/migrations/ so no `db push` can apply it by accident.
+-- APPLIED to live on 2026-09-27 as version 20260927073454, after owner review and approval. Re-verified
+-- against live in rolled-back transactions the same day (its suite passed in full).
 --
 -- Tested on the local harness: supabase/tests/rls_profile_hue_test.sql.
 -- Design: docs/design-v1.4-groups-settlements-colours.md, item 11.
@@ -17,7 +16,8 @@
 --
 --   * A hue within 25 degrees of the hue of anyone you currently share a group with is refused
 --     (23514). Two colours closer than that look alike on a donut or a member chip.
---   * Hues 28-58 are refused: that band is the brand amber (43) the app uses for "You".
+--   * Hues 28-58 are refused: that band is the brand amber (43), the app's own accent for buttons,
+--     highlights and warnings, so no person's colour reads as part of the interface.
 --   * The check takes a lock per shared group, so two groupmates picking at the same moment can't
 --     both get the same colour.
 --   * Only the hue changing triggers the check. Clearing it (null: "let the app choose") is always
@@ -66,7 +66,7 @@ begin
   end if;
 
   if new.hue between 28 and 58 then
-    raise exception 'that colour is kept for "You"' using errcode = '23514';
+    raise exception 'that colour is the app''s own accent' using errcode = '23514';
   end if;
 
   -- One lock per shared group, in a fixed order so two pickers can't deadlock.

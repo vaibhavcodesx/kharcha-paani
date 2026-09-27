@@ -1,8 +1,8 @@
--- Checks for the STAGED migration 20260927000000_profile_hue (design doc item 11): one colour per
+-- Checks for the migration 20260927000000_profile_hue (design doc item 11): one colour per
 -- person, refused when it's within 25 degrees of anyone you share a group with, or in the amber band.
 --
 -- Same conventions as rls_groups_test.sql: one transaction ending in ROLLBACK, one result row per
--- check. Run on the local harness with the staged file copied in; never against live until approved.
+-- check. Applied to live 2026-09-27; safe to run there as `postgres` (it rolls back).
 --
 -- Users: alice, bob and carol share Goa trip; mallory shares nothing, then joins.
 
@@ -132,7 +132,7 @@ select public._expect_rows('alice picks blue (200)',
   $q$ update public.profiles set hue = 200 where id = '00000000-0000-4000-8000-0000000000a1' $q$, 1);
 select public._expect_rows('saving the same colour again is fine',
   $q$ update public.profiles set hue = 200 where id = '00000000-0000-4000-8000-0000000000a1' $q$, 1);
-select public._expect_state('the amber kept for "You" is refused (43)',
+select public._expect_state('the app''s amber accent is refused (43)',
   $q$ update public.profiles set hue = 43 where id = '00000000-0000-4000-8000-0000000000a1' $q$, '23514');
 select public._expect_state('so is the edge of that band (28)',
   $q$ update public.profiles set hue = 28 where id = '00000000-0000-4000-8000-0000000000a1' $q$, '23514');

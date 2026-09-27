@@ -158,3 +158,12 @@ object BrandGradient {
     /** Gradient-filled text, for the hero balance only. */
     fun text(style: TextStyle): TextStyle = style.copy(brush = horizontal())
 }
+
+/**
+ * This account's own colour (design item 11, owner 2026-09-27: "we should see our own colour, not
+ * amber"). The avatar, its sync ring, the "You" chip and "You" on the donut use it. Amber until the
+ * account has one, and amber stays for warnings such as a failed sync.
+ */
+data class MyColour(val color: androidx.compose.ui.graphics.Color, val hex: String)
+
+val LocalMyColour = androidx.compose.runtime.compositionLocalOf { MyColour(androidx.compose.ui.graphics.Color(0xFFFF7A3D), "#FF7A3D") }

@@ -1,6 +1,5 @@
--- Checks for STAGED migration supabase/staged/20260926000000_settlement_confirmation.sql.
--- Not applied to live. Run with the staged file copied into a migrations directory (see
--- docs/local-friend-sync-v2.md, "Running the test locally").
+-- Checks for migration supabase/migrations/20260926000000_settlement_confirmation.sql.
+-- Applied to live 2026-09-27.
 --
 -- Same conventions as the other suites: one transaction ending in ROLLBACK, one result row per
 -- check, nothing left behind.

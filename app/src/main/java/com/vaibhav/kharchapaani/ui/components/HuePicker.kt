@@ -94,8 +94,8 @@ fun HuePicker(
             }
         }
         Text(
-            if (taken.isEmpty()) "Drag along the bar. The dimmed band is kept for “You”."
-            else "Dimmed colours are too close to someone else's, or kept for “You”.",
+            if (taken.isEmpty()) "Drag along the bar. The dimmed band is the app's own accent colour."
+            else "Dimmed colours are too close to someone else's, or the app's own accent colour.",
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = Spacing.s),
         )

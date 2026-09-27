@@ -433,6 +433,12 @@ class MainViewModel(
         }
     }
 
+    /** Once my own colour is known (or changes), friends on this phone move off it. */
+    fun fitColoursAround(myHue: Int?) {
+        if (myHue == null) return
+        viewModelScope.launch { ledgerRepo.repairPersonColours(myHue) }
+    }
+
     // ---- Settlement confirmation (design item 10) ----
 
     /** Settlements between members, as feed items, for the ones waiting on my answer. */
@@ -1214,7 +1220,8 @@ class MainViewModel(
         // A split with groupmates outside a shared group never reaches them (decision 1): ask first.
         if (askForGroup && _isSplit.value && !isSharedGroup(_groupId.value)) {
             val participants = _shares.value.filter { it.isSelected }.map { it.personId } + _paidByPersonId.value
-            val options = groupOptionsFor(participants)
+            // A split can bring friends who aren't on the app along as my guests (design item 9).
+            val options = SharedRecordGroups.optionsFor(participants, people.value, groups.value, splitPayerId = _paidByPersonId.value)
             if (options.involvesGroupmates) {
                 _splitGroupPrompt.value = options
                 return

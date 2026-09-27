@@ -1,6 +1,5 @@
--- STAGED, NOT APPLIED. Changes who may write what on public.settlements (new server-enforced
--- rules in the update trigger, and a new RPC), which is a hard stop under this project's rules: it
--- waits for owner review. Kept out of supabase/migrations/ so no `db push` can apply it by accident.
+-- APPLIED to live on 2026-09-27 as version 20260927073400, after owner review and approval. Re-verified
+-- against live in rolled-back transactions the same day (its suite passed in full).
 --
 -- Tested on the local harness: supabase/tests/rls_settlement_confirmation_test.sql.
 -- Design and reasoning: docs/design-v1.4-groups-settlements-colours.md, item 10.

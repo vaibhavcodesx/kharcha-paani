@@ -452,7 +452,7 @@ private fun ColourRow(colour: ColourChoice, saved: Int?, onSave: (Int) -> Unit, 
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.m)) {
                     Box(Modifier.size(28.dp).clip(KpShapes.small).background(picked?.let(::hueColour) ?: CharcoalElevated))
                     Text(
-                        "Groupmates see you in this colour on their phones. You're still amber on yours.",
+                        "You wear this colour everywhere: on your phone and on every groupmate's.",
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(start = Spacing.m),
                     )

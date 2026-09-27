@@ -1,9 +1,8 @@
--- Checks for the STAGED migration 20260926000100_group_expense_guests (design doc item 9): a group
+-- Checks for the migration 20260926000100_group_expense_guests (design doc item 9): a group
 -- expense can carry shares for friends without an account ("guests" of the member who added it).
 --
 -- Same conventions as rls_groups_test.sql: one transaction ending in ROLLBACK, one result row per
--- check, nothing left behind. Run on the local harness with the staged file copied in after the
--- applied migrations; never against live until the migration is approved.
+-- check, nothing left behind. Applied to live 2026-09-27; safe to run there as `postgres` (it rolls back).
 --
 -- Users: alice adds expenses and hosts guests; bob paid one of them; carol is a member; mallory is outside.
 

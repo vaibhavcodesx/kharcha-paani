@@ -15,7 +15,7 @@ import kotlin.math.sqrt
  * contrast and only the hue itself is a choice.
  *
  * The rules mirror the server's (migration profile_hue): no two people who share a group within
- * [MIN_GAP] degrees of each other, and nobody in the band around the brand amber, which is "You".
+ * [MIN_GAP] degrees of each other, and nobody in the band around the brand amber, the app's own accent.
  */
 object Hues {
 
@@ -25,7 +25,7 @@ object Hues {
     /** Closer than this and two colours look alike on a donut or a member chip. */
     const val MIN_GAP = 25
 
-    /** The brand amber (#FF7A3D) is at 43 degrees; this band is kept for "You". */
+    /** The brand amber (#FF7A3D) is at 43 degrees: the app's accent, so no person wears it. */
     val RESERVED = 28..58
 
     fun distance(a: Int, b: Int): Int {

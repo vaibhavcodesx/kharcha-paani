@@ -48,13 +48,15 @@ object PersonColours {
      * @param people every person on this phone, in any order. Their [PersonColour.key] is what a
      *   colour is derived from when they have none worth keeping.
      */
-    fun respace(people: List<PersonColour>): Map<Long, String> {
+    fun respace(people: List<PersonColour>, myHue: Int? = null): Map<Long, String> {
         val changes = mutableMapOf<Long, String>()
         val taken = mutableSetOf(MINE)
 
         // Chosen colours first, exactly as chosen: they're what every other phone shows too.
         val chosen = people.filter { it.chosenHue != null }
-        val chosenHues = chosen.map { it.chosenHue!! }
+        // My own colour counts as chosen too: on my phone I wear it, so nobody else should.
+        val chosenHues = chosen.map { it.chosenHue!! } + listOfNotNull(myHue)
+        myHue?.let { taken.add(Hues.hex(it)) }
         for (person in chosen) {
             val hex = Hues.hex(person.chosenHue!!)
             taken.add(hex)

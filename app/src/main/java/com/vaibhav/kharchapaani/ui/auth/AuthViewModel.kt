@@ -124,7 +124,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 "You're offline, so your colour wasn't saved. Try again when you're connected."
             } catch (e: RestException) {
                 Log.w(TAG, "Colour rejected: ${e.error}")
-                // 23514: the server's rule (too close to a groupmate's colour, or the amber kept for You).
+                // 23514: the server's rule (too close to a groupmate's colour, or the app's amber accent).
                 "Someone in your groups has a colour too close to that one. Pick one further away."
             }
             if (!automatic) _uiState.update { it.copy(hueSaveError = error) }

@@ -1,8 +1,9 @@
 # v1.4 design: mixed groups, settlement confirmation, one colour per person
 
-Status: **decided (owner, 2026-09-27); migrations staged, awaiting final review before live.**
-Three migrations are staged in `supabase/staged/` with harness tests. Each changes RLS or a
-server-enforced write rule, so applying any of them to live is a hard stop until approved.
+Status: **decided and APPLIED to live (2026-09-27, owner-approved)**, shipping with 1.4.0. The three
+migrations are in `supabase/migrations/` (live versions 20260927073400, 20260927073436,
+20260927073454). Each migration's suite also passed in full against live, in transactions forced
+to roll back (35/35, 23/23, 25/25).
 
 Owner decisions this reflects:
 
@@ -58,6 +59,11 @@ guest of the member who added the expense.
 
 ### App
 
+- **The owner's case: one expense with both kinds of friend.** Split a dinner with Shubham (on the
+  app) and Hist (not on it), then Save. The app asks which shared group it goes in, offering the
+  groups every *member* in it belongs to. Pick one, and the expense syncs to Shubham, with Hist on
+  it as your guest. It is still one expense, so it doesn't need splitting into two parts. The one
+  exception: if Hist paid, it stays on your phone, because a guest can't be a group's payer.
 - A group expense's split picker offers the group's members plus your friends who aren't on the
   app. Picking one makes them your guest.
 - On every phone a guest's share is stored under the host, with the guest's name. Every group
@@ -139,14 +145,17 @@ on every screen and every phone.
   background with the same contrast.
 - **Collision prevention:**
   - A hue within 25° of anyone you share a group with is refused by the server (23514).
-  - The band 28–58° around the brand amber (43°) is refused, because it's kept for "You".
+  - The band 28–58° around the brand amber (43°) is refused: it's the app's own accent colour for
+    buttons, highlights and warnings, so no person's colour should read as part of the interface.
   - The picker greys these arcs out and snaps to the nearest free hue.
   - A lock per shared group stops two groupmates picking the same colour at the same moment.
 - **Joining a group is never refused over colour.** If a joiner's hue is within 25° of a member's,
   the joiner's app asks them to pick again, and until then shows them as they are.
 - **Null hue:** the app picks the first free one automatically after sign-in, so everyone ends
   up with a persistent colour without having to choose.
-- **On your own phone you are still "You", in amber.** Everyone else sees your chosen colour.
+- **You see your own colour too** (owner, 2026-09-27): your avatar, the ring that turns while it
+  syncs, "You" on member chips and on the group donut. Amber stays only for warnings, such as a
+  failed sync. Friends on your phone are moved off your colour.
 - **Friends not on the app** keep a colour stored on your phone. The same picker checks it against
   the other people on your phone.
 

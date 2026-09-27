@@ -39,6 +39,33 @@ class SharedRecordGroupsTest {
     }
 
     @Test
+    fun `a split with a groupmate and a friend not on the app goes in the group, the friend as my guest`() {
+        // The owner's case: one expense with both kinds of friend, and the group chosen for the app part.
+        val options = SharedRecordGroups.optionsFor(listOf(-1L, bob.id, rahul.id), people, listOf(group(1, listOf(bob))), splitPayerId = -1L)
+
+        assertTrue(options.canSync)
+        assertEquals(1L, options.onlyGroup?.id)
+        assertEquals(listOf(rahul), options.guests)
+        assertTrue(options.withoutAccount.isEmpty())
+    }
+
+    @Test
+    fun `a split paid by a friend not on the app stays on this phone`() {
+        val options = SharedRecordGroups.optionsFor(listOf(-1L, bob.id, rahul.id), people, listOf(group(1, listOf(bob))), splitPayerId = rahul.id)
+
+        assertFalse(options.canSync)
+        assertEquals(listOf(rahul), options.withoutAccount)
+    }
+
+    @Test
+    fun `a settlement or IOU with a friend not on the app still can't go in a group`() {
+        val options = SharedRecordGroups.optionsFor(listOf(rahul.id), people, listOf(group(1, listOf(bob))))
+
+        assertFalse(options.canSync)
+        assertTrue(options.guests.isEmpty())
+    }
+
+    @Test
     fun `only active shared groups containing everyone are offered, newest first`() {
         val groups = listOf(
             group(1, listOf(bob, carol)),

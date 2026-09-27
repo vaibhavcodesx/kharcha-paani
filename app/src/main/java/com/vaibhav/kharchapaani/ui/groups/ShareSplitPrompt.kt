@@ -41,6 +41,12 @@ fun ShareSplitPrompt(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = when {
+                        options.canSync && options.guests.isNotEmpty() -> {
+                            val names = options.guests.joinToString { it.name }
+                            "Splits reach the other people only inside a shared group. $names " +
+                                "${if (options.guests.size == 1) "isn't" else "aren't"} on Kharcha Paani, so they come along as your " +
+                                "${if (options.guests.size == 1) "guest" else "guests"}: you cover their share in the group, and they owe it to you. Add it to:"
+                        }
                         options.canSync -> "Splits reach the other people only inside a shared group. Add it to:"
                         options.withoutAccount.isNotEmpty() ->
                             "$noAccount ${if (options.withoutAccount.size == 1) "isn't" else "aren't"} on Kharcha Paani, " +
