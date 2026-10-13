@@ -128,3 +128,18 @@ internal val MIGRATION_7_8 = object : Migration(7, 8) {
         db.execSQL("ALTER TABLE `people` ADD COLUMN `hue` INTEGER")
     }
 }
+
+/**
+ * v9 (ask-to-pay): a local log of asking a friend to pay you back. Additive: a new table, nothing
+ * already on the phone changes.
+ */
+internal val MIGRATION_8_9 = object : Migration(8, 9) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `payment_asks` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `personId` INTEGER NOT NULL, " +
+                "`amount` REAL NOT NULL, `sentAt` INTEGER NOT NULL, " +
+                "FOREIGN KEY(`personId`) REFERENCES `people`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_payment_asks_personId` ON `payment_asks` (`personId`)")
+    }
+}

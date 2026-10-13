@@ -20,7 +20,9 @@ import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncMetaEntity
+import com.vaibhav.kharchapaani.data.db.dao.PaymentAskDao
 import com.vaibhav.kharchapaani.data.db.dao.SubscriptionDao
+import com.vaibhav.kharchapaani.data.db.entity.PaymentAskEntity
 import com.vaibhav.kharchapaani.data.db.entity.SubscriptionEntity
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 
@@ -36,8 +38,9 @@ import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
         PendingRemoteDeleteEntity::class,
         SyncMetaEntity::class,
         SubscriptionEntity::class,
+        PaymentAskEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -49,6 +52,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun syncDao(): SyncDao
     abstract fun groupSyncDao(): GroupSyncDao
     abstract fun subscriptionDao(): SubscriptionDao
+    abstract fun paymentAskDao(): PaymentAskDao
 
     companion object {
         /**
@@ -56,7 +60,7 @@ abstract class AppDatabase : RoomDatabase() {
          * app/schemas and a MigrationTestHelper test. There is deliberately no destructive
          * fallback: a missing migration crashes on open instead of silently wiping the ledger.
          */
-        internal val ALL_MIGRATIONS = arrayOf<Migration>(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+        internal val ALL_MIGRATIONS = arrayOf<Migration>(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
 
         /** Open databases through [LedgerDatabases], which scopes the file to the signed-in account. */
         internal fun builder(context: Context, name: String): Builder<AppDatabase> =

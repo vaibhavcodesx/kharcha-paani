@@ -16,6 +16,13 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.platform.testTag
 import com.vaibhav.kharchapaani.domain.UpiPayee
 import com.vaibhav.kharchapaani.domain.UpiLink
+import com.vaibhav.kharchapaani.domain.HisaabItemiser
+import com.vaibhav.kharchapaani.ui.format.AskMessage
+import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
+import com.vaibhav.kharchapaani.ui.theme.KpShapes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.draw.clip
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.groups.RecordInGroupSection
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
@@ -35,10 +42,12 @@ fun SettleUpSheet(
     onConfirm: (fromPersonId: Long, toPersonId: Long, amount: Double, note: String, groupId: Long?) -> Unit,
     onDismiss: () -> Unit,
     upiPayee: UpiPayee? = null,
+    hisaab: HisaabItemiser.Hisaab? = null,
+    onAsk: ((amount: Double, message: String) -> Unit)? = null,
 ) {
     if (!isOpen || person == null) return
     KpModalSheet(onDismiss = onDismiss) {
-        SettleUpContent(person, suggestedAmount, groupOptions, onCreateGroup, onConfirm, upiPayee = upiPayee)
+        SettleUpContent(person, suggestedAmount, groupOptions, onCreateGroup, onConfirm, upiPayee = upiPayee, hisaab = hisaab, onAsk = onAsk)
     }
 }
 
@@ -56,6 +65,9 @@ fun SettleUpContent(
     modifier: Modifier = Modifier,
     // Set when this account has a UPI ID: shown as a QR for the amount when the friend is paying.
     upiPayee: UpiPayee? = null,
+    // Ask-to-pay: what the friend owes, line by line (null when they owe nothing), and the share.
+    hisaab: HisaabItemiser.Hisaab? = null,
+    onAsk: ((amount: Double, message: String) -> Unit)? = null,
 ) {
     // suggestedAmount > 0: they owe me, so they're the one paying.
     var theyPaid by rememberSaveable(person.id) { mutableStateOf(suggestedAmount >= 0) }
@@ -117,6 +129,16 @@ fun SettleUpContent(
             moneyComesToMe = theyPaid,
             modifier = Modifier.padding(top = Spacing.m),
         )
+        // Ask-to-pay (eng review D2): only where the money comes to you and they actually owe you.
+        if (onAsk != null && hisaab != null && theyPaid && value > 0) {
+            val message = remember(person.name, hisaab, value, upiPayee) { AskMessage.build(person.name, hisaab, value, upiPayee?.upiId) }
+            AskToPaySection(
+                firstName = firstName(person.name),
+                message = message,
+                onAsk = { onAsk(value, message) },
+                modifier = Modifier.padding(top = Spacing.m),
+            )
+        }
         RecordInGroupSection(
             otherPersonName = person.name,
             options = groupOptions,
@@ -129,5 +151,35 @@ fun SettleUpContent(
 }
 
 private const val ME = -1L
+
+/**
+ * The ask's message as it will be sent (eng review D6: previewed here, edited, if at all, in the app
+ * it's sent from) and the button that opens the share sheet.
+ */
+@Composable
+private fun AskToPaySection(firstName: String, message: String, onAsk: () -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxWidth()) {
+        Text("Ask $firstName to pay", style = MaterialTheme.typography.titleSmall)
+        Text(
+            message,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier
+                .padding(top = Spacing.s)
+                .fillMaxWidth()
+                .clip(KpShapes.medium)
+                .background(CharcoalCard)
+                .padding(Spacing.m)
+                .testTag("ask_preview"),
+        )
+        KpButton(
+            label = "Ask $firstName to pay",
+            onClick = onAsk,
+            fillWidth = true,
+            onClickLabel = "Share this hisaab with $firstName",
+            testTag = "ask_to_pay_button",
+            modifier = Modifier.padding(top = Spacing.s),
+        )
+    }
+}
 
 private fun firstName(name: String) = name.trim().substringBefore(' ').ifEmpty { name }

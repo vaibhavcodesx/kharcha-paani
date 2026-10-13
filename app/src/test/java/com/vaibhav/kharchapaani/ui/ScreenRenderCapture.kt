@@ -1,5 +1,6 @@
 package com.vaibhav.kharchapaani.ui
 
+import com.vaibhav.kharchapaani.ui.components.FriendRow
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
@@ -171,6 +172,41 @@ class ScreenRenderCapture {
                 asksLeft = 20,
                 possessive = "your",
                 onAsk = {},
+            )
+        }
+    }
+
+    // Ask-to-pay (eng review D8): the settle sheet's "paid you" side with the ask and its preview,
+    // and a friend row saying when they were asked.
+    @Test
+    fun `ask to pay on the settle sheet and a friend's row`() = capture("ask_to_pay") {
+        val rohan = PersonEntity(id = 2, name = "Rohan Mehta", avatarColor = "#70C1FF")
+        val asked = at(today, 10)
+        Column(Modifier.fillMaxSize().background(CharcoalBg)) {
+            FriendRow(
+                balance = PersonBalance(rohan, 240.0, 340.0, 100.0),
+                onOpenHistory = {}, onSettleUp = {}, onDelete = {},
+                askedAt = asked - 3 * DAY,
+                now = asked,
+            )
+            SettleUpContent(
+                person = rohan,
+                suggestedAmount = 240.0,
+                groupOptions = com.vaibhav.kharchapaani.domain.SharedRecordGroups.Options(emptyList(), emptyList(), false),
+                onCreateGroup = {},
+                onConfirm = { _, _, _, _, _ -> },
+                upiPayee = com.vaibhav.kharchapaani.domain.UpiPayee("lal@okaxis", "Lal"),
+                hisaab = com.vaibhav.kharchapaani.domain.HisaabItemiser.Hisaab(
+                    carriedOver = 0.0,
+                    earlier = 0.0,
+                    lines = listOf(
+                        com.vaibhav.kharchapaani.domain.HisaabItemiser.Line("Dinner", com.vaibhav.kharchapaani.domain.HisaabItemiser.Kind.THEIR_SHARE, at(today.minusDays(4), 21), 300.0),
+                        com.vaibhav.kharchapaani.domain.HisaabItemiser.Line("Chai", com.vaibhav.kharchapaani.domain.HisaabItemiser.Kind.THEIR_SHARE, at(today.minusDays(3), 17), 40.0),
+                        com.vaibhav.kharchapaani.domain.HisaabItemiser.Line("They paid you", com.vaibhav.kharchapaani.domain.HisaabItemiser.Kind.THEY_SENT, at(today.minusDays(1), 9), -100.0),
+                    ),
+                    total = 240.0,
+                ),
+                onAsk = { _, _ -> },
             )
         }
     }

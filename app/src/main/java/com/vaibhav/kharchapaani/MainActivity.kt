@@ -368,6 +368,8 @@ fun SplitFlowApp(
     val selectedPersonForLedger by viewModel.selectedPersonForLedger.collectAsState()
     val isSettleUpOpen by viewModel.isSettleUpOpen.collectAsState()
     val settleUpPerson by viewModel.settleUpPerson.collectAsState()
+    val settleUpHisaab by viewModel.settleUpHisaab.collectAsStateWithLifecycle()
+    val askedAt by viewModel.askedAt.collectAsStateWithLifecycle()
     val isIouOpen by viewModel.isIouOpen.collectAsState()
     val isSimplifyDebtsOpen by viewModel.isSimplifyDebtsOpen.collectAsState()
     val simplifiedDebts by viewModel.simplifiedDebts.collectAsState()
@@ -550,6 +552,7 @@ fun SplitFlowApp(
                         awaitingThem = settlementsAwaitingThem,
                         onAnswerSettlement = { viewModel.openSettlementAnswer(it) },
                         onWithdrawSettlement = { viewModel.retractSettlement(it) },
+                        askedAt = askedAt,
                     )
 
                     2 -> InsightsScreen(
@@ -721,6 +724,8 @@ fun SplitFlowApp(
         },
         onDismiss = { viewModel.dismissSettleUp() },
         upiPayee = upiPayee,
+        hisaab = settleUpHisaab,
+        onAsk = { amount, message -> settleUpPerson?.let { viewModel.askToPay(context, it, amount, message) } },
     )
 
     SubscriptionsSheet(

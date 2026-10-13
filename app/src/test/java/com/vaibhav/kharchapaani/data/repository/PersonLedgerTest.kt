@@ -62,4 +62,63 @@ class PersonLedgerTest {
         assertEquals(510.25, rows.sumOf { it.netChange }, 0.001)
         assertEquals(balance, rows.sumOf { it.netChange }, 0.001)
     }
+
+    // Ask-to-pay builds its lines from these rows (eng review D7), so they must also add up to the
+    // balance when guests are involved and when the history starts with you owing them.
+    @Test
+    fun `guest shares are rows, and the rows still add up to the balance`() = runTest {
+        val rohan = repository.addPerson("Rohan", "#70C1FF")
+        val bob = repository.addPerson("Bob", "#FFB3BA")
+        // I paid; Rohan brought a guest, so he covers both shares.
+        repository.saveTransactionWithSplits(
+            expense(900.0, "Shack"), paidByPersonId = -1L,
+            shares = listOf(
+                SplitShareEntity(splitId = 0, personId = -1L, shareAmount = 300.0),
+                SplitShareEntity(splitId = 0, personId = rohan, shareAmount = 300.0),
+                SplitShareEntity(splitId = 0, personId = rohan, shareAmount = 300.0, guestName = "Kabir"),
+            ),
+            splitType = "equal",
+        )
+        // Bob paid; Rohan came along as my guest, so he owes me his share.
+        repository.saveTransactionWithSplits(
+            expense(600.0, "Boat"), paidByPersonId = bob,
+            shares = listOf(
+                SplitShareEntity(splitId = 0, personId = -1L, shareAmount = 200.0),
+                SplitShareEntity(splitId = 0, personId = bob, shareAmount = 200.0),
+                SplitShareEntity(splitId = 0, personId = -1L, shareAmount = 200.0, guestName = "Rohan", guestPersonId = rohan),
+            ),
+            splitType = "equal",
+        )
+
+        val rows = repository.getLedgerForPerson(rohan).first()
+        val balance = repository.personBalances.first().single { it.person.id == rohan }.netBalance
+
+        assertEquals(800.0, balance, 0.001)
+        assertEquals(balance, rows.sumOf { it.netChange }, 0.001)
+        assertEquals(setOf("split", "guest"), rows.map { it.id.substringBefore('_') }.toSet())
+    }
+
+    @Test
+    fun `starting with me owing them, the rows still add up to the balance`() = runTest {
+        val rohan = repository.addPerson("Rohan", "#70C1FF")
+        repository.saveTransactionWithSplits(
+            expense(100.0, "Lunch").copy(date = 1_000L), paidByPersonId = rohan,
+            shares = listOf(SplitShareEntity(splitId = 0, personId = -1L, shareAmount = 50.0), SplitShareEntity(splitId = 0, personId = rohan, shareAmount = 50.0)),
+            splitType = "equal",
+        )
+        repository.saveTransactionWithSplits(
+            expense(600.0, "Dinner").copy(date = 2_000L), paidByPersonId = -1L,
+            shares = listOf(SplitShareEntity(splitId = 0, personId = -1L, shareAmount = 300.0), SplitShareEntity(splitId = 0, personId = rohan, shareAmount = 300.0)),
+            splitType = "equal",
+        )
+
+        val rows = repository.getLedgerForPerson(rohan).first()
+        val balance = repository.personBalances.first().single { it.person.id == rohan }.netBalance
+        val hisaab = com.vaibhav.kharchapaani.domain.HisaabItemiser.itemise(rows)!!
+
+        assertEquals(250.0, balance, 0.001)
+        assertEquals(balance, rows.sumOf { it.netChange }, 0.001)
+        assertEquals(-50.0, hisaab.carriedOver, 0.001)
+        assertEquals(balance, hisaab.total, 0.001)
+    }
 }

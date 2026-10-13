@@ -62,6 +62,20 @@ internal fun qrMatrix(text: String): BitMatrix =
         mapOf(EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.M, EncodeHintType.MARGIN to 4, EncodeHintType.CHARACTER_SET to "UTF-8"),
     )
 
+/**
+ * The same code as a picture to send (ask-to-pay): dark modules on white with the quiet zone, like
+ * the on-screen code, [modulePx] pixels a module so it survives a chat app's recompression.
+ */
+internal fun qrBitmap(text: String, modulePx: Int = 12): android.graphics.Bitmap {
+    val matrix = qrMatrix(text)
+    val width = matrix.width * modulePx
+    val height = matrix.height * modulePx
+    val pixels = IntArray(width * height) { i ->
+        if (matrix.get((i % width) / modulePx, (i / width) / modulePx)) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+    }
+    return android.graphics.Bitmap.createBitmap(pixels, width, height, android.graphics.Bitmap.Config.ARGB_8888)
+}
+
 /** Dark modules on white, whatever the theme: scanners read inverted codes badly. */
 @Composable
 fun QrCode(text: String, contentDescription: String, modifier: Modifier = Modifier, size: Dp = 200.dp) {

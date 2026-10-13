@@ -275,3 +275,29 @@ data class SubscriptionEntity(
     val cancelledAt: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
 )
+
+/**
+ * One time you asked a friend to pay you back (ask-to-pay, docs/designs/ask-to-pay.md). Written when
+ * an app is picked in the share sheet, not when it opens (eng review D5), so a closed sheet isn't an
+ * ask. Local only: it drives the "Asked 3 days ago" line and nothing reads it off the phone. Goes
+ * with the friend when they're deleted.
+ */
+@Entity(
+    tableName = "payment_asks",
+    foreignKeys = [
+        ForeignKey(
+            entity = PersonEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["personId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["personId"])]
+)
+data class PaymentAskEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val personId: Long,
+    /** What was asked for: the sheet's amount, which may be less than the whole balance. */
+    val amount: Double,
+    val sentAt: Long = System.currentTimeMillis(),
+)

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Only CSV exports are shared (MainViewModel.exportCsv writes them to cache/exports). Anything
-     listed here is reachable by an app the share is granted to, so nothing else is. -->
+<!-- Shared through the FileProvider: CSV exports and backups (MainViewModel, cache/exports) and the
+     payment code sent with an ask-to-pay (ask/AskShare, cache/asks). Anything listed here is
+     reachable by an app the share is granted to, so nothing else is. -->
 <paths>
     <cache-path name="exports" path="exports/" />
+    <cache-path name="asks" path="asks/" />
 </paths>

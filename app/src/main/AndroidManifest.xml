@@ -95,6 +95,10 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/quick_add_widget_info" />
         </receiver>
+        <!-- Logs an ask-to-pay when an app is picked in its share sheet (ask/AskShare.chooser). -->
+        <receiver
+            android:name=".ask.AskSentReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>
