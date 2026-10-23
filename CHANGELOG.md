@@ -15,6 +15,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- A split with a friend who has no account, saved on another phone while this one was syncing,
+  could arrive before its expense and be skipped for good, leaving the expense unsplit here and
+  the balance with that friend wrong. A split that arrives first now waits and is applied on the
+  next sync, once its expense is here. A test saves two splits between the two pulls and checks
+  the balance on both phones.
 - Restoring a backup after signing in on a new phone could count a payment twice. A payment typed
   to a fraction of a paisa (₹100.555) and backed up before it had synced comes back from your
   account rounded (₹100.56), so the restore didn't recognise it as already there and added the
