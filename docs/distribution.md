@@ -8,7 +8,7 @@ How this app gets signed, built and published, and what you have to do by hand.
 |---|---|
 | Module | `:app` (the only one — `settings.gradle.kts` includes nothing else) |
 | applicationId | `com.vaibhav.kharchapaani` — **never change this**, see below |
-| versionCode / versionName | `1` / `1.0.0`, in `app/build.gradle.kts` |
+| versionCode / versionName | in `app/build.gradle.kts` (`5` / `1.4.0` as of 1.4.0) |
 | Release build command | `./gradlew :app:assembleRelease` |
 | Output | `app/build/outputs/apk/release/app-release.apk` (or `app-release-unsigned.apk`) |
 
@@ -97,8 +97,8 @@ The SHA-1 it prints is the fingerprint you need in step 5.
 Both numbers live in `app/build.gradle.kts`, and both move together:
 
 ```kotlin
-versionCode = 2        // any strictly larger integer; 1 → 2 → 3
-versionName = "1.1.0"  // what people see; match the git tag, minus the "v"
+versionCode = 6        // any strictly larger integer than the last release's (1.4.0 shipped 5)
+versionName = "1.5.0"  // what people see; match the git tag, minus the "v"
 ```
 
 - **`versionCode`** is what Android compares to decide whether an APK is an
@@ -248,6 +248,9 @@ writes `.env` from the secrets, builds, **verifies the APK is actually signed**,
 deletes the keystore and `.env`, then creates the release with the APK attached.
 
 It is `workflow_dispatch` only. Pushing to `main` never publishes anything.
+
+Before anyone gets it, go through the [release checklist](release-checklist.md): the scripted
+checks (`scripts/release-smoke.sh`) and the manual ones, on the release-signed APK.
 
 ## 7. Android Developer verification
 

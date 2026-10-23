@@ -13,6 +13,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- `docs/release-checklist.md`: what to check on the release-signed build before a release goes
+  out, with `scripts/release-smoke.sh` for the parts adb can do (release key, install over the
+  existing app, cold launch, shared text, invite links, widgets in the background).
+
 ### Changed
 
 - A friend's balance and their history are now worked out from the same rows, so the history
