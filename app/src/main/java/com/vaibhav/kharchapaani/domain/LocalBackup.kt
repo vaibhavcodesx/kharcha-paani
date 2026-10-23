@@ -19,11 +19,24 @@ import kotlinx.serialization.json.Json
  *   and regardless of who it was split with.
  * - `GroupSyncEngine.buildGroupExpense` returns null unless the transaction's group exists and
  *   every participant has a profile, so a local-only group's expenses never upload either.
- * - The same class returns null for a settlement with no `groupId`, so **settlements only sync
- *   inside a shared group** — a settlement between two accounts outside one is local as well.
+ * - The same class returns null for a settlement with no `groupId`, so **a settlement reaches
+ *   groupmates only inside a shared group** — a settlement between two accounts outside one is
+ *   local as well. (One with a friend who has no account goes up privately since 1.3.0; below.)
  *
  * So the predicate is not "does a local friend appear in it" but "would the sync engine ever
  * upload it". [isUnsyncable] is that predicate, kept next to the format it decides the contents of.
+ *
+ * ## Since 1.3.0 it over-includes, on purpose
+ *
+ * Local-friend sync (docs/local-friend-sync-v2.md) uploads splits and IOUs with friends who have no
+ * account, made from 1.3.0 on, to `local_splits` and `local_settlements`. The three rules above
+ * still describe the shared-group path, and this file still carries every split and every
+ * settlement outside a shared group, so those newer records are in the backup *and* on the server.
+ * That is safe because [com.vaibhav.kharchapaani.data.repository.LocalBackupRepository.restore] is
+ * additive and recognises them: transactions by `remoteId`, settlements by who, when and the amount
+ * to the paisa. `LocalBackupOverCloudRestoreTest` restores a backup over the same records pulled from
+ * the cloud and asserts the balance doesn't move. Narrowing the file to `LOCAL_ONLY` rows would
+ * make it smaller, at the cost of a backup that can't stand in for the cloud.
  *
  * ## What is still true
  *
@@ -112,7 +125,13 @@ data class LocalBackup(
          * @param inSharedGroup null when the transaction belongs to no group.
          */
         fun isUnsyncable(isSplit: Boolean, inSharedGroup: Boolean?): Boolean = when {
-            // Excluded by `isSplit = 0`, whoever it was split with.
+            // A shared group's expenses, split or not, are the group's on the server. Checked first:
+            // behind `isSplit` they went into the file, groupmates' included, and a restore brought
+            // back ones deleted or settled since, as this phone's own (correctness audit, 2026-10-24).
+            inSharedGroup == true -> false
+            // Excluded by `isSplit = 0`, whoever it was split with. Since 1.3.0 a new personal split
+            // with friends who have no account goes up through `local_splits` instead; it is kept
+            // here anyway (see "Since 1.3.0 it over-includes" above).
             isSplit -> true
             // No group: an ordinary personal expense, which does upload.
             inSharedGroup == null -> false

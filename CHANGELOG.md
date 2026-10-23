@@ -15,6 +15,15 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- Restoring a backup after signing in on a new phone could count a payment twice. A payment typed
+  to a fraction of a paisa (₹100.555) and backed up before it had synced comes back from your
+  account rounded (₹100.56), so the restore didn't recognise it as already there and added the
+  backup's copy as well. Payments are now matched to the paisa. A test restores a backup over the
+  same records pulled from your account and checks that no balance moves, and that a split from
+  before 1.3 that a later payment settled is filled in.
+- The backup carried shared groups' split expenses, groupmates' included, and restoring it could
+  bring back ones deleted or settled in the group since, as your own. Shared groups' expenses now
+  stay out of the backup (the group keeps them), and an older backup's copies aren't restored.
 - The UPI screen said your UPI ID "stays on this phone". Since 1.0.0 it has also been on your
   profile, where people in your shared groups can read it so they can pay you. It now says so.
 - `docs/splitting-with-people-not-on-the-app.md` still said a friend who isn't on the app "lives
