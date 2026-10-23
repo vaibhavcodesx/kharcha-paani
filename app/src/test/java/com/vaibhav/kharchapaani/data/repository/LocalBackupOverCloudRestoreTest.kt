@@ -126,14 +126,17 @@ class LocalBackupOverCloudRestoreTest {
     }
 
     @Test
-    fun `a payment typed to a fraction of a paisa is recognised after the cloud rounds it`() = runTest {
-        // The settle sheet takes whatever is typed; the push rounds to the paisa (the server's
-        // numeric(12, 2)), so the cloud copy and the backup's copy differ in the third decimal.
+    fun `a payment backed up before it synced is recognised after the cloud rounds it`() = runTest {
+        // The settle sheet takes whatever is typed, and the push rounds to the paisa (the server's
+        // numeric(12, 2)). Once this phone pulls its own row back it holds the rounded amount too, so
+        // a backup taken after a full sync matches. One taken before the payment synced (recorded
+        // offline, then exported) keeps 100.555 while the cloud has 100.56.
         val a = repo(phoneA)
         val rohan = a.addPerson("Rohan", "#70C1FF")
         a.recordSettlement(fromPersonId = rohan, toPersonId = -1L, amount = 100.555, date = 1_758_700_000_000L)
-        syncAll(phoneA)
         val backup = LocalBackupRepository(phoneA).collect(appVersion = "1.4.0")
+        assertEquals(100.555, backup.settlements.single().amount, 0.0)
+        syncAll(phoneA)
 
         syncAll(phoneB)
         val fromCloud = balanceWith(phoneB, "Rohan")
