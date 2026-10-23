@@ -12,6 +12,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
+import android.util.Log
 import android.os.Build
 import android.provider.MediaStore
 import androidx.core.content.FileProvider
@@ -1211,14 +1212,17 @@ class MainViewModel(
     fun saveCurrentTransaction(askForGroup: Boolean = true) {
         val total = _amount.value.toDoubleOrNull() ?: 0.0
         if (total <= 0) return
+        // Income has no split: the sheet hides the editor, but the toggle stayed on, and the hidden
+        // shares were saved as friends owing me (correctness audit, 2026-10-24).
+        val splitting = _isSplit.value && _type.value != "income"
         // The sheet disables Save and says why; this keeps any other caller from saving it anyway.
-        if (_isSplit.value) splitProblem(_amount.value, _splitMode.value, _shares.value)?.let {
+        if (splitting) splitProblem(_amount.value, _splitMode.value, _shares.value)?.let {
             _statusMessage.value = it
             return
         }
 
         // A split with groupmates outside a shared group never reaches them (decision 1): ask first.
-        if (askForGroup && _isSplit.value && !isSharedGroup(_groupId.value)) {
+        if (askForGroup && splitting && !isSharedGroup(_groupId.value)) {
             val participants = _shares.value.filter { it.isSelected }.map { it.personId } + _paidByPersonId.value
             // A split can bring friends who aren't on the app along as my guests (design item 9).
             val options = SharedRecordGroups.optionsFor(participants, people.value, groups.value, splitPayerId = _paidByPersonId.value)
@@ -1242,14 +1246,17 @@ class MainViewModel(
             date = _date.value,
             note = _note.value,
             groupId = _groupId.value,
-            isSplit = _isSplit.value
+            isSplit = splitting
         )
 
         val selectedShares = _shares.value.filter { it.isSelected && it.amount > 0 }
-        // Percentages like 33.3 x 3 leave the amounts a few paisa short; in a shared group that would
-        // never sync, so the amounts are taken proportionally to the percentages instead.
+        // Percentages like 33.3 x 3 leave the amounts short (10 paisa on ₹100, ₹1 on ₹1000), so the
+        // amounts are taken proportionally to the percentages instead. Every split, not only a shared
+        // group's: since 1.3 a split with friends who aren't on the app syncs too, and the server
+        // refuses shares that don't add up, so that one stayed FAILED and never left the phone
+        // (correctness audit, 2026-10-24). Owed by nobody, the gap was wrong locally as well.
         val sharedPercentageAmounts = if (
-            _isSplit.value && isSharedGroup(_groupId.value) && _splitMode.value == SplitMode.PERCENTAGE &&
+            splitting && _splitMode.value == SplitMode.PERCENTAGE &&
             selectedShares.isNotEmpty() && selectedShares.sumOf { it.percentage } > 0
         ) {
             SplitRounding.byWeights(total, selectedShares.associate { it.personId to it.percentage }, _paidByPersonId.value)
@@ -1262,7 +1269,7 @@ class MainViewModel(
         val splitShareEntities = when {
             // Someone else's guests: the server only accepts them back exactly as they were.
             locked != null -> locked.map { it.copy(id = 0, splitId = 0) }
-            _isSplit.value -> selectedShares.map {
+            splitting -> selectedShares.map {
                 val amount = sharedPercentageAmounts?.get(it.personId) ?: it.amount
                 if (it.isGuest) {
                     // Stored under me, the host, so every group balance counts it as mine to cover.
@@ -1326,6 +1333,12 @@ class MainViewModel(
             ledgerRepo.deleteTransaction(txId)
         } catch (e: ArchivedGroupException) {
             _statusMessage.value = archivedMessage(e)
+            return
+        } catch (e: IllegalStateException) {
+            // Signing out while the Undo bar was up: onCleared commits this after the account's
+            // database is closed, and the uncaught error took the app down (correctness audit,
+            // 2026-10-24). The expense stays; it can be deleted again after signing back in.
+            Log.w("MainViewModel", "Delete not committed: the ledger was closed", e)
             return
         }
         // Keep the row hidden until the feed has caught up, so it doesn't blink back in between.

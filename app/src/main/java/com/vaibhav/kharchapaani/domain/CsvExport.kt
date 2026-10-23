@@ -93,8 +93,11 @@ object CsvExport {
             )
         }
 
+        // Only confirmed ones, as every balance counts them: a payment still waiting for the other
+        // person, or one they said isn't right, read as money that changed hands (correctness audit,
+        // 2026-10-24).
         val settlementRows = settlements
-            .filter { range.contains(Instant.ofEpochMilli(it.date).atZone(zone).toLocalDate()) }
+            .filter { it.isConfirmed && range.contains(Instant.ofEpochMilli(it.date).atZone(zone).toLocalDate()) }
             .sortedWith(compareBy({ it.date }, { it.id }))
             .map { settlement ->
                 val at = Instant.ofEpochMilli(settlement.date).atZone(zone)
