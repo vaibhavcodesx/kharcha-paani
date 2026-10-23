@@ -119,6 +119,17 @@ fun SettleUpContent(
         SheetRow(label = "Note") {
             SheetTextInput(value = note, onValueChange = { note = it }, placeholder = "Optional, like “Goa hotel”")
         }
+        // Ask-to-pay (eng review D2): only where the money comes to you and they actually owe you.
+        // Above the QR (owner, 2026-10-23): below it, the ask was off screen until you scrolled.
+        if (onAsk != null && hisaab != null && theyPaid && value > 0) {
+            val message = remember(person.name, hisaab, value, upiPayee) { AskMessage.build(person.name, hisaab, value, upiPayee?.upiId) }
+            AskToPaySection(
+                firstName = firstName(person.name),
+                message = message,
+                onAsk = { onAsk(value, message) },
+                modifier = Modifier.padding(top = Spacing.m),
+            )
+        }
         // A code on both sides (owner, 2026-09-27): whoever is receiving the money first, and the
         // other person's too when both have one. With a friend who isn't on the app it's your code.
         MoneyQrSection(
@@ -129,16 +140,6 @@ fun SettleUpContent(
             moneyComesToMe = theyPaid,
             modifier = Modifier.padding(top = Spacing.m),
         )
-        // Ask-to-pay (eng review D2): only where the money comes to you and they actually owe you.
-        if (onAsk != null && hisaab != null && theyPaid && value > 0) {
-            val message = remember(person.name, hisaab, value, upiPayee) { AskMessage.build(person.name, hisaab, value, upiPayee?.upiId) }
-            AskToPaySection(
-                firstName = firstName(person.name),
-                message = message,
-                onAsk = { onAsk(value, message) },
-                modifier = Modifier.padding(top = Spacing.m),
-            )
-        }
         RecordInGroupSection(
             otherPersonName = person.name,
             options = groupOptions,
