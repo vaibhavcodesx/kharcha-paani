@@ -42,7 +42,7 @@ class AskSentReceiverTest {
         val db = LedgerDatabases.open(context, userId)
         val rohan = db.personDao().insertPerson(PersonEntity(name = "Rohan", avatarColor = "#70C1FF"))
 
-        assertTrue(AskSentReceiver.record(context, picked(rohan, 200.0), now = 5_000L))
+        assertTrue(AskSentReceiver.record(context, picked(rohan, 200.0), now = 5_000L, signedInUserId = { userId }))
 
         val ask = db.paymentAskDao().observeAll().first().single()
         assertEquals(rohan, ask.personId)
@@ -54,9 +54,24 @@ class AskSentReceiverTest {
     fun `an intent that isn't an ask logs nothing`() = runBlocking {
         val db = LedgerDatabases.open(context, userId)
 
-        assertFalse(AskSentReceiver.record(context, picked(0, 200.0)))
-        assertFalse(AskSentReceiver.record(context, picked(3, 0.0)))
-        assertFalse(AskSentReceiver.record(context, picked(3, 200.0, user = null)))
+        assertFalse(AskSentReceiver.record(context, picked(0, 200.0), signedInUserId = { userId }))
+        assertFalse(AskSentReceiver.record(context, picked(3, 0.0), signedInUserId = { userId }))
+        assertFalse(AskSentReceiver.record(context, picked(3, 200.0, user = null), signedInUserId = { userId }))
         assertEquals(0, db.paymentAskDao().observeAll().first().size)
+    }
+
+    @Test
+    fun `an ask picked after switching accounts leaves the other account's ledger open`() = runBlocking {
+        // Codex review, 2026-10-23: opening the asking account's ledger closed the one in use.
+        val other = "00000000-0000-4000-8000-0000000000b2"
+        val inUse = LedgerDatabases.open(context, other)
+
+        assertFalse(AskSentReceiver.record(context, picked(3, 200.0), signedInUserId = { other }))
+
+        assertTrue("still open for the signed-in account", inUse.isOpen)
+        assertEquals(0, inUse.paymentAskDao().observeAll().first().size)
+        LedgerDatabases.close()
+        context.deleteDatabase(LedgerDatabases.databaseName(other))
+        Unit
     }
 }
