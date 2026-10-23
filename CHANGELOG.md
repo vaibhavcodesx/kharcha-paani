@@ -13,6 +13,14 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Fixed
+
+- Restoring a backup after signing in on a new phone could count a payment twice. A payment typed
+  to a fraction of a paisa (₹100.555) and backed up before it had synced comes back from your
+  account rounded (₹100.56), so the restore didn't recognise it as already there and added the
+  backup's copy as well. Payments are now matched to the paisa. A test restores a backup over the same records pulled from your account and checks
+  that no balance moves, and that a split from before 1.3 that a later payment settled is filled in.
+
 ## [1.4.0] - 2026-09-27
 
 ### Added
