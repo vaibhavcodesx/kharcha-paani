@@ -2,6 +2,7 @@ package com.vaibhav.kharchapaani.ask
 
 import android.app.PendingIntent
 import android.content.ClipData
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -9,6 +10,7 @@ import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.core.content.FileProvider
+import com.vaibhav.kharchapaani.MainActivity
 import com.vaibhav.kharchapaani.ui.components.qrBitmap
 import java.io.File
 import java.io.IOException
@@ -61,9 +63,14 @@ object AskShare {
     /**
      * The share sheet for [send]. Picking an app tells [AskSentReceiver], which logs the ask; closing
      * the sheet logs nothing (eng review D5). Neither can see whether the message was then sent.
+     *
+     * This app is left out of its own sheet: it takes shared images (bills to scan), so it was listed,
+     * and picking it logged an ask that never reached the friend.
      */
     fun chooser(context: Context, send: Intent, personId: Long, amount: Double, userId: String, title: String): Intent =
-        Intent.createChooser(send, title, pickedCallback(context, personId, amount, userId).intentSender)
+        Intent.createChooser(send, title, pickedCallback(context, personId, amount, userId).intentSender).apply {
+            putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(ComponentName(context, MainActivity::class.java)))
+        }
 
     /** What the share sheet calls when an app is picked: [AskSentReceiver], with this ask's details. */
     internal fun pickedCallback(context: Context, personId: Long, amount: Double, userId: String): PendingIntent {

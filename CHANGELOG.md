@@ -23,7 +23,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   edited in WhatsApp (or wherever you send it) before it goes. It works for friends who aren't on
   the app.
 - A friend you've asked shows "Owes you · Asked 3 days ago" on their row until they're square. An
-  ask counts only when you pick an app to send it with; closing the share sheet doesn't.
+  ask counts only when you pick an app to send it with; closing the share sheet doesn't. Kharcha
+  Paani itself isn't offered in that sheet.
 - Local database version 9: a new table logging asks (on this phone only). Additive; nothing
   already on the phone changes.
 

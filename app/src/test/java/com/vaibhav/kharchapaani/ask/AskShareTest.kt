@@ -1,5 +1,6 @@
 package com.vaibhav.kharchapaani.ask
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
@@ -9,6 +10,7 @@ import com.google.zxing.BinaryBitmap
 import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.qrcode.QRCodeReader
+import com.vaibhav.kharchapaani.MainActivity
 import com.vaibhav.kharchapaani.domain.UpiLink
 import com.vaibhav.kharchapaani.ui.components.qrBitmap
 import org.junit.Assert.assertEquals
@@ -105,5 +107,16 @@ class AskShareTest {
         }
         val chooser = AskShare.chooser(context, AskShare.sendIntent("Hey", null), personId = 7, amount = 340.0, userId = "u", title = "Ask Aaru to pay")
         assertEquals(Intent.ACTION_CHOOSER, chooser.action)
+    }
+
+    @Test
+    fun `the app isn't offered as somewhere to send its own ask`() {
+        // It takes shared images (bills to scan), so the sheet listed it, and picking it logged an
+        // ask that never reached the friend. Found on the release build's device check.
+        val chooser = AskShare.chooser(context, AskShare.sendIntent("Hey", null), personId = 7, amount = 340.0, userId = "u", title = "Ask Aaru to pay")
+
+        @Suppress("DEPRECATION")
+        val excluded = chooser.getParcelableArrayExtra(Intent.EXTRA_EXCLUDE_COMPONENTS)?.map { it as ComponentName }
+        assertEquals(listOf(ComponentName(context, MainActivity::class.java)), excluded)
     }
 }
