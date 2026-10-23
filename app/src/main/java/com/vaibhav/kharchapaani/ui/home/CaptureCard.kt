@@ -3,10 +3,7 @@ package com.vaibhav.kharchapaani.ui.home
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.ImageDecoder
 import android.net.Uri
-import android.os.Build
-import android.provider.MediaStore
 import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -33,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,6 +46,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.vaibhav.kharchapaani.domain.StatementPdf
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
@@ -59,6 +58,8 @@ import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
+import com.vaibhav.kharchapaani.util.SharedFiles
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 /**
@@ -110,24 +111,21 @@ fun CaptureCard(
         }
     }
 
+    // Read off the main thread and capped (SharedFiles): a full-size camera photo or a huge file
+    // used to be decoded right here, which froze or crashed the app.
+    val scope = rememberCoroutineScope()
     val pdfPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        if (uri != null) {
-            val bytes = runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
-            if (bytes != null && bytes.isNotEmpty()) onParsePdf(bytes, "statement.pdf") else onCaptureFailed("Couldn't open that PDF.")
+        if (uri != null) scope.launch {
+            when (val read = SharedFiles.readBytes(context, uri, StatementPdf.MAX_BYTES)) {
+                is SharedFiles.Read.Bytes -> onParsePdf(read.bytes, "statement.pdf")
+                SharedFiles.Read.TooLarge -> onCaptureFailed("That statement is too big to read in one go. Export a shorter date range and try again.")
+                SharedFiles.Read.Unreadable -> onCaptureFailed("Couldn't open that PDF.")
+            }
         }
     }
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        if (uri != null) {
-            runCatching {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri)) { decoder, _, _ ->
-                        decoder.isMutableRequired = true
-                    }
-                } else {
-                    @Suppress("DEPRECATION")
-                    MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-                }
-            }.getOrNull()?.let(onParseImage) ?: onCaptureFailed("Couldn't open that image.")
+        if (uri != null) scope.launch {
+            SharedFiles.decodeImage(context, uri)?.let(onParseImage) ?: onCaptureFailed("Couldn't open that image.")
         }
     }
 

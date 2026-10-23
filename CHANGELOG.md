@@ -13,6 +13,13 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Fixed
+
+- Scanning or sharing a very large photo (from a 100+ MP camera) or a huge file could freeze or
+  crash the app: it was opened at full size on the main thread. Photos are now opened in the
+  background at most 2048 pixels on the long side, which is still sharper than what's read, and a
+  statement over the size limit is turned away before it's read into memory.
+
 ## [1.4.0] - 2026-09-27
 
 ### Added
