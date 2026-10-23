@@ -294,13 +294,15 @@ class GroupSyncEngine(
             for (group in dao.syncedGroups()) {
                 if (group.remoteId !in visibleIds) purgeGroup(group.id)
             }
-        }
 
-        if (joinedGroup) {
-            // A newly visible group's history predates the cursors, so pull everything again.
-            // Applying a pulled row is idempotent, so re-reading known rows is only extra work.
-            syncDao.deleteMeta(GROUP_EXPENSES_PULL_CURSOR)
-            syncDao.deleteMeta(SETTLEMENTS_PULL_CURSOR)
+            if (joinedGroup) {
+                // A newly visible group's history predates the cursors, so pull everything again.
+                // Applying a pulled row is idempotent, so re-reading known rows is only extra work.
+                // In the same transaction as the insert: a pass stopped between the two used to
+                // leave the group here with its older history never pulled (Codex review, 2026-10-23).
+                syncDao.deleteMeta(GROUP_EXPENSES_PULL_CURSOR)
+                syncDao.deleteMeta(SETTLEMENTS_PULL_CURSOR)
+            }
         }
     }
 

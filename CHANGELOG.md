@@ -13,6 +13,23 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Fixed
+
+- An edit could be lost when two syncs ran at once (the regular background sync and the one
+  after a change): the older copy could reach your account last and overwrite the newer one on
+  the next pull. Syncs now run one at a time.
+- A subscription could add the same month's charge twice if the app was closed at the wrong
+  moment, or when opening the app and saving a subscription ran together.
+- Deleting a friend who isn't on the app left their IOUs and payments in your account, so a
+  reinstall brought them back, along with the friend. They're now removed from your account too.
+- Joining a shared group could miss its older expenses and payments if the sync stopped right
+  after the group arrived.
+- Two friends who aren't on the app could share a name, and the next sync then moved one's IOUs
+  onto the other. Adding a second friend with a name you already use (any case or spacing) now
+  asks you to tell them apart, like "Rahul K".
+- A payment recorded inside a local group didn't change that group's "you're owed" figure. It
+  does now.
+
 ## [1.4.0] - 2026-09-27
 
 ### Added
