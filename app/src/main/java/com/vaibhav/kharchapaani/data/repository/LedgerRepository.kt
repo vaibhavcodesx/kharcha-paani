@@ -35,6 +35,7 @@ import com.vaibhav.kharchapaani.domain.PersonColours
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.domain.SubscriptionSchedule
 import com.vaibhav.kharchapaani.domain.SubscriptionCycle
+import com.vaibhav.kharchapaani.domain.Today
 import com.vaibhav.kharchapaani.domain.roundPaisa
 import java.util.Locale
 import java.util.UUID
@@ -60,6 +61,8 @@ class LedgerRepository(
     private val selfProfileId: String? = null,
     /** See [LocalFriendSync]: off until the private-ledger migration is applied. */
     private val localFriendSync: Boolean = LocalFriendSync.ENABLED,
+    /** What "this month" is measured from; ticks over at midnight (see [Today]). */
+    private val today: Flow<LocalDate> = Today.dates(),
 ) {
 
     val allPeople: Flow<List<PersonEntity>> = db.personDao().getAllPeople()
@@ -324,15 +327,14 @@ class LedgerRepository(
     }
 
     /** This month, for Home and the widget. */
-    val monthlyAnalytics: Flow<MonthlyAnalytics> = analyticsFor { YearMonth.now(it) }
+    val monthlyAnalytics: Flow<MonthlyAnalytics> = analyticsFor { YearMonth.from(it) }
 
     /** Any month, for Insights' month picker. */
     fun monthlyAnalyticsFor(month: YearMonth): Flow<MonthlyAnalytics> = analyticsFor { month }
 
-    private fun analyticsFor(month: (ZoneId) -> YearMonth): Flow<MonthlyAnalytics> =
-        combine(allTransactions, allSplits, allSplitShares) { transactions, splits, shares ->
-            val zone = ZoneId.systemDefault()
-            MonthAnalytics.of(transactions, splits, shares, month(zone), LocalDate.now(zone), zone)
+    private fun analyticsFor(month: (today: LocalDate) -> YearMonth): Flow<MonthlyAnalytics> =
+        combine(allTransactions, allSplits, allSplitShares, today) { transactions, splits, shares, today ->
+            MonthAnalytics.of(transactions, splits, shares, month(today), today, ZoneId.systemDefault())
         }.flowOn(Dispatchers.IO)
 
     suspend fun saveTransactionWithSplits(
