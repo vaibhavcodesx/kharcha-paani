@@ -65,6 +65,8 @@ class AskSentReceiverTest {
         // Codex review, 2026-10-23: opening the asking account's ledger closed the one in use.
         val other = "00000000-0000-4000-8000-0000000000b2"
         val inUse = LedgerDatabases.open(context, other)
+        // Room opens lazily: a first query makes the connection real, so "still open" means something.
+        assertEquals(0, inUse.paymentAskDao().observeAll().first().size)
 
         assertFalse(AskSentReceiver.record(context, picked(3, 200.0), signedInUserId = { other }))
 
