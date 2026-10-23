@@ -13,6 +13,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Changed
+
+- A friend's balance and their history are now worked out from the same rows, so the history
+  always adds up to the balance. No figure moves: a test pins every friend's balance, both its
+  totals and their history on a ledger with every kind of row, checked against the old calculation.
+
 ## [1.4.0] - 2026-09-27
 
 ### Added
