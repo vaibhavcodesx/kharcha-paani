@@ -22,6 +22,7 @@ import com.vaibhav.kharchapaani.data.model.PersonLedgerItem
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.data.sync.LocalFriendSync
 import com.vaibhav.kharchapaani.data.sync.localSplitTombstone
+import com.vaibhav.kharchapaani.domain.CalendarDay
 import com.vaibhav.kharchapaani.domain.CsvExport
 import com.vaibhav.kharchapaani.domain.CsvFile
 import com.vaibhav.kharchapaani.domain.ExportRange
@@ -39,7 +40,6 @@ import com.vaibhav.kharchapaani.domain.roundPaisa
 import java.util.Locale
 import java.util.UUID
 import java.time.LocalDate
-import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
 import kotlin.math.abs
@@ -905,14 +905,14 @@ class LedgerRepository(
      */
     suspend fun saveSubscription(subscription: SubscriptionEntity, chargeFromStart: Boolean = true, today: LocalDate = LocalDate.now()): Long =
         withContext(Dispatchers.IO) {
-            val chargedThrough = if (chargeFromStart) subscription.chargedThrough else localDateMillis(today)
+            val chargedThrough = if (chargeFromStart) subscription.chargedThrough else CalendarDay.toMillis(today)
             db.subscriptionDao().insert(subscription.copy(chargedThrough = chargedThrough))
         }
 
     /** Stops future charges; the ones already in the ledger stay, as they really happened. */
     suspend fun cancelSubscription(id: Long, at: LocalDate = LocalDate.now()) = withContext(Dispatchers.IO) {
         val existing = db.subscriptionDao().byId(id) ?: return@withContext
-        db.subscriptionDao().update(existing.copy(cancelledAt = localDateMillis(at)))
+        db.subscriptionDao().update(existing.copy(cancelledAt = CalendarDay.toMillis(at)))
     }
 
     /** A cancelled subscription can be removed once it's no longer wanted in the list. */
@@ -936,9 +936,10 @@ class LedgerRepository(
                 created += db.withTransaction {
                     val subscription = db.subscriptionDao().byId(listed.id) ?: return@withTransaction 0
                     val cycle = runCatching { SubscriptionCycle.valueOf(subscription.cycle) }.getOrNull() ?: return@withTransaction 0
-                    val start = localDate(subscription.startDate, zone)
-                    val chargedThrough = subscription.chargedThrough?.let { localDate(it, zone) }
-                    val due = SubscriptionSchedule.dueDates(start, cycle, today, subscription.cancelledAt?.let { localDate(it, zone) })
+                    // Calendar days, the same in any zone; [zone] only places each charge at 9 am.
+                    val start = CalendarDay.fromMillis(subscription.startDate)
+                    val chargedThrough = subscription.chargedThrough?.let(CalendarDay::fromMillis)
+                    val due = SubscriptionSchedule.dueDates(start, cycle, today, subscription.cancelledAt?.let(CalendarDay::fromMillis))
                         .filter { chargedThrough == null || it.isAfter(chargedThrough) }
                     if (due.isEmpty()) return@withTransaction 0
 
@@ -956,19 +957,13 @@ class LedgerRepository(
                             )
                         )
                     }
-                    db.subscriptionDao().update(subscription.copy(chargedThrough = localDateMillis(due.last(), zone)))
+                    db.subscriptionDao().update(subscription.copy(chargedThrough = CalendarDay.toMillis(due.last())))
                     due.size
                 }
             }
             if (created > 0) onLocalTransactionChange()
             created
         }
-
-    private fun localDate(millis: Long, zone: ZoneId = ZoneId.systemDefault()): LocalDate =
-        Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
-
-    private fun localDateMillis(date: LocalDate, zone: ZoneId = ZoneId.systemDefault()): Long =
-        date.atStartOfDay(zone).toInstant().toEpochMilli()
 
     /** Everything in [range] as a spreadsheet; see [CsvExport]. */
     suspend fun exportCsv(range: ExportRange, zone: ZoneId = ZoneId.systemDefault(), groupId: Long? = null): CsvFile = withContext(Dispatchers.IO) {

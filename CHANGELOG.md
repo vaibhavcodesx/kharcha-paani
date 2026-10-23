@@ -21,6 +21,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- After travelling to a time zone behind the one a subscription was set up in (India to the US,
+  say), the app could add that month's charge a second time: the date it had charged through read
+  as the evening before. Subscription dates are now calendar days that read the same in any zone,
+  including ones saved by earlier versions.
 - Restoring a backup after signing in on a new phone could count a payment twice. A payment typed
   to a fraction of a paisa (₹100.555) and backed up before it had synced comes back from your
   account rounded (₹100.56), so the restore didn't recognise it as already there and added the

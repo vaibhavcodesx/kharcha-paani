@@ -34,6 +34,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.db.entity.SubscriptionEntity
+import com.vaibhav.kharchapaani.domain.CalendarDay
 import com.vaibhav.kharchapaani.domain.Categories
 import com.vaibhav.kharchapaani.domain.CategoryPrefs
 import com.vaibhav.kharchapaani.domain.SubscriptionCycle
@@ -50,7 +51,6 @@ import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -239,8 +239,8 @@ private fun SubscriptionRow(
     onDelete: () -> Unit,
 ) {
     val cycle = runCatching { SubscriptionCycle.valueOf(subscription.cycle) }.getOrNull() ?: SubscriptionCycle.MONTHLY
-    val start = Instant.ofEpochMilli(subscription.startDate).atZone(zone).toLocalDate()
-    val cancelled = subscription.cancelledAt?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
+    val start = CalendarDay.fromMillis(subscription.startDate)
+    val cancelled = subscription.cancelledAt?.let(CalendarDay::fromMillis)
     val next = SubscriptionSchedule.nextDue(start, cycle, today, cancelled)
     Row(
         verticalAlignment = Alignment.CenterVertically,
