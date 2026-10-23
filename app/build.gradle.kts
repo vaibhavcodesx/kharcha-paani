@@ -132,6 +132,9 @@ android {
     buildConfig = true
   }
   testOptions { unitTests { isIncludeAndroidResources = true } }
+  // Issues already in the code when lint joined CI (2026-10-24); CI's lint job fails on new ones.
+  // Fix one, then regenerate with `./gradlew :app:updateLintBaseline`.
+  lint { baseline = file("lint-baseline.xml") }
   // MigrationTestHelper builds old schema versions from these JSON files. Robolectric only sees
   // the app's merged debug assets (not the test source set's), so they go in debug; release
   // APKs don't carry them.

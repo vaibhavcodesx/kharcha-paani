@@ -27,14 +27,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v7
+      # All history and tags, to compare versionCode with the last release's.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
 
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 25
 
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
       # The tag is the release's identity, so it has to agree with what the APK will report.
       # Catching this here costs seconds; catching it after publishing means deleting a release.
@@ -48,6 +51,28 @@ jobs:
             exit 1
           fi
           echo "version_name=$version_name" >> "$GITHUB_ENV"
+
+      # Android installs an update only if versionCode went up, and Play refuses a repeat. The last
+      # release is the newest v* tag that isn't this one.
+      - name: Check versionCode went up since the last release
+        run: |
+          code_at() { grep -oP 'versionCode\s*=\s*\K[0-9]+' ; }
+          current=$(code_at < app/build.gradle.kts)
+          previous_tag=$(git tag -l 'v*' --sort=-v:refname | grep -vx "${{ inputs.tag }}" | head -1)
+          if [ -z "$previous_tag" ]; then
+            echo "No earlier release tag; versionCode $current."
+            exit 0
+          fi
+          previous=$(git show "$previous_tag:app/build.gradle.kts" | code_at)
+          if [ "$current" -le "$previous" ]; then
+            echo "::error::versionCode is $current, but $previous_tag shipped $previous. Bump it in app/build.gradle.kts."
+            exit 1
+          fi
+          echo "versionCode $previous ($previous_tag) -> $current"
+
+      # The same unit tests as every PR, on exactly the commit being released.
+      - name: Unit tests
+        run: ./gradlew :app:testDebugUnitTest
 
       # Written, used and deleted within this job. Secrets are masked in logs by Actions.
       - name: Restore the signing keystore
@@ -80,7 +105,8 @@ jobs:
             echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> .env
           fi
 
-      - name: Build the signed release APK
+      # The APK for direct installs, and the bundle (AAB) Play takes, from one build.
+      - name: Build the signed release APK and bundle
         env:
           KEYSTORE_PATH: ${{ runner.temp }}/release.jks
           STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -88,9 +114,9 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           if [ "${{ inputs.omit_ai_key }}" = "true" ]; then
-            ./gradlew :app:assembleRelease -PomitAiKey
+            ./gradlew :app:assembleRelease :app:bundleRelease -PomitAiKey
           else
-            ./gradlew :app:assembleRelease
+            ./gradlew :app:assembleRelease :app:bundleRelease
           fi
 
       # assembleRelease leaves the APK unsigned rather than failing when credentials are missing,
@@ -102,19 +128,34 @@ jobs:
           "$build_tools/apksigner" verify --print-certs "$apk"
           echo "apk_path=$apk" >> "$GITHUB_ENV"
 
-      - name: Name the APK after the release
+      - name: Verify the bundle is signed
+        run: |
+          aab=$(ls app/build/outputs/bundle/release/*.aab | head -1)
+          jarsigner -verify -strict "$aab"
+          echo "aab_path=$aab" >> "$GITHUB_ENV"
+
+      - name: Name the files after the release
         run: |
           suffix=""
           if [ "${{ inputs.omit_ai_key }}" = "true" ]; then suffix="-no-ai"; fi
           final="KharchaPaani-${{ inputs.tag }}${suffix}.apk"
           cp "$apk_path" "$final"
           echo "final_apk=$final" >> "$GITHUB_ENV"
+          final_aab="KharchaPaani-${{ inputs.tag }}${suffix}.aab"
+          cp "$aab_path" "$final_aab"
+          echo "final_aab=$final_aab" >> "$GITHUB_ENV"
+          # With R8 on, crash stack traces from this release can only be read with its mapping.
+          mapping=app/build/outputs/mapping/release/mapping.txt
+          if [ -f "$mapping" ]; then
+            cp "$mapping" "KharchaPaani-${{ inputs.tag }}${suffix}-mapping.txt"
+            echo "final_mapping=KharchaPaani-${{ inputs.tag }}${suffix}-mapping.txt" >> "$GITHUB_ENV"
+          fi
 
       - name: Clean up the keystore and .env
         if: always()
         run: rm -f "$RUNNER_TEMP/release.jks" .env
 
-      - name: Create the GitHub Release and attach the APK
+      - name: Create the GitHub Release and attach the APK, bundle and mapping
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -124,7 +165,7 @@ jobs:
 
             This build ships without a Gemini API key, so the AI features (Ask about your money, Read this trip, statement scanning) are hidden. Everything else works."
           fi
-          gh release create "${{ inputs.tag }}" "$final_apk" \
+          gh release create "${{ inputs.tag }}" "$final_apk" "$final_aab" ${final_mapping:+"$final_mapping"} \
             --title "Kharcha Paani ${{ inputs.tag }}" \
             --notes "$notes" \
             --target "${{ github.sha }}" \

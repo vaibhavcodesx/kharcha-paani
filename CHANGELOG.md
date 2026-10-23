@@ -13,9 +13,13 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
-
 ### Changed
 
+- Every pull request now also lints and builds the release variant, the one people install, and
+  not only the debug build the tests use. The release workflow runs the unit tests first, refuses
+  a release whose versionCode didn't go up, and attaches an AAB for Play next to the APK (plus R8's
+  mapping file once shrinking is on). GitHub Actions are pinned to exact commits, and Dependabot
+  proposes updates weekly.
 - A friend's balance and their history are now worked out from the same rows, so the history
   always adds up to the balance. No figure moves: a test pins every friend's balance, both its
   totals and their history on a ledger with every kind of row, checked against the old calculation.
@@ -43,7 +47,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [1.4.0] - 2026-09-27
 
-
 ### Added
 
 - Payments between groupmates now need both people. A settle-up or IOU someone records is
@@ -70,7 +73,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   applied 2026-09-27 after owner review. Each suite also passed against live in rolled-back
   transactions (35/35, 23/23, 25/25).
 
-
 ### Fixed
 
 - "Who pays whom" suggested payments between people who don't know each other (a friend not on
@@ -80,7 +82,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   split is now retracted with it.
 
 ## [1.3.0] - 2026-09-27
-
 
 ### Added
 
@@ -100,7 +101,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - **(server)** `local_splits`, `local_settlements` and `save_local_split`, applied 2026-09-24
   after review; used from this release.
 
-
 ### Changed
 
 - AI features use gemini-3.6-flash. The old model (now listed by Google as legacy) took 15-18 s
@@ -114,7 +114,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - UPI: the "Pay in a UPI app" button appears only when you're the one paying, and always carries
   the amount you're recording. "Any amount" now changes only the QR code.
 
-
 ### Fixed
 
 - Anything running with the app in the background waited for the app to be opened again:
@@ -127,7 +126,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   payment to yourself.
 - New subscriptions started on the first payment method in the list rather than your default.
 
-
 ### Security
 
 - **(server)** Those two tables revoke every privilege from `anon` and `authenticated` before
@@ -136,7 +134,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   signed-in user. Caught on the harness before it reached live.
 
 ## [1.2.0] - 2026-09-24
-
 
 ### Fixed
 
@@ -156,7 +153,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - A group's sync could stop for every member if any expense in it had a share naming a friend
   with no account. The server has allowed such shares since the 2026-09-20 migration, but the app
   still required every share to have a profile and failed to decode the whole page.
-
 
 ### Changed
 
@@ -179,7 +175,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - `PRD.md` is back to being the spec: vision, architecture and decisions. What changed and when
   now lives here.
 
-
 ### Built, switched off
 
 - The app side of that sync, built and tested but switched off (`LocalFriendSync.ENABLED`) until
@@ -188,7 +183,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   them. Splits and IOUs recorded before it is switched on stay on the phone, even when edited.
 
 ## [1.1.0] - 2026-09-20
-
 
 ### Added
 
@@ -201,7 +195,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   transaction's owner may write one; reads are unchanged. Applied after review, 12/12 against
   live.
 
-
 ### Fixed
 
 - Backups reported success while leaving out every split and IOU. The splits were gathered and
@@ -209,7 +202,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   backing up was narrower than what actually never syncs.
 - CSV export left out every settlement, including from the range named "Everything".
 - A group sheet showed balances that counted settlements it never listed.
-
 
 ### Security
 
@@ -221,7 +213,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 The first release: the AI Studio app, moved onto a signed-in cloud ledger, made safe to share,
 and redesigned.
-
 
 ### Added
 
@@ -243,7 +234,6 @@ and redesigned.
 - **(server)** The core schema with row-level security on every table, groups and invites,
   soft deletes with server-owned `updated_at`, and the Realtime publication.
 
-
 ### Changed
 
 - The package and application ID became `com.vaibhav.kharchapaani` (from the AI Studio
@@ -255,7 +245,6 @@ and redesigned.
 - Release builds are signed, minified, versioned, and published through a manual GitHub Releases
   workflow; the Gemini key is restricted to this app's signature.
 
-
 ### Fixed
 
 - Among many found by testing and audit: deleting a friend left expenses marked as split; an exact
@@ -265,7 +254,6 @@ and redesigned.
   UPI ID was invisible to groupmates because the group query never asked for it; AI answers were
   cut off mid-sentence because the output budget included the model's thinking; and the app
   crashed on every launch through an initialisation-order bug that 447 passing tests never saw.
-
 
 ### Security
 
