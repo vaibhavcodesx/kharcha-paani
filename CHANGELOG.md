@@ -13,8 +13,32 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Changed
+
+- A friend's balance and their history are now worked out from the same rows, so the history
+  always adds up to the balance. No figure moves: a test pins every friend's balance, both its
+  totals and their history on a ledger with every kind of row, checked against the old calculation.
+
 ### Fixed
 
+- Restoring a backup after signing in on a new phone could count a payment twice. A payment typed
+  to a fraction of a paisa (₹100.555) and backed up before it had synced comes back from your
+  account rounded (₹100.56), so the restore didn't recognise it as already there and added the
+  backup's copy as well. Payments are now matched to the paisa. A test restores a backup over the
+  same records pulled from your account and checks that no balance moves, and that a split from
+  before 1.3 that a later payment settled is filled in.
+- The backup carried shared groups' split expenses, groupmates' included, and restoring it could
+  bring back ones deleted or settled in the group since, as your own. Shared groups' expenses now
+  stay out of the backup (the group keeps them), and an older backup's copies aren't restored.
+- The UPI screen said your UPI ID "stays on this phone". Since 1.0.0 it has also been on your
+  profile, where people in your shared groups can read it so they can pay you. It now says so.
+- `docs/splitting-with-people-not-on-the-app.md` still said a friend who isn't on the app "lives
+  only on this phone" and that their name "never leaves your device". Both stopped being true in
+  1.3.0 (splits and IOUs with them back up to your account, private to you) and 1.4.0 (as a guest
+  on a shared group's expense, their name syncs to that group). The doc now says what syncs, who
+  can read it, and what survives an uninstall, including that older records stay on the phone and
+  that a restored phone can show a balance backwards until the JSON backup is restored. Code
+  comments that repeated the old claim are corrected too.
 - An edit could be lost when two syncs ran at once (the regular background sync and the one
   after a change): the older copy could reach your account last and overwrite the newer one on
   the next pull. Syncs now run one at a time.

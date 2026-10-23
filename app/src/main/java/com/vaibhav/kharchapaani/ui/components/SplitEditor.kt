@@ -131,7 +131,7 @@ fun SplitEditor(
 
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = 48.dp)) {
             Text("SPLIT BETWEEN", style = EyebrowText, modifier = Modifier.weight(1f))
-            // A friend added here is only on this phone, so can't be in a groupmate's group expense.
+            // A friend added here would be a guest, and only whoever added the expense can change its guests.
             if (payerLockedBy == null) {
                 TextButton(onClick = onOpenAddFriend) {
                     Text("Add a friend", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
