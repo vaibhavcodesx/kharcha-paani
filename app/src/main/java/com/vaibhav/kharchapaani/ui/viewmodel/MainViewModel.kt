@@ -37,6 +37,7 @@ import com.vaibhav.kharchapaani.data.model.SplitMode
 import com.vaibhav.kharchapaani.data.model.StatementParseResult
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
 import com.vaibhav.kharchapaani.data.repository.ArchivedGroupException
+import com.vaibhav.kharchapaani.data.repository.DuplicateFriendException
 import com.vaibhav.kharchapaani.ui.components.splitProblem
 import com.vaibhav.kharchapaani.data.remote.AppIdentity
 import com.vaibhav.kharchapaani.data.repository.GeminiRepository
@@ -1477,7 +1478,13 @@ class MainViewModel(
     fun addNewFriend(name: String, colorHex: String) {
         if (name.isBlank()) return
         viewModelScope.launch {
-            val newId = ledgerRepo.addPerson(name, colorHex)
+            val newId = try {
+                ledgerRepo.addPerson(name, colorHex)
+            } catch (e: DuplicateFriendException) {
+                // The sheet stays open so the name can be told apart ("Rahul K").
+                _statusMessage.value = "You already have a friend called ${e.existingName}. Add something to tell them apart, like an initial."
+                return@launch
+            }
             if (_isConfirmSheetOpen.value) {
                 val current = _shares.value.toMutableList()
                 current.add(ShareInput(personId = newId, personName = name.trim(), isSelected = true))

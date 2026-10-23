@@ -91,37 +91,14 @@ class LedgerRepository(
         allSplitShares,
         allSettlements
     ) { people, splits, shares, settlements ->
-        val splitMap = splits.associateBy { it.id }
         val sharesBySplit = shares.groupBy { it.splitId }
 
         people.map { person ->
             var theyOweMe = 0.0
             var iOweThem = 0.0
-
-            // 1. Calculate from splits
-            for (split in splits) {
-                val splitShares = sharesBySplit[split.id] ?: emptyList()
-                if (split.paidByPersonId == -1L) {
-                    // I paid for the split -> everyone else owes me their share (and their guests')
-                    theyOweMe += splitShares.coveredBy(person.id) ?: 0.0
-                } else if (split.paidByPersonId == person.id) {
-                    // Person paid for the split -> I owe them my share, and my guests'
-                    iOweThem += splitShares.coveredBy(-1L) ?: 0.0
-                }
-                // A friend of mine who came along as my guest owes me their share, whoever paid.
-                theyOweMe += splitShares.owedAsGuestBy(person.id)
-            }
-
-            // 2. Calculate from settlements / IOUs. Only confirmed ones: a pending one is a claim
-            // the other person hasn't agreed to yet (design item 10).
-            for (settlement in settlements.filter { it.isConfirmed }) {
-                if (settlement.fromPersonId == -1L && settlement.toPersonId == person.id) {
-                    // I paid money to person
-                    theyOweMe += settlement.amount
-                } else if (settlement.fromPersonId == person.id && settlement.toPersonId == -1L) {
-                    // Person paid money to me
-                    iOweThem += settlement.amount
-                }
+            // The same entries the person's history lists, so the two can't drift apart.
+            for (entry in balanceEntries(person.id, splits, sharesBySplit, settlements)) {
+                if (entry.owedToMe) theyOweMe += entry.netChange else iOweThem -= entry.netChange
             }
 
             val net = theyOweMe - iOweThem
@@ -185,7 +162,17 @@ class LedgerRepository(
                 // Groupmates' expenses and settlements move my position too, so use the group-wide view.
                 GroupBalances.netPositions(groupTxs, settlements.filter { it.groupId == group.id })[-1L] ?: 0.0
             } else {
-                othersOweMeInGroup - iOweOthersInGroup
+                // Payments recorded in the group move it too, as they do in a shared one: a repayment
+                // into a local group used to leave "you're owed" where it was (Codex review, 2026-10-23).
+                // Only confirmed ones, and only mine: between two friends it isn't my position.
+                val paid = settlements.filter { it.groupId == group.id && it.isConfirmed }.sumOf {
+                    when {
+                        it.fromPersonId == -1L -> it.amount
+                        it.toPersonId == -1L -> -it.amount
+                        else -> 0.0
+                    }
+                }
+                othersOweMeInGroup - iOweOthersInGroup + paid
             }
 
             GroupWithDetails(
@@ -214,102 +201,127 @@ class LedgerRepository(
         allSplitShares,
         allSettlements
     ) { transactions, splits, shares, settlements ->
-        val items = mutableListOf<PersonLedgerItem>()
         val txMap = transactions.associateBy { it.id }
-        val splitMap = splits.associateBy { it.id }
         val sharesBySplit = shares.groupBy { it.splitId }
 
-        // Splits involving this person
-        for (split in splits) {
-            val tx = txMap[split.transactionId] ?: continue
-            val splitShares = sharesBySplit[split.id] ?: emptyList()
-
-            if (split.paidByPersonId == -1L) {
-                // I paid
-                val personShare = splitShares.coveredBy(personId)
-                if (personShare != null) {
-                    items.add(
-                        PersonLedgerItem(
-                            id = "split_${split.id}",
-                            date = tx.date,
-                            title = tx.merchant.ifBlank { tx.category },
-                            // "You paid ₹150 (Their share)" read as their share being ₹150, and %.0f turned ₹150.50
-                            // into ₹151. Both figures, said separately, to the paisa.
-                            subtitle = "You paid ${Money.format(split.totalAmount)} · their share ${Money.format(personShare)}",
-                            amount = personShare,
-                            netChange = personShare, // they owe me more (+)
-                            isSettlement = false
-                        )
+        balanceEntries(personId, splits, sharesBySplit, settlements).mapNotNull { entry ->
+            when (entry) {
+                is BalanceEntry.Share -> {
+                    val split = entry.split
+                    val tx = txMap[split.transactionId] ?: return@mapNotNull null
+                    PersonLedgerItem(
+                        id = "split_${split.id}",
+                        date = tx.date,
+                        title = tx.merchant.ifBlank { tx.category },
+                        // "You paid ₹150 (Their share)" read as their share being ₹150, and %.0f turned ₹150.50
+                        // into ₹151. Both figures, said separately, to the paisa.
+                        subtitle = if (entry.owedToMe) {
+                            "You paid ${Money.format(split.totalAmount)} · their share ${Money.format(entry.amount)}"
+                        } else {
+                            "They paid ${Money.format(split.totalAmount)} · your share ${Money.format(entry.amount)}"
+                        },
+                        amount = entry.amount,
+                        netChange = entry.netChange,
+                        isSettlement = false
                     )
                 }
-            } else if (split.paidByPersonId == personId) {
-                // Person paid
-                val myShare = splitShares.coveredBy(-1L)
-                if (myShare != null) {
-                    items.add(
-                        PersonLedgerItem(
-                            id = "split_${split.id}",
-                            date = tx.date,
-                            title = tx.merchant.ifBlank { tx.category },
-                            subtitle = "They paid ${Money.format(split.totalAmount)} · your share ${Money.format(myShare)}",
-                            amount = myShare,
-                            netChange = -myShare, // I owe them more (-)
-                            isSettlement = false
-                        )
-                    )
-                }
-            }
-            // This friend came along as my guest on a group expense: they owe me their share.
-            val asGuest = splitShares.owedAsGuestBy(personId)
-            if (asGuest > 0.0) {
-                items.add(
+                is BalanceEntry.Guest -> {
+                    val split = entry.split
+                    val tx = txMap[split.transactionId] ?: return@mapNotNull null
                     PersonLedgerItem(
                         id = "guest_${split.id}",
                         date = tx.date,
                         title = tx.merchant.ifBlank { tx.category },
-                        subtitle = "Your guest in a group · their share ${Money.format(asGuest)}",
-                        amount = asGuest,
-                        netChange = asGuest,
+                        subtitle = "Your guest in a group · their share ${Money.format(entry.amount)}",
+                        amount = entry.amount,
+                        netChange = entry.netChange,
                         isSettlement = false
                     )
-                )
-            }
-        }
-
-        // Settlements / IOUs involving this person
-        for (settlement in settlements) {
-            if (settlement.fromPersonId == -1L && settlement.toPersonId == personId) {
-                // I paid person
-                items.add(
+                }
+                is BalanceEntry.Payment -> {
+                    val settlement = entry.settlement
                     PersonLedgerItem(
                         id = "settlement_${settlement.id}",
                         date = settlement.date,
                         // Worded the way the group feed words it (GroupFeed.describe), from your side.
-                        title = if (settlement.isIou) "You lent them" else "You paid them",
+                        title = when {
+                            entry.owedToMe -> if (settlement.isIou) "You lent them" else "You paid them"
+                            else -> if (settlement.isIou) "They lent you" else "They paid you"
+                        },
                         subtitle = settlementSubtitle(settlement),
                         amount = settlement.amount,
-                        netChange = if (settlement.isConfirmed) settlement.amount else 0.0,
+                        netChange = entry.netChange,
                         isSettlement = true
                     )
-                )
-            } else if (settlement.fromPersonId == personId && settlement.toPersonId == -1L) {
-                // Person paid me
-                items.add(
-                    PersonLedgerItem(
-                        id = "settlement_${settlement.id}",
-                        date = settlement.date,
-                        title = if (settlement.isIou) "They lent you" else "They paid you",
-                        subtitle = settlementSubtitle(settlement),
-                        amount = settlement.amount,
-                        netChange = if (settlement.isConfirmed) -settlement.amount else 0.0,
-                        isSettlement = true
-                    )
-                )
+                }
             }
+        }.sortedByDescending { it.date }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * One signed contribution to a friend's balance. [personBalances] sums these and
+     * [getLedgerForPerson] lists them, so a friend's history always adds up to their balance
+     * (ask-to-pay's itemised message promises exactly that). [owedToMe] says which of
+     * [PersonBalance]'s two totals it counts in; [netChange] is positive when they owe me more.
+     */
+    private sealed interface BalanceEntry {
+        val owedToMe: Boolean
+        val netChange: Double
+
+        /** Their share of something I paid ([owedToMe]), or mine of something they paid; guests covered included. */
+        data class Share(val split: SplitEntity, val amount: Double, override val owedToMe: Boolean) : BalanceEntry {
+            override val netChange: Double get() = if (owedToMe) amount else -amount
         }
 
-        items.sortedByDescending { it.date }
-    }.flowOn(Dispatchers.IO)
+        /** They came along as my guest on a group expense, so they owe me their share, whoever paid. */
+        data class Guest(val split: SplitEntity, val amount: Double) : BalanceEntry {
+            override val owedToMe: Boolean get() = true
+            override val netChange: Double get() = amount
+        }
+
+        /**
+         * Money either way, IOU or settlement ([owedToMe] when it went from me to them). Only a confirmed
+         * one moves the balance: a pending one is a claim the other person hasn't agreed to yet
+         * (design item 10).
+         */
+        data class Payment(val settlement: SettlementEntity, override val owedToMe: Boolean) : BalanceEntry {
+            override val netChange: Double get() = when {
+                !settlement.isConfirmed -> 0.0
+                owedToMe -> settlement.amount
+                else -> -settlement.amount
+            }
+        }
+    }
+
+    /** Everything between me and [personId], splits first, in the order the rows are given. */
+    private fun balanceEntries(
+        personId: Long,
+        splits: List<SplitEntity>,
+        sharesBySplit: Map<Long, List<SplitShareEntity>>,
+        settlements: List<SettlementEntity>,
+    ): List<BalanceEntry> {
+        val entries = mutableListOf<BalanceEntry>()
+        for (split in splits) {
+            val splitShares = sharesBySplit[split.id] ?: emptyList()
+            if (split.paidByPersonId == -1L) {
+                // I paid: they owe me their share and their guests'.
+                splitShares.coveredBy(personId)?.let { entries += BalanceEntry.Share(split, it, owedToMe = true) }
+            } else if (split.paidByPersonId == personId) {
+                // They paid: I owe them my share and my guests'.
+                splitShares.coveredBy(-1L)?.let { entries += BalanceEntry.Share(split, it, owedToMe = false) }
+            }
+            val asGuest = splitShares.owedAsGuestBy(personId)
+            if (asGuest > 0.0) entries += BalanceEntry.Guest(split, asGuest)
+        }
+        for (settlement in settlements) {
+            if (settlement.fromPersonId == -1L && settlement.toPersonId == personId) {
+                entries += BalanceEntry.Payment(settlement, owedToMe = true)
+            } else if (settlement.fromPersonId == personId && settlement.toPersonId == -1L) {
+                entries += BalanceEntry.Payment(settlement, owedToMe = false)
+            }
+        }
+        return entries
+    }
 
     /** A settlement's line in a friend's history, saying when it hasn't counted yet. */
     private fun settlementSubtitle(settlement: SettlementEntity): String {
@@ -568,8 +580,19 @@ class LedgerRepository(
         if (changed) onLocalTransactionChange()
     }
 
+    /**
+     * A friend with no account. Their name is who they are to the sync (LocalPeople matches it
+     * trimmed, any case), so two of them can't share one: a second "Rahul" had his IOUs moved onto
+     * the first on the next pull (Codex review, 2026-10-23).
+     *
+     * @throws DuplicateFriendException when a friend with no account already has this name.
+     */
     suspend fun addPerson(name: String, avatarColor: String): Long = withContext(Dispatchers.IO) {
-        db.personDao().insertPerson(PersonEntity(name = name.trim(), avatarColor = avatarColor))
+        val clean = name.trim()
+        db.withTransaction {
+            db.groupSyncDao().localPersonByName(clean)?.let { throw DuplicateFriendException(it.name) }
+            db.personDao().insertPerson(PersonEntity(name = clean, avatarColor = avatarColor))
+        }
     }
 
     /**
@@ -595,11 +618,21 @@ class LedgerRepository(
         // A groupmate comes from their group's membership; removing them locally would corrupt
         // shared expenses. They go away when they leave, or when this account does.
         if (db.personDao().getPersonById(personId)?.profileId != null) return@withContext
+        var retracted = false
         db.withTransaction {
             val affected = db.splitDao().getSplitsInvolvingPerson(personId).mapNotNull { split ->
                 val tx = db.transactionDao().getTransactionByIdDirect(split.transactionId) ?: return@mapNotNull null
                 FullTransaction(tx, split, db.splitDao().getSharesForSplitDirect(split.id))
             }
+            // Their IOUs and payments that went up to this account's private table come down too,
+            // as deleteSettlement does one at a time; left there, a reinstall brought them back and
+            // recreated the friend from their name (Codex review, 2026-10-23).
+            db.settlementDao().getAllSettlementsDirect()
+                .filter { (it.fromPersonId == personId || it.toPersonId == personId) && it.groupId == null && it.syncState != SyncState.LOCAL_ONLY }
+                .forEach {
+                    db.syncDao().insertPendingDelete(PendingRemoteDeleteEntity(it.remoteId, entityType = PendingRemoteDeleteEntity.TYPE_LOCAL_SETTLEMENT))
+                    retracted = true
+                }
             db.splitDao().deleteSharesForPerson(personId)
             db.settlementDao().deleteSettlementsForPerson(personId)
             db.groupDao().deleteMemberByPersonId(personId)
@@ -609,6 +642,7 @@ class LedgerRepository(
                 if (localFriendSync) resendPrivateSplit(it)
             }
         }
+        if (retracted) onLocalTransactionChange()
     }
 
     /**
@@ -894,30 +928,37 @@ class LedgerRepository(
     suspend fun runDueSubscriptions(today: LocalDate = LocalDate.now(), zone: ZoneId = ZoneId.systemDefault()): Int =
         withContext(Dispatchers.IO) {
             var created = 0
-            for (subscription in db.subscriptionDao().getRunnableDirect()) {
-                val cycle = runCatching { SubscriptionCycle.valueOf(subscription.cycle) }.getOrNull() ?: continue
-                val start = localDate(subscription.startDate, zone)
-                val chargedThrough = subscription.chargedThrough?.let { localDate(it, zone) }
-                val due = SubscriptionSchedule.dueDates(start, cycle, today, subscription.cancelledAt?.let { localDate(it, zone) })
-                    .filter { chargedThrough == null || it.isAfter(chargedThrough) }
-                if (due.isEmpty()) continue
+            for (listed in db.subscriptionDao().getRunnableDirect()) {
+                // The charges and the checkpoint commit together, against the subscription as it is
+                // inside the transaction: a process killed between them, or a second run started
+                // alongside this one (launch and saving a subscription both call this), would
+                // otherwise charge the same dates again (Codex review, 2026-10-23).
+                created += db.withTransaction {
+                    val subscription = db.subscriptionDao().byId(listed.id) ?: return@withTransaction 0
+                    val cycle = runCatching { SubscriptionCycle.valueOf(subscription.cycle) }.getOrNull() ?: return@withTransaction 0
+                    val start = localDate(subscription.startDate, zone)
+                    val chargedThrough = subscription.chargedThrough?.let { localDate(it, zone) }
+                    val due = SubscriptionSchedule.dueDates(start, cycle, today, subscription.cancelledAt?.let { localDate(it, zone) })
+                        .filter { chargedThrough == null || it.isAfter(chargedThrough) }
+                    if (due.isEmpty()) return@withTransaction 0
 
-                for (date in due) {
-                    db.transactionDao().insertTransaction(
-                        TransactionEntity(
-                            type = "expense",
-                            amount = subscription.amount,
-                            category = subscription.category,
-                            merchant = subscription.name,
-                            paymentMethod = subscription.paymentMethod,
-                            date = date.atTime(9, 0).atZone(zone).toInstant().toEpochMilli(),
-                            note = "Subscription",
-                            syncState = syncStateFor(groupId = null, isSplit = false),
+                    for (date in due) {
+                        db.transactionDao().insertTransaction(
+                            TransactionEntity(
+                                type = "expense",
+                                amount = subscription.amount,
+                                category = subscription.category,
+                                merchant = subscription.name,
+                                paymentMethod = subscription.paymentMethod,
+                                date = date.atTime(9, 0).atZone(zone).toInstant().toEpochMilli(),
+                                note = "Subscription",
+                                syncState = syncStateFor(groupId = null, isSplit = false),
+                            )
                         )
-                    )
-                    created++
+                    }
+                    db.subscriptionDao().update(subscription.copy(chargedThrough = localDateMillis(due.last(), zone)))
+                    due.size
                 }
-                db.subscriptionDao().update(subscription.copy(chargedThrough = localDateMillis(due.last(), zone)))
             }
             if (created > 0) onLocalTransactionChange()
             created
@@ -953,6 +994,9 @@ class LedgerRepository(
 
 /** A write into an archived shared group, which is read-only for everyone (decision 4). */
 class ArchivedGroupException(val groupName: String) : IllegalStateException("$groupName is archived and read-only")
+
+/** A friend with no account already has this name; see [LedgerRepository.addPerson]. */
+class DuplicateFriendException(val existingName: String) : IllegalStateException("a friend called $existingName already exists")
 
 /** The other party recorded this settlement: it's theirs to withdraw, mine to answer. */
 class NotYoursToWithdrawException(val settlement: SettlementEntity) : IllegalStateException("only whoever recorded this settlement can withdraw it")
