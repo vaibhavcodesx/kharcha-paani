@@ -11,12 +11,12 @@ The app has always had two, and the difference is the whole story:
 | | **A local friend** | **A groupmate** |
 |---|---|---|
 | Who they are | A name and a colour you typed | Someone signed in on their own phone |
-| Where they exist | Only on your phone | Your phone and theirs |
+| Where they exist | Your phone, and since 1.3 in your account, private to you. See below | Your phone and theirs |
 | Needs the app? | **No** | Yes |
 | Splitting | Yes — full splits, IOUs, settle up | Yes |
 | Balances | Yes, tracked exactly the same | Yes |
 | Do they see it? | No. It's your record of what's owed | Yes, live on their phone |
-| Sync | **No — this phone only**, and safe across updates. See below | Shared with the group |
+| Sync | **To your account only**, for splits and IOUs added from 1.3 on; older ones stay on this phone. See below | Shared with the group |
 
 A local friend is stored as a `PersonEntity` with no `profileId`. Everything
 the ledger does — splits, shares, settlements, the debt simplifier, the
@@ -39,22 +39,29 @@ leaves your phone.
 
 ## The one real limit
 
-**A shared group can't contain a local friend.** If a group syncs with other
-people's phones, every member has to be a real account — otherwise their phone
-would receive a split naming someone who, as far as it's concerned, doesn't
-exist.
+**A local friend can't be a member of a shared group.** If a group syncs with
+other people's phones, every member has to be a real account — otherwise their
+phone would receive a group naming someone who, as far as it's concerned,
+doesn't exist.
 
-The app already enforces this rather than failing halfway: `SharedRecordGroups`
-computes `canSync` as "every other person in this split has an account", and
-the settle-up sheet falls back to **"Save on this phone only"** when they don't.
-That's the right behaviour and it stays.
+Since 1.4.0 a local friend can still be *in* a shared group's expense, as your
+guest. Split a dinner with Shubham (on the app) and Hist (not on it), pick the
+group, and it syncs to Shubham with Hist on it. You cover Hist's share in the
+group, and Hist owes it to you. Only whoever added the expense can change its
+guests. If Hist paid, it can't go in the group and stays on your phone.
+
+The app enforces the member rule rather than failing halfway: `SharedRecordGroups`
+computes `canSync` as "everyone else in this record is a member of the group,
+apart from a split's guests", and the settle-up sheet falls back to
+**"Save on this phone only"** when they aren't. A settlement or IOU is between
+two people, so both must be members; only a split can bring guests.
 
 So the rule is:
 
 - **Trip with three friends, none on the app** → local group. Everything works.
-- **Trip with two on the app and one not** → either a shared group between the
-  two of you *plus* a separate local record for the third, or a local group for
-  all three. The second is usually what you want.
+- **Trip with two on the app and one not** → a shared group between the two of
+  you, with the third as a guest on the expenses you add (their share is yours
+  to cover, and they owe it to you), or a local group for all three.
 - **A local friend later installs the app** → see below.
 
 ## What changed on 2026-09-19
@@ -87,14 +94,34 @@ its own item rather than smuggled into a UI change.
 
 ## A note on what "not on the app" means for your data
 
-A local friend is a name you typed, and it lives **only on this phone**. An
-earlier version of this document said it was backed up to your account; that was
-wrong, and it matters, so here is what is actually true.
+A local friend is a name you typed. Until 1.3 everything about them lived only
+on this phone. That changed in 1.3.0 and again in 1.4.0, and an earlier version
+of this section still said their name never left the phone. That stopped being
+true, so here is what is true now.
 
-The server has eight tables — `profiles`, `groups`, `group_members`,
-`transactions`, `splits`, `split_shares`, `settlements`, `group_invites`. There
-is no `people` table, and every row that names a person does so by *profile id*.
-A local friend has no profile, so there is nowhere for them to go.
+**Splits and IOUs added from 1.3.0 on back up to your account.** A personal
+expense split with friends who aren't on the app, and an IOU or payment with
+one of them, upload to two tables of their own, `local_splits` and
+`local_settlements`, with the friend stored by name. Every policy on those
+tables is "the row is yours": no other account can read them, groupmates
+included. They come back when you sign in on a new phone or after clearing the
+app's data, and each friend comes back with them, by name (with a colour picked
+from the name, not the one you chose). Design and test record:
+[`local-friend-sync-v2.md`](local-friend-sync-v2.md).
+
+**Older ones stay on this phone.** Splits and IOUs recorded before 1.3.0 were
+never uploaded, and editing one doesn't upload it either. Only records made
+after the feature shipped sync (owner rule, 2026-09-23). Two other kinds stay
+here too: anything in a local (unshared) group, and a split that also includes
+someone with an account but isn't in a shared group with them.
+
+**A guest on a shared group's expense is seen by that group.** Since 1.4.0, a
+local friend you add to a shared group's expense travels with it, by name, to
+everyone in the group, because the expense's shares have to add up on their
+phones too.
+
+There is still no `people` table on the server. A local friend exists there
+only as a name on the records above.
 
 ### Normal updates are safe — this was tested, not assumed
 
@@ -123,15 +150,20 @@ server; what does not is everything below.
 | | Survives a normal update | Survives uninstall / new phone |
 |---|---|---|
 | Your own expenses and income | Yes | Yes |
-| Shared groups, their expenses and settlements | Yes | Yes |
-| Your name, avatar and UPI ID | Yes | Yes |
-| Local friends, and anything owed to or by them | **Yes** | **No** |
+| Shared groups, their expenses (guests included) and settlements | Yes | Yes |
+| Your name and avatar | Yes | Yes |
+| Your UPI ID | Yes | Your groupmates still see it; you add it again to show your own code |
+| Splits and IOUs with local friends added from 1.3.0 on, and the friends in them | Yes | Yes |
+| Splits and IOUs with local friends from before 1.3.0 | **Yes** | **No** |
+| Local friends with nothing recorded since 1.3.0 | **Yes** | **No** |
 | Local-only groups | **Yes** | **No** |
 | Subscriptions | **Yes** | **No** |
 | Custom categories and payment methods, and app settings | **Yes** | **No** |
 
-The privacy half of the original claim still holds, and is stronger than stated:
-a local friend's name never leaves your device at all.
+**One catch on a restored phone.** A payment recorded after 1.3.0 can settle a
+split from before it. The payment comes back from your account; the split
+doesn't. So on a phone restored from the cloud, that friend's balance reads
+backwards until you restore the JSON backup.
 
 **If you are about to uninstall, move phones, or you have lost the release
 keystore,** take a backup first — Settings → Export to a spreadsheet, and the

@@ -13,6 +13,18 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Fixed
+
+- The UPI screen said your UPI ID "stays on this phone". Since 1.0.0 it has also been on your
+  profile, where people in your shared groups can read it so they can pay you. It now says so.
+- `docs/splitting-with-people-not-on-the-app.md` still said a friend who isn't on the app "lives
+  only on this phone" and that their name "never leaves your device". Both stopped being true in
+  1.3.0 (splits and IOUs with them back up to your account, private to you) and 1.4.0 (as a guest
+  on a shared group's expense, their name syncs to that group). The doc now says what syncs, who
+  can read it, and what survives an uninstall, including that older records stay on the phone and
+  that a restored phone can show a balance backwards until the JSON backup is restored. Code
+  comments that repeated the old claim are corrected too.
+
 ## [1.4.0] - 2026-09-27
 
 ### Added
