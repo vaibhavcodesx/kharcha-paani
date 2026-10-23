@@ -180,8 +180,11 @@ class LocalBackupRepository(private val db: AppDatabase) {
             /** Null name is you; an unknown name means the row cannot be placed. */
             fun personId(name: String?): Long? = if (name == null) me else idOf[name.trim().lowercase()]
 
-            val groupIdOf = db.groupDao().getAllGroupsDirect()
-                .associate { it.name.trim().lowercase() to it.id }.toMutableMap()
+            val groupsHere = db.groupDao().getAllGroupsDirect()
+            val groupIdOf = groupsHere.associate { it.name.trim().lowercase() to it.id }.toMutableMap()
+            // Backups made before 2026-10-24 carry shared groups' expenses; the group's own copy on the
+            // server is the one that counts (see LocalBackup.isUnsyncable).
+            val sharedGroupNames = groupsHere.filter { it.isShared }.map { it.name.trim().lowercase() }.toSet()
             for (group in backup.groups) {
                 val key = group.name.trim().lowercase()
                 if (key in groupIdOf) {
@@ -241,7 +244,8 @@ class LocalBackupRepository(private val db: AppDatabase) {
             for (backedUp in backup.transactions) {
                 val alreadyHere = backedUp.remoteId?.let { byRemoteId[it] }
                 val shape = Triple(backedUp.date, backedUp.merchant, backedUp.amount)
-                if (alreadyHere != null || shape in byShape) {
+                val sharedGroups = backedUp.groupName?.trim()?.lowercase() in sharedGroupNames
+                if (alreadyHere != null || shape in byShape || sharedGroups) {
                     report = report.copy(transactionsSkipped = report.transactionsSkipped + 1)
                     continue
                 }

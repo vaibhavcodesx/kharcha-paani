@@ -4,6 +4,9 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
+import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
+import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
+import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.data.sync.FakeLocalLedgerRemote
@@ -11,6 +14,10 @@ import com.vaibhav.kharchapaani.data.sync.FakeTransactionRemote
 import com.vaibhav.kharchapaani.data.sync.LocalLedgerSyncEngine
 import com.vaibhav.kharchapaani.data.sync.RoomTransactionSyncStore
 import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
+import com.vaibhav.kharchapaani.domain.BackupShare
+import com.vaibhav.kharchapaani.domain.BackupSplit
+import com.vaibhav.kharchapaani.domain.BackupTransaction
+import com.vaibhav.kharchapaani.domain.LocalBackup
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -145,5 +152,33 @@ class LocalBackupOverCloudRestoreTest {
         assertEquals(1, report.settlementsSkipped)
         assertEquals(1, phoneB.settlementDao().getAllSettlementsDirect().size)
         assertEquals(fromCloud, balanceWith(phoneB, "Rohan"), 0.001)
+    }
+
+    @Test
+    fun `a shared group's expenses stay out of the backup, and an older backup's copy isn't restored`() = runTest {
+        // Correctness audit, 2026-10-24: a groupmate's expense was backed up behind the isSplit rule
+        // and restored as this phone's own after it was deleted or settled in the group.
+        val goa = phoneA.groupDao().insertGroup(GroupEntity(name = "Goa", syncState = SyncState.SYNCED))
+        val amit = phoneA.personDao().insertPerson(PersonEntity(name = "Amit", avatarColor = "#C6F24C", profileId = "00000000-0000-4000-8000-0000000000b1"))
+        val txId = phoneA.transactionDao().insertTransaction(expense(6000.0, "Villa", 1_758_400_000_000L).copy(groupId = goa, isSplit = true, syncState = SyncState.SYNCED))
+        val splitId = phoneA.splitDao().insertSplit(SplitEntity(transactionId = txId, totalAmount = 6000.0, paidByPersonId = amit, splitType = "equal"))
+        phoneA.groupSyncDao().insertShares(shares(-1L to 3000.0, amit to 3000.0).map { it.copy(splitId = splitId) })
+
+        assertEquals(emptyList<String>(), LocalBackupRepository(phoneA).collect(appVersion = "1.4.0").transactions.map { it.merchant })
+
+        // A backup from before the fix, restored onto a phone where Goa is a shared group again.
+        phoneB.groupDao().insertGroup(GroupEntity(name = "Goa", syncState = SyncState.SYNCED))
+        val older = LocalBackup(
+            exportedAt = 1L, appVersion = "1.4.0",
+            transactions = listOf(
+                BackupTransaction(type = "expense", amount = 6000.0, category = "Food", merchant = "Villa", paymentMethod = "UPI", date = 1_758_400_000_000L, groupName = "Goa", createdAt = 1L,
+                    split = BackupSplit(totalAmount = 6000.0, splitType = "equal", paidByName = "Amit", shares = listOf(BackupShare(null, 3000.0), BackupShare("Amit", 3000.0)))),
+            ),
+        )
+
+        val report = LocalBackupRepository(phoneB).restore(older)
+
+        assertEquals(0, report.transactionsAdded)
+        assertTrue(phoneB.transactionDao().getAllTransactionsDirect().isEmpty())
     }
 }

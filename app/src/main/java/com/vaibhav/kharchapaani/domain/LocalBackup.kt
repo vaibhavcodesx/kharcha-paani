@@ -125,6 +125,10 @@ data class LocalBackup(
          * @param inSharedGroup null when the transaction belongs to no group.
          */
         fun isUnsyncable(isSplit: Boolean, inSharedGroup: Boolean?): Boolean = when {
+            // A shared group's expenses, split or not, are the group's on the server. Checked first:
+            // behind `isSplit` they went into the file, groupmates' included, and a restore brought
+            // back ones deleted or settled since, as this phone's own (correctness audit, 2026-10-24).
+            inSharedGroup == true -> false
             // Excluded by `isSplit = 0`, whoever it was split with. Since 1.3.0 a new personal split
             // with friends who have no account goes up through `local_splits` instead; it is kept
             // here anyway (see "Since 1.3.0 it over-includes" above).
