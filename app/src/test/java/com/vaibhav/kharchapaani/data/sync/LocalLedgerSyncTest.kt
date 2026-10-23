@@ -197,6 +197,29 @@ class LocalLedgerSyncTest {
 
         assertTrue(phoneB.settlementDao().getAllSettlementsDirect().isEmpty())
     }
+
+    @Test
+    fun `a split pulled before its expense isn't skipped for good`() = runTest {
+        // Phone B pulls expenses, then phone A saves two private splits (each one expense and its
+        // split, written together), then phone B pulls splits: neither expense is here yet, and the
+        // second split is more than the cursor's overlap newer than the first.
+        val a = repo(phoneA, enabled = true)
+        val rohan = a.addPerson("Rohan", "#70C1FF")
+        TransactionSyncEngine(RoomTransactionSyncStore(phoneB), transactions, owner).sync()
+        a.saveTransactionWithSplits(dinner(600.0), paidByPersonId = -1L, shares = shares(-1L to 300.0, rohan to 300.0), splitType = "equal")
+        syncAll(phoneA)
+        server.advanceClock(60_000L)
+        a.saveTransactionWithSplits(dinner(90.0, "Auto"), paidByPersonId = rohan, shares = shares(-1L to 45.0, rohan to 45.0), splitType = "equal")
+        syncAll(phoneA)
+        LocalLedgerSyncEngine(phoneB, server).sync()
+
+        // The next full pass brings both expenses; both splits have to follow them.
+        syncAll(phoneB)
+
+        assertEquals(balanceWith(phoneA, "Rohan"), balanceWith(phoneB, "Rohan"), 0.001)
+        assertEquals(300.0 - 45.0, balanceWith(phoneB, "Rohan"), 0.001)
+        assertTrue(phoneB.transactionDao().getAllTransactionsDirect().all { it.isSplit })
+    }
 }
 
 /** What the staged migration enforces: owner-only rows, shares that add up, sane names. */
@@ -209,6 +232,11 @@ class FakeLocalLedgerRemote(
     val settlements = linkedMapOf<String, RemoteLocalSettlement>()
     private var clockMillis = 1_900_000_000_000L
     private fun tick(): String = Instant.fromEpochMilliseconds(clockMillis++).toString()
+
+    /** Time passing on the server between two writes. */
+    fun advanceClock(millis: Long) {
+        clockMillis += millis
+    }
 
     override suspend fun saveLocalSplit(transaction: LocalTransactionPayload, split: LocalSplitPayload) {
         val sum = split.shares.sumOf { BigDecimal.valueOf(it.shareAmount) }
