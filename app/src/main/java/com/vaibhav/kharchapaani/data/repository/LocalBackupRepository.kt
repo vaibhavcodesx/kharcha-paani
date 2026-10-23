@@ -22,6 +22,7 @@ import com.vaibhav.kharchapaani.domain.BackupTransaction
 import com.vaibhav.kharchapaani.domain.CategoryPrefs
 import com.vaibhav.kharchapaani.domain.LocalBackup
 import com.vaibhav.kharchapaani.domain.RestoreReport
+import com.vaibhav.kharchapaani.domain.roundPaisa
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -50,7 +51,8 @@ class LocalBackupRepository(private val db: AppDatabase) {
             val localGroups = allGroups.filter { !it.isShared }
             val members = db.groupDao().getAllGroupMembersDirect().groupBy { it.groupId }
 
-            // A settlement reaches the server only inside a shared group.
+            // Everything outside a shared group, including the ones with friends who have no account
+            // that sync privately since 1.3.0: kept anyway, and recognised on restore (see LocalBackup).
             val settlements = db.settlementDao().getAllSettlementsDirect()
                 .filter { settlement -> settlement.groupId?.let { groupById[it]?.isShared } != true }
 
@@ -286,8 +288,11 @@ class LocalBackupRepository(private val db: AppDatabase) {
                 )
             }
 
+            // Amounts compared to the paisa: one pulled from the cloud was rounded on the way up (the
+            // server's numeric(12, 2)), while a backup taken before it synced keeps whatever was
+            // typed, e.g. 100.555.
             val settlementKeys = db.settlementDao().getAllSettlementsDirect()
-                .map { listOf(it.fromPersonId, it.toPersonId, it.amount, it.date) }.toMutableSet()
+                .map { listOf(it.fromPersonId, it.toPersonId, roundPaisa(it.amount), it.date) }.toMutableSet()
             for (settlement in backup.settlements) {
                 val from = personId(settlement.fromName)
                 val to = personId(settlement.toName)
@@ -295,7 +300,7 @@ class LocalBackupRepository(private val db: AppDatabase) {
                     report = report.copy(settlementsSkipped = report.settlementsSkipped + 1)
                     continue
                 }
-                val key = listOf(from, to, settlement.amount, settlement.date)
+                val key = listOf(from, to, roundPaisa(settlement.amount), settlement.date)
                 if (key in settlementKeys) {
                     report = report.copy(settlementsSkipped = report.settlementsSkipped + 1)
                     continue
