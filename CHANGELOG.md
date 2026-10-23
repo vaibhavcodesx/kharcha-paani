@@ -15,6 +15,14 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- A backup could bring back a split paid by a friend you'd since deleted as paid by you, so everyone
+  else on it suddenly owed you their share. The backup names people, "no name" means you, and a
+  deleted friend had no name to write. Such a split is now backed up as what's left of it for you
+  (your share, as your own expense), a share or payment naming someone no longer on the phone is
+  left out rather than given to you, and a restore never takes a payer it can't place to be you.
+  Backups made before this fix still carry the old mistake for those splits.
+- What deleting a friend leaves as your own expense, and anything else kept on the phone only, was
+  left out of the backup as if it were in your account. It's in the backup now.
 - Restoring a backup after signing in on a new phone could count a payment twice. A payment typed
   to a fraction of a paisa (₹100.555) and backed up before it had synced comes back from your
   account rounded (₹100.56), so the restore didn't recognise it as already there and added the
