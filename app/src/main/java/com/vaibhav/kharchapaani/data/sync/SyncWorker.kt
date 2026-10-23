@@ -13,6 +13,8 @@ import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.reminder.SettlementReminders
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 import io.github.jan.supabase.exceptions.RestException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.IOException
 
 /**
@@ -53,6 +55,14 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         const val KEY_USER_ID = "user_id"
         private const val TAG = "SyncWorker"
 
+        /**
+         * One pass at a time. The periodic and the one-time work are separate unique works, so both
+         * can run at once, and the server stamps every write with its own clock: a pass that read a
+         * row before an edit could upload the old value after another pass uploaded the new one, and
+         * its pull would then overwrite the edit (Codex review, 2026-10-23).
+         */
+        private val passLock = Mutex()
+
         internal suspend fun syncIfSignedIn(
             requestedUserId: String,
             signedInUserId: String?,
@@ -60,7 +70,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         ): ListenableWorker.Result {
             if (signedInUserId != requestedUserId) return ListenableWorker.Result.success()
             return try {
-                sync()
+                passLock.withLock { sync() }
                 ListenableWorker.Result.success()
             } catch (e: IOException) {
                 // Offline, DNS, timeout (supabase-kt's HttpRequestException is an IOException).

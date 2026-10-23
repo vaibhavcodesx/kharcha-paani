@@ -49,6 +49,38 @@ class LedgerBacklogFixesTest {
         )
 
     @Test
+    fun `a repayment recorded in a local group settles it`() = runBlocking {
+        // Codex review, 2026-10-23: the local-group balance never counted its settlements.
+        val rahul = friend("Rahul")
+        val groupId = repository.createGroup("Flat", memberPersonIds = listOf(rahul))
+        repository.saveTransactionWithSplits(
+            personalTransaction("Groceries", syncState = SyncState.LOCAL_ONLY, amount = 200.0).copy(groupId = groupId),
+            paidByPersonId = -1L,
+            shares = listOf(SplitShareEntity(splitId = 0, personId = -1L, shareAmount = 100.0), SplitShareEntity(splitId = 0, personId = rahul, shareAmount = 100.0)),
+        )
+        suspend fun netIn() = repository.groupsWithDetails.first().single { it.group.id == groupId }.netBalanceForMe
+        assertEquals(100.0, netIn(), 0.0)
+
+        repository.recordSettlement(fromPersonId = rahul, toPersonId = -1L, amount = 60.0, groupId = groupId)
+        assertEquals(40.0, netIn(), 0.0)
+        repository.recordSettlement(fromPersonId = rahul, toPersonId = -1L, amount = 40.0, groupId = groupId)
+        assertEquals(0.0, netIn(), 0.0)
+    }
+
+    @Test
+    fun `a second friend with the same name is refused, whatever the case or spacing`() = runBlocking {
+        // Their name is who they are to the sync: a second "Rahul" had his IOUs moved onto the first.
+        friend("Rahul")
+
+        val refused = runCatching { friend("  rahul ") }.exceptionOrNull()
+
+        assertTrue(refused is DuplicateFriendException)
+        assertEquals("Rahul", (refused as DuplicateFriendException).existingName)
+        assertEquals(1, db.personDao().getAllPeopleDirect().count { it.name.equals("rahul", ignoreCase = true) })
+        assertNotNull(friend("Rahul K"))
+    }
+
+    @Test
     fun `deleting a local group keeps its expenses and settlements but drops the dangling group id`() = runBlocking {
         val rahul = friend("Rahul")
         val groupId = repository.createGroup("Lonavala", memberPersonIds = listOf(rahul))

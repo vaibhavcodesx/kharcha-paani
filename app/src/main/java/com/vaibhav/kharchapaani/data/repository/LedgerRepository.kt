@@ -162,7 +162,17 @@ class LedgerRepository(
                 // Groupmates' expenses and settlements move my position too, so use the group-wide view.
                 GroupBalances.netPositions(groupTxs, settlements.filter { it.groupId == group.id })[-1L] ?: 0.0
             } else {
-                othersOweMeInGroup - iOweOthersInGroup
+                // Payments recorded in the group move it too, as they do in a shared one: a repayment
+                // into a local group used to leave "you're owed" where it was (Codex review, 2026-10-23).
+                // Only confirmed ones, and only mine: between two friends it isn't my position.
+                val paid = settlements.filter { it.groupId == group.id && it.isConfirmed }.sumOf {
+                    when {
+                        it.fromPersonId == -1L -> it.amount
+                        it.toPersonId == -1L -> -it.amount
+                        else -> 0.0
+                    }
+                }
+                othersOweMeInGroup - iOweOthersInGroup + paid
             }
 
             GroupWithDetails(
@@ -570,8 +580,19 @@ class LedgerRepository(
         if (changed) onLocalTransactionChange()
     }
 
+    /**
+     * A friend with no account. Their name is who they are to the sync (LocalPeople matches it
+     * trimmed, any case), so two of them can't share one: a second "Rahul" had his IOUs moved onto
+     * the first on the next pull (Codex review, 2026-10-23).
+     *
+     * @throws DuplicateFriendException when a friend with no account already has this name.
+     */
     suspend fun addPerson(name: String, avatarColor: String): Long = withContext(Dispatchers.IO) {
-        db.personDao().insertPerson(PersonEntity(name = name.trim(), avatarColor = avatarColor))
+        val clean = name.trim()
+        db.withTransaction {
+            db.groupSyncDao().localPersonByName(clean)?.let { throw DuplicateFriendException(it.name) }
+            db.personDao().insertPerson(PersonEntity(name = clean, avatarColor = avatarColor))
+        }
     }
 
     /**
@@ -597,11 +618,21 @@ class LedgerRepository(
         // A groupmate comes from their group's membership; removing them locally would corrupt
         // shared expenses. They go away when they leave, or when this account does.
         if (db.personDao().getPersonById(personId)?.profileId != null) return@withContext
+        var retracted = false
         db.withTransaction {
             val affected = db.splitDao().getSplitsInvolvingPerson(personId).mapNotNull { split ->
                 val tx = db.transactionDao().getTransactionByIdDirect(split.transactionId) ?: return@mapNotNull null
                 FullTransaction(tx, split, db.splitDao().getSharesForSplitDirect(split.id))
             }
+            // Their IOUs and payments that went up to this account's private table come down too,
+            // as deleteSettlement does one at a time; left there, a reinstall brought them back and
+            // recreated the friend from their name (Codex review, 2026-10-23).
+            db.settlementDao().getAllSettlementsDirect()
+                .filter { (it.fromPersonId == personId || it.toPersonId == personId) && it.groupId == null && it.syncState != SyncState.LOCAL_ONLY }
+                .forEach {
+                    db.syncDao().insertPendingDelete(PendingRemoteDeleteEntity(it.remoteId, entityType = PendingRemoteDeleteEntity.TYPE_LOCAL_SETTLEMENT))
+                    retracted = true
+                }
             db.splitDao().deleteSharesForPerson(personId)
             db.settlementDao().deleteSettlementsForPerson(personId)
             db.groupDao().deleteMemberByPersonId(personId)
@@ -611,6 +642,7 @@ class LedgerRepository(
                 if (localFriendSync) resendPrivateSplit(it)
             }
         }
+        if (retracted) onLocalTransactionChange()
     }
 
     /**
@@ -896,30 +928,37 @@ class LedgerRepository(
     suspend fun runDueSubscriptions(today: LocalDate = LocalDate.now(), zone: ZoneId = ZoneId.systemDefault()): Int =
         withContext(Dispatchers.IO) {
             var created = 0
-            for (subscription in db.subscriptionDao().getRunnableDirect()) {
-                val cycle = runCatching { SubscriptionCycle.valueOf(subscription.cycle) }.getOrNull() ?: continue
-                val start = localDate(subscription.startDate, zone)
-                val chargedThrough = subscription.chargedThrough?.let { localDate(it, zone) }
-                val due = SubscriptionSchedule.dueDates(start, cycle, today, subscription.cancelledAt?.let { localDate(it, zone) })
-                    .filter { chargedThrough == null || it.isAfter(chargedThrough) }
-                if (due.isEmpty()) continue
+            for (listed in db.subscriptionDao().getRunnableDirect()) {
+                // The charges and the checkpoint commit together, against the subscription as it is
+                // inside the transaction: a process killed between them, or a second run started
+                // alongside this one (launch and saving a subscription both call this), would
+                // otherwise charge the same dates again (Codex review, 2026-10-23).
+                created += db.withTransaction {
+                    val subscription = db.subscriptionDao().byId(listed.id) ?: return@withTransaction 0
+                    val cycle = runCatching { SubscriptionCycle.valueOf(subscription.cycle) }.getOrNull() ?: return@withTransaction 0
+                    val start = localDate(subscription.startDate, zone)
+                    val chargedThrough = subscription.chargedThrough?.let { localDate(it, zone) }
+                    val due = SubscriptionSchedule.dueDates(start, cycle, today, subscription.cancelledAt?.let { localDate(it, zone) })
+                        .filter { chargedThrough == null || it.isAfter(chargedThrough) }
+                    if (due.isEmpty()) return@withTransaction 0
 
-                for (date in due) {
-                    db.transactionDao().insertTransaction(
-                        TransactionEntity(
-                            type = "expense",
-                            amount = subscription.amount,
-                            category = subscription.category,
-                            merchant = subscription.name,
-                            paymentMethod = subscription.paymentMethod,
-                            date = date.atTime(9, 0).atZone(zone).toInstant().toEpochMilli(),
-                            note = "Subscription",
-                            syncState = syncStateFor(groupId = null, isSplit = false),
+                    for (date in due) {
+                        db.transactionDao().insertTransaction(
+                            TransactionEntity(
+                                type = "expense",
+                                amount = subscription.amount,
+                                category = subscription.category,
+                                merchant = subscription.name,
+                                paymentMethod = subscription.paymentMethod,
+                                date = date.atTime(9, 0).atZone(zone).toInstant().toEpochMilli(),
+                                note = "Subscription",
+                                syncState = syncStateFor(groupId = null, isSplit = false),
+                            )
                         )
-                    )
-                    created++
+                    }
+                    db.subscriptionDao().update(subscription.copy(chargedThrough = localDateMillis(due.last(), zone)))
+                    due.size
                 }
-                db.subscriptionDao().update(subscription.copy(chargedThrough = localDateMillis(due.last(), zone)))
             }
             if (created > 0) onLocalTransactionChange()
             created
@@ -955,6 +994,9 @@ class LedgerRepository(
 
 /** A write into an archived shared group, which is read-only for everyone (decision 4). */
 class ArchivedGroupException(val groupName: String) : IllegalStateException("$groupName is archived and read-only")
+
+/** A friend with no account already has this name; see [LedgerRepository.addPerson]. */
+class DuplicateFriendException(val existingName: String) : IllegalStateException("a friend called $existingName already exists")
 
 /** The other party recorded this settlement: it's theirs to withdraw, mine to answer. */
 class NotYoursToWithdrawException(val settlement: SettlementEntity) : IllegalStateException("only whoever recorded this settlement can withdraw it")
