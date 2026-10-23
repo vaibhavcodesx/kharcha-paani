@@ -20,3 +20,6 @@ dist/
 *.keystore
 keystore.properties
 keystore-base64.txt
+
+# The local knowledge graph built by /graphify: regenerated on demand, not source.
+graphify-out/
