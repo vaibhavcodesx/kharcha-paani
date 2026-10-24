@@ -28,8 +28,10 @@ jobs:
 
       # No .env on CI: the Secrets plugin falls back to .env.example placeholders, which is all
       # the unit tests need. Robolectric's Android jars download on first run.
+      # Also compiles the on-device tests, which CI can't run (no emulator), so they can't rot
+      # unnoticed between the releases they're run for.
       - name: Unit tests
-        run: ./gradlew :app:testDebugUnitTest
+        run: ./gradlew :app:testDebugUnitTest :app:compileDebugAndroidTestKotlin
 
       - name: Upload test results
         if: always()

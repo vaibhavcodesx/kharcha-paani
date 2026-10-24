@@ -13,6 +13,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- A test now opens the whole signed-in app, Home and every tab, the way the app builds it on
+  launch, so a crash in the first frames fails CI instead of every phone. The same check runs on
+  a real phone before a release (`./gradlew :app:connectedDebugAndroidTest`).
+
 ### Changed
 
 - A friend's balance and their history are now worked out from the same rows, so the history
