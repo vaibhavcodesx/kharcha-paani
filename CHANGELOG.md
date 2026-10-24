@@ -35,6 +35,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Changed
 
+- PRD.md is now a short page on what the product is and which rules still hold. The September
+  brief it replaced (cloud migration, robustness, premium UI pass), which shipped in v1.0–v1.4, is
+  archived in `docs/history/prd-2026-09-cloud-migration.md`. CLAUDE.md now points agents at the
+  production readiness plan and asks them to gather every question for the owner at the start of a
+  session, then work through it and save new questions for the end.
 - A friend's balance and their history are now worked out from the same rows, so the history
   always adds up to the balance. No figure moves: a test pins every friend's balance, both its
   totals and their history on a ledger with every kind of row, checked against the old calculation.

@@ -27,9 +27,17 @@ In this file the audit IDs carry a prefix so they don't collide: **SEC-** (secur
 
 ## 0. Start here (next agent)
 
+0. **Ask everything up front, then run on autopilot** (the owner's rule, also in CLAUDE.md). Before
+   starting, read through the items you plan to do this session and send the owner one batch of
+   every question, decision and permission they need: confirming the tier, merges, migrations,
+   approach choices, and the open owner decisions those items depend on. After that, don't stop to
+   ask. If a new question comes up, make the safe, reversible choice and note it, or skip that item
+   and continue with the next. Put every new question on a list and ask the whole list at the end of
+   the session, along with what was done and what's next. Owner-review PRs (RLS/auth/security,
+   non-additive migrations) are still opened and left unmerged, never decided by you.
 1. Read §10 first: the owner's decisions of 2026-10-24 override anything in the tiers that disagrees.
 2. Check which of #61–#77 have merged (`gh pr list`). Build on `main`; rebase anything stacked.
-3. Ask the owner to confirm the start of Tier 1 (CLAUDE.md), then take the items in this order:
+3. With the owner's go-ahead for Tier 1 (part of the up-front batch), take the items in this order:
    T1.4 (amounts), T1.5 (status bar), T1.7 (double saves), T1.8 (safety net), T1.9 (statement
    cancel), N0, N1, T1.10 (AI notice, wording in §10), T1.2 (policy + Help & about), T1.6 (crashes),
    T1.3 (Gemini proxy + caps from §10), T1.1 (account deletion per §10). The last two need owner review.
