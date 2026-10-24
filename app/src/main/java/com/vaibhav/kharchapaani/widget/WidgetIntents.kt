@@ -3,11 +3,12 @@ package com.vaibhav.kharchapaani.widget
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import com.vaibhav.kharchapaani.MainActivity
+import com.vaibhav.kharchapaani.IncomingIntents
 
 /**
- * The taps both widgets offer. Each opens MainActivity with one of the actions it already routes
- * (MainActivity.routeIntent), so a signed-out tap still lands on sign-in and then does the thing.
+ * The taps both widgets offer. Each opens MainActivity, through the app's non-exported entry
+ * (IncomingIntents.INTERNAL_ENTRY), with one of the actions it routes, so a signed-out tap still
+ * lands on sign-in and then does the thing.
  */
 internal object WidgetIntents {
 
@@ -23,8 +24,7 @@ internal object WidgetIntents {
         activity(context, REQUEST_SPLITS, SplitFlowWidgetProvider.ACTION_VIEW_SPLITS)
 
     private fun activity(context: Context, requestCode: Int, action: String?): PendingIntent {
-        val intent = Intent(context, MainActivity::class.java).apply {
-            this.action = action
+        val intent = IncomingIntents.internal(context, action).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         return PendingIntent.getActivity(

@@ -84,6 +84,14 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   as if they had happened.
 - A statement whose dates came back day-first (05-10-2026) could be imported into 2011.
 
+### Security
+
+- Other apps could make Kharcha Paani open its add sheet, start voice entry or open a payment
+  to answer, by sending its own widget and notification actions straight to it. Those now count
+  only from the app's own widgets and notifications. Shared text has to say it's text before it's
+  read with AI, and a shared picture or PDF has to come from the sharing app, not as a path to a
+  file on the phone.
+
 ## [1.4.0] - 2026-09-27
 
 ### Added

@@ -12,7 +12,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Parcelable
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -90,7 +89,6 @@ import com.vaibhav.kharchapaani.ui.components.GroupDetailSheet
 import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
 import com.vaibhav.kharchapaani.data.sync.SupabaseLedgerChanges
 import com.vaibhav.kharchapaani.data.sync.SyncDoorbell
-import com.vaibhav.kharchapaani.domain.InviteLink
 import com.vaibhav.kharchapaani.ui.groups.JoinGroupSheet
 import com.vaibhav.kharchapaani.ui.groups.ShareSplitPrompt
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupPanel
@@ -108,7 +106,6 @@ import com.vaibhav.kharchapaani.ui.screens.SplitsScreen
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
 import com.vaibhav.kharchapaani.ui.viewmodel.MainViewModel
-import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 
 class MainActivity : ComponentActivity() {
 
@@ -241,55 +238,32 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun routeIntent(intent: Intent, viewModel: MainViewModel, sharedGroups: SharedGroupsController) {
-        // 0. Group invite link. Nothing is joined until the person confirms the preview.
-        if (intent.action == Intent.ACTION_VIEW && intent.data?.scheme == InviteLink.SCHEME) {
-            viewModel.setTab(1)
-            sharedGroups.openJoin(intent.dataString.orEmpty())
-            return
-        }
-        // 1. Shared Image (e.g. screenshot shared from GPay, Paytm, Gallery)
-        if (Intent.ACTION_SEND == intent.action && intent.type?.startsWith("image/") == true) {
-            val imageUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
-            } else {
-                @Suppress("DEPRECATION")
-                intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
+        // What counts from where is decided in IncomingIntents; this only acts on it.
+        when (val route = IncomingIntents.route(intent)) {
+            is IncomingIntents.Route.Join -> {
+                viewModel.setTab(1)
+                sharedGroups.openJoin(route.link)
             }
-            if (imageUri != null) {
-                viewModel.handleSharedImageUri(this, imageUri)
+            // A screenshot shared from GPay, Paytm or the gallery.
+            is IncomingIntents.Route.SharedImage -> viewModel.handleSharedImageUri(this, route.uri)
+            // A bank or UPI statement.
+            is IncomingIntents.Route.SharedPdf -> viewModel.handleSharedPdfUri(this, route.uri)
+            // An SMS, a WhatsApp payment message.
+            is IncomingIntents.Route.SharedText -> viewModel.parseInputText(route.text)
+            IncomingIntents.Route.QuickAdd -> {
+                viewModel.setTab(0)
+                viewModel.openManualAdd("expense")
             }
-        }
-        // 2. Shared PDF Bank / UPI Statement
-        else if (Intent.ACTION_SEND == intent.action && intent.type == "application/pdf") {
-            val pdfUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
-            } else {
-                @Suppress("DEPRECATION")
-                intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
+            IncomingIntents.Route.VoiceLog -> {
+                viewModel.setTab(0)
+                viewModel.requestVoiceCapture()
             }
-            if (pdfUri != null) {
-                viewModel.handleSharedPdfUri(this, pdfUri)
+            is IncomingIntents.Route.AnswerSettlement -> {
+                viewModel.setTab(1)
+                route.settlementId?.let(viewModel::openSettlementAnswer)
             }
-        }
-        // 3. Shared Text (e.g. SMS, WhatsApp payment text, or transaction message)
-        else if (Intent.ACTION_SEND == intent.action && (intent.type?.startsWith("text/") == true || intent.type == null)) {
-            val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
-            if (!sharedText.isNullOrBlank()) {
-                viewModel.parseInputText(sharedText)
-            }
-        }
-        // 4. Widget Actions
-        else if (intent.action == SplitFlowWidgetProvider.ACTION_QUICK_ADD) {
-            viewModel.setTab(0)
-            viewModel.openManualAdd("expense")
-        } else if (intent.action == SplitFlowWidgetProvider.ACTION_VOICE_LOG) {
-            viewModel.setTab(0)
-            viewModel.requestVoiceCapture()
-        } else if (intent.action == NotificationHelper.ACTION_ANSWER_SETTLEMENT) {
-            viewModel.setTab(1)
-            intent.getLongExtra(NotificationHelper.EXTRA_SETTLEMENT_ID, -1L).takeIf { it > 0 }?.let(viewModel::openSettlementAnswer)
-        } else if (intent.action == SplitFlowWidgetProvider.ACTION_VIEW_SPLITS) {
-            viewModel.setTab(1)
+            IncomingIntents.Route.ViewSplits -> viewModel.setTab(1)
+            null -> Unit
         }
     }
 }
