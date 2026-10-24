@@ -25,6 +25,19 @@ In this file the audit IDs carry a prefix so they don't collide: **SEC-** (secur
 
 ---
 
+## 0. Start here (next agent)
+
+1. Read §10 first: the owner's decisions of 2026-10-24 override anything in the tiers that disagrees.
+2. Check which of #61–#77 have merged (`gh pr list`). Build on `main`; rebase anything stacked.
+3. Ask the owner to confirm the start of Tier 1 (CLAUDE.md), then take the items in this order:
+   T1.4 (amounts), T1.5 (status bar), T1.7 (double saves), T1.8 (safety net), T1.9 (statement
+   cancel), N0, N1, T1.10 (AI notice, wording in §10), T1.2 (policy + Help & about), T1.6 (crashes),
+   T1.3 (Gemini proxy + caps from §10), T1.1 (account deletion per §10). The last two need owner review.
+4. Work in a git worktree per branch, follow §1, and keep this file's tiers up to date: mark an item
+   "done in #NN" when its PR merges.
+
+---
+
 ## 1. Rules for the implementing agent
 
 These come from `CLAUDE.md`, the memory notes and the owner's instructions, and they are not optional.
@@ -483,3 +496,87 @@ a fake-door paywall test, Play Billing for anything digital, multi-currency, rec
 itemised bill splitting, Hindi/Hinglish, bill photos in the cloud (owner decisions 17), and the
 ask-to-pay message tone the owner raised. These come after Tier 1 and Tier 2 are done, as the owner
 asked: make what exists production-grade first.
+
+---
+
+## 10. Owner decisions, 2026-10-24 (these override the tiers above)
+
+### D1. Account deletion: the leaving member chooses how they're remembered (T1.1)
+
+The owner's idea: at deletion time, ask whether their name may stay on past shared expenses.
+
+- The confirm sheet asks one question with two choices:
+  **"Keep my name on past group expenses"** (groupmates keep seeing "Priya" on old splits) or
+  **"Show me as Former member"**. Default: Former member, the privacy-safe choice if they skip.
+- Implementation: the profile row isn't deleted, it's **tombstoned**. `display_name` becomes either
+  their current name (frozen) or "Former member". Email, UPI ID, avatar, hue and every other personal
+  field are cleared, and the `auth.users` row is deleted, so nobody can sign in as them and nothing
+  else about them remains. Shared history and everyone else's balances stay exactly as they were.
+  Their private rows (personal expenses, private splits, local friends) are deleted outright.
+- Groups they created: ownership passes to the longest-standing remaining member; a group with no
+  one left is deleted. (Agent's call, as the owner asked.)
+- No grace period: deletion is immediate after the two-step confirm. Unsynced changes block it, with
+  "Sync first, or discard N unsynced changes".
+- The privacy policy states this choice and that a kept name is only the name, nothing else.
+
+### D2. Gemini: free tier for the first months, lenient caps (T1.3, T1.10)
+
+**Owner's choice:** the app is free at first and uses the **free (unpaid) Gemini tier**.
+
+**What the agent must not do:** write a notice that says or implies the data isn't used anywhere
+else. On the unpaid tier, Google's terms (PLAY §12, read 2026-10-24) say it **uses prompts and
+responses to improve its products and human reviewers may read them**, and they ask apps **not to send
+personal or sensitive information**. The owner is right that this isn't a "leak". But it is a use
+beyond reading the bill, so Play's User Data policy and DPDP require saying it plainly. A notice that
+hides it is the thing most likely to get the app pulled. The notice can be calm and short:
+
+> **Bills, statements and quick-add text are read by Google Gemini**
+> That's how the app fills in amounts for you. While Kharcha Paani is free, Google may use what's
+> sent to improve Gemini, and its reviewers may see it. It's never shown to other users, and we
+> never sell your data. Prefer not to? Type entries yourself: everything else works the same.
+> [Got it] [Type it myself]
+
+The same facts go in the privacy policy and Data safety form ("shared with Google for AI
+processing and product improvement").
+
+**Recommendation to the owner (not a decision):** move to the paid tier before the public production
+launch. Prepay is $5; with the caps below the cost is small, and the notice can then drop the
+"improve Gemini / reviewers" sentence. It also ends the conflict with Google's "no personal info on
+the unpaid tier" term, which is a risk to the Gemini account itself.
+
+**Daily caps per user (lenient, so normal people never hit them):**
+
+| Feature | Per day |
+|---|---|
+| Quick add (typed or spoken text) | 50 |
+| Bill / receipt photos | 10 |
+| Bank or UPI statements | 3 |
+| Insights questions | 20 |
+
+Hitting a cap shows, once: "That's today's AI reads used up. They're back tomorrow; you can still
+add entries by hand." Counts reset at midnight IST. Keep the caps server-side so they can change
+without an app update.
+
+### D3. Notifications rollout (§6): agent's call
+
+Build it in the order of §6. First N0 and N1. Then N2: the server `activity` table, the Updates
+inbox and notifications from the pull, so everyone in a split already hears about an expense at sync
+speed. Then FCM push (N3–N4). Defaults: weekly summary on, monthly off, quiet hours 22:30–08:00;
+joins and leaves go to all members (LOW channel); "Payments to confirm" can be turned off, with a
+warning.
+
+### D4. Push payload: ids only
+
+The FCM data message carries only `activity_id`, `kind`, `group_id` and the recipient's user id. No
+names, amounts or merchants pass through Google. On receipt the phone:
+
+1. Drops it if the user id isn't the signed-in account (#75).
+2. Enqueues an expedited sync (through `BackgroundAuth.sessionForNetwork`, never `awaitInitialization`).
+3. When the pull brings the `activity` row (usually 1–3 s), posts the full notification
+   ("Priya added Dinner at Toit · your share ₹450").
+4. If the pull hasn't finished in about 8 s, posts a placeholder from what's already on the phone,
+   "New expense in Goa trip" (the group name comes from the local Room copy, not the push), and
+   replaces it with the full text when the row arrives. Every high-priority push must end in a
+   visible notification, or FCM deprioritises the app.
+
+The privacy policy can then say notification content never passes through Google.
