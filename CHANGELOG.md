@@ -15,6 +15,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- `docs/production-readiness/`: the plan for launching on the Play Store, from four audits of the
+  code (security, reliability and UX, notifications and permissions) plus Play policy and DPDP
+  research and the owner's saved reels. It answers which keys, database changes and features have to
+  change, lists the console steps only the owner can do, and orders the work in three tiers, each
+  item a PR with tests. The audits are kept alongside it.
 - Ask a friend to pay you back without the awkward message. On the settle sheet's "{Friend} paid
   you" side, "Ask {name} to pay" shares a ready-made hisaab: each expense, guest share and payment
   since you were last square, a total that matches their balance, your UPI ID, and your payment
