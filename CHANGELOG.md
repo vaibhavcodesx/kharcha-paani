@@ -21,6 +21,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- Restoring a backup now shows what's in it (when it was taken, and how many friends, expenses
+  and payments) and waits for Restore. It used to apply the moment a file was picked. A file
+  with impossible numbers in it, such as a negative amount or shares adding up to more than the
+  expense, is refused with the reason, and nothing changes. Big files are read without freezing
+  the app.
 - Restoring a backup after signing in on a new phone could count a payment twice. A payment typed
   to a fraction of a paisa (₹100.555) and backed up before it had synced comes back from your
   account rounded (₹100.56), so the restore didn't recognise it as already there and added the
