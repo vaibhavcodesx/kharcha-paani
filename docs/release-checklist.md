@@ -40,6 +40,13 @@ It stops at the first failure. It checks that:
 6. an invite link opens the join preview without a crash;
 7. both widgets refresh with the app in the background without a crash.
 
+Then the on-device launch test, which opens the signed-in app and every tab on the phone (CI runs
+the same test under Robolectric on every PR, but has no emulator):
+
+```bash
+./gradlew :app:connectedDebugAndroidTest
+```
+
 ## By hand, on the release build
 
 Background work behaves differently with the app closed, so wherever a step says "backgrounded",
