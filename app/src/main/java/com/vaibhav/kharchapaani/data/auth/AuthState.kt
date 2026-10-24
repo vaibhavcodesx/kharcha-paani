@@ -2,6 +2,9 @@ package com.vaibhav.kharchapaani.data.auth
 
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserInfo
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
 sealed interface AuthState {
 
@@ -21,6 +24,18 @@ sealed interface AuthState {
         val isRefreshPending: Boolean,
     ) : AuthState
 }
+
+/** How long a stored session may sit in [SessionStatus.Initializing] before the app opens anyway. */
+const val INITIALIZING_GRACE_MS = 1_500L
+
+/** supabase-kt's [statuses] as the app sees them. [storedUser] is who the saved session belongs to. */
+fun authStates(
+    statuses: Flow<SessionStatus>,
+    storedUser: suspend () -> UserInfo?,
+): Flow<AuthState> = statuses
+    // Unchanged behaviour: auth.currentUserOrNull() only has a user while Authenticated.
+    .map { it.toAuthState((it as? SessionStatus.Authenticated)?.session?.user) }
+    .distinctUntilChanged()
 
 /**
  * [SessionStatus.RefreshFailure] carries no session, so the caller passes in the user it still
