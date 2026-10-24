@@ -305,3 +305,33 @@ data class PaymentAskEntity(
     val amount: Double,
     val sentAt: Long = System.currentTimeMillis(),
 )
+
+/**
+ * A photo of an expense's bill (docs/designs/bill-photos.md). The picture itself is a file in this
+ * account's receipts folder ([fileName] inside it, never an absolute path, so a moved data folder
+ * doesn't strand it); the row goes with its expense. A table rather than a column so a bill of
+ * several pages needs no migration later; for now the app keeps one per expense.
+ */
+@Entity(
+    tableName = "receipts",
+    foreignKeys = [
+        ForeignKey(
+            entity = TransactionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["transactionId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["transactionId"])]
+)
+data class ReceiptEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val transactionId: Long,
+    val fileName: String,
+    val width: Int,
+    val height: Int,
+    val bytes: Long,
+    val createdAt: Long = System.currentTimeMillis(),
+    /** Where a later cloud phase stores it; null while photos stay on the phone. */
+    val remotePath: String? = null,
+)

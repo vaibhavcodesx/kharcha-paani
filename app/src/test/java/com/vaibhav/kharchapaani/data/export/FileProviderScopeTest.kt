@@ -12,9 +12,11 @@ import org.robolectric.annotation.Config
 
 /**
  * The FileProvider hands out read access to whatever file_paths.xml lists, to any app a share is
- * granted to. Only two things are ever shared: CSV exports and backups (cache/exports, see
- * MainViewModel.exportCsv) and the payment code sent with an ask-to-pay (cache/asks, see
- * ask/AskShare.writeQr). Those are the only roots it may list.
+ * granted to. Only three things are ever shared: CSV exports and backups (cache/exports, see
+ * MainViewModel.exportCsv), the payment code sent with an ask-to-pay (cache/asks, see
+ * ask/AskShare.writeQr), and the file the system camera writes a bill photo into (cache/camera,
+ * see MainActivity's takeBillPhoto). Those are the only roots it may list: kept bill photos
+ * (filesDir/receipts) never are.
  *
  * This reads the configuration rather than calling FileProvider.getUriForFile: under Robolectric the
  * provider resolves no roots at all, so every "can't be shared" check would pass for the wrong reason.
@@ -37,7 +39,7 @@ class FileProviderScopeTest {
     }
 
     @Test
-    fun `only the exports and asks folders in the cache can be shared`() {
-        assertEquals(listOf("cache-path" to "exports/", "cache-path" to "asks/"), roots())
+    fun `only the exports, asks and camera folders in the cache can be shared`() {
+        assertEquals(listOf("cache-path" to "exports/", "cache-path" to "asks/", "cache-path" to "camera/"), roots())
     }
 }

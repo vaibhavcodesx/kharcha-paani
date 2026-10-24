@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Shared through the FileProvider: CSV exports and backups (MainViewModel, cache/exports) and the
-     payment code sent with an ask-to-pay (ask/AskShare, cache/asks). Anything listed here is
-     reachable by an app the share is granted to, so nothing else is. -->
+<!-- Shared through the FileProvider: CSV exports and backups (MainViewModel, cache/exports), the
+     payment code sent with an ask-to-pay (ask/AskShare, cache/asks), and the file the system camera
+     writes a bill photo into (MainActivity, cache/camera; read once and deleted). Anything listed
+     here is reachable by an app the share is granted to, so nothing else is. Kept bill photos live
+     in filesDir/receipts and are never shared. -->
 <paths>
     <cache-path name="exports" path="exports/" />
     <cache-path name="asks" path="asks/" />
+    <cache-path name="camera" path="camera/" />
 </paths>

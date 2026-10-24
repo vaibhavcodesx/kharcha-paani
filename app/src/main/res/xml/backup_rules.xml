@@ -7,4 +7,7 @@
     <!-- Supabase session (access + refresh token). Restoring it onto another device would
          carry a live session there; the user signs in again instead. -->
     <exclude domain="sharedpref" path="supabase_auth.xml" />
+    <!-- Bill photos: the 25 MB quota would otherwise stop the ledger itself being backed up
+         (see data_extraction_rules.xml). -->
+    <exclude domain="file" path="receipts/" />
 </full-backup-content>

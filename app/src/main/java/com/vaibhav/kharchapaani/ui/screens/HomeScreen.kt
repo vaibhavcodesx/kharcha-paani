@@ -111,6 +111,8 @@ fun HomeScreen(
     onOpenAccount: () -> Unit,
     modifier: Modifier = Modifier,
     today: LocalDate = LocalDate.now(),
+    /** Expenses with a bill photo, which get a small receipt icon. */
+    billPhotoIds: Set<Long> = emptySet(),
     startVoiceCapture: Boolean = false,
     onVoiceCaptureStarted: () -> Unit = {},
     syncStatus: SyncStatus = SyncStatus(),
@@ -196,6 +198,7 @@ fun HomeScreen(
                             ?.let { visits[it] ?: 0 } ?: 0,
                         fullTx = item.fullTransaction,
                         isReadOnly = item.isReadOnly,
+                        hasBillPhoto = item.fullTransaction.transaction.id in billPhotoIds,
                         onEdit = { onEditTransaction(item.fullTransaction) },
                         onDelete = { onDeleteTransaction(item.fullTransaction.transaction.id) },
                         position = position,
