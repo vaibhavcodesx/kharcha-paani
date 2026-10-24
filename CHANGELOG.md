@@ -36,6 +36,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- The app opens without internet again. Opening it offline more than about an hour after you last
+  used it left a blank dark screen until the connection came back: the sign-in token had expired,
+  it couldn't be refreshed offline, and the app lost track of which account was signed in while
+  it waited. It now opens your ledger straight away (within a second and a half at most) and
+  reconnects on its own; the account sheet says "Offline" meanwhile. A signed-out or revoked
+  account still goes to sign-in.
 - Restoring a backup after signing in on a new phone could count a payment twice. A payment typed
   to a fraction of a paisa (₹100.555) and backed up before it had synced comes back from your
   account rounded (₹100.56), so the restore didn't recognise it as already there and added the

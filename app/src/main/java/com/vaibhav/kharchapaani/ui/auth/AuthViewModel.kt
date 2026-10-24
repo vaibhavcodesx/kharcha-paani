@@ -42,8 +42,15 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                     is AuthState.SignedIn -> {
                         val cameBackOnline = !authState.isRefreshPending &&
                             _uiState.value.profile == ProfileState.Unavailable
-                        if (authState.userId != previousUserId || cameBackOnline) {
-                            loadProfile(authState.userId)
+                        val newAccount = authState.userId != previousUserId
+                        when {
+                            // No live token yet: a request would go out without one and RLS would
+                            // answer "no profile". The refresh landing comes back as cameBackOnline.
+                            newAccount && authState.isRefreshPending -> {
+                                profileJob?.cancel()
+                                _uiState.update { it.copy(profile = ProfileState.Unavailable) }
+                            }
+                            newAccount || cameBackOnline -> loadProfile(authState.userId)
                         }
                     }
                     AuthState.SignedOut -> {
