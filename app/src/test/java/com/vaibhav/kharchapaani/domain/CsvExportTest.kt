@@ -5,6 +5,7 @@ import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
+import com.vaibhav.kharchapaani.data.db.entity.SettlementStatus
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.data.model.FullTransaction
 import org.junit.Assert.assertEquals
@@ -139,6 +140,22 @@ class CsvExportTest {
         assertEquals(1, csv.rows)
         assertTrue(rows(csv)[1].contains("Settlement"))
         assertTrue(rows(csv)[1].contains("Rohan paid You"))
+    }
+
+    @Test
+    fun `a payment still waiting for an answer, or disputed, isn't exported as paid`() {
+        val at = LocalDateTime.of(2025, 3, 4, 9, 0)
+        val csv = CsvExport.build(
+            emptyList(), listOf(rohan), emptyList(), ExportRange.Everything, zone,
+            settlements = listOf(
+                settlement(1, at, 250.0, from = 2, to = -1),
+                settlement(2, at, 2000.0, from = 2, to = -1).copy(status = SettlementStatus.PENDING),
+                settlement(3, at, 900.0, from = 2, to = -1).copy(status = SettlementStatus.REJECTED),
+            ),
+        )
+
+        assertEquals(1, csv.rows)
+        assertTrue(rows(csv)[1].contains("250.00"))
     }
 
     @Test

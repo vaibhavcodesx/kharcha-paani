@@ -57,6 +57,17 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   crash the app: it was opened at full size on the main thread. Photos are now opened in the
   background at most 2048 pixels on the long side, which is still sharper than what's read, and a
   statement over the size limit is turned away before it's read into memory.
+- A split by percentage with friends who aren't on the app (33.3% each, say) came out a few
+  paisa to a rupee short. It never reached your account, so it was lost on a new phone, and the
+  gap was owed by nobody. Percentage splits now divide the exact amount, as they already did in
+  shared groups.
+- Switching an expense with a split to Income still saved the hidden split, so the income showed
+  up as friends owing you.
+- Signing out while "Undo" was showing after a delete could crash the app.
+- "Last synced" could say "just now" while group sync was failing.
+- The spreadsheet export listed payments still waiting for the other person, and disputed ones,
+  as if they had happened.
+- A statement whose dates came back day-first (05-10-2026) could be imported into 2011.
 
 ## [1.4.0] - 2026-09-27
 

@@ -22,13 +22,13 @@ class TransactionSyncEngine(
     private val store: TransactionSyncStore,
     private val remote: TransactionRemote,
     private val ownerId: String,
-    private val clock: () -> Long = System::currentTimeMillis,
 ) {
 
     suspend fun sync() {
         push()
         pull()
-        store.putMeta(LAST_SYNCED_AT, clock().toString())
+        // "Last synced" is SyncWorker's to stamp, once every engine has got through: stamped here,
+        // it read "just now" while the group sync failed on every pass (correctness audit, 2026-10-24).
     }
 
     internal suspend fun push() {
