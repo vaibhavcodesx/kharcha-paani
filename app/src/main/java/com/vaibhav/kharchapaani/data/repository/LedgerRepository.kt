@@ -26,6 +26,7 @@ import com.vaibhav.kharchapaani.domain.CsvExport
 import com.vaibhav.kharchapaani.domain.CsvFile
 import com.vaibhav.kharchapaani.domain.ExportRange
 import com.vaibhav.kharchapaani.domain.GroupBalances
+import com.vaibhav.kharchapaani.domain.HisaabItemiser
 import com.vaibhav.kharchapaani.domain.coveredBy
 import com.vaibhav.kharchapaani.domain.ownShareOf
 import com.vaibhav.kharchapaani.domain.owedAsGuestBy
@@ -44,8 +45,12 @@ import java.time.YearMonth
 import java.time.ZoneId
 import kotlin.math.abs
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 
@@ -322,6 +327,29 @@ class LedgerRepository(
         }
         return entries
     }
+
+    /**
+     * For each friend you've asked to pay you back and who still owes you, when you last asked
+     * (ask-to-pay). An ask from before they were last square is about a debt that's gone, so it
+     * doesn't count. Only asked friends are walked, so this costs with how many you've asked, not
+     * with everyone on the phone.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val currentAsks: Flow<Map<Long, Long>> = db.paymentAskDao().observeAll().flatMapLatest { asks ->
+        val latest = asks.groupBy { it.personId }.mapValues { (_, theirs) -> theirs.maxOf { it.sentAt } }
+        if (latest.isEmpty()) {
+            flowOf(emptyMap())
+        } else {
+            combine(latest.keys.map { id -> getLedgerForPerson(id).map { id to it } }) { ledgers ->
+                ledgers.mapNotNull { (id, rows) ->
+                    val askedAt = latest.getValue(id)
+                    val stillOwed = HisaabItemiser.itemise(rows) != null
+                    val clearedSince = HisaabItemiser.lastZeroAt(rows)?.let { it >= askedAt } ?: false
+                    if (stillOwed && !clearedSince) id to askedAt else null
+                }.toMap()
+            }
+        }
+    }.flowOn(Dispatchers.IO)
 
     /** A settlement's line in a friend's history, saying when it hasn't counted yet. */
     private fun settlementSubtitle(settlement: SettlementEntity): String {

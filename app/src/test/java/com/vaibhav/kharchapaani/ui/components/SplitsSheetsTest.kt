@@ -56,6 +56,22 @@ class SplitsSheetsTest {
         assertEquals(1, history)
     }
 
+    @Test
+    fun `a friend you've asked says when, and only while they owe you`() {
+        val now = 10 * 24 * 3_600_000L
+        composeTestRule.setContent {
+            SplitFlowTheme {
+                androidx.compose.foundation.layout.Column {
+                    FriendRow(PersonBalance(bob, 250.0, 250.0, 0.0), onOpenHistory = {}, onSettleUp = {}, onDelete = {}, askedAt = now - 3 * 24 * 3_600_000L, now = now)
+                    FriendRow(PersonBalance(carol, -90.0, 0.0, 90.0), onOpenHistory = {}, onSettleUp = {}, onDelete = {}, askedAt = now, now = now)
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Owes you · Asked 3 days ago").assertExists()
+        composeTestRule.onNodeWithText("You owe them").assertExists()
+    }
+
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun `deleting a friend is one step away, not a bin on every row`() {

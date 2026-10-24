@@ -13,6 +13,21 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- Ask a friend to pay you back without the awkward message. On the settle sheet's "{Friend} paid
+  you" side, "Ask {name} to pay" shares a ready-made hisaab: each expense, guest share and payment
+  since you were last square, a total that matches their balance, your UPI ID, and your payment
+  code as a picture they can scan or pick from their gallery. Change the amount first to ask for
+  part of it ("Asking ₹200 of the ₹340 you owe"). The message is previewed on the sheet and can be
+  edited in WhatsApp (or wherever you send it) before it goes. It works for friends who aren't on
+  the app.
+- A friend you've asked shows "Owes you · Asked 3 days ago" on their row until they're square. An
+  ask counts only when you pick an app to send it with; closing the share sheet doesn't. Kharcha
+  Paani itself isn't offered in that sheet.
+- Local database version 9: a new table logging asks (on this phone only). Additive; nothing
+  already on the phone changes.
+
 ### Changed
 
 - A friend's balance and their history are now worked out from the same rows, so the history

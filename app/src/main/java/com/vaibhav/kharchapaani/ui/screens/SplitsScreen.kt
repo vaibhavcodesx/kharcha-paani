@@ -96,6 +96,8 @@ fun SplitsScreen(
     awaitingThem: List<ActivityItem.Settlement> = emptyList(),
     onAnswerSettlement: (Long) -> Unit = {},
     onWithdrawSettlement: (Long) -> Unit = {},
+    // Ask-to-pay: person id to when you last asked them, for friends who still owe you.
+    askedAt: Map<Long, Long> = emptyMap(),
 ) {
     val owedToMe = personBalances.filter { it.netBalance > 0 }.sumOf { it.netBalance }
     val iOwe = abs(personBalances.filter { it.netBalance < 0 }.sumOf { it.netBalance })
@@ -207,6 +209,7 @@ fun SplitsScreen(
                         onSettleUp = { onSettleUp(balance.person) },
                         onDelete = { friendToDelete = balance },
                         modifier = Modifier.animateItem().padding(top = if (index == 0) 0.dp else 2.dp),
+                        askedAt = askedAt[balance.person.id],
                     )
                 }
             }

@@ -1,5 +1,6 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import com.vaibhav.kharchapaani.ui.format.AskMessage
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -63,6 +64,9 @@ fun FriendRow(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
     position: RowPosition = RowPosition.Single,
+    // Ask-to-pay: when you last asked them to pay you back, if they still owe you since.
+    askedAt: Long? = null,
+    now: Long = System.currentTimeMillis(),
 ) {
     val person = balance.person
     val owesMe = balance.netBalance >= 0.005
@@ -74,6 +78,7 @@ fun FriendRow(
     // corrupt shared expenses), so the row doesn't pretend it can. They go when they leave.
     val canDelete = person.profileId == null
     val status = when {
+        owesMe && askedAt != null -> "Owes you · ${AskMessage.askedLabel(askedAt, now)}"
         owesMe -> "Owes you"
         iOwe -> "You owe them"
         else -> "All settled"

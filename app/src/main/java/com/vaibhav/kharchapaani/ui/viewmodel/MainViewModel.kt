@@ -8,6 +8,9 @@ import com.vaibhav.kharchapaani.data.repository.ReceiptReadResult
 import android.app.Application
 import android.content.ClipData
 import android.content.Context
+import com.vaibhav.kharchapaani.ask.AskShare
+import com.vaibhav.kharchapaani.domain.HisaabItemiser
+import com.vaibhav.kharchapaani.domain.UpiLink
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
@@ -106,6 +109,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -574,6 +578,16 @@ class MainViewModel(
     val isSettleUpOpen: StateFlow<Boolean> = _isSettleUpOpen.asStateFlow()
     private val _settleUpPerson = MutableStateFlow<PersonEntity?>(null)
     val settleUpPerson: StateFlow<PersonEntity?> = _settleUpPerson.asStateFlow()
+
+    /** What the friend on the settle sheet owes you, line by line, for asking them to pay (ask-to-pay). */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val settleUpHisaab: StateFlow<HisaabItemiser.Hisaab?> = _settleUpPerson
+        .flatMapLatest { person -> person?.let { p -> ledgerRepo.getLedgerForPerson(p.id).map { HisaabItemiser.itemise(it) } } ?: flowOf(null) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    /** Friends you've asked to pay you back and who still owe you: person id to when you last asked. */
+    val askedAt: StateFlow<Map<Long, Long>> = ledgerRepo.currentAsks
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     private val _isIouOpen = MutableStateFlow(false)
     val isIouOpen: StateFlow<Boolean> = _isIouOpen.asStateFlow()
@@ -1418,6 +1432,24 @@ class MainViewModel(
     fun dismissSettleUp() {
         _isSettleUpOpen.value = false
         _settleUpPerson.value = null
+    }
+
+    /**
+     * Opens the share sheet with [message] and, when you have a UPI ID, your payment code for [amount]
+     * (ask-to-pay). The ask is logged only if an app is picked (ask/AskSentReceiver).
+     */
+    fun askToPay(context: Context, person: PersonEntity, amount: Double, message: String) {
+        viewModelScope.launch {
+            val app = getApplication<Application>()
+            val qr = upiPayee.value?.let { payee ->
+                withContext(Dispatchers.IO) {
+                    AskShare.writeQr(app, person.id, UpiLink.build(payee.upiId, payee.name, amount, note = "Kharcha Paani hisaab"))
+                }
+            }
+            val firstName = person.name.trim().substringBefore(' ').ifEmpty { person.name }
+            val chooser = AskShare.chooser(app, AskShare.sendIntent(message, qr), person.id, amount, userId, "Ask $firstName to pay")
+            context.startActivity(chooser)
+        }
     }
 
     fun recordSettlementPayment(fromPersonId: Long, toPersonId: Long, amount: Double, note: String, groupId: Long? = null) {

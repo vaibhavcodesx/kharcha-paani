@@ -8,6 +8,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.performTextReplacement
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.domain.UpiPayee
@@ -78,15 +80,75 @@ class SettleUpUpiTest {
 
     private val rohan = PersonEntity(id = 2, name = "Rohan Mehta", avatarColor = "#70C1FF")
 
-    private fun show(payee: UpiPayee?, owed: Double, person: PersonEntity = rohan) {
+    private fun show(
+        payee: UpiPayee?,
+        owed: Double,
+        person: PersonEntity = rohan,
+        hisaab: com.vaibhav.kharchapaani.domain.HisaabItemiser.Hisaab? = null,
+        onAsk: ((Double, String) -> Unit)? = null,
+    ) {
         composeTestRule.setContent {
             SplitFlowTheme {
                 SettleUpContent(
                     person = person, suggestedAmount = owed, groupOptions = com.vaibhav.kharchapaani.domain.SharedRecordGroups.Options(emptyList(), emptyList(), false),
-                    onCreateGroup = {}, onConfirm = { _, _, _, _, _ -> }, upiPayee = payee,
+                    onCreateGroup = {}, onConfirm = { _, _, _, _, _ -> }, upiPayee = payee, hisaab = hisaab, onAsk = onAsk,
                 )
             }
         }
+    }
+
+    private val owes340 = com.vaibhav.kharchapaani.domain.HisaabItemiser.Hisaab(
+        carriedOver = 0.0,
+        earlier = 0.0,
+        lines = listOf(com.vaibhav.kharchapaani.domain.HisaabItemiser.Line("Dinner", com.vaibhav.kharchapaani.domain.HisaabItemiser.Kind.THEIR_SHARE, 1_000L, 340.0)),
+        total = 340.0,
+    )
+
+    // Ask-to-pay (eng review D2, D4, D6, D8).
+    @Test
+    fun `when a friend owes you, you can ask them, and what's shared is what the preview shows`() {
+        var shared: Pair<Double, String>? = null
+        show(UpiPayee("lal@okaxis", "Lal"), owed = 340.0, hisaab = owes340, onAsk = { amount, message -> shared = amount to message })
+
+        // A semantics click: the sheet's action bar sits over the bottom of the scroll area in a test.
+        composeTestRule.onNodeWithTag("ask_to_pay_button").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+
+        assertEquals(340.0, shared!!.first, 0.0)
+        assertTrue(shared!!.second.contains("Total: ₹340"))
+        assertTrue(shared!!.second.contains("UPI: lal@okaxis"))
+        composeTestRule.onNodeWithTag("ask_preview").assertTextContains(shared!!.second)
+    }
+
+    @Test
+    fun `asking for less than they owe says so in the message`() {
+        var shared: Pair<Double, String>? = null
+        show(UpiPayee("lal@okaxis", "Lal"), owed = 340.0, hisaab = owes340, onAsk = { amount, message -> shared = amount to message })
+
+        composeTestRule.onNodeWithTag("settle_amount_input").performTextReplacement("200")
+        // A semantics click: the sheet's action bar sits over the bottom of the scroll area in a test.
+        composeTestRule.onNodeWithTag("ask_to_pay_button").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+
+        assertEquals(200.0, shared!!.first, 0.0)
+        assertTrue(shared!!.second.contains("Asking ₹200 of the ₹340 you owe."))
+    }
+
+    @Test
+    fun `there's no ask on the side where you're paying, or when nothing is owed`() {
+        show(UpiPayee("lal@okaxis", "Lal"), owed = 340.0, hisaab = owes340, onAsk = { _, _ -> })
+        composeTestRule.onNodeWithText("You paid Rohan").performClick()
+        composeTestRule.onNodeWithTag("ask_to_pay_button").assertDoesNotExist()
+    }
+
+    @Test
+    fun `with no UPI ID the ask still goes, as text without a code line`() {
+        var shared: String? = null
+        show(null, owed = 340.0, hisaab = owes340, onAsk = { _, message -> shared = message })
+
+        // A semantics click: the sheet's action bar sits over the bottom of the scroll area in a test.
+        composeTestRule.onNodeWithTag("ask_to_pay_button").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+
+        assertTrue(!shared!!.contains("UPI:"))
+        composeTestRule.onNodeWithTag("no_payee_upi").assertExists()
     }
 
     @Test
