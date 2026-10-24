@@ -37,7 +37,7 @@ class StatementChecksTest {
     }
 
     @Test
-    fun `a huge amount among small ones is unticked, but a statement of big ones isn't`() {
+    fun `huge income among small rows is unticked, but a statement of big ones isn't`() {
         val small = (1..6).map { row("UPI $it", 200.0 + it, today.minusDays(it.toLong())) }
         val out = review(small + row("Salary", 5_00_000.0, today.minusDays(2), type = "income"))
         assertEquals(StatementChecks.LARGE, out.getValue("Salary").flag)
@@ -46,9 +46,13 @@ class StatementChecksTest {
         val big = review(listOf(row("Rent", 25_000.0, today.minusDays(3)), row("Car EMI", 30_000.0, today.minusDays(4)), row("School", 40_000.0, today.minusDays(5))))
         assertTrue(big.values.all { it.isSelected })
 
+        // A big expense among small ones is routine (rent), not suspicious.
+        val rent = review(small + row("Rent", 25_000.0, today.minusDays(2)))
+        assertTrue(rent.getValue("Rent").isSelected)
+
         // Ten times the median, but under ₹10,000: not worth a second look.
-        val cheap = review(listOf(row("Chai", 20.0, today.minusDays(1)), row("Chai 2", 20.0, today.minusDays(2)), row("Shoes", 2_500.0, today.minusDays(3))))
-        assertTrue(cheap.getValue("Shoes").isSelected)
+        val cheap = review(listOf(row("Chai", 20.0, today.minusDays(1)), row("Chai 2", 20.0, today.minusDays(2)), row("Refund", 2_500.0, today.minusDays(3), type = "income")))
+        assertTrue(cheap.getValue("Refund").isSelected)
     }
 
     @Test

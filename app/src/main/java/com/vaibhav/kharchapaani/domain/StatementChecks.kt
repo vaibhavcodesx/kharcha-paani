@@ -19,7 +19,9 @@ import java.util.Locale
  * - a date that couldn't be read (the row would otherwise land on today);
  * - a date after today;
  * - a date outside the statement's own period, when that period can be read;
- * - an amount far bigger than the rest of the statement.
+ * - money in far bigger than the rest of the statement. Income only: a big expense (rent, an EMI)
+ *   is routine and would need ticking on every import, and the risk is money that was never
+ *   received making the month look better than it is.
  */
 object StatementChecks {
 
@@ -28,7 +30,7 @@ object StatementChecks {
     const val LARGE = "Much bigger than the rest of this statement"
     fun outside(period: String) = "Outside the statement's dates ($period)"
 
-    /** A row this many times the statement's median, and at least [LARGE_FLOOR], is checked. */
+    /** Income this many times the statement's median, and at least [LARGE_FLOOR], is checked. */
     internal const val LARGE_MULTIPLE = 10.0
     internal const val LARGE_FLOOR = 10_000.0
 
@@ -52,7 +54,7 @@ object StatementChecks {
                 // A day's grace either side: a statement's period and its rows' dates are sometimes a
                 // time zone apart.
                 range != null && (day.isBefore(range.first.minusDays(1)) || day.isAfter(range.second.plusDays(1))) -> outside(period.trim())
-                item.amount >= LARGE_FLOOR && item.amount >= LARGE_MULTIPLE * median -> LARGE
+                item.type == "income" && item.amount >= LARGE_FLOOR && item.amount >= LARGE_MULTIPLE * median -> LARGE
                 else -> null
             }
             if (reason == null) item else item.copy(flag = reason, isSelected = false)
