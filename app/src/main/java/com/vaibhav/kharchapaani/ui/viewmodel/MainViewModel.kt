@@ -10,10 +10,7 @@ import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.ImageDecoder
 import android.net.Uri
-import android.os.Build
-import android.provider.MediaStore
 import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -69,6 +66,7 @@ import com.vaibhav.kharchapaani.domain.GroupInsights
 import com.vaibhav.kharchapaani.ui.format.MonthNames
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
+import com.vaibhav.kharchapaani.domain.StatementPdf
 import com.vaibhav.kharchapaani.domain.StatementReadFailure
 import com.vaibhav.kharchapaani.domain.StatementReadResult
 import com.vaibhav.kharchapaani.domain.ActivityFeed
@@ -89,6 +87,7 @@ import com.vaibhav.kharchapaani.reminder.ReminderRule
 import com.vaibhav.kharchapaani.reminder.ReminderScheduler
 import com.vaibhav.kharchapaani.reminder.ReminderSettings
 import com.vaibhav.kharchapaani.util.NotificationHelper
+import com.vaibhav.kharchapaani.util.SharedFiles
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 import java.io.File
 import java.time.LocalDate
@@ -829,24 +828,11 @@ class MainViewModel(
         }
     }
 
+    /** A picture shared into the app: read off the main thread and at a size the phone can hold. */
     fun handleSharedImageUri(context: Context, uri: Uri) {
-        try {
-            val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                val source = ImageDecoder.createSource(context.contentResolver, uri)
-                ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
-                    decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-                    decoder.isMutableRequired = true
-                }
-            } else {
-                @Suppress("DEPRECATION")
-                MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-            }
-            if (bitmap != null) {
-                parseReceiptImage(bitmap)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            _statusMessage.value = "Couldn't open that image."
+        viewModelScope.launch {
+            val bitmap = SharedFiles.decodeImage(context.applicationContext, uri)
+            if (bitmap != null) parseReceiptImage(bitmap) else _statusMessage.value = "Couldn't open that image."
         }
     }
 
@@ -886,17 +872,14 @@ class MainViewModel(
         StatementReadFailure.Unreadable -> "Couldn't read that statement. Try again, or export it again from your bank or UPI app."
     }
 
+    /** A PDF shared into the app, read only up to the size a statement can be. */
     fun handleSharedPdfUri(context: Context, uri: Uri) {
-        try {
-            val inputStream = context.contentResolver.openInputStream(uri)
-            val bytes = inputStream?.readBytes() ?: ByteArray(0)
-            inputStream?.close()
-            if (bytes.isNotEmpty()) {
-                parseBankOrUpiStatement(bytes, "statement.pdf")
+        viewModelScope.launch {
+            when (val read = SharedFiles.readBytes(context.applicationContext, uri, StatementPdf.MAX_BYTES)) {
+                is SharedFiles.Read.Bytes -> parseBankOrUpiStatement(read.bytes, "statement.pdf")
+                SharedFiles.Read.TooLarge -> _statusMessage.value = statementFailureMessage(StatementReadFailure.TooLarge)
+                SharedFiles.Read.Unreadable -> _statusMessage.value = "Couldn't open that PDF."
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            _statusMessage.value = "Couldn't open that PDF."
         }
     }
 
