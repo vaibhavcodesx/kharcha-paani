@@ -1,36 +1,33 @@
-\# Kharcha Paani — Project Context
+# Kharcha Paani: Project Context
 
+A native Android app (Kotlin + Jetpack Compose + Room + Supabase + Gemini API), originally built in
+Google AI Studio. Since then it has been through many Claude Code sessions; v1.0–v1.4 have shipped.
 
+Before starting any work, read:
+1. **PRD.md**, a short page on what the product is and which rules hold.
+2. **docs/production-readiness/README.md**, the current work order. Read §0 "Start here" and §10
+   "Owner decisions" first: §10 overrides anything else in it.
 
-This is an existing, working native Android app (Kotlin + Jetpack
+docs/history/ is archive only: the old September PRD and its status log. Don't take tasks from it.
+docs/original-architecture-dossier.md describes the app as it was before any of this work, so treat
+it as background.
 
-Compose + Room + Gemini API), originally built in Google AI Studio — no
+Don't re-architect things that already work well (the ledger/balance pattern, the debt
+simplification algorithm, the AI ingestion pipeline, the groups/trips model). Improve and extend them.
 
-Claude Code work has been done on it yet.
+## How to work with me
 
+- **At the start of a session, ask everything up front.** Collect every question, decision and
+  permission you'll need for the session's planned work (merges, migrations, choices between
+  approaches, anything in the plan marked as an owner decision) and ask them together, once, before
+  you start. Then work on autopilot without stopping for me.
+- **Questions that come up later go on a list, not to me.** When something new needs my decision
+  mid-session, make the safe, reversible choice if there is one (and note it), or skip that item and
+  move on to the next. Then ask me the whole list together at the end of the session.
+- **Hard stops stay hard stops.** Anything touching RLS, auth or security, or a non-additive migration,
+  is opened as a PR and left for my review, never merged by you.
+- Confirm with me before starting each tier of the plan; that confirmation belongs in the up-front
+  questions.
 
-
-Read PRD.md before starting any work — it covers the cloud migration to
-
-Supabase, correctness/testing priorities, and a UI/UX premium-polish
-
-pass, in priority order. Also read docs/original-architecture-dossier.md
-
-for the full original technical writeup of what already exists.
-
-
-
-Don't re-architect things that already work well (the ledger/balance
-
-pattern, the debt simplification algorithm, the AI ingestion pipeline,
-
-the groups/trips model) — improve and extend them, per the PRD's "Out of
-
-Scope" section.
-
-
-
-Confirm with me before starting each numbered priority area in the PRD.
-
-Record what changed in CHANGELOG.md (Keep a Changelog format), not in PRD.md.
-PRD.md is the stable spec: update it only when a spec or decision changes.
+Record what changed in CHANGELOG.md (Keep a Changelog format). Update PRD.md only when what the
+product is, or a rule, changes.
