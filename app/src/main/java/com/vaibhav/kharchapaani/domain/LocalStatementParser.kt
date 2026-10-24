@@ -24,6 +24,8 @@ object LocalStatementParser {
         SimpleDateFormat("yyyy/MM/dd", Locale.US)
     )
 
+    private val YEAR_FIRST = Regex("^\\d{4}[-/]")
+
     private val displayDateFormatter = SimpleDateFormat("dd MMM yyyy", Locale.US)
     private val monthYearFormatter = SimpleDateFormat("MMMM yyyy", Locale.US)
     private val monthSortFormatter = SimpleDateFormat("yyyyMM", Locale.US)
@@ -40,9 +42,14 @@ object LocalStatementParser {
             .replace("  ", " ")
             .trim()
 
+        // Strict, and a year-first format only for text that starts with a 4-digit year: leniently,
+        // "05-10-2026" read as year 5, month 10, day 2026, rolled over and came out in 2011
+        // (correctness audit, 2026-10-24).
+        val startsWithYear = YEAR_FIRST.containsMatchIn(cleaned)
         for (format in supportedDateFormats) {
+            if (format.toPattern().startsWith("yyyy") && !startsWithYear) continue
             try {
-                format.isLenient = true
+                format.isLenient = false
                 val date = format.parse(cleaned)
                 if (date != null) {
                     val cal = Calendar.getInstance().apply { time = date }

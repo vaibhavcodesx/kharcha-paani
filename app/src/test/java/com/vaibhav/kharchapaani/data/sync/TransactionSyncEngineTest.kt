@@ -24,7 +24,7 @@ class TransactionSyncEngineTest {
     private val owner = "owner-1"
     private val store = FakeSyncStore()
     private val remote = FakeTransactionRemote(owner)
-    private val engine = TransactionSyncEngine(store, remote, owner, clock = { 42L })
+    private val engine = TransactionSyncEngine(store, remote, owner)
 
     @Test
     fun `pending personal transactions are pushed and marked synced`() = runBlocking {
@@ -36,7 +36,7 @@ class TransactionSyncEngineTest {
         val uploaded = remote.server.getValue(chai.remoteId)
         assertEquals("Chai", uploaded.merchant)
         assertEquals(40.01, uploaded.amount, 0.0)
-        assertEquals("42", store.meta[TransactionSyncEngine.LAST_SYNCED_AT])
+        assertNull("SyncWorker stamps it once every engine is through", store.meta[TransactionSyncEngine.LAST_SYNCED_AT])
     }
 
     @Test

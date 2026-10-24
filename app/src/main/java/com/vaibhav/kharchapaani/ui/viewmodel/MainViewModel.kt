@@ -13,10 +13,8 @@ import com.vaibhav.kharchapaani.domain.HisaabItemiser
 import com.vaibhav.kharchapaani.domain.UpiLink
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.ImageDecoder
 import android.net.Uri
-import android.os.Build
-import android.provider.MediaStore
+import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -43,6 +41,7 @@ import com.vaibhav.kharchapaani.data.model.SplitMode
 import com.vaibhav.kharchapaani.data.model.StatementParseResult
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
 import com.vaibhav.kharchapaani.data.repository.ArchivedGroupException
+import com.vaibhav.kharchapaani.data.repository.DuplicateFriendException
 import com.vaibhav.kharchapaani.ui.components.splitProblem
 import com.vaibhav.kharchapaani.data.remote.AppIdentity
 import com.vaibhav.kharchapaani.data.repository.GeminiRepository
@@ -71,6 +70,7 @@ import com.vaibhav.kharchapaani.domain.GroupInsights
 import com.vaibhav.kharchapaani.ui.format.MonthNames
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
+import com.vaibhav.kharchapaani.domain.StatementPdf
 import com.vaibhav.kharchapaani.domain.StatementReadFailure
 import com.vaibhav.kharchapaani.domain.StatementReadResult
 import com.vaibhav.kharchapaani.domain.ActivityFeed
@@ -91,6 +91,7 @@ import com.vaibhav.kharchapaani.reminder.ReminderRule
 import com.vaibhav.kharchapaani.reminder.ReminderScheduler
 import com.vaibhav.kharchapaani.reminder.ReminderSettings
 import com.vaibhav.kharchapaani.util.NotificationHelper
+import com.vaibhav.kharchapaani.util.SharedFiles
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 import java.io.File
 import java.time.LocalDate
@@ -842,24 +843,11 @@ class MainViewModel(
         }
     }
 
+    /** A picture shared into the app: read off the main thread and at a size the phone can hold. */
     fun handleSharedImageUri(context: Context, uri: Uri) {
-        try {
-            val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                val source = ImageDecoder.createSource(context.contentResolver, uri)
-                ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
-                    decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-                    decoder.isMutableRequired = true
-                }
-            } else {
-                @Suppress("DEPRECATION")
-                MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-            }
-            if (bitmap != null) {
-                parseReceiptImage(bitmap)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            _statusMessage.value = "Couldn't open that image."
+        viewModelScope.launch {
+            val bitmap = SharedFiles.decodeImage(context.applicationContext, uri)
+            if (bitmap != null) parseReceiptImage(bitmap) else _statusMessage.value = "Couldn't open that image."
         }
     }
 
@@ -899,17 +887,14 @@ class MainViewModel(
         StatementReadFailure.Unreadable -> "Couldn't read that statement. Try again, or export it again from your bank or UPI app."
     }
 
+    /** A PDF shared into the app, read only up to the size a statement can be. */
     fun handleSharedPdfUri(context: Context, uri: Uri) {
-        try {
-            val inputStream = context.contentResolver.openInputStream(uri)
-            val bytes = inputStream?.readBytes() ?: ByteArray(0)
-            inputStream?.close()
-            if (bytes.isNotEmpty()) {
-                parseBankOrUpiStatement(bytes, "statement.pdf")
+        viewModelScope.launch {
+            when (val read = SharedFiles.readBytes(context.applicationContext, uri, StatementPdf.MAX_BYTES)) {
+                is SharedFiles.Read.Bytes -> parseBankOrUpiStatement(read.bytes, "statement.pdf")
+                SharedFiles.Read.TooLarge -> _statusMessage.value = statementFailureMessage(StatementReadFailure.TooLarge)
+                SharedFiles.Read.Unreadable -> _statusMessage.value = "Couldn't open that PDF."
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            _statusMessage.value = "Couldn't open that PDF."
         }
     }
 
@@ -1225,14 +1210,17 @@ class MainViewModel(
     fun saveCurrentTransaction(askForGroup: Boolean = true) {
         val total = _amount.value.toDoubleOrNull() ?: 0.0
         if (total <= 0) return
+        // Income has no split: the sheet hides the editor, but the toggle stayed on, and the hidden
+        // shares were saved as friends owing me (correctness audit, 2026-10-24).
+        val splitting = _isSplit.value && _type.value != "income"
         // The sheet disables Save and says why; this keeps any other caller from saving it anyway.
-        if (_isSplit.value) splitProblem(_amount.value, _splitMode.value, _shares.value)?.let {
+        if (splitting) splitProblem(_amount.value, _splitMode.value, _shares.value)?.let {
             _statusMessage.value = it
             return
         }
 
         // A split with groupmates outside a shared group never reaches them (decision 1): ask first.
-        if (askForGroup && _isSplit.value && !isSharedGroup(_groupId.value)) {
+        if (askForGroup && splitting && !isSharedGroup(_groupId.value)) {
             val participants = _shares.value.filter { it.isSelected }.map { it.personId } + _paidByPersonId.value
             // A split can bring friends who aren't on the app along as my guests (design item 9).
             val options = SharedRecordGroups.optionsFor(participants, people.value, groups.value, splitPayerId = _paidByPersonId.value)
@@ -1256,14 +1244,17 @@ class MainViewModel(
             date = _date.value,
             note = _note.value,
             groupId = _groupId.value,
-            isSplit = _isSplit.value
+            isSplit = splitting
         )
 
         val selectedShares = _shares.value.filter { it.isSelected && it.amount > 0 }
-        // Percentages like 33.3 x 3 leave the amounts a few paisa short; in a shared group that would
-        // never sync, so the amounts are taken proportionally to the percentages instead.
+        // Percentages like 33.3 x 3 leave the amounts short (10 paisa on ₹100, ₹1 on ₹1000), so the
+        // amounts are taken proportionally to the percentages instead. Every split, not only a shared
+        // group's: since 1.3 a split with friends who aren't on the app syncs too, and the server
+        // refuses shares that don't add up, so that one stayed FAILED and never left the phone
+        // (correctness audit, 2026-10-24). Owed by nobody, the gap was wrong locally as well.
         val sharedPercentageAmounts = if (
-            _isSplit.value && isSharedGroup(_groupId.value) && _splitMode.value == SplitMode.PERCENTAGE &&
+            splitting && _splitMode.value == SplitMode.PERCENTAGE &&
             selectedShares.isNotEmpty() && selectedShares.sumOf { it.percentage } > 0
         ) {
             SplitRounding.byWeights(total, selectedShares.associate { it.personId to it.percentage }, _paidByPersonId.value)
@@ -1276,7 +1267,7 @@ class MainViewModel(
         val splitShareEntities = when {
             // Someone else's guests: the server only accepts them back exactly as they were.
             locked != null -> locked.map { it.copy(id = 0, splitId = 0) }
-            _isSplit.value -> selectedShares.map {
+            splitting -> selectedShares.map {
                 val amount = sharedPercentageAmounts?.get(it.personId) ?: it.amount
                 if (it.isGuest) {
                     // Stored under me, the host, so every group balance counts it as mine to cover.
@@ -1340,6 +1331,12 @@ class MainViewModel(
             ledgerRepo.deleteTransaction(txId)
         } catch (e: ArchivedGroupException) {
             _statusMessage.value = archivedMessage(e)
+            return
+        } catch (e: IllegalStateException) {
+            // Signing out while the Undo bar was up: onCleared commits this after the account's
+            // database is closed, and the uncaught error took the app down (correctness audit,
+            // 2026-10-24). The expense stays; it can be deleted again after signing back in.
+            Log.w("MainViewModel", "Delete not committed: the ledger was closed", e)
             return
         }
         // Keep the row hidden until the feed has caught up, so it doesn't blink back in between.
@@ -1526,7 +1523,13 @@ class MainViewModel(
     fun addNewFriend(name: String, colorHex: String) {
         if (name.isBlank()) return
         viewModelScope.launch {
-            val newId = ledgerRepo.addPerson(name, colorHex)
+            val newId = try {
+                ledgerRepo.addPerson(name, colorHex)
+            } catch (e: DuplicateFriendException) {
+                // The sheet stays open so the name can be told apart ("Rahul K").
+                _statusMessage.value = "You already have a friend called ${e.existingName}. Add something to tell them apart, like an initial."
+                return@launch
+            }
             if (_isConfirmSheetOpen.value) {
                 val current = _shares.value.toMutableList()
                 current.add(ShareInput(personId = newId, personName = name.trim(), isSelected = true))

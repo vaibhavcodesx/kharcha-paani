@@ -5,6 +5,11 @@
 > **Superseded in part, 2026-09-23.** This design only covers a *group* expense: a personal
 > expense can't have a `splits` row at all, so the common case still had nowhere to go. See
 > [`local-friend-sync-v2.md`](local-friend-sync-v2.md) for why, and for the staged fix.
+>
+> **Now written, 2026-10-23.** "Nothing writes it yet" below was true when written. Since 1.4.0,
+> `save_group_expense` writes `local_name` for a guest on a shared group's expense
+> (`20260926000100_group_expense_guests.sql`), and since 1.3.0 personal splits and IOUs with
+> friends not on the app go to `local_splits` and `local_settlements` instead.
 
 So the database can hold this today and nothing writes it yet. That is deliberate: turning it on
 means `SyncDao.pendingPersonalTransactions` stops filtering `isSplit = 0`, which changes what

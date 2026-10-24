@@ -183,6 +183,25 @@ class LocalLedgerSyncTest {
     }
 
     @Test
+    fun `deleting a friend takes their synced IOUs down, so a restore doesn't bring them back`() = runTest {
+        // Codex review, 2026-10-23: the friend's settlements were deleted in bulk with no tombstone,
+        // and a reinstall pulled the IOU back and recreated the friend from its name.
+        val a = repo(phoneA, enabled = true)
+        val rohan = a.addPerson("Rohan", "#70C1FF")
+        a.recordSettlement(fromPersonId = -1L, toPersonId = rohan, amount = 777.0, isIou = true)
+        a.recordSettlement(fromPersonId = rohan, toPersonId = -1L, amount = 100.0)
+        syncAll(phoneA)
+
+        a.deletePerson(rohan)
+        syncAll(phoneA)
+        syncAll(phoneB)
+
+        assertTrue(server.settlements.values.all { it.deletedAt != null })
+        assertTrue(phoneB.settlementDao().getAllSettlementsDirect().isEmpty())
+        assertTrue("no Rohan recreated", phoneB.personDao().getAllPeopleDirect().none { it.name == "Rohan" })
+    }
+
+    @Test
     fun `a retracted IOU is retracted on the other phone too`() = runTest {
         val a = repo(phoneA, enabled = true)
         val rohan = a.addPerson("Rohan", "#70C1FF")

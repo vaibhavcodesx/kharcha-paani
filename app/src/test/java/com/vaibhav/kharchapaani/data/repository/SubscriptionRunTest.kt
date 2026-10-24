@@ -5,6 +5,9 @@ import androidx.test.core.app.ApplicationProvider
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.entity.SubscriptionEntity
 import com.vaibhav.kharchapaani.domain.SubscriptionCycle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -65,6 +68,18 @@ class SubscriptionRunTest {
         // A month later, one more.
         assertEquals(1, repository.runDueSubscriptions(today = LocalDate.of(2026, 10, 15), zone = zone))
         assertEquals(5, entries().size)
+    }
+
+    @Test
+    fun `two runs started together charge each date once`() = runBlocking {
+        // Launch and saving a subscription both run this; each used to read the same checkpoint and
+        // charge the same months (Codex review, 2026-10-23).
+        repository.saveSubscription(netflix(LocalDate.of(2026, 6, 15)))
+
+        val runs = List(3) { async(Dispatchers.IO) { repository.runDueSubscriptions(today = LocalDate.of(2026, 9, 18), zone = zone) } }
+
+        assertEquals(4, runs.awaitAll().sum())
+        assertEquals(4, entries().size)
     }
 
     @Test

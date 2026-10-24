@@ -124,7 +124,11 @@ enum class SyncState {
     /** Changed locally; the next push uploads it. */
     PENDING,
 
-    /** Never uploaded: pre-sync history (handled by step 5) or split/group rows (step 4). */
+    /**
+     * Never uploaded: pre-sync history (handled by step 5), local-group rows, and splits and IOUs
+     * that can't sync, including those with friends not on the app from before 1.3 (forward-only,
+     * docs/local-friend-sync-v2.md).
+     */
     LOCAL_ONLY,
 
     /** The server rejected this row; it stays local and retries after the next edit. */
