@@ -489,13 +489,23 @@ backs off and retries.
 
 ---
 
-## 9. Left for the product conversation (office hours), not this plan
+## 9. After Tier 1 and 2: the product conversation (office hours)
 
-Pricing (the notes suggest "Kharcha Paani Plus" at ₹49/month or ₹399/year), what to put behind it,
-a fake-door paywall test, Play Billing for anything digital, multi-currency, recurring roommate splits,
-itemised bill splitting, Hindi/Hinglish, bill photos in the cloud (owner decisions 17), and the
-ask-to-pay message tone the owner raised. These come after Tier 1 and Tier 2 are done, as the owner
-asked: make what exists production-grade first.
+**No pricing, paid plans, paywalls or billing work for now** (decision D5). Office hours focus on one
+question: what makes Kharcha Paani a daily habit and a necessity, something people would miss if it
+were gone? Topics, in the owner's priority:
+
+1. **Seeing where the money went:** clear monthly picture, categories, trends.
+2. **Budget limits (new feature):** per-month and per-category budgets, with friendly, never-preachy
+   nudges as a budget is approached and when it's crossed ("Food's at 80% for October, ₹1,200 left").
+3. **Easy splits and getting money back:** settle-up, ask-to-pay messages that feel casual and never
+   like begging (the owner's tone rule), reminders the user controls.
+4. **AI quick add:** fast, forgiving, works for Hinglish.
+5. Then: retention loops (the weekly digest, streaks only if they don't nag), recurring roommate
+   splits, itemised bill splitting, Hindi/Hinglish, multi-currency trips.
+
+Use the office-hours skill in builder/startup mode on this framing. The earlier monetisation notes
+(₹49/month Plus, feature gating, fake-door test) stay parked until after the free period.
 
 ---
 
@@ -580,3 +590,13 @@ names, amounts or merchants pass through Google. On receipt the phone:
    visible notification, or FCM deprioritises the app.
 
 The privacy policy can then say notification content never passes through Google.
+
+### D5. Free first, paid later (product strategy)
+
+- The app is **free for at least the first 3 months**. During that time the goal is habit and
+  necessity: people should rely on it daily for seeing what they spent, budgets, easy splits and
+  settle-ups, and AI quick add.
+- After that, the owner reviews user response and feedback, then adds paid plans that feel worth
+  paying for. AI caps (D2) will then vary by plan.
+- **Until then: no paid-plan, paywall, billing or pricing work or discussion.** Build features and
+  production readiness only. Nothing in the app should hint at a future paywall or feel limited.
