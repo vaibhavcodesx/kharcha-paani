@@ -214,7 +214,7 @@ class MainActivity : ComponentActivity() {
                 }
                 LaunchedEffect(viewModel, queuedIntent) {
                     if (queuedIntent != null) {
-                        routeIntent(queuedIntent, viewModel, sharedGroups.controller)
+                        routeIntent(queuedIntent, viewModel, sharedGroups.controller, session.userId)
                         onIntentHandled()
                     }
                 }
@@ -237,7 +237,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun routeIntent(intent: Intent, viewModel: MainViewModel, sharedGroups: SharedGroupsController) {
+    private fun routeIntent(intent: Intent, viewModel: MainViewModel, sharedGroups: SharedGroupsController, userId: String) {
         // What counts from where is decided in IncomingIntents; this only acts on it.
         when (val route = IncomingIntents.route(intent)) {
             is IncomingIntents.Route.Join -> {
@@ -260,7 +260,9 @@ class MainActivity : ComponentActivity() {
             }
             is IncomingIntents.Route.AnswerSettlement -> {
                 viewModel.setTab(1)
-                route.settlementId?.let(viewModel::openSettlementAnswer)
+                // Another account's notification (or one from before notifications said whose they
+                // were) names a settlement in a different ledger: open Splits, not that id here.
+                if (route.userId == userId) route.settlementId?.let(viewModel::openSettlementAnswer)
             }
             IncomingIntents.Route.ViewSplits -> viewModel.setTab(1)
             null -> Unit

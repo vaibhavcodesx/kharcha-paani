@@ -86,6 +86,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Security
 
+- Signing out, or switching to another account, now takes down the previous account's
+  notifications and deletes the CSV exports and ask-to-pay QR images it left in the app's cache. A
+  payment-to-confirm notification also says whose it is, so one left over from another account
+  can't open a different payment that happens to share its number.
 - Other apps could make Kharcha Paani open its add sheet, start voice entry or open a payment
   to answer, by sending its own widget and notification actions straight to it. Those now count
   only from the app's own widgets and notifications. Shared text has to say it's text before it's
