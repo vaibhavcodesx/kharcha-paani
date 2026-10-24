@@ -23,7 +23,8 @@ import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 
 /**
  * Lets a settlement or IOU with a groupmate be recorded in a shared group so it syncs to them.
- * Shows nothing for friends without an account, whose records stay on this phone as before.
+ * Shows nothing for friends without an account: a record with one can't go in a group, and from 1.3
+ * on it backs up privately to this account instead (docs/local-friend-sync-v2.md).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

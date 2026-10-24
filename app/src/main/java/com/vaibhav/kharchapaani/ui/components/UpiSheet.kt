@@ -39,8 +39,8 @@ fun UpiSheet(
 }
 
 /**
- * Your UPI ID, so a friend settling up can scan or copy it. It stays on this phone: nothing about it
- * syncs, and it's only shown when you show it.
+ * Your UPI ID, so a friend settling up can scan or copy it. Saved on this phone and published to your
+ * profile, which only you and people you share a group with can read (MainViewModel.saveUpi).
  */
 @Composable
 fun UpiContent(
@@ -76,7 +76,7 @@ fun UpiContent(
     ) {
         SheetTitle(
             title = "Get paid by UPI",
-            supporting = "Friends settling up with you can scan your code or copy your ID. It stays on this phone.",
+            supporting = "Friends settling up with you can scan your code or copy your ID. People in your shared groups can see it too.",
         )
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             SheetRow(label = "UPI ID", position = RowPosition.First) {

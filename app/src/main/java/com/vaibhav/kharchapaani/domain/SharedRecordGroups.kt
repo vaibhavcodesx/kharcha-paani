@@ -7,7 +7,8 @@ import com.vaibhav.kharchapaani.data.model.GroupWithDetails
 /**
  * Where a split, settlement or IOU with other people can sync. The server only shares records inside
  * a shared group whose members include everyone involved (decision 1), so a record with a groupmate
- * needs one of those groups, and a record with a friend who has no account can only stay local.
+ * needs one of those groups. A friend who has no account can't be a member: they can only come along
+ * as a split's guest, and their other records back up privately to this account instead (from 1.3).
  */
 object SharedRecordGroups {
 
