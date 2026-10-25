@@ -39,6 +39,16 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   takes. It now has a Cancel button, Back and a tap outside cancel it too, and what was being read
   is dropped rather than opening later. After 20 seconds it says long statements take up to 3
   minutes and that a shorter date range is quicker.
+- A "payment to confirm" notification stayed up after the payment was answered on your other
+  phone, withdrawn by whoever recorded it, or gone with its group, and tapping it opened a payment
+  that no longer waited for you. Each sync now takes those down.
+- With only the "Payments to confirm" notifications blocked in the phone's settings, a reminder was
+  counted as shown although nothing appeared, so you never got it. It now waits until they're
+  allowed again; the daily reminder checks its own channel the same way.
+- Payment reminders came only after a fully successful sync, so one part of the sync failing
+  stopped all of them. They now go out whatever the sync managed.
+- Both notification channels exist from the first launch, so either can be turned off in the
+  phone's settings before its first notification.
 
 ## [1.5.0] - 2026-10-25
 
