@@ -2,6 +2,7 @@ package com.vaibhav.kharchapaani.ui.viewmodel
 
 import com.vaibhav.kharchapaani.domain.receiptNotice
 import com.vaibhav.kharchapaani.domain.quickAddNotice
+import com.vaibhav.kharchapaani.domain.isSavableAmount
 import com.vaibhav.kharchapaani.domain.AiFailure
 import com.vaibhav.kharchapaani.domain.CalendarDay
 import com.vaibhav.kharchapaani.domain.AiAskResult
@@ -1027,7 +1028,9 @@ class MainViewModel(
         }
 
         viewModelScope.launch {
-            val entities = items.map { item ->
+            // A row the statement reader got wrong (no amount, or more than the server stores) is
+            // left out rather than refusing the whole import.
+            val entities = items.filter { isSavableAmount(it.amount) }.map { item ->
                 TransactionEntity(
                     id = 0,
                     type = item.type,
@@ -1054,7 +1057,7 @@ class MainViewModel(
         _splitLocked.value = false
         _type.value = parsed.type
         // Money.input, not Double.toString, which writes ₹1,00,00,000 as "1.0E7".
-        _amount.value = if (parsed.amount > 0) Money.input(parsed.amount) else ""
+        _amount.value = if (isSavableAmount(parsed.amount)) Money.input(parsed.amount) else ""
         _merchant.value = parsed.merchant
         // Whatever the parser said, as one of this account's choices (the offline parser and older
         // prompts don't know custom categories).
@@ -1224,7 +1227,7 @@ class MainViewModel(
     }
 
     fun updateSharePercentage(personId: Long, pct: Double) {
-        val total = _amount.value.toDoubleOrNull() ?: 0.0
+        val total = Money.parseInput(_amount.value) ?: 0.0
         val current = _shares.value.toMutableList()
         val index = current.indexOfFirst { it.personId == personId }
         if (index != -1) {
@@ -1238,7 +1241,7 @@ class MainViewModel(
     }
 
     private fun recalculateShares() {
-        val total = _amount.value.toDoubleOrNull() ?: 0.0
+        val total = Money.parseInput(_amount.value) ?: 0.0
         val current = _shares.value.toMutableList()
         val selected = current.filter { it.isSelected }
 
@@ -1322,7 +1325,7 @@ class MainViewModel(
     }
 
     fun saveCurrentTransaction(askForGroup: Boolean = true) {
-        val total = _amount.value.toDoubleOrNull() ?: 0.0
+        val total = Money.parseInput(_amount.value) ?: 0.0
         if (total <= 0) return
         // Income has no split: the sheet hides the editor, but the toggle stayed on, and the hidden
         // shares were saved as friends owing me (correctness audit, 2026-10-24).

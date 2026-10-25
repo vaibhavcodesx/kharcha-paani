@@ -204,14 +204,14 @@ private fun ShareRow(
                     value = if (share.amount > 0) Money.input(share.amount) else "",
                     prefix = "₹",
                     suffix = "",
-                    onValueChange = { onExactAmountChange(it.toDoubleOrNull() ?: 0.0) },
+                    onValueChange = { onExactAmountChange(Money.parseInput(it) ?: 0.0) },
                     description = "${share.personName}'s amount",
                 )
                 SplitMode.PERCENTAGE -> NumberBox(
                     value = if (share.percentage > 0) Money.input(share.percentage) else "",
                     prefix = "",
                     suffix = "%",
-                    onValueChange = { onPercentageChange(it.toDoubleOrNull() ?: 0.0) },
+                    onValueChange = { onPercentageChange(Money.parseInput(it) ?: 0.0) },
                     description = "${share.personName}'s percentage",
                 )
             }
@@ -227,7 +227,7 @@ private fun ShareRow(
 @Composable
 private fun NumberBox(value: String, prefix: String, suffix: String, onValueChange: (String) -> Unit, description: String) {
     var text by remember { mutableStateOf(value) }
-    if ((text.toDoubleOrNull() ?: 0.0) != (value.toDoubleOrNull() ?: 0.0)) text = value
+    if ((Money.parseInput(text) ?: 0.0) != (Money.parseInput(value) ?: 0.0)) text = value
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -241,9 +241,11 @@ private fun NumberBox(value: String, prefix: String, suffix: String, onValueChan
         if (prefix.isNotEmpty()) Text(prefix, style = MoneyText.row, color = WarmAmberLight)
         BasicTextField(
             value = text,
-            onValueChange = {
-                text = it
-                onValueChange(it)
+            onValueChange = { typed ->
+                Money.acceptInput(typed)?.let {
+                    text = it
+                    onValueChange(it)
+                }
             },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -268,7 +270,7 @@ private const val ME = -1L
  * money silently fell out of everyone's balance.
  */
 internal fun splitProblem(amount: String, splitMode: SplitMode, shares: List<ShareInput>): String? {
-    val total = amount.toDoubleOrNull() ?: 0.0
+    val total = Money.parseInput(amount) ?: 0.0
     val selected = shares.filter { it.isSelected }
     if (selected.isEmpty()) return "Pick who's in the split"
     return when (splitMode) {

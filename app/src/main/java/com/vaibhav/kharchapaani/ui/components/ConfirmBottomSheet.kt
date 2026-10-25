@@ -240,18 +240,29 @@ fun ConfirmSheetContent(
     val context = LocalContext.current
     val dateText = remember(date) { describeDate(date) }
     val group = availableGroups.firstOrNull { it.id == groupId }
+    var checkLargeAmount by remember { mutableStateOf<Double?>(null) }
+    checkLargeAmount?.let { large ->
+        LargeAmountDialog(
+            amount = large,
+            onConfirm = {
+                checkLargeAmount = null
+                onSave()
+            },
+            onDismiss = { checkLargeAmount = null },
+        )
+    }
 
     SheetScaffold(
         modifier = modifier,
         actionBar = if (isParsing) null else {
             {
-                val value = amount.toDoubleOrNull() ?: 0.0
+                val value = Money.parseInput(amount) ?: 0.0
                 val splitIssue = if (isSplit && value > 0) splitProblem(amount, splitMode, shares) else null
                 GlassActionBar(
                     label = if (isEditing) "Update" else "Save",
                     disabledLabel = splitIssue ?: "Add an amount",
                     enabled = value > 0 && splitIssue == null,
-                    onClick = onSave,
+                    onClick = { if (value > Money.LARGE_AMOUNT) checkLargeAmount = value else onSave() },
                     summary = if (value > 0) Money.format(value) else "₹0",
                     detail = listOfNotNull(merchant.ifBlank { null } ?: category, paymentMethod.ifBlank { null }).joinToString(" · "),
                     buttonTestTag = "confirm_save_button",
@@ -541,7 +552,8 @@ private fun pickDateTime(context: android.content.Context, initial: Long, onPick
                 { _, hour, minute ->
                     cal.set(Calendar.HOUR_OF_DAY, hour)
                     cal.set(Calendar.MINUTE, minute)
-                    onPicked(cal.timeInMillis)
+                    // Nothing is spent in the future: a later time today becomes now.
+                    onPicked(minOf(cal.timeInMillis, System.currentTimeMillis()))
                 },
                 cal.get(Calendar.HOUR_OF_DAY),
                 cal.get(Calendar.MINUTE),
@@ -551,7 +563,7 @@ private fun pickDateTime(context: android.content.Context, initial: Long, onPick
         cal.get(Calendar.YEAR),
         cal.get(Calendar.MONTH),
         cal.get(Calendar.DAY_OF_MONTH),
-    ).show()
+    ).apply { datePicker.maxDate = System.currentTimeMillis() }.show()
 }
 
 private const val HOUR = 60 * 60 * 1000L

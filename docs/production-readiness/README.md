@@ -263,7 +263,7 @@ user sees in the first minute.
   the URL and drop the response-body excerpts from release logs (SEC L-4).
 - Sources: SEC §0.1, H-1, M-2, L-4; PLAY §7, §12; owner decisions 4.
 
-**T1.4 Amounts that can't break the app or the sync** · M
+**T1.4 Amounts that can't break the app or the sync** · M · **done in #84**
 - One `Money.parseInput(text): Double?`: strip grouping commas and spaces; digits with at most one
   "." and 2 decimals; finite; at most ₹9,99,99,99,999.99 (the server's `numeric(12,2)`). Use it
   everywhere an amount is read: `MainViewModel` (the three `toDoubleOrNull` sites), `ConfirmBottomSheet`,

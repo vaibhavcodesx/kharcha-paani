@@ -39,6 +39,8 @@ import com.vaibhav.kharchapaani.domain.SubscriptionSchedule
 import com.vaibhav.kharchapaani.domain.SubscriptionCycle
 import com.vaibhav.kharchapaani.domain.Today
 import com.vaibhav.kharchapaani.domain.roundPaisa
+import com.vaibhav.kharchapaani.domain.MAX_AMOUNT_RUPEES
+import com.vaibhav.kharchapaani.domain.isSavableAmount
 import java.util.Locale
 import java.util.UUID
 import java.time.LocalDate
@@ -381,6 +383,7 @@ class LedgerRepository(
         shares: List<SplitShareEntity> = emptyList(),
         splitType: String = "equal"
     ): Long = withContext(Dispatchers.IO) {
+        requireSavable(tx.amount)
         val isSplit = shares.isNotEmpty()
         val txId = db.withTransaction {
             requireWritableGroup(tx.groupId)
@@ -404,6 +407,7 @@ class LedgerRepository(
         transactions: List<TransactionEntity>
     ): List<Long> = withContext(Dispatchers.IO) {
         if (transactions.isEmpty()) return@withContext emptyList()
+        transactions.forEach { requireSavable(it.amount) }
         val now = System.currentTimeMillis()
         val ids = db.withTransaction {
             db.transactionDao().insertTransactions(
@@ -422,6 +426,7 @@ class LedgerRepository(
         shares: List<SplitShareEntity> = emptyList(),
         splitType: String = "equal"
     ) = withContext(Dispatchers.IO) {
+        requireSavable(tx.amount)
         val isSplit = shares.isNotEmpty()
         db.withTransaction {
             val existing = db.transactionDao().getTransactionByIdDirect(tx.id) ?: return@withTransaction
@@ -531,6 +536,7 @@ class LedgerRepository(
         groupId: Long? = null,
         date: Long = System.currentTimeMillis()
     ): Long = withContext(Dispatchers.IO) {
+        requireSavable(amount)
         val shared = db.withTransaction {
             requireWritableGroup(groupId)
             isSharedGroup(groupId) ||
@@ -886,6 +892,10 @@ class LedgerRepository(
      * Decision 4: an archived shared group is read-only. The server already refuses these writes
      * (RLS requires an active group); refusing here too means nothing is queued that can only fail.
      */
+    /** The last line against an amount that can't sync: every input path parses with Money.parseInput first. */
+    private fun requireSavable(amount: Double) =
+        require(isSavableAmount(amount)) { "Amount must be a positive number up to $MAX_AMOUNT_RUPEES, was $amount" }
+
     private suspend fun requireWritableGroup(groupId: Long?) {
         val group = groupId?.let { db.groupDao().getGroupByIdDirect(it) } ?: return
         if (group.isShared && group.isArchived) throw ArchivedGroupException(group.name)
@@ -935,6 +945,7 @@ class LedgerRepository(
      */
     suspend fun saveSubscription(subscription: SubscriptionEntity, chargeFromStart: Boolean = true, today: LocalDate = LocalDate.now()): Long =
         withContext(Dispatchers.IO) {
+            requireSavable(subscription.amount)
             val chargedThrough = if (chargeFromStart) subscription.chargedThrough else CalendarDay.toMillis(today)
             db.subscriptionDao().insert(subscription.copy(chargedThrough = chargedThrough))
         }

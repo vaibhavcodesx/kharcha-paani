@@ -13,6 +13,16 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Fixed
+
+- An amount that isn't a plain number ("Infinity", "1e999", a pasted 19-digit number) could be
+  saved. Its upload then failed on every sync, so nothing else in the account synced again, and
+  drawing it crashed the app. Amount fields now take only digits with up to two decimals, up to
+  ₹9,99,99,99,999.99 (what the server stores); commas, spaces and a ₹ sign in a pasted amount are
+  ignored. A row that still can't be uploaded is marked as not synced, and the rest sync on.
+- Saving more than ₹10 lakh asks first ("That's ₹12,00,000. Right?"), and an expense's date can no
+  longer be set in the future.
+
 ## [1.5.0] - 2026-10-25
 
 ### Added
