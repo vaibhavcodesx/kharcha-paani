@@ -75,6 +75,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   with impossible numbers in it, such as a negative amount or shares adding up to more than the
   expense, is refused with the reason, and nothing changes. Big files are read without freezing
   the app.
+- The app couldn't run on Android 7.0 and 7.1, although it said it supported them: its dates use
+  Java's `java.time`, which those versions don't have. The build now includes it (core library
+  desugaring), so Android 7 phones get it too. Found by the new lint check.
 - Restoring a backup after signing in on a new phone could count a payment twice. A payment typed
   to a fraction of a paisa (₹100.555) and backed up before it had synced comes back from your
   account rounded (₹100.56), so the restore didn't recognise it as already there and added the
