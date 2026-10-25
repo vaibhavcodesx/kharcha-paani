@@ -316,7 +316,7 @@ user sees in the first minute.
   `ActivityNotFoundException`.
 - Sources: REL M1, L3.
 
-**T1.9 The statement dialog can be cancelled** · S
+**T1.9 The statement dialog can be cancelled** · S · **done in #89**
 - Keep `statementJob`; a Cancel button; Back/dismiss cancels it and clears `_isParsingStatement`; after
   20 s, the line "Long statements take up to 3 minutes. You can cancel and try a shorter date range."
 - Why: Back does nothing for up to 3–6 minutes today (REL H2).

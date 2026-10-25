@@ -34,6 +34,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -273,10 +277,19 @@ private fun Figure(label: String, value: String, color: androidx.compose.ui.grap
     }
 }
 
-/** Shown while the statement is being read; the sheet opens once there's something to check. */
+/**
+ * Shown while the statement is being read; the sheet opens once there's something to check.
+ * Cancel, Back and a tap outside all stop the reading ([onCancel]). A long statement can take
+ * minutes, so after a while it says so and how to make it quicker.
+ */
 @Composable
-fun StatementParsingLoadingDialog(onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
+fun StatementParsingLoadingDialog(onCancel: () -> Unit) {
+    var takingLong by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(LONG_READ_MILLIS)
+        takingLong = true
+    }
+    Dialog(onDismissRequest = onCancel) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
@@ -287,13 +300,23 @@ fun StatementParsingLoadingDialog(onDismiss: () -> Unit) {
             CircularProgressIndicator(color = WarmAmberPrimary, strokeWidth = 3.dp, modifier = Modifier.size(36.dp))
             Text("Reading your statement", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = Spacing.l))
             Text(
-                "Sorting its entries by month. Nothing is added until you check them.",
+                if (takingLong) {
+                    "Long statements take up to 3 minutes. You can cancel and try a shorter date range."
+                } else {
+                    "Sorting its entries by month. Nothing is added until you check them."
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = Spacing.xs),
+                modifier = Modifier.padding(top = Spacing.xs).semantics { liveRegion = LiveRegionMode.Polite },
             )
+            TextButton(onClick = onCancel, modifier = Modifier.padding(top = Spacing.m).testTag("statement_reading_cancel")) {
+                Text("Cancel", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
+            }
         }
     }
 }
+
+/** When the reading dialog starts saying a long statement takes a while. */
+private const val LONG_READ_MILLIS = 20_000L
 
 private val TickShape = SquircleShape(7.dp)
