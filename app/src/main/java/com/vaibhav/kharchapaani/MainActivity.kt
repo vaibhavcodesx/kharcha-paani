@@ -148,6 +148,9 @@ class MainActivity : ComponentActivity() {
         // On recreation (e.g. rotation) the launch intent was already handled; re-handling it
         // would parse the same shared screenshot twice.
         if (savedInstanceState == null) queuedIntent = intent
+        // Every channel exists from the first launch, so each can be turned off in system settings
+        // before its first notification, and the Notifications screen can read their state.
+        NotificationHelper.createChannels(this)
 
         setContent {
             SplitFlowTheme {

@@ -37,11 +37,17 @@ object SettlementReminders {
         return "Still waiting on you: $amount with $otherName" to "$what, $days days ago. It won't count until you answer."
     }
 
-    /** Shows whatever is due in [userId]'s ledger [db]; returns how many it showed. */
+    /**
+     * Shows whatever is due in [userId]'s ledger [db], and takes down the ones that no longer wait
+     * for me; returns how many it showed. With the "Payments to confirm" channel blocked, nothing is
+     * counted as shown, so the reminder comes when it's unblocked.
+     */
     suspend fun remind(context: Context, db: AppDatabase, userId: String, now: Long = System.currentTimeMillis()): Int {
-        if (!NotificationHelper.canNotify(context)) return 0
+        val waiting = db.groupSyncDao().settlementsAwaitingMyAnswer()
+        NotificationHelper.clearStaleSettlementReminders(context, waiting.map { it.id }.toSet())
+        if (!NotificationHelper.canNotify(context, NotificationHelper.CHANNEL_SETTLEMENTS)) return 0
         var shown = 0
-        for (settlement in db.groupSyncDao().settlementsAwaitingMyAnswer()) {
+        for (settlement in waiting) {
             val stage = stageFor(settlement.createdAt, now)
             if (stage <= settlement.remindedStage) continue
             val otherId = if (settlement.fromPersonId == -1L) settlement.toPersonId else settlement.fromPersonId

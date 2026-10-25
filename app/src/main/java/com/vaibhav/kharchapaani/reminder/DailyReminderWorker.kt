@@ -45,7 +45,7 @@ class DailyReminderWorker(context: Context, params: WorkerParameters) : Coroutin
     }
 
     private suspend fun remindIfNothingLogged() {
-        if (!NotificationHelper.canNotify(applicationContext)) return
+        if (!NotificationHelper.canNotify(applicationContext, NotificationHelper.CHANNEL_DAILY_REMINDER)) return
         // Signed out: there's no one's day to remind about. Not auth.awaitInitialization(): in the
         // background that waits until the app is next opened, which is exactly when this isn't needed.
         val userId = BackgroundAuth.signedInUserId(applicationContext) ?: return
