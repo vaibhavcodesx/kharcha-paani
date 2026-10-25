@@ -928,7 +928,7 @@ fun SplitFlowApp(
     // Bank & UPI Statement Parsing Loading Overlay
     if (isParsingStatement) {
         StatementParsingLoadingDialog(
-            onDismiss = { viewModel.dismissStatementImportDialog() }
+            onCancel = { viewModel.dismissStatementImportDialog() }
         )
     }
 

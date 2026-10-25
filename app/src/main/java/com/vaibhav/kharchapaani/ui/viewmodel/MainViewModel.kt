@@ -131,6 +131,9 @@ class MainViewModel(
     application: Application,
     private val db: AppDatabase,
     private val userId: String,
+    // Identity passed in so requests carry the headers a key restricted to this app requires.
+    // Tests pass one whose client answers without a network.
+    private val geminiRepo: GeminiRepository = GeminiRepository(appIdentity = AppIdentity.of(application)),
 ) : AndroidViewModel(application) {
 
     private val ledgerRepo = LedgerRepository(db, onLocalTransactionChange = ::requestSync, selfProfileId = userId)
@@ -167,8 +170,6 @@ class MainViewModel(
             requestSync()
         }
     }
-    // Identity passed in so requests carry the headers a key restricted to this app requires.
-    private val geminiRepo = GeminiRepository(appIdentity = AppIdentity.of(application))
 
     private val settings = AppSettings(application)
 
@@ -969,12 +970,19 @@ class MainViewModel(
         }
     }
 
+    /** The statement being read, so Cancel (or Back on the reading dialog) can stop it. */
+    private var statementJob: Job? = null
+
     fun parseBankOrUpiStatement(pdfBytes: ByteArray, fileName: String = "statement.pdf") {
-        viewModelScope.launch {
+        statementJob?.cancel()
+        statementJob = viewModelScope.launch {
             _isParsingStatement.value = true
             _isImportStatementOpen.value = true
-            val result = geminiRepo.readStatementPdf(pdfBytes, fileName, parseChoices())
-            _isParsingStatement.value = false
+            val result = try {
+                geminiRepo.readStatementPdf(pdfBytes, fileName, parseChoices())
+            } finally {
+                _isParsingStatement.value = false
+            }
             when (result) {
                 is StatementReadResult.Success -> _statementParseResult.value = result.statement
                 is StatementReadResult.Failed -> {
@@ -1016,7 +1024,15 @@ class MainViewModel(
         }
     }
 
+    /**
+     * Closes the statement import, and stops a reading still under way: its answer is dropped
+     * rather than opening the list later. Back on the reading dialog used to do nothing for the
+     * minutes a long statement takes.
+     */
     fun dismissStatementImportDialog() {
+        statementJob?.cancel()
+        statementJob = null
+        _isParsingStatement.value = false
         _isImportStatementOpen.value = false
         _statementParseResult.value = null
     }
