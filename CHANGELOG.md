@@ -31,6 +31,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - On a phone in light mode, the clock, battery and other status bar icons were dark on the app's
   dark background, so they couldn't be seen, and 3-button navigation had a white strip. The bars
   now always have light icons over the app.
+- Tapping Save twice quickly logged the expense twice, and tapping Create group twice made two
+  groups. A second tap while the first is still saving now does nothing, and Save shows a spinner
+  meanwhile. The same goes for recording a payment or an IOU, importing a statement, adding a
+  friend and adding a subscription.
 
 ## [1.5.0] - 2026-10-25
 
