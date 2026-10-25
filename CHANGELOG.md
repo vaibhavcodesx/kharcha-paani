@@ -32,6 +32,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   Paani itself isn't offered in that sheet.
 - Local database version 9: a new table logging asks (on this phone only). Additive; nothing
   already on the phone changes.
+- A test now opens the whole signed-in app, Home and every tab, the way the app builds it on
+  launch, so a crash in the first frames fails CI instead of every phone. The same check runs on
+  a real phone before a release (`./gradlew :app:connectedDebugAndroidTest`).
 
 ### Changed
 
