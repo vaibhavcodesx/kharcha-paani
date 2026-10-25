@@ -35,6 +35,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - A test now opens the whole signed-in app, Home and every tab, the way the app builds it on
   launch, so a crash in the first frames fails CI instead of every phone. The same check runs on
   a real phone before a release (`./gradlew :app:connectedDebugAndroidTest`).
+- `docs/release-checklist.md`: what to check on the release-signed build before a release goes
+  out, with `scripts/release-smoke.sh` for the parts adb can do (release key, install over the
+  existing app, cold launch, shared text, invite links, widgets in the background).
 
 ### Changed
 
