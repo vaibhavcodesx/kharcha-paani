@@ -18,6 +18,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - A launch screen with the Kharcha Paani mark on the app's dark background, held while your account
   opens (at most 1.5 s), so the app goes straight from it to Home. The launcher icon has a themed
   (monochrome) version too: just the ₹.
+- Daily AI reads per person, generous enough that normal use never meets them: 50 quick adds,
+  10 bills, 3 statements and 20 Insights questions a day, back at midnight IST. Reaching one says
+  "That's today's AI reads used up. They're back tomorrow; you can still add entries by hand."
+  **(server, staged, not applied)**
+- Statement reads are cleaned on the server before they reach the app: at most 1,000 rows, no
+  amount the database couldn't store, merchant and note cut to 80 and 200 characters.
 
 ### Fixed
 
@@ -39,6 +45,13 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   takes. It now has a Cancel button, Back and a tap outside cancel it too, and what was being read
   is dropped rather than opening later. After 20 seconds it says long statements take up to 3
   minutes and that a shorter date range is quicker.
+
+### Security
+
+- The Gemini key is no longer in the app. Every AI read goes through a Supabase Edge Function
+  (`gemini-proxy`) that holds the key as a server secret, accepts only signed-in people, and
+  passes back Google's reply. Until now the key shipped inside every APK, where anyone could
+  copy it.
 
 ## [1.5.0] - 2026-10-25
 

@@ -48,7 +48,6 @@ import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
 import com.vaibhav.kharchapaani.data.repository.ArchivedGroupException
 import com.vaibhav.kharchapaani.data.repository.DuplicateFriendException
 import com.vaibhav.kharchapaani.ui.components.splitProblem
-import com.vaibhav.kharchapaani.data.remote.AppIdentity
 import com.vaibhav.kharchapaani.data.repository.GeminiRepository
 import com.vaibhav.kharchapaani.data.repository.LocalBackupRepository
 import com.vaibhav.kharchapaani.data.repository.toBackup
@@ -73,6 +72,7 @@ import com.vaibhav.kharchapaani.domain.BackupReadResult
 import com.vaibhav.kharchapaani.domain.DailySpend
 import com.vaibhav.kharchapaani.domain.GroupInsights
 import com.vaibhav.kharchapaani.ui.format.MonthNames
+import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import com.vaibhav.kharchapaani.domain.StatementPdf
@@ -131,9 +131,11 @@ class MainViewModel(
     application: Application,
     private val db: AppDatabase,
     private val userId: String,
-    // Identity passed in so requests carry the headers a key restricted to this app requires.
+    // Gemini goes through the gemini-proxy Edge Function with this account's session token.
     // Tests pass one whose client answers without a network.
-    private val geminiRepo: GeminiRepository = GeminiRepository(appIdentity = AppIdentity.of(application)),
+    private val geminiRepo: GeminiRepository = GeminiRepository(
+        accessToken = { SupabaseClientProvider.get(application).auth.currentSessionOrNull()?.accessToken },
+    ),
 ) : AndroidViewModel(application) {
 
     private val ledgerRepo = LedgerRepository(db, onLocalTransactionChange = ::requestSync, selfProfileId = userId)
@@ -1006,6 +1008,7 @@ class MainViewModel(
         StatementReadFailure.Offline -> "Couldn't reach the internet. Try again once you're back online."
         StatementReadFailure.Rejected -> "Couldn't read that statement right now. Try again in a minute."
         StatementReadFailure.RateLimited -> "Too many reads in a short while. Wait a minute, then try that statement again."
+        StatementReadFailure.DailyLimit -> "That's today's statement reads used up. They're back tomorrow; you can still add entries by hand."
         StatementReadFailure.KeyRefused -> "Statement reading isn't available in this copy of the app right now. It's a setup problem on our side."
         StatementReadFailure.Blocked -> "Google declined to read that statement. Try exporting it again, or a shorter date range."
         StatementReadFailure.Truncated -> "That statement has more rows than fit in one read. Export a shorter date range and try again."
