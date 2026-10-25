@@ -21,9 +21,9 @@ import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.io.IOException
@@ -35,9 +35,10 @@ class AuthRepository(
 ) {
     private val auth get() = supabase.auth
 
-    val authState: Flow<AuthState> = auth.sessionStatus
-        .map { it.toAuthState(auth.currentUserOrNull()) }
-        .distinctUntilChanged()
+    val authState: Flow<AuthState> = authStates(
+        auth.sessionStatus,
+        storedUser = { withContext(Dispatchers.IO) { auth.sessionManager.loadSessionOrNull()?.user } },
+    )
 
     /** [activityContext] must be an Activity: Credential Manager anchors its account picker to it. */
     suspend fun signInWithGoogle(activityContext: Context): GoogleSignInResult {
