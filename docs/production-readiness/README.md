@@ -280,7 +280,7 @@ user sees in the first minute.
 - Why it's Tier 1: today a pasted "Infinity" **silently stops all cloud sync for that account
   forever**, and a pasted "1e999" crashes the app (SEC H-3, REL H3, both verified).
 
-**T1.5 Status bar and launch screen** · S
+**T1.5 Status bar and launch screen** · S · **done in #87**
 - `enableEdgeToEdge(SystemBarStyle.dark(TRANSPARENT), SystemBarStyle.dark(TRANSPARENT))`; explicit
   dark `windowBackground` in `themes.xml`; `core-splashscreen` with the brand mark, kept on screen
   while the auth gate is loading (at most 1.5 s, which matches #77's grace period); the loading gate

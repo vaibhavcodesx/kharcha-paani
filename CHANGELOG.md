@@ -13,6 +13,18 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- A launch screen with the Kharcha Paani mark on the app's dark background, held while your account
+  opens (at most 1.5 s), so the app goes straight from it to Home. The launcher icon has a themed
+  (monochrome) version too: just the ₹.
+
+### Fixed
+
+- On a phone in light mode, the clock, battery and other status bar icons were dark on the app's
+  dark background, so they couldn't be seen, and 3-button navigation had a white strip. The bars
+  now always have light icons over the app.
+
 ## [1.5.0] - 2026-10-25
 
 ### Added
