@@ -308,7 +308,7 @@ user sees in the first minute.
 - Why: a double tap logs the dinner twice, and on Create group makes two shared groups on the server
   (REL H1).
 
-**T1.8 Nothing crashes on a full disk or a closed database** · M
+**T1.8 Nothing crashes on a full disk or a closed database** · M · **done in #100**
 - A `launchAction(failMessage) { … }` helper in `MainViewModel` (and `SharedGroupsController`) that
   rethrows `CancellationException`, maps known domain exceptions, and otherwise logs, records a
   non-fatal and shows a human message ("Couldn't save. Your phone may be out of space."). Use it for
