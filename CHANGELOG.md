@@ -40,6 +40,13 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   archived in `docs/history/prd-2026-09-cloud-migration.md`. CLAUDE.md now points agents at the
   production readiness plan and asks them to gather every question for the owner at the start of a
   session, then work through it and save new questions for the end.
+### Changed
+
+- Every pull request now also lints and builds the release variant, the one people install, and
+  not only the debug build the tests use. The release workflow runs the unit tests first, refuses
+  a release whose versionCode didn't go up, and attaches an AAB for Play next to the APK (plus R8's
+  mapping file once shrinking is on). GitHub Actions are pinned to exact commits, and Dependabot
+  proposes updates weekly.
 - A friend's balance and their history are now worked out from the same rows, so the history
   always adds up to the balance. No figure moves: a test pins every friend's balance, both its
   totals and their history on a ledger with every kind of row, checked against the old calculation.

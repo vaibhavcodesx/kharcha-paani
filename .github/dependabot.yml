@@ -1,0 +1,28 @@
+# Update proposals, as PRs that go through Android CI like any other. Nothing merges by itself.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # Reads gradle/libs.versions.toml.
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Minor and patch updates together; each major version on its own.
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # 3.7.0+ needs Kotlin 2.4, which this project (Kotlin 2.2.10) can't consume yet.
+      - dependency-name: "io.github.jan-tennert.supabase:*"
+        versions: [">=3.7.0"]
+      # 1.7.1+ needs Compose 1.11; the Compose BOM here is on 1.9.x.
+      - dependency-name: "dev.chrisbanes.haze:*"
+        versions: [">=1.7.1"]
