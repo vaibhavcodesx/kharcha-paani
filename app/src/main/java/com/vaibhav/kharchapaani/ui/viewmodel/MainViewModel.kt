@@ -135,6 +135,10 @@ class MainViewModel(
 
     private val ledgerRepo = LedgerRepository(db, onLocalTransactionChange = ::requestSync, selfProfileId = userId)
 
+    private val submissions = Submissions(viewModelScope)
+    /** Actions still writing, so their sheet can show its button as busy (see [Submissions]). */
+    val submitting: StateFlow<Set<Submit>> = submissions.inFlight
+
     private val authRepo = AuthRepository(
         supabase = SupabaseClientProvider.get(application),
         googleWebClientId = BuildConfig.GOOGLE_WEB_CLIENT_ID,
@@ -245,7 +249,7 @@ class MainViewModel(
     }
 
     fun addSubscription(new: NewSubscription, chargeFromStart: Boolean) {
-        viewModelScope.launch {
+        submissions.launch(Submit.AddSubscription) {
             ledgerRepo.saveSubscription(
                 SubscriptionEntity(
                     name = new.name,
@@ -1027,7 +1031,7 @@ class MainViewModel(
             return
         }
 
-        viewModelScope.launch {
+        submissions.launch(Submit.ImportStatement) {
             // A row the statement reader got wrong (no amount, or more than the server stores) is
             // left out rather than refusing the whole import.
             val entities = items.filter { isSavableAmount(it.amount) }.map { item ->
@@ -1396,7 +1400,7 @@ class MainViewModel(
             else -> emptyList()
         }
 
-        viewModelScope.launch {
+        submissions.launch(Submit.SaveEntry) {
             // A photo still being written goes with the expense rather than being dropped.
             billPhotoJob?.join()
             val savedId = try {
@@ -1503,7 +1507,7 @@ class MainViewModel(
         memberPersonIds: List<Long>,
         shared: Boolean = false,
     ) {
-        viewModelScope.launch {
+        submissions.launch(Submit.CreateGroup) {
             if (shared) {
                 ledgerRepo.createSharedGroup(name, description, emoji, colorHex)
             } else {
@@ -1577,7 +1581,7 @@ class MainViewModel(
     }
 
     fun recordSettlementPayment(fromPersonId: Long, toPersonId: Long, amount: Double, note: String, groupId: Long? = null) {
-        viewModelScope.launch {
+        submissions.launch(Submit.RecordSettlement) {
             try {
                 ledgerRepo.recordSettlement(
                     fromPersonId = fromPersonId,
@@ -1605,7 +1609,7 @@ class MainViewModel(
     }
 
     fun recordIou(fromPersonId: Long, toPersonId: Long, amount: Double, note: String, groupId: Long? = null) {
-        viewModelScope.launch {
+        submissions.launch(Submit.RecordIou) {
             try {
                 ledgerRepo.recordSettlement(
                     fromPersonId = fromPersonId,
@@ -1646,7 +1650,7 @@ class MainViewModel(
 
     fun addNewFriend(name: String, colorHex: String) {
         if (name.isBlank()) return
-        viewModelScope.launch {
+        submissions.launch(Submit.AddFriend) {
             val newId = try {
                 ledgerRepo.addPerson(name, colorHex)
             } catch (e: DuplicateFriendException) {

@@ -34,6 +34,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.TextButton
@@ -249,7 +250,8 @@ fun SheetScaffold(
 /**
  * The sheet's primary action, floating in Liquid Glass. The glass is only the rim: an optional
  * summary and the gradient button sit on the solid core. Disabled, the button says what's missing
- * ([disabledLabel]) instead of just dimming.
+ * ([disabledLabel]) instead of just dimming. [busy] while the action is still writing: the button
+ * keeps its label beside a spinner and takes no second tap.
  */
 @Composable
 fun GlassActionBar(
@@ -261,6 +263,7 @@ fun GlassActionBar(
     summary: String? = null,
     detail: String? = null,
     buttonTestTag: String? = null,
+    busy: Boolean = false,
 ) {
     GlassPanel(
         shape = SquircleShape(28.dp),
@@ -286,16 +289,22 @@ fun GlassActionBar(
                     .heightIn(min = 52.dp)
                     .clip(KpShapes.action)
                     .background(if (enabled) BrandGradient.diagonal() else SolidColor(CharcoalElevated))
-                    .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+                    .clickable(enabled = enabled && !busy, role = Role.Button, onClick = onClick)
                     .padding(horizontal = Spacing.xl)
                     .then(if (buttonTestTag != null) Modifier.testTag(buttonTestTag) else Modifier),
             ) {
-                Text(
-                    text = if (enabled) label else disabledLabel,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (enabled) CharcoalBg else MutedWarmGray,
-                    maxLines = 1,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (busy) {
+                        CircularProgressIndicator(color = CharcoalBg, strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(Spacing.s))
+                    }
+                    Text(
+                        text = if (enabled) label else disabledLabel,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (enabled) CharcoalBg else MutedWarmGray,
+                        maxLines = 1,
+                    )
+                }
             }
         }
     }

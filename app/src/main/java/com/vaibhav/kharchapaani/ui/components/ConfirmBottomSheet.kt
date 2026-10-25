@@ -140,6 +140,8 @@ fun ConfirmBottomSheet(
     billPhoto: BillPhoto = BillPhoto.None,
     onAddBillPhoto: (BillPhotoSource) -> Unit = {},
     onRemoveBillPhoto: () -> Unit = {},
+    // True while the save is still writing: Save shows a spinner and takes no second tap.
+    isSaving: Boolean = false,
 ) {
     if (!isOpen) return
     val focusManager = LocalFocusManager.current
@@ -162,6 +164,7 @@ fun ConfirmBottomSheet(
             onPercentageChange = onPercentageChange, onOpenAddFriend = onOpenAddFriend, addedBy = addedBy,
             splitLocked = splitLocked, categories = categories, paymentMethods = paymentMethods,
             billPhoto = billPhoto, onAddBillPhoto = onAddBillPhoto, onRemoveBillPhoto = onRemoveBillPhoto,
+            isSaving = isSaving,
             onSave = {
                 focusManager.clearFocus()
                 onSave()
@@ -226,6 +229,8 @@ fun ConfirmSheetContent(
     billPhoto: BillPhoto = BillPhoto.None,
     onAddBillPhoto: (BillPhotoSource) -> Unit = {},
     onRemoveBillPhoto: () -> Unit = {},
+    // True while the save is still writing: Save shows a spinner and takes no second tap.
+    isSaving: Boolean = false,
 ) {
     // An entry keeps its own category or method even when it isn't a choice here (hidden since, or a
     // groupmate's own category), so it's shown and stays selected.
@@ -266,6 +271,7 @@ fun ConfirmSheetContent(
                     summary = if (value > 0) Money.format(value) else "₹0",
                     detail = listOfNotNull(merchant.ifBlank { null } ?: category, paymentMethod.ifBlank { null }).joinToString(" · "),
                     buttonTestTag = "confirm_save_button",
+                    busy = isSaving,
                 )
             }
         },
