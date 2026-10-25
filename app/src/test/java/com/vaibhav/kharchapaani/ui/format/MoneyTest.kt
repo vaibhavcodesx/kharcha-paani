@@ -46,6 +46,19 @@ class MoneyTest {
     }
 
     @Test
+    fun `an amount that isn't a number draws as zero instead of crashing the screen`() {
+        assertEquals("₹0", Money.format(Double.POSITIVE_INFINITY))
+        assertEquals("₹0", Money.format(Double.NaN))
+        assertEquals("₹0", Money.format(Double.NEGATIVE_INFINITY, showPlus = true))
+        assertEquals("0", Money.digits(Double.NaN))
+    }
+
+    @Test
+    fun `an amount too big for a Long is still drawn`() {
+        assertEquals("₹10,00,00,00,00,00,00,00,00,000", Money.format(1e20))
+    }
+
+    @Test
     fun `the device locale doesn't change the decimal separator`() {
         val previous = Locale.getDefault()
         try {
