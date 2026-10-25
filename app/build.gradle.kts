@@ -112,7 +112,10 @@ android {
   buildTypes {
     release {
       isCrunchPngs = false
-      isMinifyEnabled = false
+      // R8: shrinks, optimises and obfuscates the release build. Its mapping.txt is what turns a
+      // release stack trace back into names; release.yml attaches it to every GitHub Release.
+      isMinifyEnabled = true
+      isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       // Null leaves the APK unsigned rather than failing the build. An unsigned APK will not
       // install on a phone, which is the right outcome: a release build with no key is for

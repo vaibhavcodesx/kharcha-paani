@@ -42,6 +42,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   session, then work through it and save new questions for the end.
 ### Changed
 
+- Release builds are now shrunk with R8: a smaller download, and code that isn't used is gone.
+  Each GitHub Release carries the mapping file that turns its crash reports back into readable
+  stack traces.
 - Every pull request now also lints and builds the release variant, the one people install, and
   not only the debug build the tests use. The release workflow runs the unit tests first, refuses
   a release whose versionCode didn't go up, and attaches an AAB for Play next to the APK (plus R8's
