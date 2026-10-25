@@ -50,6 +50,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   a release whose versionCode didn't go up, and attaches an AAB for Play next to the APK (plus R8's
   mapping file once shrinking is on). GitHub Actions are pinned to exact commits, and Dependabot
   proposes updates weekly.
+- Back on Splits or Insights now goes to Home instead of closing the app. Back on Home still
+  leaves.
 - A friend's balance and their history are now worked out from the same rows, so the history
   always adds up to the balance. No figure moves: a test pins every friend's balance, both its
   totals and their history on a ledger with every kind of row, checked against the old calculation.

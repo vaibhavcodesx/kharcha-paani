@@ -15,6 +15,7 @@ import android.os.Bundle
 import android.os.Parcelable
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -318,6 +319,9 @@ fun SplitFlowApp(
     val isUpiOpen by viewModel.isUpiOpen.collectAsStateWithLifecycle()
     val restorePreview by viewModel.restorePreview.collectAsStateWithLifecycle()
     val currentTab by viewModel.currentTab.collectAsState()
+    // Back from Splits or Insights goes Home first, rather than closing the app; Back on Home leaves.
+    // Sheets and dialogs are their own windows and still take Back before this does.
+    BackHandler(enabled = currentTab != AppTab.Activity.ordinal) { viewModel.setTab(AppTab.Activity.ordinal) }
     val rawTransactions by viewModel.rawTransactions.collectAsState()
     val activityFeed by viewModel.activityFeed.collectAsState()
     val totalNetOwed by viewModel.totalNetOwed.collectAsState()
