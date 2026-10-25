@@ -10,6 +10,8 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.vaibhav.kharchapaani.domain.AiUsage
 import com.vaibhav.kharchapaani.domain.CategoryPrefs
+import com.vaibhav.kharchapaani.domain.NotificationPrefs
+import com.vaibhav.kharchapaani.domain.QuietHours
 import com.vaibhav.kharchapaani.domain.UpiPayee
 import com.vaibhav.kharchapaani.reminder.ReminderSettings
 import kotlinx.serialization.json.Json
@@ -48,14 +50,50 @@ class AppSettings(context: Context) {
     }
 
     /**
-     * Whether the app has already asked for notification permission on its own. It asks once, after
-     * the first entry; after that only the settings row asks, so a "no" isn't met with the same
-     * dialog on every launch.
+     * How many times Android's notification dialog has been asked for, which tells "never asked"
+     * from "refused for good" (see NotificationAccess). Before this count there was a single "asked"
+     * flag, read here as one ask.
      */
-    val notificationPermissionAsked: Flow<Boolean> = store.data.map { it[NOTIFICATION_PERMISSION_ASKED] ?: false }
+    val notificationPermissionAsks: Flow<Int> = store.data.map { prefs ->
+        prefs[NOTIFICATION_PERMISSION_ASKS] ?: if (prefs[NOTIFICATION_PERMISSION_ASKED] == true) 1 else 0
+    }
 
-    suspend fun markNotificationPermissionAsked() {
-        store.edit { it[NOTIFICATION_PERMISSION_ASKED] = true }
+    suspend fun recordNotificationPermissionAsk() {
+        store.edit { prefs ->
+            val asked = prefs[NOTIFICATION_PERMISSION_ASKS] ?: if (prefs[NOTIFICATION_PERMISSION_ASKED] == true) 1 else 0
+            prefs[NOTIFICATION_PERMISSION_ASKS] = asked + 1
+        }
+    }
+
+    /** How often the app has offered to turn notifications on by itself (at most twice, ever). */
+    val notificationOffersShown: Flow<Int> = store.data.map { it[NOTIFICATION_OFFERS_SHOWN] ?: 0 }
+
+    suspend fun recordNotificationOffer() {
+        store.edit { it[NOTIFICATION_OFFERS_SHOWN] = (it[NOTIFICATION_OFFERS_SHOWN] ?: 0) + 1 }
+    }
+
+    /** The Notifications screen's choices. Read by the sync worker too, before it reminds. */
+    val notificationPrefs: Flow<NotificationPrefs> = store.data.map { prefs ->
+        NotificationPrefs(
+            paymentsToConfirm = prefs[PAYMENTS_TO_CONFIRM] ?: true,
+            quietHours = QuietHours(
+                enabled = prefs[QUIET_HOURS_ENABLED] ?: true,
+                startMinute = prefs[QUIET_HOURS_START] ?: QuietHours.DEFAULT_START,
+                endMinute = prefs[QUIET_HOURS_END] ?: QuietHours.DEFAULT_END,
+            ),
+        )
+    }
+
+    suspend fun setPaymentsToConfirm(on: Boolean) {
+        store.edit { it[PAYMENTS_TO_CONFIRM] = on }
+    }
+
+    suspend fun setQuietHours(quietHours: QuietHours) {
+        store.edit {
+            it[QUIET_HOURS_ENABLED] = quietHours.enabled
+            it[QUIET_HOURS_START] = quietHours.startMinute.coerceIn(0, 24 * 60 - 1)
+            it[QUIET_HOURS_END] = quietHours.endMinute.coerceIn(0, 24 * 60 - 1)
+        }
     }
 
     /** This account's UPI ID and payee name (backlog item 9). Per account, since it's theirs to be paid on. */
@@ -119,7 +157,14 @@ class AppSettings(context: Context) {
         val ASK_BEFORE_DISCARDING = booleanPreferencesKey("ask_before_discarding")
         val REMINDER_ENABLED = booleanPreferencesKey("reminder_enabled")
         val REMINDER_MINUTE = intPreferencesKey("reminder_minute_of_day")
+        /** The old single flag; read only to carry it over into [NOTIFICATION_PERMISSION_ASKS]. */
         val NOTIFICATION_PERMISSION_ASKED = booleanPreferencesKey("notification_permission_asked")
+        val NOTIFICATION_PERMISSION_ASKS = intPreferencesKey("notification_permission_asks")
+        val NOTIFICATION_OFFERS_SHOWN = intPreferencesKey("notification_offers_shown")
+        val PAYMENTS_TO_CONFIRM = booleanPreferencesKey("notify_payments_to_confirm")
+        val QUIET_HOURS_ENABLED = booleanPreferencesKey("quiet_hours_enabled")
+        val QUIET_HOURS_START = intPreferencesKey("quiet_hours_start_minute")
+        val QUIET_HOURS_END = intPreferencesKey("quiet_hours_end_minute")
         fun upiIdKey(userId: String) = stringPreferencesKey("upi_id_$userId")
         fun upiNameKey(userId: String) = stringPreferencesKey("upi_name_$userId")
     }

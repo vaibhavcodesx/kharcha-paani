@@ -3,6 +3,11 @@ package com.vaibhav.kharchapaani.ui.viewmodel
 import com.vaibhav.kharchapaani.domain.receiptNotice
 import com.vaibhav.kharchapaani.domain.quickAddNotice
 import com.vaibhav.kharchapaani.domain.isSavableAmount
+import com.vaibhav.kharchapaani.domain.NotificationAccess
+import com.vaibhav.kharchapaani.domain.NotificationMoment
+import com.vaibhav.kharchapaani.domain.NotificationOffer
+import com.vaibhav.kharchapaani.domain.NotificationPrefs
+import com.vaibhav.kharchapaani.domain.QuietHours
 import com.vaibhav.kharchapaani.domain.AiFailure
 import com.vaibhav.kharchapaani.domain.CalendarDay
 import com.vaibhav.kharchapaani.domain.AiAskResult
@@ -198,9 +203,46 @@ class MainViewModel(
     val reminder: StateFlow<ReminderSettings> = settings.reminder
         .stateIn(viewModelScope, SharingStarted.Eagerly, ReminderSettings())
 
-    /** Whether the app has already asked for notification permission by itself (it does so once). */
-    val notificationPermissionAsked: StateFlow<Boolean> = settings.notificationPermissionAsked
-        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    /** Times Android's notification dialog was asked for. Until read, as if asked out (never ask early). */
+    val notificationPermissionAsks: StateFlow<Int> = settings.notificationPermissionAsks
+        .stateIn(viewModelScope, SharingStarted.Eagerly, NotificationAccess.MAX_SYSTEM_ASKS)
+
+    /** Times the app offered by itself; until read, as if used up, so nothing is offered early. */
+    val notificationOffersShown: StateFlow<Int> = settings.notificationOffersShown
+        .stateIn(viewModelScope, SharingStarted.Eagerly, NotificationOffer.MAX_OFFERS)
+
+    val notificationPrefs: StateFlow<NotificationPrefs> = settings.notificationPrefs
+        .stateIn(viewModelScope, SharingStarted.Eagerly, NotificationPrefs())
+
+    private val _notificationMoment = MutableStateFlow<NotificationMoment?>(null)
+    /**
+     * Set right after something a notification would follow up on (a group joined or created, a
+     * payment recorded that waits for the other person, the first own entry). The shell offers to
+     * turn notifications on there, if Android would still ask; see [NotificationOffer].
+     */
+    val notificationMoment: StateFlow<NotificationMoment?> = _notificationMoment.asStateFlow()
+
+    fun reachNotificationMoment(moment: NotificationMoment) {
+        if (_notificationMoment.value == null) _notificationMoment.value = moment
+    }
+
+    /** The offer was shown (whatever the answer): it counts against the two. */
+    fun notificationOfferShown() {
+        _notificationMoment.value = null
+        viewModelScope.launch { settings.recordNotificationOffer() }
+    }
+
+    fun clearNotificationMoment() {
+        _notificationMoment.value = null
+    }
+
+    fun setPaymentsToConfirm(on: Boolean) {
+        viewModelScope.launch { settings.setPaymentsToConfirm(on) }
+    }
+
+    fun setQuietHours(quietHours: QuietHours) {
+        viewModelScope.launch { settings.setQuietHours(quietHours) }
+    }
 
     fun setReminderEnabled(enabled: Boolean) {
         viewModelScope.launch {
@@ -216,8 +258,8 @@ class MainViewModel(
         }
     }
 
-    fun markNotificationPermissionAsked() {
-        viewModelScope.launch { settings.markNotificationPermissionAsked() }
+    fun recordNotificationPermissionAsk() {
+        viewModelScope.launch { settings.recordNotificationPermissionAsk() }
     }
 
     init {
@@ -1530,6 +1572,7 @@ class MainViewModel(
                 ledgerRepo.createGroup(name, description, emoji, colorHex, memberPersonIds)
             }
             dismissCreateGroup()
+            if (shared) reachNotificationMoment(NotificationMoment.CreatedGroup)
             _statusMessage.value = if (shared) {
                 "Created $name. Open it to invite people."
             } else {
@@ -1612,6 +1655,8 @@ class MainViewModel(
                 return@launch
             }
             dismissSettleUp()
+            // In a shared group it waits for the other person's answer, and theirs for mine.
+            if (isSharedGroup(groupId)) reachNotificationMoment(NotificationMoment.RecordedPayment)
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
     }
