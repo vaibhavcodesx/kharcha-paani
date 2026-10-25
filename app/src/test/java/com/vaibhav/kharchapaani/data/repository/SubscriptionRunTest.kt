@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.entity.SubscriptionEntity
+import com.vaibhav.kharchapaani.domain.CalendarDay
 import com.vaibhav.kharchapaani.domain.SubscriptionCycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -114,5 +115,34 @@ class SubscriptionRunTest {
         repository.deleteSubscription(id)
         assertNull(db.subscriptionDao().byId(id))
         assertEquals("the charges it already made stay", 3, entries().size)
+    }
+
+    private val india = ZoneId.of("Asia/Kolkata")
+    private val newYork = ZoneId.of("America/New_York")
+
+    @Test
+    fun `flying west doesn't charge again a month already charged`() = runBlocking {
+        // A row as every version before this fix wrote it: local midnight in India.
+        fun indianMidnight(date: LocalDate) = date.atStartOfDay(india).toInstant().toEpochMilli()
+        db.subscriptionDao().insert(
+            netflix(LocalDate.of(2026, 9, 1)).copy(
+                startDate = indianMidnight(LocalDate.of(2026, 9, 1)),
+                chargedThrough = indianMidnight(LocalDate.of(2026, 10, 1)),
+            )
+        )
+
+        // In New York, India's midnight on the 1st is the evening of the 30th: the 1st looked uncharged.
+        assertEquals(0, repository.runDueSubscriptions(today = LocalDate.of(2026, 10, 24), zone = newYork))
+        assertEquals(1, repository.runDueSubscriptions(today = LocalDate.of(2026, 11, 1), zone = newYork))
+    }
+
+    @Test
+    fun `a subscription saved in one zone charges each date once in another`() = runBlocking {
+        repository.saveSubscription(netflix(LocalDate.of(2026, 9, 1)).copy(startDate = CalendarDay.toMillis(LocalDate.of(2026, 9, 1))))
+        assertEquals(2, repository.runDueSubscriptions(today = LocalDate.of(2026, 10, 1), zone = india))
+
+        assertEquals(0, repository.runDueSubscriptions(today = LocalDate.of(2026, 10, 2), zone = newYork))
+        assertEquals(1, repository.runDueSubscriptions(today = LocalDate.of(2026, 11, 1), zone = ZoneId.of("Pacific/Honolulu")))
+        assertEquals(3, entries().size)
     }
 }
