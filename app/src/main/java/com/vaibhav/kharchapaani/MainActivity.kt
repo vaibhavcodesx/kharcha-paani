@@ -23,7 +23,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
@@ -44,6 +43,7 @@ import com.vaibhav.kharchapaani.ui.components.CategoriesSheet
 import com.vaibhav.kharchapaani.ui.components.SubscriptionsSheet
 import com.vaibhav.kharchapaani.domain.Categories
 import com.vaibhav.kharchapaani.ui.shell.KpSnackbarHost
+import com.vaibhav.kharchapaani.ui.shell.applySystemBars
 import com.vaibhav.kharchapaani.ui.shell.snackbarClearance
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -125,7 +125,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        applySystemBars()
 
         // On recreation (e.g. rotation) the launch intent was already handled; re-handling it
         // would parse the same shared screenshot twice.
