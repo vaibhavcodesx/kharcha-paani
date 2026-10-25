@@ -8,7 +8,7 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.vaibhav.kharchapaani.MainActivity
+import com.vaibhav.kharchapaani.IncomingIntents
 import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 
@@ -55,8 +55,7 @@ object NotificationHelper {
     fun showSettlementReminder(context: Context, settlementId: Long, title: String, text: String): Boolean {
         if (!canNotify(context)) return false
         createChannels(context)
-        val open = Intent(context, MainActivity::class.java).apply {
-            action = ACTION_ANSWER_SETTLEMENT
+        val open = IncomingIntents.internal(context, ACTION_ANSWER_SETTLEMENT).apply {
             putExtra(EXTRA_SETTLEMENT_ID, settlementId)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
@@ -94,8 +93,7 @@ object NotificationHelper {
         createChannels(context)
 
         // The widget's quick-add action: MainActivity already routes it to a new expense on Home.
-        val open = Intent(context, MainActivity::class.java).apply {
-            action = SplitFlowWidgetProvider.ACTION_QUICK_ADD
+        val open = IncomingIntents.internal(context, SplitFlowWidgetProvider.ACTION_QUICK_ADD).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         val pendingIntent = PendingIntent.getActivity(
