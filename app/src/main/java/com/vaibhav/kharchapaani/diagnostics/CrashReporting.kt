@@ -59,7 +59,7 @@ object CrashReporting {
      */
     fun recordProblem(reason: String, cause: Throwable? = null) {
         val report = HandledProblem(if (cause == null) reason else "$reason (${cause.javaClass.simpleName})")
-        Log.w(TAG, report.message)
+        Log.w(TAG, report.message.orEmpty())
         if (!started) return
         try {
             FirebaseCrashlytics.getInstance().recordException(report)
