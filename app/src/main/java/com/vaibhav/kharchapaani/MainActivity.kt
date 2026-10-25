@@ -96,6 +96,7 @@ import com.vaibhav.kharchapaani.domain.NotificationAccess
 import com.vaibhav.kharchapaani.domain.NotificationMoment
 import com.vaibhav.kharchapaani.domain.NotificationOffer
 import com.vaibhav.kharchapaani.reminder.ReminderSchedule
+import com.vaibhav.kharchapaani.ui.auth.LicencesSheet
 import com.vaibhav.kharchapaani.ui.auth.ProfileState
 import com.vaibhav.kharchapaani.ui.auth.ColourChoice
 import com.vaibhav.kharchapaani.domain.Hues
@@ -653,6 +654,7 @@ fun SplitFlowApp(
     }
     RestoreBackupDialog(backup = restorePreview, onRestore = viewModel::confirmRestore, onDismiss = viewModel::dismissRestore)
 
+    var isLicencesOpen by rememberSaveable { mutableStateOf(false) }
     if (isAccountSheetOpen) {
         AccountSheet(
             colour = ColourChoice(taken = groupmateHues, clashWith = colourClash),
@@ -697,8 +699,14 @@ fun SplitFlowApp(
                 isAccountSheetOpen = false
                 isNotificationsOpen = true
             },
+            onOpenLicences = {
+                isAccountSheetOpen = false
+                isLicencesOpen = true
+            },
+            onNoApp = viewModel::showMessage,
         )
     }
+    LicencesSheet(isOpen = isLicencesOpen, onDismiss = { isLicencesOpen = false })
 
     NotificationsSheet(
         isOpen = isNotificationsOpen,
