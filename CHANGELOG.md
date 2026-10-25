@@ -44,6 +44,14 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   always adds up to the balance. No figure moves: a test pins every friend's balance, both its
   totals and their history on a ledger with every kind of row, checked against the old calculation.
 
+### Removed
+
+- The app no longer asks for microphone access in its manifest. Voice entry hands off to the phone's
+  own speech screen, which never needed it, so the permission was never used.
+- Dropped libraries nothing used: Retrofit, Moshi and its code generator, OkHttp's logging
+  interceptor, Firebase AI and App Check, and the Google Services plugin (which ran without a
+  config file). The app is smaller and has less in it to keep updated.
+
 ### Fixed
 
 - A backup could bring back a split paid by a friend you'd since deleted as paid by you, so everyone
