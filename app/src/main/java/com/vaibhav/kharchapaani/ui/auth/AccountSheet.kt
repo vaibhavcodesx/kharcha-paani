@@ -69,6 +69,7 @@ import com.vaibhav.kharchapaani.data.auth.Profile
 import com.vaibhav.kharchapaani.domain.ProfileEdit
 import com.vaibhav.kharchapaani.reminder.ReminderSchedule
 import com.vaibhav.kharchapaani.reminder.ReminderSettings
+import com.vaibhav.kharchapaani.ui.components.DestructiveText
 import com.vaibhav.kharchapaani.ui.components.GlassActionBar
 import com.vaibhav.kharchapaani.ui.components.hueColour
 import com.vaibhav.kharchapaani.ui.components.HuePicker
@@ -113,6 +114,7 @@ fun AccountSheet(
     onRetryProfile: () -> Unit,
     onSignOut: () -> Unit,
     onDismiss: () -> Unit,
+    onDeleteAccount: () -> Unit = {},
     upiId: String? = null,
     onOpenUpi: () -> Unit = {},
     onOpenCategories: () -> Unit = {},
@@ -138,6 +140,7 @@ fun AccountSheet(
             onRetryFailedSync = onRetryFailedSync,
             onRetryProfile = onRetryProfile,
             onSignOut = onSignOut,
+            onDeleteAccount = onDeleteAccount,
             upiId = upiId,
             onOpenUpi = onOpenUpi,
             onOpenCategories = onOpenCategories,
@@ -167,6 +170,7 @@ fun AccountSheetContent(
     onRetryFailedSync: () -> Unit,
     onRetryProfile: () -> Unit,
     onSignOut: () -> Unit,
+    onDeleteAccount: () -> Unit = {},
     modifier: Modifier = Modifier,
     upiId: String? = null,
     onOpenUpi: () -> Unit = {},
@@ -416,6 +420,13 @@ fun AccountSheetContent(
                 .testTag("account_sign_out"),
         ) {
             Text(text = "Sign out", style = MaterialTheme.typography.titleMedium.copy(color = OffWhiteText))
+        }
+        // Play requires deleting an account to be easy to find in the app (plan T1.1).
+        TextButton(
+            onClick = onDeleteAccount,
+            modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("account_delete"),
+        ) {
+            Text("Delete my account", style = MaterialTheme.typography.labelLarge, color = DestructiveText)
         }
     }
 }

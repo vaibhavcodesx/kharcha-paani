@@ -77,6 +77,15 @@ class AppSettings(context: Context) {
         }
     }
 
+    /** Removes what's kept here for [userId] alone, after that account was deleted (plan T1.1). */
+    suspend fun clearAccount(userId: String) {
+        store.edit { prefs ->
+            prefs.remove(upiIdKey(userId))
+            prefs.remove(upiNameKey(userId))
+            prefs.remove(categoryPrefsKey(userId))
+        }
+    }
+
     /** This account's categories and payment methods (backlog item 7). Per account, on this phone. */
     fun categoryPrefs(userId: String): Flow<CategoryPrefs> = store.data.map { prefs ->
         prefs[categoryPrefsKey(userId)]?.let { runCatching { json.decodeFromString(CategoryPrefs.serializer(), it) }.getOrNull() } ?: CategoryPrefs()
