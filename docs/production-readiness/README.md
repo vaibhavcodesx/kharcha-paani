@@ -290,7 +290,7 @@ user sees in the first minute.
   strip (REL B1). **Device check in light mode, gesture and 3-button navigation.**
 - Sources: REL B1, M10; PLAY §10.
 
-**T1.6 Crash reporting** · M
+**T1.6 Crash reporting** · M · **done in #98** (the off switch lands with T1.2's Help & about)
 - Recommended: Firebase Crashlytics (FCM in N3 needs Firebase anyway). Initialise without the
   google-services plugin if the owner prefers (options from `.env`, NOTIF open question 4). Upload the
   R8 mapping in `release.yml` (after #71).

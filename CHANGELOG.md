@@ -18,6 +18,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - A launch screen with the Kharcha Paani mark on the app's dark background, held while your account
   opens (at most 1.5 s), so the app goes straight from it to Home. The launcher icon has a themed
   (monochrome) version too: just the ₹.
+- Crash reports through Firebase Crashlytics, so problems on people's phones can be found and
+  fixed. They never include amounts, names, notes or documents, and stay off in any build without
+  the Firebase project. Handled problems (a sync the server refused, a ledger that wouldn't open,
+  an unusual AI failure) are reported with their reason only.
 
 ### Fixed
 
