@@ -824,7 +824,6 @@ class MainViewModel(
         }
         _editingTransactionId.value = tx.id
         resetBillPhoto()
-        loadBillPhoto(tx.id)
         _type.value = tx.type
         _amount.value = if (tx.amount % 1.0 == 0.0) tx.amount.toLong().toString() else tx.amount.toString()
         _merchant.value = tx.merchant
@@ -885,6 +884,9 @@ class MainViewModel(
 
         editBaseline = currentDraft()
         _isConfirmSheetOpen.value = true
+        // After the sheet is open: the load gives up on a sheet that has closed, and started any
+        // earlier it could see this one as not open yet.
+        loadBillPhoto(tx.id)
     }
 
     // The expense as it was when its edit opened, to tell whether closing the sheet loses changes.
