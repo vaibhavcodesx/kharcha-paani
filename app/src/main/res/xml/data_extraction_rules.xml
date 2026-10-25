@@ -7,6 +7,10 @@
     <!-- Supabase session (access + refresh token): never leaves the device it was issued on. -->
     <cloud-backup>
         <exclude domain="sharedpref" path="supabase_auth.xml" />
+        <!-- Bill photos: Auto Backup has a 25 MB quota and backs up nothing once it's exceeded, so a
+             few hundred bills would stop the ledger itself being backed up. Device transfer has no
+             such limit and keeps them. -->
+        <exclude domain="file" path="receipts/" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="sharedpref" path="supabase_auth.xml" />

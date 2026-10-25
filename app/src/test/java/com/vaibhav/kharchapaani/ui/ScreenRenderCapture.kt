@@ -322,6 +322,34 @@ class ScreenRenderCapture {
     }
 
     @Test
+    fun `a scanned bill, with its photo kept`() = capture("confirm_sheet_bill_photo") {
+        // A stand-in for the bill: a light page with a few dark lines, written as the store writes one.
+        val bill = java.io.File.createTempFile("bill", ".jpg").apply {
+            val page = android.graphics.Bitmap.createBitmap(600, 900, android.graphics.Bitmap.Config.ARGB_8888)
+            val canvas = android.graphics.Canvas(page)
+            canvas.drawColor(android.graphics.Color.rgb(246, 243, 236))
+            val ink = android.graphics.Paint().apply { color = android.graphics.Color.rgb(60, 60, 60); strokeWidth = 6f }
+            for (line in 0 until 14) canvas.drawLine(60f, 90f + line * 52f, if (line % 3 == 0) 420f else 540f, 90f + line * 52f, ink)
+            outputStream().use { page.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, it) }
+        }
+        Column(Modifier.fillMaxSize().background(CharcoalSurface), horizontalAlignment = Alignment.CenterHorizontally) {
+            SheetHandle()
+            ConfirmSheetContent(
+                isParsing = false, isEditing = false, notice = "Read from your bill. The photo is kept below.",
+                type = "expense", amount = "2340", merchant = "DMart",
+                category = "Groceries", paymentMethod = "UPI", note = "", date = at(today, 18, 5), groupId = null,
+                availableGroups = emptyList(), isSplit = false,
+                splitMode = SplitMode.EQUAL, paidByPersonId = -1L, shares = listOf(ShareInput(-1, "You")),
+                onTypeChange = {}, onAmountChange = {}, onMerchantChange = {}, onCategoryChange = {}, onPaymentMethodChange = {},
+                onNoteChange = {}, onDateChange = {}, onGroupIdChange = {}, onIsSplitChange = {}, onSplitModeChange = {},
+                onPaidByPersonIdChange = {}, onTogglePersonShare = {}, onExactAmountChange = { _, _ -> },
+                onPercentageChange = { _, _ -> }, onOpenAddFriend = {}, onSave = {},
+                billPhoto = com.vaibhav.kharchapaani.data.receipts.BillPhoto.Kept(bill, staged = null),
+            )
+        }
+    }
+
+    @Test
     fun `editing a groupmate's expense you paid for`() = capture("confirm_sheet_payer_edit") {
         Column(Modifier.fillMaxSize().background(CharcoalSurface), horizontalAlignment = Alignment.CenterHorizontally) {
             SheetHandle()

@@ -187,7 +187,8 @@ dependencies {
   // implementation(libs.androidx.navigation.compose)
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
-  // implementation(libs.coil.compose)
+  // Bill photos: the sheet's thumbnail and the full-screen viewer load the kept file.
+  implementation(libs.coil.compose)
 
   // Google Sign-In via Credential Manager, exchanged for a Supabase session (not Firebase Auth).
   implementation(libs.androidx.credentials)

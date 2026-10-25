@@ -21,8 +21,10 @@ import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncMetaEntity
 import com.vaibhav.kharchapaani.data.db.dao.PaymentAskDao
+import com.vaibhav.kharchapaani.data.db.dao.ReceiptDao
 import com.vaibhav.kharchapaani.data.db.dao.SubscriptionDao
 import com.vaibhav.kharchapaani.data.db.entity.PaymentAskEntity
+import com.vaibhav.kharchapaani.data.db.entity.ReceiptEntity
 import com.vaibhav.kharchapaani.data.db.entity.SubscriptionEntity
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 
@@ -39,8 +41,9 @@ import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
         SyncMetaEntity::class,
         SubscriptionEntity::class,
         PaymentAskEntity::class,
+        ReceiptEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -53,6 +56,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun groupSyncDao(): GroupSyncDao
     abstract fun subscriptionDao(): SubscriptionDao
     abstract fun paymentAskDao(): PaymentAskDao
+    abstract fun receiptDao(): ReceiptDao
 
     companion object {
         /**
@@ -60,7 +64,7 @@ abstract class AppDatabase : RoomDatabase() {
          * app/schemas and a MigrationTestHelper test. There is deliberately no destructive
          * fallback: a missing migration crashes on open instead of silently wiping the ledger.
          */
-        internal val ALL_MIGRATIONS = arrayOf<Migration>(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+        internal val ALL_MIGRATIONS = arrayOf<Migration>(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
 
         /** Open databases through [LedgerDatabases], which scopes the file to the signed-in account. */
         internal fun builder(context: Context, name: String): Builder<AppDatabase> =

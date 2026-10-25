@@ -6,6 +6,9 @@ import com.vaibhav.kharchapaani.domain.AiFailure
 import com.vaibhav.kharchapaani.domain.CalendarDay
 import com.vaibhav.kharchapaani.domain.AiAskResult
 import com.vaibhav.kharchapaani.data.repository.ReceiptReadResult
+import com.vaibhav.kharchapaani.data.repository.ReceiptRepository
+import com.vaibhav.kharchapaani.data.receipts.BillPhoto
+import com.vaibhav.kharchapaani.data.receipts.ReceiptStore
 import android.app.Application
 import android.content.ClipData
 import android.content.Context
@@ -616,6 +619,94 @@ class MainViewModel(
     private val _parseNotice = MutableStateFlow<String?>(null)
     val parseNotice: StateFlow<String?> = _parseNotice.asStateFlow()
 
+    // Bill photos (docs/designs/bill-photos.md): kept on this phone, in this account's folder.
+    private val receipts = ReceiptRepository(db, ReceiptStore.forAccount(application, userId))
+
+    private val _billPhoto = MutableStateFlow<BillPhoto>(BillPhoto.None)
+    /** The add sheet's bill photo; the ledger only changes when the expense saves. */
+    val billPhoto: StateFlow<BillPhoto> = _billPhoto.asStateFlow()
+
+    /** Whether the expense being edited had a photo when its sheet opened, so Save knows to remove it. */
+    private var hadBillPhotoOnOpen = false
+    private var billPhotoJob: Job? = null
+
+    /** Expenses with a bill photo, for the feed's icon. */
+    val billPhotoIds: StateFlow<Set<Long>> = receipts.transactionIds
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    init {
+        // Photos whose expense went by a route that doesn't know about files (a sync pull, a
+        // groupmate's delete), and photos picked but never saved.
+        viewModelScope.launch {
+            runCatching { receipts.sweepOrphans() }.onFailure { Log.w("MainViewModel", "Bill photo sweep failed", it) }
+        }
+    }
+
+    /** A picture from the camera or the gallery for the bill photo row; [onRead] runs once it's read. */
+    fun attachBillPhoto(context: Context, uri: Uri, onRead: () -> Unit = {}) {
+        keepBillPhoto {
+            SharedFiles.decodeImage(context.applicationContext, uri, ReceiptStore.MAX_SIDE).also { onRead() }
+        }
+    }
+
+    fun removeBillPhoto() {
+        billPhotoJob?.cancel()
+        (_billPhoto.value as? BillPhoto.Kept)?.staged?.let(receipts.store::discard)
+        _billPhoto.value = BillPhoto.None
+    }
+
+    /** Decodes and writes a new photo; until it's written the row shows it's working. */
+    private fun keepBillPhoto(decode: suspend () -> Bitmap?) {
+        billPhotoJob?.cancel()
+        val previous = _billPhoto.value.takeIf { it != BillPhoto.Processing } ?: BillPhoto.None
+        _billPhoto.value = BillPhoto.Processing
+        billPhotoJob = viewModelScope.launch {
+            val staged = decode()?.let { receipts.store.stage(it) }
+            if (staged == null) {
+                // The photo that was there stays; this one couldn't be read or written.
+                _billPhoto.value = previous
+                _statusMessage.value = "Couldn't use that photo."
+                return@launch
+            }
+            (previous as? BillPhoto.Kept)?.staged?.let(receipts.store::discard)
+            _billPhoto.value = BillPhoto.Kept(staged.file, staged)
+        }
+    }
+
+    /** A fresh sheet: drop a photo picked and never saved. */
+    private fun resetBillPhoto() {
+        billPhotoJob?.cancel()
+        billPhotoJob = null
+        (_billPhoto.value as? BillPhoto.Kept)?.staged?.let(receipts.store::discard)
+        _billPhoto.value = BillPhoto.None
+        hadBillPhotoOnOpen = false
+    }
+
+    private fun loadBillPhoto(transactionId: Long) {
+        // Not billPhotoJob: picking a new photo mustn't cancel learning that there was an old one.
+        viewModelScope.launch {
+            val (_, file) = receipts.photoOf(transactionId) ?: return@launch
+            if (_editingTransactionId.value != transactionId || !_isConfirmSheetOpen.value) return@launch
+            hadBillPhotoOnOpen = true
+            if (_billPhoto.value == BillPhoto.None) {
+                _billPhoto.value = if (file.exists()) BillPhoto.Kept(file, staged = null) else BillPhoto.Missing
+            }
+        }
+    }
+
+    /** After the expense saved: keep, replace or remove its photo to match the sheet. */
+    private suspend fun settleBillPhoto(transactionId: Long) {
+        when (val photo = _billPhoto.value) {
+            is BillPhoto.Kept -> photo.staged?.let { staged ->
+                if (!receipts.attach(transactionId, staged)) _statusMessage.value = "Saved. The bill photo couldn't be kept."
+            }
+            BillPhoto.None -> if (hadBillPhotoOnOpen) receipts.remove(transactionId)
+            BillPhoto.Missing, BillPhoto.Processing -> Unit
+        }
+        _billPhoto.value = BillPhoto.None
+        hadBillPhotoOnOpen = false
+    }
+
     fun showMessage(text: String) {
         _statusMessage.value = text
     }
@@ -653,6 +744,7 @@ class MainViewModel(
     private fun defaultPaymentMethod(): String = Categories.defaultPaymentMethod(categoryPrefs.value)
 
     fun openManualAdd(defaultType: String = "expense") {
+        resetBillPhoto()
         _parseNotice.value = null
         _editingTransactionId.value = null
         lockedShares = null
@@ -673,6 +765,7 @@ class MainViewModel(
     }
 
     fun openManualAddForGroup(targetGroupId: Long) {
+        resetBillPhoto()
         // A notice left from an earlier bill that couldn't be read doesn't belong on a fresh entry.
         _parseNotice.value = null
         _editingTransactionId.value = null
@@ -724,6 +817,8 @@ class MainViewModel(
             return
         }
         _editingTransactionId.value = tx.id
+        resetBillPhoto()
+        loadBillPhoto(tx.id)
         _type.value = tx.type
         _amount.value = if (tx.amount % 1.0 == 0.0) tx.amount.toLong().toString() else tx.amount.toString()
         _merchant.value = tx.merchant
@@ -806,13 +901,23 @@ class MainViewModel(
 
     /** Whether closing the quick-add sheet now would lose what's in it. */
     fun hasUnsavedEntry(): Boolean =
-        EntryDraft.isUnsaved(currentDraft(), original = editBaseline.takeIf { _editingTransactionId.value != null })
+        EntryDraft.isUnsaved(currentDraft(), original = editBaseline.takeIf { _editingTransactionId.value != null }) ||
+            billPhotoChanged()
+
+    /** A new photo waiting, or the expense's photo removed: closing the sheet would lose it. */
+    private fun billPhotoChanged(): Boolean = when (val photo = _billPhoto.value) {
+        is BillPhoto.Kept -> photo.staged != null
+        BillPhoto.Processing -> true
+        BillPhoto.None -> hadBillPhotoOnOpen
+        BillPhoto.Missing -> false
+    }
 
     fun parseInputText(rawText: String) {
         if (rawText.isBlank()) return
         viewModelScope.launch {
             _isParsing.value = true
             _parseNotice.value = null
+            resetBillPhoto()
             val friendNames = people.value.map { it.name }
             val outcome = geminiRepo.parseText(rawText, friendNames, parseChoices())
             applyParsedResult(outcome.result)
@@ -826,13 +931,20 @@ class MainViewModel(
     }
 
     fun parseReceiptImage(bitmap: Bitmap) {
+        // The picture that was read is kept with the expense by default; one tap on the row drops it.
+        resetBillPhoto()
+        keepBillPhoto { bitmap }
         viewModelScope.launch {
             _isParsing.value = true
             _isConfirmSheetOpen.value = true
             when (val read = geminiRepo.readReceipt(bitmap, parseChoices())) {
                 is ReceiptReadResult.Read -> {
                     applyParsedResult(read.entry)
-                    _parseNotice.value = if (read.missingAmount) "Read the bill, but couldn't find the total. Fill in the amount." else null
+                    _parseNotice.value = when {
+                        read.missingAmount -> "Read the bill, but couldn't find the total. Fill in the amount."
+                        _billPhoto.value != BillPhoto.None -> "Read from your bill. The photo is kept below."
+                        else -> null
+                    }
                 }
                 is ReceiptReadResult.Failed -> {
                     applyParsedResult(ParsedTransactionResult(type = "expense", amount = 0.0, merchant = "", category = "Other", paymentMethod = "Other", note = "", readFailed = true))
@@ -1178,6 +1290,7 @@ class MainViewModel(
     fun dismissConfirmSheet() {
         _isConfirmSheetOpen.value = false
         _parseNotice.value = null
+        resetBillPhoto()
     }
 
     private val _splitGroupPrompt = MutableStateFlow<SharedRecordGroups.Options?>(null)
@@ -1281,14 +1394,18 @@ class MainViewModel(
         }
 
         viewModelScope.launch {
-            try {
-                if (_editingTransactionId.value != null && _editingTransactionId.value != 0L) {
+            // A photo still being written goes with the expense rather than being dropped.
+            billPhotoJob?.join()
+            val savedId = try {
+                val editingId = _editingTransactionId.value
+                if (editingId != null && editingId != 0L) {
                     ledgerRepo.updateTransactionWithSplits(
                         tx = tx,
                         paidByPersonId = _paidByPersonId.value,
                         shares = splitShareEntities,
                         splitType = _splitMode.value.name.lowercase(Locale.getDefault())
                     )
+                    editingId
                 } else {
                     ledgerRepo.saveTransactionWithSplits(
                         tx = tx,
@@ -1301,6 +1418,7 @@ class MainViewModel(
                 _statusMessage.value = archivedMessage(e)
                 return@launch
             }
+            settleBillPhoto(savedId)
             _isConfirmSheetOpen.value = false
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
@@ -1328,8 +1446,9 @@ class MainViewModel(
     fun commitDelete(txId: Long) = pendingDeletes.commit(txId)
 
     private suspend fun commitTransactionDelete(txId: Long) {
-        try {
-            ledgerRepo.deleteTransaction(txId)
+        val photos = try {
+            // Read first: the rows go with the expense (cascade), and with them the file names.
+            receipts.fileNamesOf(txId).also { ledgerRepo.deleteTransaction(txId) }
         } catch (e: ArchivedGroupException) {
             _statusMessage.value = archivedMessage(e)
             return
@@ -1340,6 +1459,7 @@ class MainViewModel(
             Log.w("MainViewModel", "Delete not committed: the ledger was closed", e)
             return
         }
+        receipts.deleteFiles(photos)
         // Keep the row hidden until the feed has caught up, so it doesn't blink back in between.
         withTimeoutOrNull(2_000) { ledgerRepo.fullTransactions.first { list -> list.none { it.transaction.id == txId } } }
         SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())

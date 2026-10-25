@@ -63,6 +63,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
+import com.vaibhav.kharchapaani.data.receipts.BillPhoto
 import com.vaibhav.kharchapaani.data.model.ShareInput
 import com.vaibhav.kharchapaani.data.model.SplitMode
 import com.vaibhav.kharchapaani.domain.Categories
@@ -136,6 +137,9 @@ fun ConfirmBottomSheet(
     splitLocked: Boolean = false,
     categories: List<String> = Categories.categoriesFor(type, CategoryPrefs()),
     paymentMethods: List<String> = Categories.paymentMethods(CategoryPrefs()),
+    billPhoto: BillPhoto = BillPhoto.None,
+    onAddBillPhoto: (BillPhotoSource) -> Unit = {},
+    onRemoveBillPhoto: () -> Unit = {},
 ) {
     if (!isOpen) return
     val focusManager = LocalFocusManager.current
@@ -157,6 +161,7 @@ fun ConfirmBottomSheet(
             onTogglePersonShare = onTogglePersonShare, onExactAmountChange = onExactAmountChange,
             onPercentageChange = onPercentageChange, onOpenAddFriend = onOpenAddFriend, addedBy = addedBy,
             splitLocked = splitLocked, categories = categories, paymentMethods = paymentMethods,
+            billPhoto = billPhoto, onAddBillPhoto = onAddBillPhoto, onRemoveBillPhoto = onRemoveBillPhoto,
             onSave = {
                 focusManager.clearFocus()
                 onSave()
@@ -218,6 +223,9 @@ fun ConfirmSheetContent(
     splitLocked: Boolean = false,
     categories: List<String> = Categories.categoriesFor(type, CategoryPrefs()),
     paymentMethods: List<String> = Categories.paymentMethods(CategoryPrefs()),
+    billPhoto: BillPhoto = BillPhoto.None,
+    onAddBillPhoto: (BillPhotoSource) -> Unit = {},
+    onRemoveBillPhoto: () -> Unit = {},
 ) {
     // An entry keeps its own category or method even when it isn't a choice here (hidden since, or a
     // groupmate's own category), so it's shown and stays selected.
@@ -435,6 +443,8 @@ fun ConfirmSheetContent(
         SheetRow(label = "Note", position = RowPosition.Single, modifier = Modifier.padding(top = Spacing.xl)) {
             SheetTextInput(value = note, onValueChange = onNoteChange, placeholder = "Optional")
         }
+
+        BillPhotoRow(photo = billPhoto, onAdd = onAddBillPhoto, onRemove = onRemoveBillPhoto, modifier = Modifier.padding(top = Spacing.s))
     }
 }
 
