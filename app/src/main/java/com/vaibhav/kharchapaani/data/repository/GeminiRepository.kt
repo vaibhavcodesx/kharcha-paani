@@ -8,6 +8,7 @@ import com.vaibhav.kharchapaani.data.remote.AppIdentity
 import com.vaibhav.kharchapaani.data.model.ParsedTransactionResult
 import com.vaibhav.kharchapaani.data.model.StatementParseResult
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
+import com.vaibhav.kharchapaani.domain.StatementChecks
 import com.vaibhav.kharchapaani.domain.LocalHeuristicParser
 import com.vaibhav.kharchapaani.domain.Categories
 import com.vaibhav.kharchapaani.domain.CategoryPrefs
@@ -483,14 +484,16 @@ class GeminiRepository(
             return@withContext failed(truncatedOr(finishReason, StatementReadFailure.Unreadable), "answer: ${e.message}")
         }
 
-        val items = statementItems(parsed.optJSONArray("transactions"), choices)
+        val period = parsed.optString("statementPeriod", "")
+        // Read rows arrive ticked unless something about them needs a second look.
+        val items = StatementChecks.review(statementItems(parsed.optJSONArray("transactions"), choices), period)
         if (items.isEmpty()) {
             return@withContext failed(truncatedOr(finishReason, StatementReadFailure.NothingFound), "0 rows, finishReason=$finishReason")
         }
         StatementReadResult.Success(
             LocalStatementParser.buildStatementGroups(
                 parsed.optString("bankOrApp", "Bank / UPI Statement"),
-                parsed.optString("statementPeriod", ""),
+                period,
                 items,
             )
         )
@@ -504,7 +507,8 @@ class GeminiRepository(
             // pre-ticked, as a ₹0 row. Read it properly, and leave out a row with no money in it.
             val amount = AiParse.amountField(itemObj.opt("amount"))
             if (amount <= 0) continue
-            val (timestamp, formattedDate, monthName) = LocalStatementParser.parseDateToTimestamp(itemObj.optString("date", ""))
+            val rawDate = itemObj.optString("date", "")
+            val (timestamp, formattedDate, monthName) = LocalStatementParser.parseDateToTimestamp(rawDate)
             val cal = java.util.Calendar.getInstance().apply { timeInMillis = timestamp }
             val monthSortKey = String.format(java.util.Locale.US, "%04d%02d", cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH) + 1)
             val type = itemObj.optString("type", "expense")
@@ -522,6 +526,7 @@ class GeminiRepository(
                     paymentMethod = choices.paymentFor(itemObj.optString("paymentMethod", "UPI")),
                     note = itemObj.optString("note", ""),
                     isSelected = true,
+                    flag = if (LocalStatementParser.readsAsDate(rawDate)) null else StatementChecks.NO_DATE,
                 )
             )
         }

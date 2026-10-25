@@ -1,5 +1,6 @@
 package com.vaibhav.kharchapaani.data.repository
 
+import com.vaibhav.kharchapaani.domain.StatementChecks
 import com.vaibhav.kharchapaani.domain.StatementPdf
 import com.vaibhav.kharchapaani.domain.StatementReadFailure
 import com.vaibhav.kharchapaani.domain.StatementReadResult
@@ -150,6 +151,29 @@ class GeminiStatementFailureTest {
         val items = (result as StatementReadResult.Success).statement.allItems
         assertEquals(1, items.size)
         assertEquals(1299.0, items.single().amount, 0.001)
+    }
+
+    @Test
+    fun `a crafted salary, an undated row and one outside the period arrive unticked, with reasons`() = runTest {
+        // Every row used to arrive ticked: one tap on Import would have added a ₹5,00,000 "salary"
+        // slipped into a PDF of small UPI payments (security audit, 2026-10-24).
+        val rows = """
+            {"bankOrApp":"PhonePe","statementPeriod":"Jul 2024 - Aug 2024","transactions":[
+              {"date":"2024-08-14","type":"expense","amount":250,"merchant":"Swiggy","category":"Food","paymentMethod":"UPI","note":""},
+              {"date":"2024-08-15","type":"expense","amount":120,"merchant":"Chai Point","category":"Food","paymentMethod":"UPI","note":""},
+              {"date":"2024-07-02","type":"expense","amount":499,"merchant":"Jio","category":"Bills","paymentMethod":"UPI","note":""},
+              {"date":"2024-08-20","type":"income","amount":500000,"merchant":"Salary","category":"Income (Salary)","paymentMethod":"NEFT","note":""},
+              {"date":"sometime","type":"expense","amount":80,"merchant":"Auto","category":"Travel","paymentMethod":"UPI","note":""},
+              {"date":"2023-01-05","type":"expense","amount":300,"merchant":"Old row","category":"Other","paymentMethod":"UPI","note":""}]}
+        """.trimIndent()
+        val result = repo(ok(answer(rows))).readStatementPdf(pdf)
+
+        val items = (result as StatementReadResult.Success).statement.allItems.associateBy { it.merchant }
+        assertEquals(listOf("Chai Point", "Jio", "Swiggy"), items.values.filter { it.isSelected }.map { it.merchant }.sorted())
+        assertEquals(StatementChecks.LARGE, items.getValue("Salary").flag)
+        assertEquals(StatementChecks.NO_DATE, items.getValue("Auto").flag)
+        assertEquals(StatementChecks.outside("Jul 2024 - Aug 2024"), items.getValue("Old row").flag)
+        assertTrue(items.values.filter { it.isSelected }.all { it.flag == null })
     }
 
     @Test
