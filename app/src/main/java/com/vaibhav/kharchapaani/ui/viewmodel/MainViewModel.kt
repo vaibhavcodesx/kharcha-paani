@@ -3,6 +3,7 @@ package com.vaibhav.kharchapaani.ui.viewmodel
 import com.vaibhav.kharchapaani.domain.receiptNotice
 import com.vaibhav.kharchapaani.domain.quickAddNotice
 import com.vaibhav.kharchapaani.domain.AiFailure
+import com.vaibhav.kharchapaani.domain.CalendarDay
 import com.vaibhav.kharchapaani.domain.AiAskResult
 import com.vaibhav.kharchapaani.data.repository.ReceiptReadResult
 import android.app.Application
@@ -248,7 +249,7 @@ class MainViewModel(
                     category = new.category,
                     paymentMethod = new.paymentMethod,
                     cycle = new.cycle.name,
-                    startDate = new.start.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                    startDate = CalendarDay.toMillis(new.start),
                 ),
                 chargeFromStart = chargeFromStart,
             )

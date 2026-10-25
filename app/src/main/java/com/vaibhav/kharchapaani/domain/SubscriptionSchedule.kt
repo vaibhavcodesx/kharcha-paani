@@ -2,6 +2,28 @@ package com.vaibhav.kharchapaani.domain
 
 import java.time.LocalDate
 
+/**
+ * A subscription's dates (start, charged-through, cancelled) are calendar days, stored as epoch
+ * milliseconds.
+ *
+ * They used to be stored as local midnight in the phone's zone at the time and read back in its zone
+ * now. After a flight west, midnight in India read as the evening before, so the charge already made
+ * that day looked missing and was made again (correctness audit, 2026-10-24).
+ *
+ * Now a day is written as midnight UTC, and read by rounding to the nearest UTC midnight. That reads
+ * the new values exactly, and the old ones too: local midnight anywhere between UTC−12 and UTC+12 is
+ * within half a day of that day's UTC midnight. India, at +5:30, is well inside. (+13 and +14, a
+ * few Pacific islands and New Zealand's summer time, round to the day before; there's no telling
+ * from the number alone.) No migration: rows are re-written the new way as they're charged.
+ */
+object CalendarDay {
+    private const val DAY_MILLIS = 24 * 60 * 60 * 1000L
+
+    fun toMillis(date: LocalDate): Long = date.toEpochDay() * DAY_MILLIS
+
+    fun fromMillis(millis: Long): LocalDate = LocalDate.ofEpochDay(Math.floorDiv(millis + DAY_MILLIS / 2, DAY_MILLIS))
+}
+
 /** How often a subscription is charged. */
 enum class SubscriptionCycle { WEEKLY, MONTHLY, YEARLY }
 
