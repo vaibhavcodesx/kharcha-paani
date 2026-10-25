@@ -27,6 +27,8 @@ object NotificationHelper {
     private const val NOTIFICATION_ID_SETTLEMENT_BASE = 30_000
     const val ACTION_ANSWER_SETTLEMENT = "com.vaibhav.kharchapaani.ACTION_ANSWER_SETTLEMENT"
     const val EXTRA_SETTLEMENT_ID = "settlement_id"
+    /** Whose ledger [EXTRA_SETTLEMENT_ID] is in: the same id is another payment in another account's. */
+    const val EXTRA_USER_ID = "user_id"
 
     fun createChannels(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -52,11 +54,12 @@ object NotificationHelper {
     }
 
     /** A settlement waiting for my answer (design item 10); tapping it opens the answer sheet. */
-    fun showSettlementReminder(context: Context, settlementId: Long, title: String, text: String): Boolean {
+    fun showSettlementReminder(context: Context, userId: String, settlementId: Long, title: String, text: String): Boolean {
         if (!canNotify(context)) return false
         createChannels(context)
         val open = IncomingIntents.internal(context, ACTION_ANSWER_SETTLEMENT).apply {
             putExtra(EXTRA_SETTLEMENT_ID, settlementId)
+            putExtra(EXTRA_USER_ID, userId)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         val id = NOTIFICATION_ID_SETTLEMENT_BASE + (settlementId % 100_000).toInt()

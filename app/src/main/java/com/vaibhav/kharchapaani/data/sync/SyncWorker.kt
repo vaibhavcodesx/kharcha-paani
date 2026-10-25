@@ -47,7 +47,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             // A groupmate may have chosen a new colour: fit everyone else on this phone around it.
             LedgerRepository(database, selfProfileId = userId).repairPersonColours()
             // Payments a groupmate recorded that wait for my answer: the first nudge, then day 3, 6…
-            SettlementReminders.remind(applicationContext, database)
+            SettlementReminders.remind(applicationContext, database, userId)
         }
     }
 

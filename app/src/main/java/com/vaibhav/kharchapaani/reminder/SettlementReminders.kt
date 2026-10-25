@@ -37,8 +37,8 @@ object SettlementReminders {
         return "Still waiting on you: $amount with $otherName" to "$what, $days days ago. It won't count until you answer."
     }
 
-    /** Shows whatever is due; returns how many it showed. */
-    suspend fun remind(context: Context, db: AppDatabase, now: Long = System.currentTimeMillis()): Int {
+    /** Shows whatever is due in [userId]'s ledger [db]; returns how many it showed. */
+    suspend fun remind(context: Context, db: AppDatabase, userId: String, now: Long = System.currentTimeMillis()): Int {
         if (!NotificationHelper.canNotify(context)) return 0
         var shown = 0
         for (settlement in db.groupSyncDao().settlementsAwaitingMyAnswer()) {
@@ -47,7 +47,7 @@ object SettlementReminders {
             val otherId = if (settlement.fromPersonId == -1L) settlement.toPersonId else settlement.fromPersonId
             val name = db.personDao().getPersonById(otherId)?.name ?: "A groupmate"
             val (title, body) = textFor(settlement, name, stage, now)
-            if (NotificationHelper.showSettlementReminder(context, settlement.id, title, body)) {
+            if (NotificationHelper.showSettlementReminder(context, userId, settlement.id, title, body)) {
                 db.groupSyncDao().setRemindedStage(settlement.id, stage)
                 shown++
             }

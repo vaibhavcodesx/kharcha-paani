@@ -33,8 +33,12 @@ class IncomingIntentsTest {
         assertEquals(Route.VoiceLog, IncomingIntents.route(IncomingIntents.internal(context, SplitFlowWidgetProvider.ACTION_VOICE_LOG)))
         assertEquals(Route.ViewSplits, IncomingIntents.route(IncomingIntents.internal(context, SplitFlowWidgetProvider.ACTION_VIEW_SPLITS)))
         assertEquals(
-            Route.AnswerSettlement(42L),
-            IncomingIntents.route(IncomingIntents.internal(context, NotificationHelper.ACTION_ANSWER_SETTLEMENT).putExtra(NotificationHelper.EXTRA_SETTLEMENT_ID, 42L)),
+            Route.AnswerSettlement(42L, userId = "alice"),
+            IncomingIntents.route(
+                IncomingIntents.internal(context, NotificationHelper.ACTION_ANSWER_SETTLEMENT)
+                    .putExtra(NotificationHelper.EXTRA_SETTLEMENT_ID, 42L)
+                    .putExtra(NotificationHelper.EXTRA_USER_ID, "alice"),
+            ),
         )
     }
 

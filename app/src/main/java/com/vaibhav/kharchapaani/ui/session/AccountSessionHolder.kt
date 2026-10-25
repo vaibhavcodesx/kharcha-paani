@@ -48,7 +48,11 @@ class AccountSessionHolder(application: Application) : AndroidViewModel(applicat
     fun onAccountChanged(userId: String?) {
         if (userId == activeUserId) return
         // Stop the previous account's background sync; its queued rows stay on disk for next time.
-        activeUserId?.let { SyncScheduler.cancelFor(getApplication(), it) }
+        // Its notifications and shared files go: they belong to a ledger no longer on screen.
+        activeUserId?.let {
+            SyncScheduler.cancelFor(getApplication(), it)
+            AccountLeftovers.clear(getApplication())
+        }
         activeUserId = userId
         openJob?.cancel()
         endSession()
