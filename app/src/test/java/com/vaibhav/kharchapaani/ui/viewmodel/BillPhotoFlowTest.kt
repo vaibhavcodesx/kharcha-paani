@@ -90,7 +90,8 @@ class BillPhotoFlowTest {
         assertTrue(db.receiptDao().allFileNames().isEmpty())
 
         viewModel.saveCurrentTransaction()
-        until { db.receiptDao().allFileNames().isNotEmpty() }
+        // The sheet closes once the save, photo included, has finished.
+        until { !viewModel.isConfirmSheetOpen.value }
 
         val tx = db.transactionDao().getAllTransactionsDirect().single()
         val row = db.receiptDao().forTransaction(tx.id).single()
@@ -118,7 +119,10 @@ class BillPhotoFlowTest {
         viewModel.attachBillPhoto(application, picture())
         keptPhoto()
         viewModel.saveCurrentTransaction()
-        until { db.receiptDao().allFileNames().isNotEmpty() }
+        // Until the sheet closes, as a person would: the save is still finishing after the photo's
+        // row is written, and editing before then raced its clean-up (failed on the 1.5.0 release run).
+        until { !viewModel.isConfirmSheetOpen.value }
+        assertTrue(db.receiptDao().allFileNames().isNotEmpty())
         val full = withTimeout(10_000) { viewModel.rawTransactions.first { it.isNotEmpty() } }.single()
 
         viewModel.openEditTransaction(full)
@@ -129,8 +133,9 @@ class BillPhotoFlowTest {
         viewModel.removeBillPhoto()
         assertTrue(viewModel.hasUnsavedEntry())
         viewModel.saveCurrentTransaction()
-        until { db.receiptDao().allFileNames().isEmpty() }
+        until { !viewModel.isConfirmSheetOpen.value }
 
+        assertTrue(db.receiptDao().allFileNames().isEmpty())
         assertFalse(existing.file.exists())
     }
 }
