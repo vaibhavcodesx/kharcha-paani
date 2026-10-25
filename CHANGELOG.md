@@ -13,6 +13,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-25
+
 ### Added
 
 - `docs/production-readiness/`: the plan for launching on the Play Store, from four audits of the
@@ -53,7 +55,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   archived in `docs/history/prd-2026-09-cloud-migration.md`. CLAUDE.md now points agents at the
   production readiness plan and asks them to gather every question for the owner at the start of a
   session, then work through it and save new questions for the end.
-### Changed
 
 - Every pull request now also lints and builds the release variant, the one people install, and
   not only the debug build the tests use. The release workflow runs the unit tests first, refuses
@@ -393,7 +394,8 @@ and redesigned.
   silently deleted splits, shares and members through cascades.
 - The file provider narrowed to exported files only.
 
-[Unreleased]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/vaibhavcodesx/kharcha-paani/compare/v1.1.0...v1.2.0

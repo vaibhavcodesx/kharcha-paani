@@ -161,8 +161,12 @@ opened the ledger and sat on a blank screen. CI proved the bug first (4 of 7 new
 
 ## 3. What has to land first: the open PRs
 
-All are green in CI and **unmerged pending the owner's device tests**. Suggested order (keeps the
-CHANGELOG conflicts one at a time):
+**Status 2026-10-25: all merged except #71.** The owner approved merging them, #74, #75 and #77
+included, before the device tests. They were tested together on CI first, then shipped in 1.5.0;
+the device checklist is [docs/testing/1.5.0-device-checks.md](../testing/1.5.0-device-checks.md).
+**#71 (R8) is still open:** it needs its own signed-release smoke test before merging.
+
+The order they were merged in (keeps the CHANGELOG conflicts one at a time):
 
 #61 → #62 → #63 → #66 → #72 → #73 → #68 → #64 → #65 → #71 (only after a signed-release smoke test) →
 #69 → #70 → #67 → #74 → #75 (both **[owner review]**, security) → #76 (Room v10) → #77 (**[owner review]**, auth).
