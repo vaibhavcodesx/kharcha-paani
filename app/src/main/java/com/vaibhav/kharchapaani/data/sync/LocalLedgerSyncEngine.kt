@@ -15,6 +15,8 @@ import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.domain.PersonColours
 import com.vaibhav.kharchapaani.domain.roundPaisa
 import kotlin.math.abs
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
@@ -22,7 +24,9 @@ import kotlin.time.Instant
 /**
  * Splits and IOUs with friends who have no account, to and from this account's private tables
  * (`local_splits`, `local_settlements`). Runs after [TransactionSyncEngine], so a split's personal
- * expense is always on the phone before the split that hangs off it is pulled.
+ * expense is usually on the phone before the split that hangs off it is pulled. Not always: another
+ * phone can save one between the two pulls, so a split that arrives first holds the cursor until
+ * its expense does (see [pullPaged]).
  *
  * Only rows already PENDING are pushed. Nothing here ever turns a LOCAL_ONLY row into PENDING: the
  * history already on a phone stays there unless its owner opts in (docs/local-friend-sync-v2.md).
@@ -162,22 +166,27 @@ class LocalLedgerSyncEngine(
 
     internal suspend fun pull() {
         pullPaged(SPLITS_CURSOR, remote::splitsChangedSince, { it.updatedAt }) { applySplit(it) }
-        pullPaged(SETTLEMENTS_CURSOR, remote::settlementsChangedSince, { it.updatedAt }) { applySettlement(it) }
+        pullPaged(SETTLEMENTS_CURSOR, remote::settlementsChangedSince, { it.updatedAt }) { applySettlement(it); true }
     }
 
-    private suspend fun applySplit(row: RemoteLocalSplit) {
+    /** False when the split has to wait for its expense, and be pulled again. */
+    @OptIn(ExperimentalTime::class)
+    private suspend fun applySplit(row: RemoteLocalSplit): Boolean {
         val tx = syncDao.transactionByRemoteId(row.transactionId) ?: run {
-            // Its expense was deleted, or hasn't arrived: nothing to hang the split on.
-            Log.w(TAG, "local split ${row.id}: no expense ${row.transactionId} here")
-            return
+            // Nothing to hang the split on. Gone for good when it was retracted, or its expense was
+            // deleted here; otherwise the expense hasn't arrived yet. A day on, it isn't coming.
+            val settled = row.deletedAt != null || syncDao.hasPendingDelete(row.transactionId) ||
+                Clock.System.now() - Instant.parse(row.updatedAt) > WAIT_FOR_EXPENSE
+            Log.w(TAG, "local split ${row.id}: no expense ${row.transactionId} here${if (settled) "" else ", waiting for it"}")
+            return settled
         }
         // A change still queued here wins, and goes up on the next push.
-        if (tx.syncState != SyncState.SYNCED || tx.groupId != null) return
+        if (tx.syncState != SyncState.SYNCED || tx.groupId != null) return true
 
         dao.deleteSplitForTransaction(tx.id)
         if (row.deletedAt != null) {
             if (tx.isSplit) dao.updateTransaction(tx.copy(isSplit = false))
-            return
+            return true
         }
         val splitId = dao.insertSplit(
             SplitEntity(
@@ -199,6 +208,7 @@ class LocalLedgerSyncEngine(
             }
         )
         if (!tx.isSplit) dao.updateTransaction(tx.copy(isSplit = true))
+        return true
     }
 
     private suspend fun applySettlement(row: RemoteLocalSettlement) {
@@ -227,22 +237,37 @@ class LocalLedgerSyncEngine(
         if (local == null) dao.insertSettlement(pulled) else dao.updateSettlement(pulled)
     }
 
+    /**
+     * Pulls rows changed since the cursor, oldest first, a page at a time. [apply] returns false for
+     * a row it couldn't use yet; the cursor then stays at that row, so the next pull fetches it
+     * again (`updated_at >= since`) instead of moving past it for good.
+     */
     @OptIn(ExperimentalTime::class)
     private suspend fun <T> pullPaged(
         cursorKey: String,
         fetch: suspend (String?, Int) -> List<T>,
         updatedAt: (T) -> String,
-        apply: suspend (T) -> Unit,
+        apply: suspend (T) -> Boolean,
     ) {
         var since = syncDao.meta(cursorKey)?.let { (Instant.parse(it) - CURSOR_OVERLAP).toString() }
+        // The oldest row still waiting, across every page of this pull.
+        var waiting: Instant? = null
         repeat(MAX_PAGES) {
             val page = fetch(since, PAGE_SIZE)
             if (page.isEmpty()) return
             val newest = page.maxBy { Instant.parse(updatedAt(it)) }.let(updatedAt)
             db.withTransaction {
-                page.forEach { apply(it) }
+                page.forEach { row ->
+                    if (!apply(row)) {
+                        val at = Instant.parse(updatedAt(row))
+                        if (waiting.let { it == null || at < it }) waiting = at
+                    }
+                }
+                val held = waiting
                 val current = syncDao.meta(cursorKey)
-                if (current == null || Instant.parse(newest) > Instant.parse(current)) {
+                if (held != null) {
+                    syncDao.putMeta(SyncMetaEntity(cursorKey, held.toString()))
+                } else if (current == null || Instant.parse(newest) > Instant.parse(current)) {
                     syncDao.putMeta(SyncMetaEntity(cursorKey, newest))
                 }
             }
@@ -260,6 +285,8 @@ class LocalLedgerSyncEngine(
         private const val PAGE_SIZE = 1000
         private const val MAX_PAGES = 50
         private val CURSOR_OVERLAP = 5.seconds
+        /** How long a split waits for its expense before it's let go. The race it covers is seconds. */
+        private val WAIT_FOR_EXPENSE = 1.days
         private const val TAG = "LocalLedgerSync"
     }
 }
