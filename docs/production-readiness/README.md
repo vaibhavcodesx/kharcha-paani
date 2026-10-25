@@ -299,7 +299,7 @@ user sees in the first minute.
 - Declare "Crash logs, Diagnostics" in Data safety and the privacy policy (T1.2).
 - Sources: REL H4; PLAY §8; owner decisions 16.
 
-**T1.7 No double saves** · S
+**T1.7 No double saves** · S · **done in #88**
 - An `isSubmitting` flag per action (save expense, import statement, record settlement, IOU, create
   group, add friend): return early if set, cleared in `finally`, passed to `GlassActionBar` as
   disabled-with-spinner.

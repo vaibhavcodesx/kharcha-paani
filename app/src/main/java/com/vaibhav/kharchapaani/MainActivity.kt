@@ -114,6 +114,7 @@ import com.vaibhav.kharchapaani.ui.screens.SplitsScreen
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
 import com.vaibhav.kharchapaani.ui.viewmodel.MainViewModel
+import com.vaibhav.kharchapaani.ui.viewmodel.Submit
 
 class MainActivity : ComponentActivity() {
 
@@ -649,6 +650,7 @@ fun SplitFlowApp(
     // photo picker hands back a picture. The app declares no CAMERA permission, so neither asks
     // for one. The camera's original is deleted once it's read; only the re-encoded copy is kept.
     val billPhoto by viewModel.billPhoto.collectAsStateWithLifecycle()
+    val submitting by viewModel.submitting.collectAsStateWithLifecycle()
     var cameraFile by rememberSaveable { mutableStateOf<String?>(null) }
     val takeBillPhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
         val file = cameraFile?.let(::File) ?: return@rememberLauncherForActivityResult
@@ -718,6 +720,7 @@ fun SplitFlowApp(
         billPhoto = billPhoto,
         onAddBillPhoto = addBillPhoto,
         onRemoveBillPhoto = viewModel::removeBillPhoto,
+        isSaving = Submit.SaveEntry in submitting,
     )
 
     val isExportOpen by viewModel.isExportOpen.collectAsState()
