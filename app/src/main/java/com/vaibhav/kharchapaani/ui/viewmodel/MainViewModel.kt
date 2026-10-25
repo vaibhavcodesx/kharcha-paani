@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.viewmodel
 
+import kotlinx.coroutines.CancellationException
+import com.vaibhav.kharchapaani.diagnostics.CrashReporting
 import com.vaibhav.kharchapaani.domain.receiptNotice
 import com.vaibhav.kharchapaani.domain.quickAddNotice
 import com.vaibhav.kharchapaani.domain.isSavableAmount
@@ -138,7 +140,23 @@ class MainViewModel(
 
     private val ledgerRepo = LedgerRepository(db, onLocalTransactionChange = ::requestSync, selfProfileId = userId)
 
-    private val submissions = Submissions(viewModelScope)
+    private val submissions = Submissions(viewModelScope, onFailure = { _statusMessage.value = it })
+
+    /**
+     * A user action that writes or sends something, with the safety net (plan T1.8): anything it
+     * didn't handle (a full disk, a ledger closed by signing out, a bug) is told to the person and
+     * reported instead of taking the app down. Cancellation passes through.
+     */
+    private fun launchAction(block: suspend CoroutineScope.() -> Unit): Job = viewModelScope.launch {
+        try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            CrashReporting.recordProblem("A user action failed", e)
+            _statusMessage.value = Submissions.failureMessage(e)
+        }
+    }
     /** Actions still writing, so their sheet can show its button as busy (see [Submissions]). */
     val submitting: StateFlow<Set<Submit>> = submissions.inFlight
 
@@ -161,7 +179,7 @@ class MainViewModel(
     }
 
     fun retryFailedSync() {
-        viewModelScope.launch {
+        launchAction {
             db.withTransaction {
                 db.syncDao().requeueFailedTransactions()
                 db.syncDao().requeueFailedGroups()
@@ -273,14 +291,14 @@ class MainViewModel(
     }
 
     fun cancelSubscription(id: Long) {
-        viewModelScope.launch {
+        launchAction {
             ledgerRepo.cancelSubscription(id)
             _statusMessage.value = "Cancelled. Charges already logged stay."
         }
     }
 
     fun deleteSubscription(id: Long) {
-        viewModelScope.launch { ledgerRepo.deleteSubscription(id) }
+        launchAction { ledgerRepo.deleteSubscription(id) }
     }
 
     private val _isCategoriesOpen = MutableStateFlow(false)
@@ -311,7 +329,7 @@ class MainViewModel(
     }
 
     fun saveUpi(payee: UpiPayee?) {
-        viewModelScope.launch {
+        launchAction {
             settings.setUpiPayee(userId, payee)
             _isUpiOpen.value = false
             // Kept on this phone *and* published to the profile. Local-only was the original
@@ -433,16 +451,16 @@ class MainViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun retractSettlement(settlementId: Long) {
-        viewModelScope.launch {
+        launchAction {
             try {
                 ledgerRepo.deleteSettlement(settlementId)
             } catch (e: ArchivedGroupException) {
                 _statusMessage.value = archivedMessage(e)
-                return@launch
+                return@launchAction
             } catch (e: NotYoursToWithdrawException) {
                 // Theirs to withdraw; mine to answer (design item 10).
                 openSettlementAnswer(settlementId)
-                return@launch
+                return@launchAction
             }
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
@@ -498,12 +516,12 @@ class MainViewModel(
     fun answerSettlement(confirm: Boolean, note: String = "") {
         val id = _answeringSettlementId.value ?: return
         _answeringSettlementId.value = null
-        viewModelScope.launch {
+        launchAction {
             try {
                 ledgerRepo.respondToSettlement(id, confirm, note)
             } catch (e: ArchivedGroupException) {
                 _statusMessage.value = archivedMessage(e)
-                return@launch
+                return@launchAction
             }
             NotificationHelper.clearSettlementReminder(getApplication(), id)
             _statusMessage.value = if (confirm) "Confirmed. It counts for both of you now." else "Marked not right. It won't count."
@@ -924,14 +942,18 @@ class MainViewModel(
             _isParsing.value = true
             _parseNotice.value = null
             resetBillPhoto()
-            val friendNames = people.value.map { it.name }
-            val outcome = geminiRepo.parseText(rawText, friendNames, parseChoices())
-            applyParsedResult(outcome.result)
-            // No method said: this account's own default, not "Other".
-            if (outcome.result.paymentMethod.isBlank()) _paymentMethod.value = defaultPaymentMethod()
-            // Why it's a guess, when it is: offline, out of quota and a refused key each say so.
-            _parseNotice.value = outcome.failure?.quickAddNotice()
-            _isParsing.value = false
+            try {
+                val friendNames = people.value.map { it.name }
+                val outcome = geminiRepo.parseText(rawText, friendNames, parseChoices())
+                applyParsedResult(outcome.result)
+                // No method said: this account's own default, not "Other".
+                if (outcome.result.paymentMethod.isBlank()) _paymentMethod.value = defaultPaymentMethod()
+                // Why it's a guess, when it is: offline, out of quota and a refused key each say so.
+                _parseNotice.value = outcome.failure?.quickAddNotice()
+            } finally {
+                // Whatever happened, the sheet never stays stuck on "Reading…".
+                _isParsing.value = false
+            }
             _isConfirmSheetOpen.value = true
         }
     }
@@ -943,22 +965,25 @@ class MainViewModel(
         viewModelScope.launch {
             _isParsing.value = true
             _isConfirmSheetOpen.value = true
-            when (val read = geminiRepo.readReceipt(bitmap, parseChoices())) {
-                is ReceiptReadResult.Read -> {
-                    applyParsedResult(read.entry)
-                    _parseNotice.value = when {
-                        read.missingAmount -> "Read the bill, but couldn't find the total. Fill in the amount."
-                        _billPhoto.value != BillPhoto.None -> "Read from your bill. The photo is kept below."
-                        else -> null
+            try {
+                when (val read = geminiRepo.readReceipt(bitmap, parseChoices())) {
+                    is ReceiptReadResult.Read -> {
+                        applyParsedResult(read.entry)
+                        _parseNotice.value = when {
+                            read.missingAmount -> "Read the bill, but couldn't find the total. Fill in the amount."
+                            _billPhoto.value != BillPhoto.None -> "Read from your bill. The photo is kept below."
+                            else -> null
+                        }
+                    }
+                    is ReceiptReadResult.Failed -> {
+                        applyParsedResult(ParsedTransactionResult(type = "expense", amount = 0.0, merchant = "", category = "Other", paymentMethod = "Other", note = "", readFailed = true))
+                        // "Try a clearer photo" was the answer to being offline too.
+                        _parseNotice.value = read.reason.receiptNotice()
                     }
                 }
-                is ReceiptReadResult.Failed -> {
-                    applyParsedResult(ParsedTransactionResult(type = "expense", amount = 0.0, merchant = "", category = "Other", paymentMethod = "Other", note = "", readFailed = true))
-                    // "Try a clearer photo" was the answer to being offline too.
-                    _parseNotice.value = read.reason.receiptNotice()
-                }
+            } finally {
+                _isParsing.value = false
             }
-            _isParsing.value = false
         }
     }
 
@@ -1552,7 +1577,7 @@ class MainViewModel(
             _statusMessage.value = "Shared groups can't be deleted. Open the group to archive or leave it."
             return
         }
-        viewModelScope.launch {
+        launchAction {
             ledgerRepo.deleteGroup(groupId)
             dismissGroupDetail()
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
@@ -1583,7 +1608,7 @@ class MainViewModel(
      * (ask-to-pay). The ask is logged only if an app is picked (ask/AskSentReceiver).
      */
     fun askToPay(context: Context, person: PersonEntity, amount: Double, message: String) {
-        viewModelScope.launch {
+        launchAction {
             val app = getApplication<Application>()
             val qr = upiPayee.value?.let { payee ->
                 withContext(Dispatchers.IO) {
@@ -1686,7 +1711,7 @@ class MainViewModel(
     }
 
     fun deleteFriend(personId: Long) {
-        viewModelScope.launch {
+        launchAction {
             ledgerRepo.deletePerson(personId)
             if (_selectedPersonForLedger.value?.id == personId) {
                 _selectedPersonForLedger.value = null
@@ -1854,11 +1879,11 @@ class MainViewModel(
     }
 
     fun exportCsv(context: Context, range: ExportRange, groupId: Long? = null) {
-        viewModelScope.launch {
+        launchAction {
             val csv = ledgerRepo.exportCsv(range, groupId = groupId)
             if (csv.rows == 0) {
                 _statusMessage.value = if (groupId != null) "Nothing logged in that group to export." else "Nothing logged in that range to export."
-                return@launch
+                return@launchAction
             }
             val uri = writeExport(csv)
             val send = Intent(Intent.ACTION_SEND).apply {
@@ -1882,7 +1907,7 @@ class MainViewModel(
      * phone, or a change of signing key that loses it. See [LocalBackup].
      */
     fun exportLocalBackup(context: Context) {
-        viewModelScope.launch {
+        launchAction {
             // Settings are read here and handed in: the repository owns the database, not
             // DataStore, and the first version of this simply forgot to pass them — which is
             // exactly why every export came back with empty category lists.
@@ -1893,7 +1918,7 @@ class MainViewModel(
             )
             if (backup.isEmpty) {
                 _statusMessage.value = "Nothing on this phone that isn't already backed up to your account."
-                return@launch
+                return@launchAction
             }
             val fileName = LocalBackup.fileName(backup.exportedAt)
             val uri = writeToCache(fileName, LocalBackup.encode(backup))
@@ -1920,16 +1945,16 @@ class MainViewModel(
      * it was picked, with no way to see what it held (security audit, 2026-10-24).
      */
     fun importLocalBackup(context: Context, uri: Uri) {
-        viewModelScope.launch {
+        launchAction {
             val text = when (val read = SharedFiles.readBytes(context.applicationContext, uri, BACKUP_MAX_BYTES)) {
                 is SharedFiles.Read.Bytes -> read.bytes.toString(Charsets.UTF_8)
                 SharedFiles.Read.TooLarge -> {
                     _statusMessage.value = "That file is too big to be a Kharcha Paani backup."
-                    return@launch
+                    return@launchAction
                 }
                 SharedFiles.Read.Unreadable -> {
                     _statusMessage.value = "Couldn't open that file."
-                    return@launch
+                    return@launchAction
                 }
             }
             when (val result = withContext(Dispatchers.Default) { LocalBackup.decode(text) }) {
@@ -1948,7 +1973,7 @@ class MainViewModel(
     fun confirmRestore() {
         val backup = _restorePreview.value ?: return
         _restorePreview.value = null
-        viewModelScope.launch {
+        launchAction {
             val report = backupRepo.restore(backup)
             restoreSettings(backup.settings)
             _statusMessage.value = report.copy(settingsRestored = !backup.settings.isEmpty).message()

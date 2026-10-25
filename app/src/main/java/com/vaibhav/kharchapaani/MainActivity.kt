@@ -18,6 +18,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.os.SystemClock
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.activity.ComponentActivity
@@ -952,5 +953,10 @@ private fun shareInviteLink(context: Context, groupName: String, link: String) {
         type = "text/plain"
         putExtra(Intent.EXTRA_TEXT, "Join \"$groupName\" on Kharcha Paani to split expenses together: $link")
     }
-    context.startActivity(Intent.createChooser(send, "Share invite"))
+    // The system chooser is nearly always there, but not on every stripped-down ROM.
+    try {
+        context.startActivity(Intent.createChooser(send, "Share invite"))
+    } catch (e: ActivityNotFoundException) {
+        Log.w("MainActivity", "No app to share the invite with", e)
+    }
 }
