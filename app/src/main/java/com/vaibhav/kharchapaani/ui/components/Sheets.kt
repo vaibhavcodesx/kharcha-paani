@@ -67,6 +67,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.theme.BrandGradient
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -174,6 +175,32 @@ private fun DiscardDialog(guard: DiscardGuard, onKeepEditing: () -> Unit, onDisc
         dismissButton = {
             TextButton(onClick = onKeepEditing) {
                 Text("Keep editing", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
+            }
+        },
+        titleContentColor = OffWhiteText,
+    )
+}
+
+/**
+ * Asked before saving more than [Money.LARGE_AMOUNT]: one zero too many is an easy slip on a phone
+ * keypad, and a ₹10,00,000 dinner would throw every balance off until someone noticed.
+ */
+@Composable
+fun LargeAmountDialog(amount: Double, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = CharcoalSurface,
+        shape = KpShapes.large,
+        title = { Text("That's ${Money.format(amount)}. Right?", style = MaterialTheme.typography.headlineMedium) },
+        text = { Text("Just checking for an extra zero.", style = MaterialTheme.typography.bodyMedium) },
+        confirmButton = {
+            TextButton(onClick = onConfirm, modifier = Modifier.testTag("large_amount_confirm")) {
+                Text("Yes, save", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Change it", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
             }
         },
         titleContentColor = OffWhiteText,
@@ -325,7 +352,8 @@ fun BigAmountField(
             if (amount.isEmpty()) Text("0", style = MoneyText.hero, color = SubMutedWarmGray)
             BasicTextField(
                 value = amount,
-                onValueChange = onAmountChange,
+                // Only a plain amount gets in: "NaN", "1e999" or a pasted 19-digit number used to.
+                onValueChange = { Money.acceptInput(it)?.let(onAmountChange) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 textStyle = MoneyText.hero.copy(color = OffWhiteText),

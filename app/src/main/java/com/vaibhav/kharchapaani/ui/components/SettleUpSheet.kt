@@ -75,8 +75,16 @@ fun SettleUpContent(
     var note by rememberSaveable(person.id) { mutableStateOf("") }
     var selectedGroupId by remember(person.id, groupOptions) { mutableStateOf(groupOptions.onlyGroup?.id) }
 
-    val value = amount.toDoubleOrNull() ?: 0.0
+    val value = Money.parseInput(amount) ?: 0.0
     val needsGroup = groupOptions.canSync && selectedGroupId == null
+    fun record() {
+        val groupId = selectedGroupId.takeIf { groupOptions.canSync }
+        if (theyPaid) onConfirm(person.id, ME, value, note, groupId) else onConfirm(ME, person.id, value, note, groupId)
+    }
+    var checkLargeAmount by remember { mutableStateOf(false) }
+    if (checkLargeAmount) {
+        LargeAmountDialog(value, onConfirm = { checkLargeAmount = false; record() }, onDismiss = { checkLargeAmount = false })
+    }
 
     SheetScaffold(
         modifier = modifier,
@@ -85,10 +93,7 @@ fun SettleUpContent(
                 label = if (groupOptions.involvesGroupmates && !groupOptions.canSync) "Save on this phone only" else "Record settlement",
                 disabledLabel = if (value <= 0) "Add an amount" else "Choose a group",
                 enabled = value > 0 && !needsGroup,
-                onClick = {
-                    val groupId = selectedGroupId.takeIf { groupOptions.canSync }
-                    if (theyPaid) onConfirm(person.id, ME, value, note, groupId) else onConfirm(ME, person.id, value, note, groupId)
-                },
+                onClick = { if (value > Money.LARGE_AMOUNT) checkLargeAmount = true else record() },
                 buttonTestTag = "confirm_settle_button",
             )
         },

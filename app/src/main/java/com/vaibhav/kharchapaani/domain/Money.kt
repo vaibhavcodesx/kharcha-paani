@@ -9,3 +9,12 @@ import java.math.RoundingMode
  * on one side and not the other; negative amounts were rounded toward zero as well.
  */
 fun roundPaisa(rupees: Double): Double = BigDecimal.valueOf(rupees).setScale(2, RoundingMode.HALF_UP).toDouble()
+
+/** The largest amount the server's `numeric(12,2)` columns hold: ₹9,99,99,99,999.99. */
+const val MAX_AMOUNT_RUPEES = 9_999_999_999.99
+
+/**
+ * Whether [amount] can be saved and synced: a real number above zero that the server can store. A
+ * pasted "Infinity" used to be saved, and its upload threw on every sync, so nothing else synced.
+ */
+fun isSavableAmount(amount: Double): Boolean = amount.isFinite() && amount > 0 && amount <= MAX_AMOUNT_RUPEES

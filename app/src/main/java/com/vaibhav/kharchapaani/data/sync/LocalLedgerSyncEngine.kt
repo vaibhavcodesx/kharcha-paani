@@ -14,6 +14,7 @@ import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.domain.PersonColours
 import com.vaibhav.kharchapaani.domain.roundPaisa
+import com.vaibhav.kharchapaani.domain.isSavableAmount
 import kotlin.math.abs
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
@@ -91,6 +92,7 @@ class LocalLedgerSyncEngine(
     @OptIn(ExperimentalTime::class)
     internal suspend fun buildSplit(tx: TransactionEntity): Pair<LocalTransactionPayload, LocalSplitPayload>? {
         if (tx.groupId != null || !tx.isSplit) return null
+        if (!isSavableAmount(tx.amount)) return null
         val split = dao.splitForTransaction(tx.id) ?: return null
         val shares = dao.sharesForSplit(split.id)
         if (shares.isEmpty()) return null
@@ -129,7 +131,7 @@ class LocalLedgerSyncEngine(
     private suspend fun pushSettlement(settlement: SettlementEntity) {
         val from = nameOf(settlement.fromPersonId)
         val to = nameOf(settlement.toPersonId)
-        if (from == null || to == null || (from.value == null && to.value == null)) {
+        if (from == null || to == null || (from.value == null && to.value == null) || !isSavableAmount(settlement.amount)) {
             dao.markSettlementFailedIfUnchanged(settlement.id, settlement.updatedAt)
             return
         }
