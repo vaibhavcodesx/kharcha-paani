@@ -1,4 +1,6 @@
 # The wrapper scripts must keep their native line endings, or ./gradlew breaks on the Linux CI runner.
 gradlew text eol=lf
+# Same for shell scripts, which Git Bash on Windows also refuses to run with CRLF.
+*.sh text eol=lf
 *.bat text eol=crlf
 *.jar binary
