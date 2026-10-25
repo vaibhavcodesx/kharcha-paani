@@ -103,7 +103,7 @@ fun SubscriptionsContent(
     var start by rememberSaveable { mutableStateOf(today) }
     var askBackdate by rememberSaveable { mutableStateOf(false) }
 
-    val value = amount.toDoubleOrNull() ?: 0.0
+    val value = Money.parseInput(amount) ?: 0.0
     val cleanName = name.trim()
     val ready = cleanName.isNotEmpty() && value > 0
     val missed = remember(start, cycle, today) { SubscriptionSchedule.dueDates(start, cycle, today) }
@@ -157,7 +157,7 @@ fun SubscriptionsContent(
             SheetRow(label = "Amount", position = RowPosition.Middle) {
                 SheetTextInput(
                     value = amount,
-                    onValueChange = { amount = it },
+                    onValueChange = { typed -> Money.acceptInput(typed)?.let { amount = it } },
                     placeholder = "649",
                     keyboardType = KeyboardType.Decimal,
                     fieldTestTag = "subscription_amount_input",

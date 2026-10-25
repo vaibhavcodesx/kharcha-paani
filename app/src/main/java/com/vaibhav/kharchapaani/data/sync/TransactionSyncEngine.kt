@@ -38,16 +38,28 @@ class TransactionSyncEngine(
 
     private suspend fun pushUpserts() {
         repeat(MAX_PUSH_BATCHES) {
-            val batch = store.pendingUpserts(PUSH_BATCH_SIZE)
-            if (batch.isEmpty()) return
-            try {
-                remote.upsert(batch.map { it.toUpload(ownerId) })
-                batch.forEach { store.markSyncedIfUnchanged(it.id, it.updatedAt) }
-            } catch (e: RowsRejectedException) {
-                // One bad row fails the whole request; resend individually so the rest still sync.
-                batch.forEach { pushSingle(it) }
+            val fetched = store.pendingUpserts(PUSH_BATCH_SIZE)
+            if (fetched.isEmpty()) return
+            // A row that can't even be written as an upload (a non-finite amount) is marked FAILED
+            // here. Thrown from the batch, it stopped every later sync for the account.
+            val batch = fetched.filter { row ->
+                val convertible = runCatching { row.toUpload(ownerId) }.isSuccess
+                if (!convertible) {
+                    Log.w(TAG, "Transaction ${row.remoteId} can't be uploaded; marked failed")
+                    store.markFailedIfUnchanged(row.id, row.updatedAt)
+                }
+                convertible
             }
-            if (batch.size < PUSH_BATCH_SIZE) return
+            if (batch.isNotEmpty()) {
+                try {
+                    remote.upsert(batch.map { it.toUpload(ownerId) })
+                    batch.forEach { store.markSyncedIfUnchanged(it.id, it.updatedAt) }
+                } catch (e: RowsRejectedException) {
+                    // One bad row fails the whole request; resend individually so the rest still sync.
+                    batch.forEach { pushSingle(it) }
+                }
+            }
+            if (fetched.size < PUSH_BATCH_SIZE) return
         }
     }
 

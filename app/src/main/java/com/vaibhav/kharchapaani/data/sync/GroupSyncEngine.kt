@@ -18,6 +18,7 @@ import com.vaibhav.kharchapaani.domain.PersonColours
 import com.vaibhav.kharchapaani.domain.UpiLink
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.domain.SplitRounding
+import com.vaibhav.kharchapaani.domain.isSavableAmount
 import java.util.UUID
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.seconds
@@ -105,6 +106,7 @@ class GroupSyncEngine(
     @OptIn(ExperimentalTime::class)
     internal suspend fun buildGroupExpense(tx: TransactionEntity): GroupExpenseUpload? {
         val group = tx.groupId?.let { dao.groupById(it) } ?: return null
+        if (!isSavableAmount(tx.amount)) return null.also { Log.w(TAG, "${tx.remoteId}: amount can't be uploaded") }
         val split = dao.splitForTransaction(tx.id)
         val shares = split?.let { dao.sharesForSplit(it.id) }.orEmpty()
         val payerId = split?.paidByPersonId ?: ME
@@ -189,6 +191,7 @@ class GroupSyncEngine(
     @OptIn(ExperimentalTime::class)
     private suspend fun buildSettlement(settlement: SettlementEntity): SettlementUpload? {
         val group = settlement.groupId?.let { dao.groupById(it) } ?: return null
+        if (!isSavableAmount(settlement.amount)) return null
         return SettlementUpload(
             id = settlement.remoteId,
             fromProfileId = profileIdOf(settlement.fromPersonId) ?: return null,

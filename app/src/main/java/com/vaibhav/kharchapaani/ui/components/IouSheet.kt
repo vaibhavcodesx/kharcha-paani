@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.testTag
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.UpiPayee
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.groups.RecordInGroupSection
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
 import com.vaibhav.kharchapaani.ui.theme.EyebrowText
@@ -65,7 +66,7 @@ fun IouContent(
     }
     var selectedGroupId by remember(groupOptions) { mutableStateOf(groupOptions.onlyGroup?.id) }
 
-    val value = amount.toDoubleOrNull() ?: 0.0
+    val value = Money.parseInput(amount) ?: 0.0
     val needsGroup = groupOptions.canSync && selectedGroupId == null
     val missing = when {
         people.isEmpty() -> "Add a friend first"
@@ -73,6 +74,16 @@ fun IouContent(
         value <= 0 -> "Add an amount"
         needsGroup -> "Choose a group"
         else -> null
+    }
+    fun record() {
+        val chosen = person ?: return
+        val note = reason.ifBlank { if (lent) "Informal Loan" else "Borrowed Amount" }
+        val groupId = selectedGroupId.takeIf { groupOptions.canSync }
+        if (lent) onConfirm(ME, chosen.id, value, note, groupId) else onConfirm(chosen.id, ME, value, note, groupId)
+    }
+    var checkLargeAmount by remember { mutableStateOf(false) }
+    if (checkLargeAmount) {
+        LargeAmountDialog(value, onConfirm = { checkLargeAmount = false; record() }, onDismiss = { checkLargeAmount = false })
     }
 
     SheetScaffold(
@@ -82,12 +93,7 @@ fun IouContent(
                 label = if (groupOptions.involvesGroupmates && !groupOptions.canSync) "Save on this phone only" else "Record IOU",
                 disabledLabel = missing ?: "",
                 enabled = missing == null,
-                onClick = {
-                    val chosen = person ?: return@GlassActionBar
-                    val note = reason.ifBlank { if (lent) "Informal Loan" else "Borrowed Amount" }
-                    val groupId = selectedGroupId.takeIf { groupOptions.canSync }
-                    if (lent) onConfirm(ME, chosen.id, value, note, groupId) else onConfirm(chosen.id, ME, value, note, groupId)
-                },
+                onClick = { if (value > Money.LARGE_AMOUNT) checkLargeAmount = true else record() },
                 buttonTestTag = "confirm_iou_button",
             )
         },

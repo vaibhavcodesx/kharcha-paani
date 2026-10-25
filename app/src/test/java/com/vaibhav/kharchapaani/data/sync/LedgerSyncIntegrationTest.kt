@@ -153,4 +153,31 @@ class LedgerSyncIntegrationTest {
         assertEquals(SyncState.SYNCED, pulled.syncState)
         assertEquals(emptyList<String>(), dao.pendingDeletes(10))
     }
+
+    @Test
+    fun `a row that can't be uploaded is marked failed and the rest still sync`() = runBlocking {
+        val owner = "owner-1"
+        val remote = FakeTransactionRemote(owner)
+        val engine = TransactionSyncEngine(RoomTransactionSyncStore(db), remote, owner)
+        // Written straight to the table, the way a pasted "Infinity" reached it before the input fix.
+        val broken = db.transactionDao().insertTransaction(personalTransaction("Pasted", amount = Double.POSITIVE_INFINITY))
+        val fine = repository.saveTransactionWithSplits(personalTransaction("Chai", amount = 40.0))
+
+        engine.sync()
+
+        assertEquals(SyncState.FAILED, db.transactionDao().getTransactionByIdDirect(broken)?.syncState)
+        assertEquals(SyncState.SYNCED, db.transactionDao().getTransactionByIdDirect(fine)?.syncState)
+        assertEquals(listOf("Chai"), remote.server.values.map { it.merchant })
+    }
+
+    @Test
+    fun `the repository refuses an amount that isn't a positive number`() = runBlocking {
+        for (bad in listOf(Double.POSITIVE_INFINITY, Double.NaN, 0.0, -5.0)) {
+            val refused = runCatching { repository.saveTransactionWithSplits(personalTransaction("Bad", amount = bad)) }
+            assertTrue("$bad was saved", refused.exceptionOrNull() is IllegalArgumentException)
+            val settlement = runCatching { repository.recordSettlement(fromPersonId = 5, toPersonId = -1, amount = bad) }
+            assertTrue("settlement of $bad was saved", settlement.exceptionOrNull() is IllegalArgumentException)
+        }
+        assertEquals(emptyList<Any>(), dao.pendingPersonalTransactions(10))
+    }
 }
