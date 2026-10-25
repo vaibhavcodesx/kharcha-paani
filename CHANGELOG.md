@@ -38,6 +38,14 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   version you're on.
 - `docs/legal/play-console-answers.md`: the Data safety and Financial features answers for the Play
   Console, and the account deletion page for people who no longer have the app.
+- Before the first quick add, bill scan, statement, Insights question or trip read goes to Google
+  Gemini, the app now says so, once: "Bills, statements and quick-add text are read by Google
+  Gemini", that while the app is free Google may use what's sent to improve Gemini and its
+  reviewers may see it, that it's never shown to other users and never sold. "Type it myself"
+  sends nothing: a quick add is filled in on your phone instead, and a bill photo is kept on a
+  blank entry for you to type.
+- "Report this answer" under each AI answer opens your mail app with the answer, so a wrong or
+  offensive one can be reported.
 
 ### Fixed
 

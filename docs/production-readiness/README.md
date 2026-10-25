@@ -321,7 +321,7 @@ user sees in the first minute.
   20 s, the line "Long statements take up to 3 minutes. You can cancel and try a shorter date range."
 - Why: Back does nothing for up to 3–6 minutes today (REL H2).
 
-**T1.10 AI disclosure and the 18+ line** · S
+**T1.10 AI disclosure and the 18+ line** · S · **done in #96** (the 18+ line in #95)
 - A one-time sheet before the first scan, photo, statement or Insights question: "Photos, PDFs and
   text you send are read by Google Gemini to fill in your entry. They aren't used to train Google's
   models. [Continue] [Not now]". Store consent in `AppSettings`; "Not now" keeps manual entry working.

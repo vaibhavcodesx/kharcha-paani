@@ -10,6 +10,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.platform.LocalContext
+import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
+import com.vaibhav.kharchapaani.util.Support
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -141,6 +145,19 @@ fun AskAnswer(
             state is AskState.Answered -> {
                 if (asked != null) Text(asked.eyebrow.uppercase(), style = EyebrowText)
                 Text(state.text, style = MaterialTheme.typography.bodyLarge)
+                // Play's AI-generated content policy: an answer can be reported from where it's read.
+                val context = LocalContext.current
+                Text(
+                    "Report this answer",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = SubMutedWarmGray,
+                    modifier = Modifier
+                        .clickable(onClickLabel = "Report this answer by email") {
+                            Support.reportAiAnswer(context, asked?.label ?: "Insights", state.text)
+                        }
+                        .padding(vertical = Spacing.xs)
+                        .testTag("ai_answer_report"),
+                )
             }
 
             !hasSpending -> Text(
