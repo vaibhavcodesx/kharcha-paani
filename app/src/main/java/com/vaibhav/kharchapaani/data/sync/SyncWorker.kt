@@ -1,5 +1,6 @@
 package com.vaibhav.kharchapaani.data.sync
 
+import com.vaibhav.kharchapaani.diagnostics.CrashReporting
 import android.content.Context
 import android.util.Log
 import androidx.work.CoroutineWorker
@@ -77,11 +78,14 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 ListenableWorker.Result.retry()
             } catch (e: RestException) {
                 Log.w(TAG, "Sync request failed (${e.statusCode}): ${e.error}")
+                // The status code only: the server's message can quote the row it refused.
+                CrashReporting.recordProblem("Sync request failed: HTTP ${e.statusCode}")
                 ListenableWorker.Result.retry()
             } catch (e: IllegalStateException) {
                 // Expected only when a sign-out closes the database mid-run; anything else is a bug,
                 // so it's logged loudly. Rows stay queued either way and the next trigger resyncs.
                 Log.e(TAG, "Sync stopped", e)
+                CrashReporting.recordProblem("Sync stopped", e)
                 ListenableWorker.Result.failure()
             }
         }
