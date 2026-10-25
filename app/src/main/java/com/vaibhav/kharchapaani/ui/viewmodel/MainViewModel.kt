@@ -3,6 +3,7 @@ package com.vaibhav.kharchapaani.ui.viewmodel
 import com.vaibhav.kharchapaani.domain.receiptNotice
 import com.vaibhav.kharchapaani.domain.quickAddNotice
 import com.vaibhav.kharchapaani.domain.isSavableAmount
+import com.vaibhav.kharchapaani.domain.LocalHeuristicParser
 import com.vaibhav.kharchapaani.domain.AiFailure
 import com.vaibhav.kharchapaani.domain.CalendarDay
 import com.vaibhav.kharchapaani.domain.AiAskResult
@@ -920,6 +921,19 @@ class MainViewModel(
 
     fun parseInputText(rawText: String) {
         if (rawText.isBlank()) return
+        withAiNotice(insteadOfAi = { fillInOnPhone(rawText) }) { readTextWithAi(rawText) }
+    }
+
+    /** "Type it myself" on a quick add: the phone's own guess, and the sheet to check it in. */
+    private fun fillInOnPhone(rawText: String) {
+        resetBillPhoto()
+        applyParsedResult(LocalHeuristicParser.parse(rawText, people.value.map { it.name }).copy(date = System.currentTimeMillis()))
+        if (_paymentMethod.value.isBlank()) _paymentMethod.value = defaultPaymentMethod()
+        _parseNotice.value = "Filled in on your phone. Check the amount and details."
+        _isConfirmSheetOpen.value = true
+    }
+
+    private fun readTextWithAi(rawText: String) {
         viewModelScope.launch {
             _isParsing.value = true
             _parseNotice.value = null
@@ -937,6 +951,14 @@ class MainViewModel(
     }
 
     fun parseReceiptImage(bitmap: Bitmap) {
+        withAiNotice(insteadOfAi = {
+            // Typed by hand, with the bill still kept beside it.
+            openManualAdd()
+            keepBillPhoto { bitmap }
+        }) { readReceiptWithAi(bitmap) }
+    }
+
+    private fun readReceiptWithAi(bitmap: Bitmap) {
         // The picture that was read is kept with the expense by default; one tap on the row drops it.
         resetBillPhoto()
         keepBillPhoto { bitmap }
@@ -974,6 +996,12 @@ class MainViewModel(
     private var statementJob: Job? = null
 
     fun parseBankOrUpiStatement(pdfBytes: ByteArray, fileName: String = "statement.pdf") {
+        withAiNotice(insteadOfAi = {
+            _statusMessage.value = "Statements are read by Gemini, so this one wasn't. You can still add entries yourself."
+        }) { readStatementWithAi(pdfBytes, fileName) }
+    }
+
+    private fun readStatementWithAi(pdfBytes: ByteArray, fileName: String) {
         statementJob?.cancel()
         statementJob = viewModelScope.launch {
             _isParsingStatement.value = true
@@ -1712,6 +1740,45 @@ class MainViewModel(
     /** Whether asking is possible at all: no key in the build means the section isn't shown. */
     val aiAvailable: Boolean = geminiRepo.hasApiKey()
 
+    // The one-time notice before anything goes to Gemini (plan T1.10, decision D2).
+    private val aiNoticeAccepted: StateFlow<Boolean> = settings.aiNoticeAccepted
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    private val _isAiNoticeOpen = MutableStateFlow(false)
+    val isAiNoticeOpen: StateFlow<Boolean> = _isAiNoticeOpen.asStateFlow()
+    private var afterAiNotice: (() -> Unit)? = null
+    private var insteadOfAi: (() -> Unit)? = null
+
+    /**
+     * Runs [withAi] if what it sends to Gemini is covered: the notice accepted, or no key in this
+     * build (then nothing leaves the phone). Otherwise shows the notice first; "Type it myself" runs
+     * [insteadOfAi], which never sends anything.
+     */
+    private fun withAiNotice(insteadOfAi: () -> Unit, withAi: () -> Unit) {
+        if (!aiAvailable || aiNoticeAccepted.value) return withAi()
+        afterAiNotice = withAi
+        this.insteadOfAi = insteadOfAi
+        _isAiNoticeOpen.value = true
+    }
+
+    fun acceptAiNotice() {
+        val next = afterAiNotice
+        closeAiNotice()
+        viewModelScope.launch { settings.setAiNoticeAccepted(true) }
+        next?.invoke()
+    }
+
+    fun declineAiNotice() {
+        val instead = insteadOfAi
+        closeAiNotice()
+        instead?.invoke()
+    }
+
+    private fun closeAiNotice() {
+        _isAiNoticeOpen.value = false
+        afterAiNotice = null
+        insteadOfAi = null
+    }
+
     private var askJob: Job? = null
 
     /**
@@ -1723,6 +1790,12 @@ class MainViewModel(
      * running — no queue, because a queued answer lands under a chip nobody is looking at.
      */
     fun askInsights(prompt: AiPrompt) {
+        // Picking an answer already in hand sends nothing, so it needs no notice.
+        if (!_askBoard.value.needsAsking(prompt)) return askInsightsNow(prompt)
+        withAiNotice(insteadOfAi = {}) { askInsightsNow(prompt) }
+    }
+
+    private fun askInsightsNow(prompt: AiPrompt) {
         if (!_askBoard.value.needsAsking(prompt)) {
             _askBoard.value = _askBoard.value.select(prompt)
             return
@@ -1803,6 +1876,10 @@ class MainViewModel(
 
     /** Reads one group, start to finish. Group sheet only — it is about a group. */
     fun askTripReview(groupId: Long) {
+        withAiNotice(insteadOfAi = {}) { askTripReviewNow(groupId) }
+    }
+
+    private fun askTripReviewNow(groupId: Long) {
         tripJob?.cancel()
         tripJob = viewModelScope.launch {
             // Nothing to read yet, so nothing to say: leaving the state alone keeps the button
