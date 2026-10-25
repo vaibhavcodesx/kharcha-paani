@@ -130,6 +130,9 @@ class MainViewModel(
     application: Application,
     private val db: AppDatabase,
     private val userId: String,
+    // Identity passed in so requests carry the headers a key restricted to this app requires.
+    // Tests pass one whose client answers without a network.
+    private val geminiRepo: GeminiRepository = GeminiRepository(appIdentity = AppIdentity.of(application)),
 ) : AndroidViewModel(application) {
 
     private val ledgerRepo = LedgerRepository(db, onLocalTransactionChange = ::requestSync, selfProfileId = userId)
@@ -162,8 +165,6 @@ class MainViewModel(
             requestSync()
         }
     }
-    // Identity passed in so requests carry the headers a key restricted to this app requires.
-    private val geminiRepo = GeminiRepository(appIdentity = AppIdentity.of(application))
 
     private val settings = AppSettings(application)
 
