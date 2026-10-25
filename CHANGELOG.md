@@ -77,6 +77,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   stopped all of them. They now go out whatever the sync managed.
 - Both notification channels exist from the first launch, so either can be turned off in the
   phone's settings before its first notification.
+- A save that failed in a way the app didn't expect (a full phone, signing out while it was
+  saving) could close the app. Every action that writes or sends something now says what happened
+  instead ("Couldn't save. Your phone may be out of space."), and the reading spinner on a quick
+  add or a bill always goes away, even when the read fails. Sharing an invite on a phone with no
+  share sheet no longer crashes.
 
 ## [1.5.0] - 2026-10-25
 
