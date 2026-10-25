@@ -1,5 +1,77 @@
 # TODOS
 
+## From the owner's own use (2026-10-25)
+
+Gaps and bugs the owner noticed using the app. Not yet investigated: check each in the code before
+fixing. Kept in the owner's numbering (there was no item 1). Each one is a PR of its own unless noted.
+
+### 2. Member colour dots in a group's expenses
+
+**What:** In a group's expense list, show each person's colour dot (the colour each person already has)
+beside who paid and who's in it, as the friend rows already do.
+**Priority:** P2 · **Effort:** S
+
+### 3a. More categories
+
+**What:** Add "Packaged goods", "Beverages", and a category for haircuts, salon, spa, grooming and the
+like. The owner didn't want it called "Personal". Suggested name: **"Grooming"**, or "Self-care" if it
+should also cover gym and wellness; the owner picks. New categories must also reach the AI prompts
+(quick add, bills, statements) so Gemini can choose them, and `CategoriesTest`.
+**Priority:** P2 · **Effort:** S
+
+### 3b. Saved cards as payment methods
+
+**What:** Let people add a card as a payment method under a name they choose plus its last 4 digits
+(for example "HDFC credit ••4321"), and keep several. Only the last 4 digits are stored, never a full
+number, expiry or CVV, and the field takes 4 digits only. The entry then shows "Card ••4321".
+**Check first:** Play's Financial features declaration and the Data safety form. Storing the last 4
+digits is "financial info: other" on the phone. It is optional and stays on the phone unless it syncs,
+so decide whether payment-method labels sync.
+**Priority:** P3 · **Effort:** M (Room migration if methods move to a table)
+
+### 4. Tapping an IOU card shows the whole note
+
+**What:** A long IOU note is cut off on its card. Tapping the card should open it (a sheet or an
+expanded card) with the full note, the date and who recorded it.
+**Priority:** P2 · **Effort:** S
+
+### 5. Sorting groups
+
+**What:** Sort options on the Groups list: latest activity (default), name, what you're owed, what
+you owe, newest. Remember the choice.
+**Priority:** P3 · **Effort:** S
+
+### 6. Handling a lot of friends (20+)
+
+**What:** With 20 or more friends, the friend list, the split picker and the payer picker get long.
+Add search, people you split with often at the top, and a compact row style. Check performance (lazy
+lists in sheets, already in T3.7).
+**Priority:** P2 · **Effort:** M
+
+### 7. Fix the Groups → categories toggle
+
+**What:** The categories toggle on a group doesn't work as expected. Reproduce first: the owner's
+report is "Fix Groups -> categories toggle".
+**Priority:** P1 (a bug) · **Effort:** S
+
+### 8. A settlements view in a group
+
+**What:** A toggle or tab in a group to see every recorded settlement (who paid whom, when, its
+status), not just the expenses.
+**Priority:** P2 · **Effort:** S
+
+### 9. Pick a group by default when splitting with someone
+
+**What:** When you start a split and pick a person, preselect the group the two of you most recently
+added an expense in. You can still change it.
+**Priority:** P2 · **Effort:** S
+
+### 10. A walkthrough for new users, with Skip
+
+**What:** A short first-run tour of the main features (quick add, splits, groups, settle up), always
+skippable and never shown again once done or skipped. Later task: after the Play launch work.
+**Priority:** P3 · **Effort:** M
+
 ## Ledger
 
 ### One source for the per-friend balance maths

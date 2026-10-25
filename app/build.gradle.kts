@@ -80,8 +80,8 @@ android {
     // "is this an update?" — it must strictly increase or the new APK refuses to install over
     // the old one. versionName is the human label and should match the git tag: tag v1.1.0,
     // versionName "1.1.0".
-    versionCode = 5
-    versionName = "1.4.0"
+    versionCode = 6
+    versionName = "1.5.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
