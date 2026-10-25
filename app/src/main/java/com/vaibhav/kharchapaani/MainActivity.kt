@@ -18,12 +18,13 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
@@ -44,11 +45,17 @@ import com.vaibhav.kharchapaani.ui.components.CategoriesSheet
 import com.vaibhav.kharchapaani.ui.components.SubscriptionsSheet
 import com.vaibhav.kharchapaani.domain.Categories
 import com.vaibhav.kharchapaani.ui.shell.KpSnackbarHost
+import com.vaibhav.kharchapaani.ui.shell.applySystemBars
 import com.vaibhav.kharchapaani.ui.shell.snackbarClearance
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.testTag
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -123,9 +130,19 @@ class MainActivity : ComponentActivity() {
     // Share/widget intents wait here until the signed-in account's ledger is open.
     private var queuedIntent by mutableStateOf<Intent?>(null)
 
+    // Read by the launch screen's keep-on-screen check, which runs outside composition.
+    @Volatile private var gateIsLoading = true
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        // The launch screen stays up while the stored session and ledger open (usually a few
+        // milliseconds), never longer than #77's grace period, so a signed-in person goes from the
+        // brand mark straight to Home without a blank frame or a flash of the sign-in screen.
+        val launchedAt = SystemClock.uptimeMillis()
+        installSplashScreen().setKeepOnScreenCondition {
+            gateIsLoading && SystemClock.uptimeMillis() - launchedAt < SPLASH_MAX_MILLIS
+        }
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        applySystemBars()
 
         // On recreation (e.g. rotation) the launch intent was already handled; re-handling it
         // would parse the same shared screenshot twice.
@@ -154,11 +171,13 @@ class MainActivity : ComponentActivity() {
                         AccountSessionState.None, AccountSessionState.Opening -> AuthGate.Loading
                     }
                 }
+                SideEffect { gateIsLoading = gate == AuthGate.Loading }
                 Crossfade(targetState = gate, label = "AuthGate") { target ->
                     when (target) {
-                        // Stored sessions and ledger files open in milliseconds; a blank frame
-                        // avoids flashing the sign-in screen at someone already signed in.
-                        AuthGate.Loading -> Box(Modifier.fillMaxSize().background(CharcoalBg))
+                        // Stored sessions and ledger files open in milliseconds; the brand mark
+                        // continues the launch screen and avoids flashing the sign-in screen at
+                        // someone already signed in.
+                        AuthGate.Loading -> LoadingBrandMark()
                         AuthGate.SignIn -> SignInScreen(
                             isSigningIn = authUiState.isSigningIn,
                             failure = authUiState.signInFailure,
@@ -279,6 +298,20 @@ class MainActivity : ComponentActivity() {
 }
 
 private enum class AuthGate { Loading, SignIn, LedgerFailed, App }
+
+/** The launch screen's longest hold, matching #77's grace period for a session still refreshing. */
+private const val SPLASH_MAX_MILLIS = 1_500L
+
+/**
+ * The launch screen's brand mark, where the launch screen leaves it, for the rare open that takes
+ * longer than the launch screen waits. 288dp is the launch screen's own icon box.
+ */
+@Composable
+private fun LoadingBrandMark() {
+    Box(Modifier.fillMaxSize().background(CharcoalBg).testTag("loading_brand_mark"), contentAlignment = Alignment.Center) {
+        Image(painterResource(R.drawable.ic_launcher_foreground), contentDescription = "Kharcha Paani", modifier = Modifier.size(288.dp))
+    }
+}
 
 @Composable
 fun SplitFlowApp(

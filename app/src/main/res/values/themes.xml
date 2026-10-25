@@ -1,5 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar" />
+    <!--
+      The app is always dark. The window itself is the app's background colour, so nothing light
+      shows behind the first frame or under a 3-button navigation bar.
+    -->
+    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@color/kp_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <!--
+      The launch screen: the brand mark on the same background, held while the signed-in account
+      opens (at most 1.5 s, see MainActivity), then the app takes over without a flash.
+    -->
+    <style name="Theme.MyApplication.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/kp_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.MyApplication</item>
+    </style>
 </resources>
