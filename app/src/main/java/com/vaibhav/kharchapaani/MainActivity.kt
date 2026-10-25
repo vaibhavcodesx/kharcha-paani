@@ -98,6 +98,7 @@ import com.vaibhav.kharchapaani.ui.groups.SharedGroupsController
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupsViewModel
 import com.vaibhav.kharchapaani.ui.components.IouSheet
 import com.vaibhav.kharchapaani.ui.components.PersonLedgerSheet
+import com.vaibhav.kharchapaani.ui.components.RestoreBackupDialog
 import com.vaibhav.kharchapaani.ui.components.SettleUpSheet
 import com.vaibhav.kharchapaani.ui.components.SimplifyDebtsSheet
 import com.vaibhav.kharchapaani.ui.components.StatementImportDialog
@@ -315,6 +316,7 @@ fun SplitFlowApp(
     val isSubscriptionsOpen by viewModel.isSubscriptionsOpen.collectAsStateWithLifecycle()
     val subscriptions by viewModel.subscriptions.collectAsStateWithLifecycle()
     val isUpiOpen by viewModel.isUpiOpen.collectAsStateWithLifecycle()
+    val restorePreview by viewModel.restorePreview.collectAsStateWithLifecycle()
     val currentTab by viewModel.currentTab.collectAsState()
     val rawTransactions by viewModel.rawTransactions.collectAsState()
     val activityFeed by viewModel.activityFeed.collectAsState()
@@ -599,6 +601,7 @@ fun SplitFlowApp(
             viewModel.importLocalBackup(context, uri)
         }
     }
+    RestoreBackupDialog(backup = restorePreview, onRestore = viewModel::confirmRestore, onDismiss = viewModel::dismissRestore)
 
     if (isAccountSheetOpen) {
         AccountSheet(

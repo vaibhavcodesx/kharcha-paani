@@ -1765,28 +1765,55 @@ class MainViewModel(
         }
     }
 
-    /** Reads a backup file the person picked and puts back whatever is missing. */
+    private val _restorePreview = MutableStateFlow<LocalBackup?>(null)
+    /** A backup that read and checked out, waiting for the person to confirm the restore. */
+    val restorePreview: StateFlow<LocalBackup?> = _restorePreview.asStateFlow()
+
+    /**
+     * Reads a backup file the person picked and, if it checks out, asks before restoring it.
+     *
+     * Read off the main thread and no further than [BACKUP_MAX_BYTES]: the file is whatever someone
+     * picked, and readText() on a huge one froze or crashed the app. It used to be applied the moment
+     * it was picked, with no way to see what it held (security audit, 2026-10-24).
+     */
     fun importLocalBackup(context: Context, uri: Uri) {
         viewModelScope.launch {
-            val text = withContext(Dispatchers.IO) {
-                runCatching { context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } }.getOrNull()
+            val text = when (val read = SharedFiles.readBytes(context.applicationContext, uri, BACKUP_MAX_BYTES)) {
+                is SharedFiles.Read.Bytes -> read.bytes.toString(Charsets.UTF_8)
+                SharedFiles.Read.TooLarge -> {
+                    _statusMessage.value = "That file is too big to be a Kharcha Paani backup."
+                    return@launch
+                }
+                SharedFiles.Read.Unreadable -> {
+                    _statusMessage.value = "Couldn't open that file."
+                    return@launch
+                }
             }
-            if (text == null) {
-                _statusMessage.value = "Couldn't open that file."
-                return@launch
-            }
-            when (val result = LocalBackup.decode(text)) {
+            when (val result = withContext(Dispatchers.Default) { LocalBackup.decode(text) }) {
                 is BackupReadResult.Unreadable ->
                     _statusMessage.value = "That doesn't look like a Kharcha Paani backup."
                 is BackupReadResult.TooNew ->
                     _statusMessage.value = "That backup was written by a newer version of the app. Update first."
-                is BackupReadResult.Ok -> {
-                    val report = backupRepo.restore(result.backup)
-                    restoreSettings(result.backup.settings)
-                    _statusMessage.value = report.copy(settingsRestored = !result.backup.settings.isEmpty).message()
-                }
+                is BackupReadResult.Invalid ->
+                    _statusMessage.value = "That backup can't be restored: ${result.problem}. Nothing was changed."
+                is BackupReadResult.Ok -> _restorePreview.value = result.backup
             }
         }
+    }
+
+    /** Puts back whatever in the previewed backup is missing here. */
+    fun confirmRestore() {
+        val backup = _restorePreview.value ?: return
+        _restorePreview.value = null
+        viewModelScope.launch {
+            val report = backupRepo.restore(backup)
+            restoreSettings(backup.settings)
+            _statusMessage.value = report.copy(settingsRestored = !backup.settings.isEmpty).message()
+        }
+    }
+
+    fun dismissRestore() {
+        _restorePreview.value = null
     }
 
     /** Category and payment-method choices live in DataStore, so they restore separately. */
@@ -1827,6 +1854,9 @@ class MainViewModel(
     }
 
     companion object {
+        /** A year of a busy ledger is well under 1 MB of JSON; this is generous and still bounded. */
+        const val BACKUP_MAX_BYTES = 16 * 1024 * 1024
+
         fun factory(application: Application, db: AppDatabase, userId: String): ViewModelProvider.Factory =
             viewModelFactory { initializer { MainViewModel(application, db, userId) } }
     }
