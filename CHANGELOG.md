@@ -59,6 +59,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   the balance with that friend wrong. A split that arrives first now waits and is applied on the
   next sync, once its expense is here. A test saves two splits between the two pulls and checks
   the balance on both phones.
+- Opening the app on the 1st of a month, Home still showed last month's spending as "this month"
+  until something was saved. Home now moves on to the new month by itself, within a minute of
+  midnight.
 - Restoring a backup after signing in on a new phone could count a payment twice. A payment typed
   to a fraction of a paisa (₹100.555) and backed up before it had synced comes back from your
   account rounded (₹100.56), so the restore didn't recognise it as already there and added the
