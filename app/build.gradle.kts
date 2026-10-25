@@ -178,6 +178,8 @@ dependencies {
   implementation(libs.androidx.compose.ui.graphics)
   implementation(libs.androidx.compose.ui.tooling.preview)
   implementation(libs.androidx.core.ktx)
+  // The launch screen: the brand mark on the app's dark background while the account opens.
+  implementation(libs.androidx.core.splashscreen)
   implementation(libs.androidx.datastore.preferences)
   // QR codes for the UPI payment request (pure Java, no Android dependencies).
   implementation(libs.zxing.core)

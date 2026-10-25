@@ -13,6 +13,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- A launch screen with the Kharcha Paani mark on the app's dark background, held while your account
+  opens (at most 1.5 s), so the app goes straight from it to Home. The launcher icon has a themed
+  (monochrome) version too: just the ₹.
+
 ### Fixed
 
 - An amount that isn't a plain number ("Infinity", "1e999", a pasted 19-digit number) could be
@@ -22,6 +28,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   ignored. A row that still can't be uploaded is marked as not synced, and the rest sync on.
 - Saving more than ₹10 lakh asks first ("That's ₹12,00,000. Right?"), and an expense's date can no
   longer be set in the future.
+- On a phone in light mode, the clock, battery and other status bar icons were dark on the app's
+  dark background, so they couldn't be seen, and 3-button navigation had a white strip. The bars
+  now always have light icons over the app.
 
 ## [1.5.0] - 2026-10-25
 

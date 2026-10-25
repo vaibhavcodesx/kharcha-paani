@@ -7,4 +7,6 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <!-- CharcoalBg in ui/theme/Color.kt: the window behind the app and the launch screen. -->
+    <color name="kp_background">#FF0E0D0C</color>
 </resources>
