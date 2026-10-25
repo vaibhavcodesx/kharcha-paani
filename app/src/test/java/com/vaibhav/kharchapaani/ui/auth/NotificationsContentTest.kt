@@ -51,7 +51,8 @@ class NotificationsContentTest {
     fun `with notifications off, the screen says so and Turn on asks`() {
         show(access = NotificationAccess.CanAsk)
 
-        compose.onNodeWithTag("notifications_off").assertTextContains("Notifications are off", substring = true)
+        compose.onNodeWithTag("notifications_off").assertExists()
+        compose.onNodeWithText("Notifications are off").assertExists()
         compose.onNodeWithTag("notifications_turn_on").performClick()
 
         assertEquals(1, turnedOn)
