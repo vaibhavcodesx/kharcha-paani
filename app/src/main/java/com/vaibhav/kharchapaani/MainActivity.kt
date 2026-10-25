@@ -116,6 +116,7 @@ import com.vaibhav.kharchapaani.ui.groups.SharedGroupPanel
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupsController
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupsViewModel
 import com.vaibhav.kharchapaani.ui.components.IouSheet
+import com.vaibhav.kharchapaani.ui.components.AiNoticeSheet
 import com.vaibhav.kharchapaani.ui.components.PersonLedgerSheet
 import com.vaibhav.kharchapaani.ui.components.RestoreBackupDialog
 import com.vaibhav.kharchapaani.ui.components.SettleUpSheet
@@ -992,6 +993,10 @@ fun SplitFlowApp(
         onDismiss = { viewModel.dismissAddFriend() },
         takenColours = phoneColours,
     )
+
+    // Once, before the first thing goes to Gemini (plan T1.10).
+    val isAiNoticeOpen by viewModel.isAiNoticeOpen.collectAsStateWithLifecycle()
+    if (isAiNoticeOpen) AiNoticeSheet(onGotIt = viewModel::acceptAiNotice, onTypeMyself = viewModel::declineAiNotice)
 
     // Bank & UPI Statement Parsing Loading Overlay
     if (isParsingStatement) {
