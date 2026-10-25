@@ -1,5 +1,11 @@
 package com.vaibhav.kharchapaani
 
+import java.util.UUID
+import java.io.File
+import com.vaibhav.kharchapaani.ui.components.BillPhotoSource
+import androidx.core.content.FileProvider
+import androidx.activity.result.PickVisualMediaRequest
+import android.content.ActivityNotFoundException
 import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
@@ -322,6 +328,7 @@ fun SplitFlowApp(
     // Back from Splits or Insights goes Home first, rather than closing the app; Back on Home leaves.
     // Sheets and dialogs are their own windows and still take Back before this does.
     BackHandler(enabled = currentTab != AppTab.Activity.ordinal) { viewModel.setTab(AppTab.Activity.ordinal) }
+    val billPhotoIds by viewModel.billPhotoIds.collectAsStateWithLifecycle()
     val rawTransactions by viewModel.rawTransactions.collectAsState()
     val activityFeed by viewModel.activityFeed.collectAsState()
     val totalNetOwed by viewModel.totalNetOwed.collectAsState()
@@ -513,6 +520,7 @@ fun SplitFlowApp(
                 when (targetTab) {
                     0 -> HomeScreen(
                         activity = activityFeed,
+                        billPhotoIds = billPhotoIds,
                         people = people,
                         totalNetOwed = totalNetOwed,
                         monthlyAnalytics = monthlyAnalytics,
@@ -661,6 +669,35 @@ fun SplitFlowApp(
     )
 
     // Confirm & Edit Bottom Sheet
+    // Bill photos: the system camera writes into cache/camera through the FileProvider, and the
+    // photo picker hands back a picture. The app declares no CAMERA permission, so neither asks
+    // for one. The camera's original is deleted once it's read; only the re-encoded copy is kept.
+    val billPhoto by viewModel.billPhoto.collectAsStateWithLifecycle()
+    var cameraFile by rememberSaveable { mutableStateOf<String?>(null) }
+    val takeBillPhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
+        val file = cameraFile?.let(::File) ?: return@rememberLauncherForActivityResult
+        cameraFile = null
+        if (taken) viewModel.attachBillPhoto(context, Uri.fromFile(file)) { file.delete() } else file.delete()
+    }
+    val pickBillPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) viewModel.attachBillPhoto(context, uri)
+    }
+    val addBillPhoto: (BillPhotoSource) -> Unit = { source ->
+        when (source) {
+            BillPhotoSource.Camera -> {
+                val file = File(File(context.cacheDir, "camera").apply { mkdirs() }, "${UUID.randomUUID()}.jpg")
+                cameraFile = file.path
+                try {
+                    takeBillPhoto.launch(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
+                } catch (e: ActivityNotFoundException) {
+                    cameraFile = null
+                    viewModel.showMessage("No camera app on this phone. Choose a photo from the gallery instead.")
+                }
+            }
+            BillPhotoSource.Gallery -> pickBillPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        }
+    }
+
     ConfirmBottomSheet(
         isOpen = isConfirmSheetOpen,
         isParsing = isParsing,
@@ -702,6 +739,9 @@ fun SplitFlowApp(
         hasUnsavedInput = { askBeforeDiscarding && viewModel.hasUnsavedEntry() },
         categories = Categories.categoriesFor(txType, categoryPrefs),
         paymentMethods = Categories.paymentMethods(categoryPrefs),
+        billPhoto = billPhoto,
+        onAddBillPhoto = addBillPhoto,
+        onRemoveBillPhoto = viewModel::removeBillPhoto,
     )
 
     val isExportOpen by viewModel.isExportOpen.collectAsState()

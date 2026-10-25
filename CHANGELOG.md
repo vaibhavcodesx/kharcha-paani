@@ -20,6 +20,13 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   research and the owner's saved reels. It answers which keys, database changes and features have to
   change, lists the console steps only the owner can do, and orders the work in three tiers, each
   item a PR with tests. The audits are kept alongside it.
+- Bill photos. Any expense can keep a photo of its bill: "Bill photo · optional" in the add and
+  edit sheet, from the camera or the gallery, with no permission asked. Scan bill and pictures
+  shared into the app keep the picture they read, and one tap removes it. Tap the thumbnail to see
+  the bill full screen and zoom in; expenses with a photo show a small receipt icon in the list.
+  Photos stay on this phone only (in your account's own folder, out of the 25 MB cloud backup, and
+  not in the JSON backup), are shrunk to about 300 KB, and carry no location or phone details.
+  Deleting an expense deletes its photo, after Undo has gone.
 - Ask a friend to pay you back without the awkward message. On the settle sheet's "{Friend} paid
   you" side, "Ask {name} to pay" shares a ready-made hisaab: each expense, guest share and payment
   since you were last square, a total that matches their balance, your UPI ID, and your payment

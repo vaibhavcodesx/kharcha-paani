@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import androidx.compose.material.icons.outlined.ReceiptLong
+import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -73,6 +75,7 @@ fun TransactionItemCard(
     position: RowPosition = RowPosition.Single,
     people: List<PersonEntity> = emptyList(),
     visits: Int = 0,
+    hasBillPhoto: Boolean = false,
 ) {
     val tx = fullTx.transaction
     val isIncome = tx.type == "income"
@@ -167,6 +170,14 @@ fun TransactionItemCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(text = detail, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     PaymentPill(method = tx.paymentMethod, modifier = Modifier.padding(start = Spacing.s))
+                    if (hasBillPhoto) {
+                        Icon(
+                            Icons.Outlined.ReceiptLong,
+                            contentDescription = "Has a bill photo",
+                            tint = MutedWarmGray,
+                            modifier = Modifier.padding(start = Spacing.s).size(14.dp),
+                        )
+                    }
                     if (isSplit) {
                         SharerFaces(
                             sharers = sharers,
