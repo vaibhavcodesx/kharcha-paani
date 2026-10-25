@@ -214,7 +214,7 @@ Effort is a rough guide: S ≈ under a day, M ≈ 1–2 days, L ≈ 3+ days of a
 Nothing in this tier is optional: each one is a Play rejection, a data-loss bug, or something every
 user sees in the first minute.
 
-**T1.1 Delete my account** · L · **[owner review]** (auth, RLS, service role)
+**T1.1 Delete my account** · L · **[owner review]** (auth, RLS, service role) · **PR #103, awaiting owner review**
 - Edge Function `delete-account` (service role): delete the caller's private rows (`local_splits`,
   `local_settlements`, personal `transactions`), replace their profile on shared records with a
   tombstone ("Former member"), remove their group memberships, delete the `auth.users` row. Several
