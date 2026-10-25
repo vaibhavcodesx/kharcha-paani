@@ -123,8 +123,9 @@ data class LocalBackup(
          * a row left out is gone.
          *
          * @param inSharedGroup null when the transaction belongs to no group.
+         * @param localOnly the row is marked never to upload (`SyncState.LOCAL_ONLY`).
          */
-        fun isUnsyncable(isSplit: Boolean, inSharedGroup: Boolean?): Boolean = when {
+        fun isUnsyncable(isSplit: Boolean, inSharedGroup: Boolean?, localOnly: Boolean = false): Boolean = when {
             // A shared group's expenses, split or not, are the group's on the server. Checked first:
             // behind `isSplit` they went into the file, groupmates' included, and a restore brought
             // back ones deleted or settled since, as this phone's own (correctness audit, 2026-10-24).
@@ -133,6 +134,10 @@ data class LocalBackup(
             // with friends who have no account goes up through `local_splits` instead; it is kept
             // here anyway (see "Since 1.3.0 it over-includes" above).
             isSplit -> true
+            // `pendingPersonalTransactions` only takes PENDING rows. A split whose friend was deleted
+            // becomes a plain expense of my share and stays LOCAL_ONLY (LedgerRepository
+            // .collapseSplitWithNobodyElse), as does one restored from a backup: neither ever uploads.
+            localOnly -> true
             // No group: an ordinary personal expense, which does upload.
             inSharedGroup == null -> false
             // A local-only group's expenses have nowhere on the server to go.

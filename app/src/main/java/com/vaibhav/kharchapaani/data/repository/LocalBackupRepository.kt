@@ -45,6 +45,11 @@ class LocalBackupRepository(private val db: AppDatabase) {
             // Every person, not just local ones: a split with a registered groupmate outside a
             // shared group is just as unsyncable, and its shares still have to name someone.
             val nameOf = people.associate { it.id to it.name }
+            // Null in the file means "you", so only -1 may be written as null. Someone deleted from
+            // this phone has no name to write, and writing null for them turned a split they paid
+            // into one I paid (correctness audit, 2026-10-24).
+            fun known(personId: Long) = personId == me || personId in nameOf
+            fun nameFor(personId: Long): String? = if (personId == me) null else nameOf.getValue(personId)
 
             val allGroups = db.groupDao().getAllGroupsDirect()
             val groupById = allGroups.associateBy { it.id }
@@ -53,14 +58,17 @@ class LocalBackupRepository(private val db: AppDatabase) {
 
             // Everything outside a shared group, including the ones with friends who have no account
             // that sync privately since 1.3.0: kept anyway, and recognised on restore (see LocalBackup).
+            // One with someone no longer here moves no balance the app shows, and has no one to name.
             val settlements = db.settlementDao().getAllSettlementsDirect()
                 .filter { settlement -> settlement.groupId?.let { groupById[it]?.isShared } != true }
+                .filter { known(it.fromPersonId) && known(it.toPersonId) }
 
             val splitByTransaction = db.splitDao().getAllSplitsDirect().associateBy { it.transactionId }
             val transactions = db.transactionDao().getAllTransactionsDirect().filter { transaction ->
                 LocalBackup.isUnsyncable(
                     isSplit = transaction.isSplit || splitByTransaction.containsKey(transaction.id),
                     inSharedGroup = transaction.groupId?.let { groupById[it]?.isShared ?: false },
+                    localOnly = transaction.syncState == SyncState.LOCAL_ONLY,
                 )
             }
 
@@ -101,8 +109,8 @@ class LocalBackupRepository(private val db: AppDatabase) {
                 },
                 settlements = settlements.map {
                     BackupSettlement(
-                        fromName = nameOf[it.fromPersonId],
-                        toName = nameOf[it.toPersonId],
+                        fromName = nameFor(it.fromPersonId),
+                        toName = nameFor(it.toPersonId),
                         amount = it.amount,
                         date = it.date,
                         note = it.note,
@@ -111,12 +119,18 @@ class LocalBackupRepository(private val db: AppDatabase) {
                         createdAt = it.createdAt,
                     )
                 },
-                transactions = transactions.map { transaction ->
+                transactions = transactions.mapNotNull { transaction ->
                     val split = splitByTransaction[transaction.id]
+                    val shares = split?.let { db.splitDao().getSharesForSplitDirect(it.id) }.orEmpty()
+                    // Paid by a friend since deleted: what's left of it for me is my share, which is
+                    // what the app counts as my spending. Nobody here owes anybody here for it.
+                    val payerGone = split != null && !known(split.paidByPersonId)
+                    val amount = if (payerGone) roundPaisa(shares.filter { it.personId == me }.sumOf { it.shareAmount }) else transaction.amount
+                    if (payerGone && amount <= 0) return@mapNotNull null
                     BackupTransaction(
                         remoteId = transaction.remoteId.takeIf { it.isNotBlank() },
                         type = transaction.type,
-                        amount = transaction.amount,
+                        amount = amount,
                         category = transaction.category,
                         merchant = transaction.merchant,
                         paymentMethod = transaction.paymentMethod,
@@ -124,14 +138,15 @@ class LocalBackupRepository(private val db: AppDatabase) {
                         note = transaction.note,
                         groupName = transaction.groupId?.let { groupById[it]?.name },
                         createdAt = transaction.createdAt,
-                        split = split?.let {
+                        split = split?.takeUnless { payerGone }?.let {
                             BackupSplit(
                                 totalAmount = it.totalAmount,
                                 splitType = it.splitType,
-                                paidByName = nameOf[it.paidByPersonId],
-                                shares = db.splitDao().getSharesForSplitDirect(it.id).map { share ->
+                                paidByName = nameFor(it.paidByPersonId),
+                                // A share of someone no longer here isn't anyone's to restore.
+                                shares = shares.filter { share -> known(share.personId) }.map { share ->
                                     BackupShare(
-                                        name = nameOf[share.personId],
+                                        name = nameFor(share.personId),
                                         amount = share.shareAmount,
                                         percentage = share.percentage,
                                     )
@@ -241,11 +256,18 @@ class LocalBackupRepository(private val db: AppDatabase) {
             val byRemoteId = existing.filter { it.remoteId.isNotBlank() }.associateBy { it.remoteId }
             val byShape = existing.map { Triple(it.date, it.merchant, it.amount) }.toMutableSet()
 
-            for (backedUp in backup.transactions) {
-                val alreadyHere = backedUp.remoteId?.let { byRemoteId[it] }
-                val shape = Triple(backedUp.date, backedUp.merchant, backedUp.amount)
-                val sharedGroups = backedUp.groupName?.trim()?.lowercase() in sharedGroupNames
-                if (alreadyHere != null || shape in byShape || sharedGroups) {
+            for (inFile in backup.transactions) {
+                val alreadyHere = inFile.remoteId?.let { byRemoteId[it] }
+                val shape = Triple(inFile.date, inFile.merchant, inFile.amount)
+                val sharedGroups = inFile.groupName?.trim()?.lowercase() in sharedGroupNames
+                // A payer named but not known here (a groupmate this phone hasn't synced yet) is not
+                // "you": falling back to me flipped who owes whom. Keep my share as my own spending,
+                // the way deleting a friend leaves it (LedgerRepository.deletePerson).
+                val payerUnknown = inFile.split?.paidByName?.let { personId(it) == null } == true
+                val backedUp = if (payerUnknown) {
+                    inFile.copy(amount = roundPaisa(inFile.split!!.shares.filter { it.name == null }.sumOf { it.amount }), split = null)
+                } else inFile
+                if (alreadyHere != null || shape in byShape || sharedGroups || backedUp.amount <= 0) {
                     report = report.copy(transactionsSkipped = report.transactionsSkipped + 1)
                     continue
                 }
@@ -273,8 +295,9 @@ class LocalBackupRepository(private val db: AppDatabase) {
                     SplitEntity(
                         transactionId = transactionId,
                         totalAmount = split.totalAmount,
-                        // The field whose loss would flip who owes whom, silently.
-                        paidByPersonId = personId(split.paidByName) ?: me,
+                        // The field whose loss would flip who owes whom, silently. Never null here:
+                        // an unknown payer was turned into my own expense above.
+                        paidByPersonId = personId(split.paidByName)!!,
                         splitType = split.splitType,
                     )
                 )
