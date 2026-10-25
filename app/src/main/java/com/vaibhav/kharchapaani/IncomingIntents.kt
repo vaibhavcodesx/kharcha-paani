@@ -38,7 +38,8 @@ object IncomingIntents {
         data object QuickAdd : Route
         data object VoiceLog : Route
         data object ViewSplits : Route
-        data class AnswerSettlement(val settlementId: Long?) : Route
+        /** [userId] is whose ledger [settlementId] is in; null from notifications posted before 1.5. */
+        data class AnswerSettlement(val settlementId: Long?, val userId: String?) : Route
     }
 
     fun route(intent: Intent): Route? {
@@ -63,7 +64,10 @@ object IncomingIntents {
             SplitFlowWidgetProvider.ACTION_VOICE_LOG -> Route.VoiceLog
             SplitFlowWidgetProvider.ACTION_VIEW_SPLITS -> Route.ViewSplits
             NotificationHelper.ACTION_ANSWER_SETTLEMENT ->
-                Route.AnswerSettlement(intent.getLongExtra(NotificationHelper.EXTRA_SETTLEMENT_ID, -1L).takeIf { it > 0 })
+                Route.AnswerSettlement(
+                    settlementId = intent.getLongExtra(NotificationHelper.EXTRA_SETTLEMENT_ID, -1L).takeIf { it > 0 },
+                    userId = intent.getStringExtra(NotificationHelper.EXTRA_USER_ID),
+                )
             else -> null
         }
     }

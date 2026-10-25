@@ -1,11 +1,13 @@
 package com.vaibhav.kharchapaani.ui.session
 
 import android.app.Application
+import android.app.NotificationManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.vaibhav.kharchapaani.data.db.LedgerDatabases
+import com.vaibhav.kharchapaani.util.NotificationHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -23,7 +25,9 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import java.io.File
 import java.util.UUID
 import java.util.concurrent.Executors
 
@@ -79,6 +83,31 @@ class AccountSessionHolderTest {
         withTimeout(5_000) { holder.state.first { it == AccountSessionState.None && !aliceSession.database.isOpen } }
 
         assertTrue(aliceViewModel.cleared)
+    }
+
+    @Test
+    fun `moving to another account takes down the last one's notifications and shared files`() = runBlocking {
+        openSessionFor(alice)
+        // A reminder for one of Alice's settlements, and a CSV and an ask QR made from her ledger.
+        NotificationHelper.showSettlementReminder(application, alice, 5L, "Rohan says they paid you ₹500", "Confirm it")
+        val files = AccountLeftovers.SHARED_FILE_DIRS.map { File(application.cacheDir, it).apply { mkdirs() }.resolve("alice.txt").apply { writeText("Rohan ₹500") } }
+        val notifications = shadowOf(application.getSystemService(NotificationManager::class.java))
+        assertEquals(1, notifications.allNotifications.size)
+
+        openSessionFor(bob)
+
+        assertEquals(0, notifications.allNotifications.size)
+        assertTrue(files.none { it.exists() })
+    }
+
+    @Test
+    fun `opening the first account of a launch leaves its notifications alone`() = runBlocking {
+        // A cold start with Alice already signed in isn't a change of account.
+        NotificationHelper.showSettlementReminder(application, alice, 5L, "Rohan says they paid you ₹500", "Confirm it")
+
+        openSessionFor(alice)
+
+        assertEquals(1, shadowOf(application.getSystemService(NotificationManager::class.java)).allNotifications.size)
     }
 
     private suspend fun openSessionFor(userId: String): AccountSession {
