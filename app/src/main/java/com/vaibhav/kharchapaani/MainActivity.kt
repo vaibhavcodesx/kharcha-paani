@@ -90,6 +90,7 @@ import com.vaibhav.kharchapaani.ui.session.AccountSessionState
 import com.vaibhav.kharchapaani.ui.session.LedgerOpenFailedScreen
 import com.vaibhav.kharchapaani.data.auth.AuthState
 import com.vaibhav.kharchapaani.ui.auth.AccountSheet
+import com.vaibhav.kharchapaani.ui.auth.LicencesSheet
 import com.vaibhav.kharchapaani.ui.auth.ProfileState
 import com.vaibhav.kharchapaani.ui.auth.ColourChoice
 import com.vaibhav.kharchapaani.domain.Hues
@@ -625,6 +626,7 @@ fun SplitFlowApp(
     }
     RestoreBackupDialog(backup = restorePreview, onRestore = viewModel::confirmRestore, onDismiss = viewModel::dismissRestore)
 
+    var isLicencesOpen by rememberSaveable { mutableStateOf(false) }
     if (isAccountSheetOpen) {
         AccountSheet(
             colour = ColourChoice(taken = groupmateHues, clashWith = colourClash),
@@ -668,8 +670,14 @@ fun SplitFlowApp(
             onReminderEnabledChange = viewModel::setReminderEnabled,
             onReminderTimeChange = viewModel::setReminderTime,
             onAllowNotifications = allowNotifications,
+            onOpenLicences = {
+                isAccountSheetOpen = false
+                isLicencesOpen = true
+            },
+            onNoApp = viewModel::showMessage,
         )
     }
+    LicencesSheet(isOpen = isLicencesOpen, onDismiss = { isLicencesOpen = false })
 
     SettlementAnswerSheet(
         item = answeringSettlement,

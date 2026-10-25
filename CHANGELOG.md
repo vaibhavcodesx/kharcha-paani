@@ -18,6 +18,17 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - A launch screen with the Kharcha Paani mark on the app's dark background, held while your account
   opens (at most 1.5 s), so the app goes straight from it to Home. The launcher icon has a themed
   (monochrome) version too: just the ₹.
+- A privacy policy and terms of use (`docs/legal/`, published from `site/`), written from what the
+  app really does: who handles your data (Supabase in Tokyo, Google Gemini on its free tier, Google
+  Sign-In, crash reports), what groupmates see, how long data is kept, how deleting your account
+  works, your rights under India's DPDP Act and a grievance contact who replies within 90 days.
+- The sign-in screen says what continuing agrees to, with the Terms and Privacy policy a tap away,
+  and that the app is for people 18 or older.
+- Help & about at the bottom of the account sheet: send feedback (your mail app opens with the app
+  and phone versions filled in), the privacy policy, the terms, open-source licences, and the
+  version you're on.
+- `docs/legal/play-console-answers.md`: the Data safety and Financial features answers for the Play
+  Console, and the account deletion page for people who no longer have the app.
 
 ### Fixed
 
