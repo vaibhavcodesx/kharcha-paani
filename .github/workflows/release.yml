@@ -128,10 +128,14 @@ jobs:
           "$build_tools/apksigner" verify --print-certs "$apk"
           echo "apk_path=$apk" >> "$GITHUB_ENV"
 
+      # Not -strict: on JDK 25 it fails every bundle with "signed in JarFile but is not signed in
+      # JarInputStream", a warning about the AAB's entry order (the 1.5.0 run hit it). An unsigned
+      # bundle never prints "jar verified", so that is what's checked.
       - name: Verify the bundle is signed
         run: |
           aab=$(ls app/build/outputs/bundle/release/*.aab | head -1)
-          jarsigner -verify -strict "$aab"
+          jarsigner -verify "$aab" | tee "$RUNNER_TEMP/jarsigner.txt"
+          grep -q "^jar verified" "$RUNNER_TEMP/jarsigner.txt"
           echo "aab_path=$aab" >> "$GITHUB_ENV"
 
       - name: Name the files after the release
