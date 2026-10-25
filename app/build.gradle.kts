@@ -8,6 +8,8 @@ plugins {
   alias(libs.plugins.androidx.room)
   alias(libs.plugins.roborazzi)
   alias(libs.plugins.secrets)
+  // Stamps each build with the id Crashlytics needs; without it the SDK refuses to start.
+  alias(libs.plugins.firebase.crashlytics)
 }
 
 /**
@@ -164,6 +166,9 @@ secrets {
 // This makes it easy to add them back in the future if needed.
 dependencies {
   coreLibraryDesugaring(libs.desugar.jdk.libs)
+  // Crash reports (plan T1.6): off unless .env has the Firebase project, and the person can turn them off.
+  implementation(platform(libs.firebase.bom))
+  implementation(libs.firebase.crashlytics)
   implementation(platform(libs.androidx.compose.bom))
   // implementation(libs.accompanist.permissions)
   implementation(libs.androidx.activity.compose)
