@@ -66,6 +66,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   say), the app could add that month's charge a second time: the date it had charged through read
   as the evening before. Subscription dates are now calendar days that read the same in any zone,
   including ones saved by earlier versions.
+- Importing a statement no longer ticks every row it read. Rows whose date couldn't be read
+  (they'd have landed on today), rows dated after today or outside the statement's own dates, and
+  income far bigger than the rest of the statement arrive unticked, each with the reason under
+  it. A tampered PDF could otherwise slip a ₹5,00,000 "salary" in among real payments.
 - Restoring a backup after signing in on a new phone could count a payment twice. A payment typed
   to a fraction of a paisa (₹100.555) and backed up before it had synced comes back from your
   account rounded (₹100.56), so the restore didn't recognise it as already there and added the

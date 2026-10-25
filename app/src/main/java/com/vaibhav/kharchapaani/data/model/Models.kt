@@ -146,7 +146,9 @@ data class StatementTransactionItem(
     val category: String = "Food",
     val paymentMethod: String = "PopUPI",
     val note: String = "",
-    val isSelected: Boolean = true
+    val isSelected: Boolean = true,
+    /** Why the row was left unticked for a second look (StatementChecks), or null. */
+    val flag: String? = null,
 )
 
 data class StatementMonthGroup(

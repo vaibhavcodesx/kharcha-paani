@@ -230,6 +230,10 @@ fun StatementTransactionRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            // Left unticked on purpose (StatementChecks): say why, so ticking it is a decision.
+            item.flag?.let { reason ->
+                Text(reason, style = MaterialTheme.typography.bodySmall, color = WarmAmberLight, modifier = Modifier.testTag("statement_flag_${item.id}"))
+            }
         }
         Text(
             text = if (isIncome) Money.format(item.amount, showPlus = true) else "-${Money.format(item.amount)}",
