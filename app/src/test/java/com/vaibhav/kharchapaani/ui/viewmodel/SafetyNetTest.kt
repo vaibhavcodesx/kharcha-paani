@@ -8,6 +8,9 @@ import androidx.work.Configuration
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.vaibhav.kharchapaani.data.db.AppDatabase
+import com.vaibhav.kharchapaani.domain.SubscriptionCycle
+import com.vaibhav.kharchapaani.ui.components.NewSubscription
+import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -47,7 +50,7 @@ class SafetyNetTest {
 
     @After
     fun tearDown() {
-        if (db.isOpen) db.close()
+        db.close()
         Dispatchers.resetMain()
     }
 
@@ -74,15 +77,13 @@ class SafetyNetTest {
     }
 
     @Test
-    fun `saving after the ledger was closed shows a message instead of crashing`() = runBlocking {
-        viewModel.openManualAdd()
-        viewModel.updateAmount("250")
-        // What signing out mid-save does to the account's database.
-        db.close()
-
-        viewModel.saveCurrentTransaction()
+    fun `a save the ledger refuses comes back as a message instead of a crash`() = runBlocking {
+        // A ₹0 subscription: the repository's guard refuses it with an exception nobody catches
+        // on the way, the shape of every unplanned failure the net is for.
+        viewModel.addSubscription(NewSubscription("Netflix", 0.0, "Entertainment", "UPI", SubscriptionCycle.MONTHLY, LocalDate.of(2026, 10, 1)), chargeFromStart = true)
 
         withTimeout(10_000) { while (viewModel.statusMessage.value == null) delay(20) }
-        assertEquals("Couldn't save just now. Try again.", viewModel.statusMessage.value)
+        assertEquals("Something went wrong and that wasn't saved. Try again.", viewModel.statusMessage.value)
+        assertTrue("the action can be tried again", Submit.AddSubscription !in viewModel.submitting.value)
     }
 }
