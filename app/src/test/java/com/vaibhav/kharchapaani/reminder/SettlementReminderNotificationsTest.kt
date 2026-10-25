@@ -9,6 +9,7 @@ import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.data.db.entity.SettlementStatus
+import com.vaibhav.kharchapaani.domain.NotificationPrefs
 import com.vaibhav.kharchapaani.util.NotificationHelper
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -83,5 +84,28 @@ class SettlementReminderNotificationsTest {
         SettlementReminders.remind(context, db, userId, now + 60_000)
 
         assertEquals(0, manager.activeNotifications.size)
+    }
+
+    @Test
+    fun `during quiet hours the nudge waits, and comes once they're over`() = runBlocking {
+        val id = priyaSaysShePaid()
+        val utc = java.time.ZoneOffset.UTC
+        val elevenPm = java.time.LocalDateTime.of(2027, 1, 15, 23, 0).toInstant(utc).toEpochMilli()
+
+        assertEquals(0, SettlementReminders.remind(context, db, userId, elevenPm, NotificationPrefs(), utc))
+        assertTrue(db.groupSyncDao().settlementById(id)!!.remindedStage < 0)
+
+        val nineAm = elevenPm + 10 * 3_600_000L
+        assertEquals(1, SettlementReminders.remind(context, db, userId, nineAm, NotificationPrefs(), utc))
+    }
+
+    @Test
+    fun `with payments to confirm turned off, nothing is shown or used up`() = runBlocking {
+        val id = priyaSaysShePaid()
+
+        val shown = SettlementReminders.remind(context, db, userId, now, NotificationPrefs(paymentsToConfirm = false))
+
+        assertEquals(0, shown)
+        assertTrue(db.groupSyncDao().settlementById(id)!!.remindedStage < 0)
     }
 }

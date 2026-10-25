@@ -90,6 +90,12 @@ import com.vaibhav.kharchapaani.ui.session.AccountSessionState
 import com.vaibhav.kharchapaani.ui.session.LedgerOpenFailedScreen
 import com.vaibhav.kharchapaani.data.auth.AuthState
 import com.vaibhav.kharchapaani.ui.auth.AccountSheet
+import com.vaibhav.kharchapaani.ui.auth.NotificationOfferSheet
+import com.vaibhav.kharchapaani.ui.auth.NotificationsSheet
+import com.vaibhav.kharchapaani.domain.NotificationAccess
+import com.vaibhav.kharchapaani.domain.NotificationMoment
+import com.vaibhav.kharchapaani.domain.NotificationOffer
+import com.vaibhav.kharchapaani.reminder.ReminderSchedule
 import com.vaibhav.kharchapaani.ui.auth.ProfileState
 import com.vaibhav.kharchapaani.ui.auth.ColourChoice
 import com.vaibhav.kharchapaani.domain.Hues
@@ -426,38 +432,52 @@ fun SplitFlowApp(
 
     val context = LocalContext.current
 
-    // The daily reminder needs notifications. Asked for once by the app itself, the first time
-    // there's an entry of the person's own — never on a first launch before they've seen the app —
-    // and after that only from the reminder's row in settings.
+    // Notifications (plan N1): the app offers by itself, with its own explanation first, right
+    // after something a notification would follow up on, at most twice and never on a first launch
+    // before the person has seen the app. After that only the Notifications screen asks.
     val reminder by viewModel.reminder.collectAsStateWithLifecycle()
-    val notificationPermissionAsked by viewModel.notificationPermissionAsked.collectAsStateWithLifecycle()
-    var notificationsAllowed by remember { mutableStateOf(NotificationHelper.canNotify(context)) }
+    val notificationPermissionAsks by viewModel.notificationPermissionAsks.collectAsStateWithLifecycle()
+    val notificationOffersShown by viewModel.notificationOffersShown.collectAsStateWithLifecycle()
+    val notificationPrefs by viewModel.notificationPrefs.collectAsStateWithLifecycle()
+    val notificationMoment by viewModel.notificationMoment.collectAsStateWithLifecycle()
+    var isNotificationsOpen by rememberSaveable { mutableStateOf(false) }
+    val permission = Manifest.permission.POST_NOTIFICATIONS
+    fun readAccess() = NotificationAccess.of(
+        sdk = Build.VERSION.SDK_INT,
+        enabledForApp = NotificationHelper.canNotify(context),
+        granted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED,
+        timesAsked = notificationPermissionAsks,
+        shouldShowRationale = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            (context as? Activity)?.shouldShowRequestPermissionRationale(permission) == true,
+    )
+    var notificationAccess by remember { mutableStateOf(readAccess()) }
+    LaunchedEffect(notificationPermissionAsks) { notificationAccess = readAccess() }
+    val notificationsAllowed = notificationAccess == NotificationAccess.Allowed
     LifecycleResumeEffect(Unit) {
         // Back from the system's notification settings, or the permission dialog.
-        notificationsAllowed = NotificationHelper.canNotify(context)
+        notificationAccess = readAccess()
         onPauseOrDispose { }
     }
     val askForNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        notificationsAllowed = NotificationHelper.canNotify(context)
+        notificationAccess = readAccess()
     }
     val hasOwnEntry = rawTransactions.any { it.transaction.isOwnedByMe }
-    LaunchedEffect(hasOwnEntry, notificationPermissionAsked, reminder.enabled) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && hasOwnEntry && reminder.enabled &&
-            !notificationPermissionAsked && !NotificationHelper.canNotify(context)
-        ) {
-            viewModel.markNotificationPermissionAsked()
-            askForNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+    LaunchedEffect(hasOwnEntry, reminder.enabled, notificationOffersShown) {
+        // Only as the first offer: once one has been shown, this moment has had its turn.
+        if (hasOwnEntry && reminder.enabled && notificationOffersShown == 0) {
+            viewModel.reachNotificationMoment(NotificationMoment.FirstOwnEntry)
+        }
+    }
+    LaunchedEffect(sharedGroupsState.justJoined) {
+        if (sharedGroupsState.justJoined) {
+            viewModel.reachNotificationMoment(NotificationMoment.JoinedGroup)
+            sharedGroups.clearJustJoined()
         }
     }
     val allowNotifications: () -> Unit = {
-        val activity = context as? Activity
-        val permission = Manifest.permission.POST_NOTIFICATIONS
-        val canStillAsk = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED &&
-            // Never asked, or declined once (Android shows the dialog a second time, then stops).
-            (!notificationPermissionAsked || activity?.shouldShowRequestPermissionRationale(permission) == true)
-        if (canStillAsk) {
-            viewModel.markNotificationPermissionAsked()
+        if (readAccess() == NotificationAccess.CanAsk) {
+            viewModel.recordNotificationPermissionAsk()
             askForNotifications.launch(permission)
         } else {
             // Declined for good, or turned off in system settings: only the settings page can fix it.
@@ -466,7 +486,12 @@ fun SplitFlowApp(
             } else {
                 Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
             }
-            context.startActivity(intent)
+            // A phone without a settings screen for it: nothing more to offer from here.
+            try {
+                context.startActivity(intent)
+            } catch (e: ActivityNotFoundException) {
+                viewModel.showMessage("Open your phone's settings and turn on notifications for Kharcha Paani.")
+            }
         }
     }
 
@@ -668,10 +693,42 @@ fun SplitFlowApp(
             onDismiss = { isAccountSheetOpen = false },
             reminder = reminder,
             notificationsAllowed = notificationsAllowed,
-            onReminderEnabledChange = viewModel::setReminderEnabled,
-            onReminderTimeChange = viewModel::setReminderTime,
-            onAllowNotifications = allowNotifications,
+            onOpenNotifications = {
+                isAccountSheetOpen = false
+                isNotificationsOpen = true
+            },
         )
+    }
+
+    NotificationsSheet(
+        isOpen = isNotificationsOpen,
+        access = notificationAccess,
+        prefs = notificationPrefs,
+        reminder = reminder,
+        onTurnOn = allowNotifications,
+        onPaymentsToConfirmChange = viewModel::setPaymentsToConfirm,
+        onQuietHoursChange = viewModel::setQuietHours,
+        onReminderEnabledChange = viewModel::setReminderEnabled,
+        onReminderTimeChange = viewModel::setReminderTime,
+        onDismiss = { isNotificationsOpen = false },
+    )
+
+    // The app's own offer, at most twice and only while Android would still ask (N1).
+    val offerMoment = notificationMoment
+    if (offerMoment != null) {
+        if (NotificationOffer.shouldOffer(notificationAccess, notificationOffersShown)) {
+            NotificationOfferSheet(
+                moment = offerMoment,
+                reminderTime = ReminderSchedule.label(reminder.minuteOfDay, android.text.format.DateFormat.is24HourFormat(context)),
+                onTurnOn = {
+                    viewModel.notificationOfferShown()
+                    allowNotifications()
+                },
+                onNotNow = viewModel::notificationOfferShown,
+            )
+        } else {
+            LaunchedEffect(offerMoment) { viewModel.clearNotificationMoment() }
+        }
     }
 
     SettlementAnswerSheet(

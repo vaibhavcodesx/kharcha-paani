@@ -3,6 +3,9 @@ package com.vaibhav.kharchapaani.reminder
 import android.content.Context
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
+import com.vaibhav.kharchapaani.domain.NotificationPrefs
+import java.time.Instant
+import java.time.ZoneId
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.util.NotificationHelper
 
@@ -39,13 +42,25 @@ object SettlementReminders {
 
     /**
      * Shows whatever is due in [userId]'s ledger [db], and takes down the ones that no longer wait
-     * for me; returns how many it showed. With the "Payments to confirm" channel blocked, nothing is
-     * counted as shown, so the reminder comes when it's unblocked.
+     * for me; returns how many it showed. With the "Payments to confirm" channel blocked, the switch
+     * off or quiet hours on ([prefs]), nothing is counted as shown, so the reminder comes later.
      */
-    suspend fun remind(context: Context, db: AppDatabase, userId: String, now: Long = System.currentTimeMillis()): Int {
+    suspend fun remind(
+        context: Context,
+        db: AppDatabase,
+        userId: String,
+        now: Long = System.currentTimeMillis(),
+        prefs: NotificationPrefs = NotificationPrefs(),
+        zone: ZoneId = ZoneId.systemDefault(),
+    ): Int {
         val waiting = db.groupSyncDao().settlementsAwaitingMyAnswer()
         NotificationHelper.clearStaleSettlementReminders(context, waiting.map { it.id }.toSet())
         if (!NotificationHelper.canNotify(context, NotificationHelper.CHANNEL_SETTLEMENTS)) return 0
+        // Turned off on the Notifications screen, or quiet hours: nothing is shown and no stage is
+        // used up, so the nudge comes at the first sync after they end (or once they're back on).
+        if (!prefs.paymentsToConfirm) return 0
+        val local = Instant.ofEpochMilli(now).atZone(zone)
+        if (prefs.quietHours.isQuietAt(local.hour * 60 + local.minute)) return 0
         var shown = 0
         for (settlement in waiting) {
             val stage = stageFor(settlement.createdAt, now)
