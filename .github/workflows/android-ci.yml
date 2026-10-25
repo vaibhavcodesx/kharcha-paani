@@ -10,21 +10,23 @@ concurrency:
   group: android-ci-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
+# Actions are pinned to a commit, not a tag: a tag can be moved to different code after review.
+# Dependabot (.github/dependabot.yml) proposes the updates.
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Matches gradle/gradle-daemon-jvm.properties (toolchainVersion=25), so Gradle doesn't
       # have to download a second JDK for its daemon.
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 25
 
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
       # No .env on CI: the Secrets plugin falls back to .env.example placeholders, which is all
       # the unit tests need. Robolectric's Android jars download on first run.
@@ -33,10 +35,61 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unit-test-results
           path: |
             app/build/test-results/testDebugUnitTest/
             app/build/reports/tests/testDebugUnitTest/
+          retention-days: 14
+
+  # Lint on the variant that ships. Issues already in the code are recorded in
+  # app/lint-baseline.xml, so this fails on new ones only.
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Lint the release variant
+        run: ./gradlew :app:lintRelease
+
+      - name: Upload the lint report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lint-report
+          path: |
+            app/build/reports/lint-results-release.*
+            app/lint-baseline.xml
+          retention-days: 14
+
+  # The release variant has to build on every PR, not just on release day: it's the one with R8
+  # and the one nobody runs while developing. Unsigned, since CI holds no key; release.yml signs.
+  release-bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Build the unsigned release bundle
+        run: ./gradlew :app:bundleRelease
+
+      - name: Upload the R8 mapping
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-mapping
+          path: app/build/outputs/mapping/release/
+          if-no-files-found: ignore
           retention-days: 14
