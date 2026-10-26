@@ -119,9 +119,7 @@ fun AccountSheet(
     onOpenSubscriptions: () -> Unit = {},
     reminder: ReminderSettings = ReminderSettings(),
     notificationsAllowed: Boolean = true,
-    onReminderEnabledChange: (Boolean) -> Unit = {},
-    onReminderTimeChange: (minuteOfDay: Int) -> Unit = {},
-    onAllowNotifications: () -> Unit = {},
+    onOpenNotifications: () -> Unit = {},
     colour: ColourChoice = ColourChoice(),
     onSaveHue: (Int) -> Unit = {},
 ) {
@@ -144,9 +142,7 @@ fun AccountSheet(
             onOpenSubscriptions = onOpenSubscriptions,
             reminder = reminder,
             notificationsAllowed = notificationsAllowed,
-            onReminderEnabledChange = onReminderEnabledChange,
-            onReminderTimeChange = onReminderTimeChange,
-            onAllowNotifications = onAllowNotifications,
+            onOpenNotifications = onOpenNotifications,
             colour = colour,
             onSaveHue = onSaveHue,
         )
@@ -174,9 +170,7 @@ fun AccountSheetContent(
     onOpenSubscriptions: () -> Unit = {},
     reminder: ReminderSettings = ReminderSettings(),
     notificationsAllowed: Boolean = true,
-    onReminderEnabledChange: (Boolean) -> Unit = {},
-    onReminderTimeChange: (minuteOfDay: Int) -> Unit = {},
-    onAllowNotifications: () -> Unit = {},
+    onOpenNotifications: () -> Unit = {},
     colour: ColourChoice = ColourChoice(),
     onSaveHue: (Int) -> Unit = {},
 ) {
@@ -363,17 +357,19 @@ fun AccountSheetContent(
                     ),
                 )
             }
-            ReminderRows(
-                reminder = reminder,
-                notificationsAllowed = notificationsAllowed,
-                onEnabledChange = { enabled ->
-                    onReminderEnabledChange(enabled)
-                    // Turning it on is the moment to ask, if the phone won't show it yet.
-                    if (enabled && !notificationsAllowed) onAllowNotifications()
+            val reminderTime = ReminderSchedule.label(reminder.minuteOfDay, android.text.format.DateFormat.is24HourFormat(LocalContext.current))
+            SettingRow(
+                title = "Notifications",
+                detail = when {
+                    !notificationsAllowed -> "Off for Kharcha Paani"
+                    reminder.enabled -> "Payments to confirm, and a reminder at $reminderTime"
+                    else -> "Payments to confirm"
                 },
-                onTimeChange = onReminderTimeChange,
-                onAllowNotifications = onAllowNotifications,
-            )
+                position = RowPosition.Middle,
+                modifier = Modifier.clickable(onClickLabel = "Open notification settings", onClick = onOpenNotifications).testTag("setting_notifications"),
+            ) {
+                Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
+            }
             SettingRow(
                 title = "Export to a spreadsheet",
                 detail = "A month, dates or everything, as CSV",
@@ -531,7 +527,7 @@ private fun AvatarTile(
 }
 
 @Composable
-private fun SettingRow(
+internal fun SettingRow(
     title: String,
     detail: String,
     position: RowPosition,
@@ -562,7 +558,7 @@ private fun SettingRow(
  * kind of silent failure this app has been removing everywhere else.
  */
 @Composable
-private fun ReminderRows(
+internal fun ReminderRows(
     reminder: ReminderSettings,
     notificationsAllowed: Boolean,
     onEnabledChange: (Boolean) -> Unit,

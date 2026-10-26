@@ -9,6 +9,8 @@ import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.LedgerDatabases
 import com.vaibhav.kharchapaani.data.db.entity.SyncMetaEntity
 import com.vaibhav.kharchapaani.data.remote.BackgroundAuth
+import com.vaibhav.kharchapaani.data.settings.AppSettings
+import kotlinx.coroutines.flow.first
 import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.reminder.SettlementReminders
@@ -39,7 +41,10 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 // Payments a groupmate recorded that wait for my answer: the first nudge, then day
                 // 3, 6… Whatever the pull managed, the ones already on the phone still get theirs:
                 // inside the pass, one failing engine stopped every reminder.
-                runCatching { SettlementReminders.remind(applicationContext, database, userId) }
+                runCatching {
+                    val prefs = AppSettings(applicationContext).notificationPrefs.first()
+                    SettlementReminders.remind(applicationContext, database, userId, prefs = prefs)
+                }
                     .onFailure { Log.w(TAG, "Settlement reminders skipped", it) }
             }
         }

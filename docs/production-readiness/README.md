@@ -453,7 +453,7 @@ in the Updates inbox.
 | Phase | What | Server? | Tier |
 |---|---|---|---|
 | N0 | Fix what exists: create all channels at start; cancel stale "payment to confirm" notifications (G6); a blocked channel doesn't use up a reminder stage (G3); reminders don't depend on the whole sync passing (G8); tags instead of computed ids (G9) | no | T1 · **done in #90** |
-| N1 | Permission state machine + pre-prompt + the four ask moments + Notifications screen | no | T1 |
+| N1 | Permission state machine + pre-prompt + the four ask moments + Notifications screen | no | T1 · **done in #92** |
 | N2 | `activity` table + triggers + RLS **[owner review]**; Room v11 `inbox_items`; Updates screen; notifications posted from the pull (48 h window, no flood on first sync) | yes | T2 |
 | N3 | FCM client, `push_tokens` / `notification_prefs` / group mutes **[owner review]**, unregister on sign-out | yes | T3 |
 | N4 | `push-dispatch` Edge Function, pg_net trigger, retry sweep **[owner review]**; owner sets Firebase secrets (O11) | yes | T3 |

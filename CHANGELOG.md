@@ -18,6 +18,15 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - A launch screen with the Kharcha Paani mark on the app's dark background, held while your account
   opens (at most 1.5 s), so the app goes straight from it to Home. The launcher icon has a themed
   (monochrome) version too: just the ₹.
+- A Notifications screen, from the account sheet: whether your phone shows Kharcha Paani's
+  notifications at all (with a Turn on button that asks, or opens the phone's settings once Android
+  won't ask any more), a switch for payments to confirm (turning it off says what you'd miss), the
+  daily reminder and its time, and quiet hours, 10:30 PM to 8 AM unless you change them, when payment
+  nudges wait till morning.
+- The app now offers to turn notifications on right after something a notification would follow
+  up: joining or creating a shared group, recording a payment in one, or your first own entry with
+  the daily reminder on. It explains what they're for first, offers at most twice, and "Not now"
+  leaves everything working. Before, someone who only used groups was never asked at all.
 
 ### Fixed
 
