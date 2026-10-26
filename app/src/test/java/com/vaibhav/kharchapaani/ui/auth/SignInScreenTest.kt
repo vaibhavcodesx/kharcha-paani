@@ -59,6 +59,18 @@ class SignInScreenTest {
         composeTestRule.onNodeWithContentDescription("Dismiss").assertDoesNotExist()
     }
 
+    @Test
+    fun `an unavailable Google picker offers an offline recovery before Play services advice`() {
+        setScreen(failure = GoogleSignInFailure.GoogleUnavailable)
+        composeTestRule.onNodeWithText("If you're offline, connect and try again. Otherwise, check that Google Play services is up to date.").assertExists()
+    }
+
+    @Test
+    fun `a missing account result offers an offline recovery before account advice`() {
+        setScreen(failure = GoogleSignInFailure.NoGoogleAccount)
+        composeTestRule.onNodeWithText("If you're offline, connect and try again. Otherwise, add a Google account to this phone.").assertExists()
+    }
+
     private fun setScreen(
         isSigningIn: Boolean = false,
         failure: GoogleSignInFailure? = null,

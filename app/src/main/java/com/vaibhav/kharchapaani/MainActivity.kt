@@ -650,6 +650,7 @@ fun SplitFlowApp(
         }
         // Only the dock samples the content: sheets and dialogs are other windows (see LocalHazeState).
         CompositionLocalProvider(LocalHazeState provides hazeState) {
+            com.vaibhav.kharchapaani.ui.components.MoneyConfirmationHaptics(viewModel.moneyConfirmations)
             ReviewAfterSettlement(
                 moments = viewModel.reviewMoments,
                 enabled = !isConfirmSheetOpen && !isSettleUpOpen && !isIouOpen && !isImportStatementOpen &&
