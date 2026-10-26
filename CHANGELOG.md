@@ -46,6 +46,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   blank entry for you to type.
 - "Report this answer" under each AI answer opens your mail app with the answer, so a wrong or
   offensive one can be reported.
+- Crash reports through Firebase Crashlytics, so problems on people's phones can be found and
+  fixed. They never include amounts, names, notes or documents, and stay off in any build without
+  the Firebase project. Handled problems (a sync the server refused, a ledger that wouldn't open,
+  an unusual AI failure) are reported with their reason only.
 
 ### Fixed
 
