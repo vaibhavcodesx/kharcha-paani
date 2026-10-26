@@ -8,11 +8,6 @@ on:
         description: 'Release tag, e.g. v1.0.0 (must match versionName in app/build.gradle.kts)'
         required: true
         type: string
-      omit_ai_key:
-        description: 'Build without the Gemini key (AI section hidden). Use for wider sharing.'
-        required: false
-        default: false
-        type: boolean
       prerelease:
         description: 'Mark the GitHub Release as a pre-release'
         required: false
@@ -89,7 +84,6 @@ jobs:
       # placeholders in .env.example and the shipped app cannot reach Supabase.
       - name: Write .env from secrets
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
           GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
@@ -102,11 +96,8 @@ jobs:
             echo "SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY"
             echo "GOOGLE_WEB_CLIENT_ID=$GOOGLE_WEB_CLIENT_ID"
           } > .env
-          if [ "${{ inputs.omit_ai_key }}" = "true" ]; then
-            echo "Building without the Gemini key: the AI section will be hidden."
-          else
-            echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> .env
-          fi
+          # No GEMINI_API_KEY: since the gemini-proxy Edge Function (plan T1.3) the key lives only
+          # on the server. The Gradle build refuses to compile one in even if it were here.
           # Crash reports (plan T1.6): only with all three. Without them the placeholders in
           # .env.example apply and the build never reports.
           if [ -n "$FIREBASE_APP_ID" ] && [ -n "$FIREBASE_API_KEY" ] && [ -n "$FIREBASE_PROJECT_ID" ]; then
@@ -127,11 +118,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          if [ "${{ inputs.omit_ai_key }}" = "true" ]; then
-            ./gradlew :app:assembleRelease :app:bundleRelease -PomitAiKey
-          else
-            ./gradlew :app:assembleRelease :app:bundleRelease
-          fi
+          ./gradlew :app:assembleRelease :app:bundleRelease
 
       # assembleRelease leaves the APK unsigned rather than failing when credentials are missing,
       # so "it built" is not the same as "it is installable". This is the check that it is.
@@ -155,7 +142,6 @@ jobs:
       - name: Name the files after the release
         run: |
           suffix=""
-          if [ "${{ inputs.omit_ai_key }}" = "true" ]; then suffix="-no-ai"; fi
           final="KharchaPaani-${{ inputs.tag }}${suffix}.apk"
           cp "$apk_path" "$final"
           echo "final_apk=$final" >> "$GITHUB_ENV"
@@ -178,11 +164,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           notes="Install: download the APK below, open it on your phone, and allow installation from this source when Android asks."
-          if [ "${{ inputs.omit_ai_key }}" = "true" ]; then
-            notes="$notes
-
-            This build ships without a Gemini API key, so the AI features (Ask about your money, Read this trip, statement scanning) are hidden. Everything else works."
-          fi
           gh release create "${{ inputs.tag }}" "$final_apk" "$final_aab" ${final_mapping:+"$final_mapping"} \
             --title "Kharcha Paani ${{ inputs.tag }}" \
             --notes "$notes" \

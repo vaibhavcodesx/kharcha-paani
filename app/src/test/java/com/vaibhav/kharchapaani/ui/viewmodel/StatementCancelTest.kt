@@ -65,7 +65,8 @@ class StatementCancelTest {
                 .build()
         }.build(),
         endpoint = { model -> "https://example.invalid/v1beta/models/$model:generateContent" },
-        apiKey = { "test-key" },
+        accessToken = { "test-token" },
+        configured = true,
     )
 
     @Before
