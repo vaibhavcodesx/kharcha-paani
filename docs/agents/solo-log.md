@@ -31,6 +31,8 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #133 · X10 / REL L5 offline sign-in wording · merged; conditional connection advice comes before account/Play-services advice, without changing authentication or guessing network state.
 
+- 2026-10-27 · #138 · X7 / T2.10 Splits group cards · merged; cards grow, amounts fit without ellipses, large text wraps names and figures, and decorative perforation is omitted above 150% text size.
+
 - 2026-10-27 · #136 · X10 / REL L10 statement dates · merged; formatters are local per call, preserving supported formats, strict date checks and the current time zone; eight threads verify 4,000 dates and labels.
 
 - 2026-10-27 · #135 · X10 / REL L7 bill naming · merged; Bill photo describes the existing gallery picker; capture and cancellation behavior are unchanged.
