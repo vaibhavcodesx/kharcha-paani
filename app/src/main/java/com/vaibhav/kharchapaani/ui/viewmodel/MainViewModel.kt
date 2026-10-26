@@ -81,6 +81,8 @@ import com.vaibhav.kharchapaani.domain.DailySpend
 import com.vaibhav.kharchapaani.domain.GroupInsights
 import com.vaibhav.kharchapaani.ui.format.MonthNames
 import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import com.vaibhav.kharchapaani.domain.StatementPdf
@@ -146,6 +148,9 @@ class MainViewModel(
         accessToken = { SupabaseClientProvider.get(application).auth.currentSessionOrNull()?.accessToken },
     ),
 ) : AndroidViewModel(application) {
+
+    private val _reviewMoments = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val reviewMoments = _reviewMoments.asSharedFlow()
 
     private val ledgerRepo = LedgerRepository(db, onLocalTransactionChange = ::requestSync, selfProfileId = userId)
 
