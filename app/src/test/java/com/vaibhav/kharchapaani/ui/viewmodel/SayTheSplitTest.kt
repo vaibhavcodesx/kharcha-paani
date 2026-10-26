@@ -110,16 +110,14 @@ class SayTheSplitTest {
 
     @Test
     fun `a group named in the line puts the expense in that group, with its members`() = runBlocking {
-        // ₹600 over three: a local group's equal split still rounds each share on its own (₹500
-        // would show ₹500.01; TODOS "Equal splits outside shared groups drift by a paisa").
-        viewModel.parseInputText("petrol 600 goa trip")
+        viewModel.parseInputText("petrol 500 goa trip")
         viewModel.declineAiNotice()
 
         assertTrue(viewModel.isConfirmSheetOpen.value)
         assertEquals(10L, viewModel.groupId.value)
         assertTrue(viewModel.isSplit.value)
         assertEquals(setOf(-1L, 1L, 2L), ticked())
-        assertEquals(600.0, shareTotal(), 0.001)
+        assertEquals(500.0, shareTotal(), 0.001)
     }
 
     @Test

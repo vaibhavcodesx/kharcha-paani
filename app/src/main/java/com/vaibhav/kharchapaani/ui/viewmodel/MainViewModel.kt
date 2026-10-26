@@ -1378,8 +1378,9 @@ class MainViewModel(
 
         if (selected.isEmpty()) return
 
-        if (isSharedGroup(_groupId.value) && _splitMode.value == SplitMode.EQUAL && total > 0) {
-            // Paisa-exact, leftover on the payer (decision 6), so the shares always sync.
+        if (_splitMode.value == SplitMode.EQUAL && total > 0) {
+            // Paisa-exact, leftover on the payer (decision 6): a shared group's shares always sync, and
+            // anyone else's add up too (₹500 over three is 166.66, 166.66 and the payer's 166.68).
             val rounded = SplitRounding.equal(total, selected.map { it.personId }, _paidByPersonId.value)
             _shares.value = current.map { item ->
                 rounded[item.personId]?.let { item.copy(amount = it, percentage = 100.0 / selected.size) }

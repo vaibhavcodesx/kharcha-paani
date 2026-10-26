@@ -110,6 +110,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   instead ("Couldn't save. Your phone may be out of space."), and the reading spinner on a quick
   add or a bill always goes away, even when the read fails. Sharing an invite on a phone with no
   share sheet no longer crashes.
+- - An equal split with friends now adds up to the amount to the paisa, as a shared group's already
+  did: ₹500 over three is ₹166.66, ₹166.66 and ₹166.68 on whoever paid, not ₹166.67 three times
+  (₹500.01).
 
 ### Security
 
