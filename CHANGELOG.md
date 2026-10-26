@@ -15,6 +15,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- Home money figures fit their available width at large text sizes, keeping every digit and paisa
+  visible instead of squeezing individual animated digits out of view (X7 / T2.10, REL M7).
+
 - Ambiguous Google picker errors suggest reconnecting before Play services or account advice
   (X10 / REL L5).
 
