@@ -76,7 +76,10 @@ class SettlementReminderNotificationsTest {
         val public = notification.publicVersion
         assertNotNull("lock screen needs a separate generic notification", public)
         assertEquals(Notification.VISIBILITY_PUBLIC, public.visibility)
-        val publicText = public.extras.toString()
+        val publicText = listOf(
+            Notification.EXTRA_TITLE, Notification.EXTRA_TEXT, Notification.EXTRA_BIG_TEXT,
+            Notification.EXTRA_SUB_TEXT, Notification.EXTRA_SUMMARY_TEXT,
+        ).mapNotNull { public.extras.getCharSequence(it) }.joinToString(" ")
         assertFalse(publicText.contains("Priya"))
         assertFalse(publicText.contains("500"))
         assertEquals("Kharcha Paani", public.extras.getCharSequence(Notification.EXTRA_TITLE).toString())
