@@ -113,7 +113,8 @@ class ReviewPromptTest {
         now = 10 * DAY
         vm.openSettleUp(friend)
         vm.recordSettlementPayment(-1, 2, 100.0, "Thanks")
-        until { !vm.isSettleUpOpen.value }
+        until { !vm.isSettleUpOpen.value && vm.submitting.value.isEmpty() }
+        until { manager.requests == 1 }
         idle()
         assertTrue(db.settlementDao().getAllSettlements().first().any { it.amount == 100.0 && it.isConfirmed })
         assertEquals(1, manager.requests)
@@ -127,6 +128,7 @@ class ReviewPromptTest {
         vm.openSettlementAnswer(60)
         vm.answerSettlement(true)
         until { db.groupSyncDao().settlementById(60)?.isConfirmed == true && vm.statusMessage.value?.startsWith("Confirmed") == true }
+        until { manager.requests == 1 }
         idle()
         assertEquals(1, manager.requests)
     }
@@ -142,7 +144,7 @@ class ReviewPromptTest {
         vm.recordIou(-1, 2, 40.0, "")
         until { !vm.isIouOpen.value }
         vm.recordSettlementPayment(-1, 2, Double.NaN, "")
-        until { vm.statusMessage.value != null }
+        until { vm.statusMessage.value != null && vm.submitting.value.isEmpty() }
         idle()
         assertEquals(0, manager.requests)
     }
