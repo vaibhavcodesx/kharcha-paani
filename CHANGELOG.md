@@ -13,6 +13,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Fixed
+
+- Overlapping statement parses use separate date formatters, keeping dates and month labels
+  consistent across threads (X10 / REL L10).
+
 ### Added
 
 - A confirmed settlement can offer Play’s own review flow after a settling-in week, at most once
