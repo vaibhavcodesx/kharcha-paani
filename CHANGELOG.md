@@ -13,6 +13,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Fixed
+
+- Home waits for the first ledger result before showing balances or the first-entry invitation
+  on cold start (X10 / REL L1).
+
 ### Added
 
 - Play-installed builds can offer a flexible update, keep working during download, and show an
