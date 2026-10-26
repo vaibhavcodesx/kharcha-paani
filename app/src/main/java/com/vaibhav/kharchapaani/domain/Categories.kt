@@ -33,8 +33,8 @@ object Categories {
      * grocery run showed with no icon and couldn't be picked again when edited.
      */
     val defaultExpense = listOf(
-        "Food", "Groceries", "Transport", "Shopping", "Bills", "Entertainment", "Health", "Rent",
-        "Investment", "Team Payment", OTHER,
+        "Food", "Beverages", "Groceries", "Packaged goods", "Transport", "Shopping", "Self-care",
+        "Bills", "Entertainment", "Health", "Rent", "Investment", "Team Payment", OTHER,
     )
     val defaultIncome = listOf("Income (Salary)", "Income (Client)", OTHER_INCOME)
 

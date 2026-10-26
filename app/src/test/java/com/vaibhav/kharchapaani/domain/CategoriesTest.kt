@@ -9,6 +9,14 @@ import org.junit.Test
 class CategoriesTest {
 
     @Test
+    fun `beverages, packaged goods and self-care are offered, before Other`() {
+        val expense = Categories.expenseCategories(CategoryPrefs())
+
+        assertTrue(expense.containsAll(listOf("Beverages", "Packaged goods", "Self-care")))
+        assertEquals("Other", expense.last())
+    }
+
+    @Test
     fun `the statement importer's categories are ordinary choices now`() {
         val prefs = CategoryPrefs()
         assertTrue("Groceries" in Categories.expenseCategories(prefs))

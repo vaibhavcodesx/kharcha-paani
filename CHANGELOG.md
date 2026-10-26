@@ -64,6 +64,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   with "bhai" or "ji" after the name, from the widget's mic and text field as much as from Home.
   A group and a friend together ("lunch 900 Goa trip with Rohan") splits with just that friend. A
   name that matches more than one friend, or nobody, is said on the sheet instead of being dropped.
+- - Three new categories: Beverages, Packaged goods, and Self-care (haircuts, salon, spa, grooming,
+  the gym and wellness), each with its own icon and colour. Quick add, bills and statements can
+  choose them, and so can the phone's own guess: "haircut 300", "juice 60", "maggi 14". The gym
+  now counts as Self-care instead of Health.
 - - A "Send crash reports" switch in Help & about, as the privacy policy promises. Crash reports stay
   on unless you turn them off, and the switch only appears in builds that can send them.
 

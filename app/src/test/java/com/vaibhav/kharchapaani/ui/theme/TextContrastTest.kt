@@ -81,7 +81,8 @@ class TextContrastTest {
         val categories = mapOf(
             "Food" to CatFood, "Bills" to CatBills, "Groceries" to CatGroceries,
             "Income" to CatIncome, "Health" to CatHealth, "Investment" to CatInvestment,
-            "Transport" to CatTransport,
+            "Transport" to CatTransport, "Beverages" to CatBeverages,
+            "Packaged goods" to CatPackagedGoods, "Self-care" to CatSelfCare,
         )
         for ((name, colour) in categories) {
             assertAtLeast(colour, CharcoalCard, largeMinimum, "$name on a card")
