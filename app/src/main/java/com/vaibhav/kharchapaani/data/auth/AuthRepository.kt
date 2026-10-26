@@ -21,12 +21,13 @@ import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.io.IOException
 
 class AuthRepository(
     private val supabase: SupabaseClient,
@@ -182,6 +183,15 @@ class AuthRepository(
      * Always ends signed out locally. If the server can't be reached, the refresh token stays
      * valid server-side until it expires; that's accepted so sign-out works offline.
      */
+    /**
+     * Deletes this account on the server (decision D1): its private rows and sign-in go, shared
+     * history stays under the name chosen here or "Former member". Throws on failure; nothing is
+     * deleted then.
+     */
+    suspend fun deleteAccount(keepName: Boolean) {
+        supabase.postgrest.rpc("delete_my_account", buildJsonObject { put("p_keep_name", keepName) })
+    }
+
     suspend fun signOut(context: Context) {
         try {
             auth.signOut()
