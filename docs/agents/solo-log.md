@@ -19,4 +19,11 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #128 · X5 / TODOS 2 member colour dots · merged; keep names and credit lines, use the account colour for You and a neutral dot when a guest colour is unknown.
 
+- 2026-10-27 · #123 · X5 / TODOS 9 recent split group · merged; use the most recently added shared expense, preserve explicit group/No group and edits, and ignore archived groups.
+- 2026-10-27 · #130 · X8 / T3.6 statement re-import · parked: red CI 40403130740 proved selected duplicates; CI 40404218629 exposed exact-day matches consumed by neighbouring new purchases. Reserve all exact-day matches before the one-day tolerance; branch remains unmerged.
+
+- 2026-10-27 · #129 · X6 / T2.8 flexible Play updates · merged; no immediate flow, defer during drafts/deletion, download without blocking the ledger, restart only on an explicit tap; actual Play test-track delivery still needs the phone.
+
+- 2026-10-27 � #131 � X9 / T3.9 Play reviews � merged; only saved confirmed settlements, one settling-in week and 180-day attempt cooldown, silent SDK failure and no star requests; Play may suppress its dialog.
+
 ## Questions

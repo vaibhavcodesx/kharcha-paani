@@ -18,6 +18,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - A confirmed settlement can offer Play’s own review flow after a settling-in week, at most once
   per 180 days; errors, old history and busy screens do not trigger it (X9 / T3.9).
 
+- Play-installed builds can offer a flexible update, keep working during download, and show an
+  explicit Restart action when it is ready; drafts and sheets defer the offer (X6 / T2.8).
+
+- New splits with one selected friend suggest the last active group where you added an expense
+  together; choosing a group or No group keeps your choice (X5 / TODOS 9).
+
 - Group expense rows show saved colour dots beside the payer and split participants, including
   category expansions; names remain beside the dots (X5 / TODOS 2).
 
