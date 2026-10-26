@@ -15,6 +15,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Groups have a Settlements view for payments and IOUs, including dates, people and confirmation
+  status, while All activity keeps the combined history (X5 / TODOS 8).
+
 - Tap an IOU card to read its whole note, full date and saved recorder, then tap again to collapse.
   Answer and removal actions remain available; entries without recorder metadata say so instead
   of guessing who added them (X5 / TODOS 4).

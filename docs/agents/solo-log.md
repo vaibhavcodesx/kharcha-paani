@@ -13,4 +13,6 @@ owner or Claude go at the bottom.
 
 ## Log
 
+- 2026-10-27 · #125 · X5 / TODOS 8 group settlements view · merged; All activity stays default, payments and IOUs retain confirmation status, archived history is read-only.
+
 ## Questions
