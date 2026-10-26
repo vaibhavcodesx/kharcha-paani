@@ -73,6 +73,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- Retracting a settlement, deleting an IOU or deleting a local group now asks first and explains
+  what happens to balances or group history. Cancel keeps everything, and the accessibility
+  delete-group action uses the same confirmation (X4 / T2.5).
+
 - The ledger no longer appears in Recents thumbnails on Android 13+, while manual screenshots
   still work. Payment reminders have a generic lock-screen version without names or amounts,
   and incoming image/PDF shares reject this app's own files and non-content URIs (X3 / T2.6).
