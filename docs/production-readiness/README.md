@@ -27,6 +27,9 @@ In this file the audit IDs carry a prefix so they don't collide: **SEC-** (secur
 
 ## 0. Start here (next agent)
 
+**Where things stand and what's next (2026-10-27): [`docs/plan-1.6-to-launch.md`](../plan-1.6-to-launch.md).**
+Read it before this page's tiers; who builds what is in `docs/agents/work-split.md`.
+
 0. **Ask everything up front, then run on autopilot** (the owner's rule, also in CLAUDE.md). Before
    starting, read through the items you plan to do this session and send the owner one batch of
    every question, decision and permission they need: confirming the tier, merges, migrations,
