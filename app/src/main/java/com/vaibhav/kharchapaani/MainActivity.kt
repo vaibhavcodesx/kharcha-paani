@@ -132,6 +132,7 @@ import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
 import com.vaibhav.kharchapaani.ui.viewmodel.MainViewModel
 import com.vaibhav.kharchapaani.ui.viewmodel.Submit
+import com.vaibhav.kharchapaani.updates.FlexibleUpdates
 
 class MainActivity : ComponentActivity() {
 
@@ -647,6 +648,14 @@ fun SplitFlowApp(
         }
         // Only the dock samples the content: sheets and dialogs are other windows (see LocalHazeState).
         CompositionLocalProvider(LocalHazeState provides hazeState) {
+            FlexibleUpdates(
+                enabled = !isConfirmSheetOpen && !isSettleUpOpen && !isIouOpen && !isImportStatementOpen &&
+                    !isParsingStatement && !isParsing && !isCreateGroupOpen && !isAddFriendOpen &&
+                    !isAccountSheetOpen && !isDeleteAccountOpen && !authUiState.isDeletingAccount &&
+                    answeringSettlement == null && splitGroupPrompt == null &&
+                    snackbarHostState.currentSnackbarData == null,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = snackbarClearance()),
+            )
             KpSnackbarHost(
                 state = snackbarHostState,
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = snackbarClearance()),
