@@ -1,5 +1,10 @@
 package com.vaibhav.kharchapaani.ui.auth
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -9,6 +14,7 @@ import com.vaibhav.kharchapaani.BuildConfig
 import com.vaibhav.kharchapaani.data.auth.AuthState
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -51,6 +57,35 @@ class HelpAndAboutTest {
         compose.onNodeWithTag("help_licences").performScrollTo().performClick()
 
         assertTrue(licencesOpened)
+    }
+
+    @Test
+    fun `crash reports can be turned off, and the switch is only there when the build can send them`() {
+        var reports by mutableStateOf<Boolean?>(true)
+        compose.setContent {
+            SplitFlowTheme {
+                AccountSheetContent(
+                    state = AuthUiState(authState = AuthState.SignedIn(userId = "u", email = "a@b.c", isRefreshPending = false)),
+                    syncStatus = SyncStatus(),
+                    askBeforeDiscarding = true,
+                    onSaveProfile = { _, _ -> },
+                    onAskBeforeDiscardingChange = {},
+                    onOpenExport = {},
+                    onRetryFailedSync = {},
+                    onRetryProfile = {},
+                    onSignOut = {},
+                    crashReports = reports,
+                    onCrashReportsChange = { reports = it },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("help_crash_reports").performScrollTo().assertIsOn().performClick()
+        assertEquals(false, reports)
+        compose.onNodeWithTag("help_crash_reports").assertIsOff()
+
+        reports = null
+        compose.onNodeWithTag("help_crash_reports").assertDoesNotExist()
     }
 
     @Test

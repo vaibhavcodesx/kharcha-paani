@@ -65,6 +65,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vaibhav.kharchapaani.BuildConfig
+import com.vaibhav.kharchapaani.diagnostics.CrashReporting
 import com.vaibhav.kharchapaani.data.auth.AuthState
 import com.vaibhav.kharchapaani.util.LegalLinks
 import com.vaibhav.kharchapaani.util.Support
@@ -129,6 +130,10 @@ fun AccountSheet(
     /** When the phone has no app to open a link or an email with: what to tell the person instead. */
     onNoApp: (String) -> Unit = {},
 ) {
+    // Read here rather than passed in: the setting lives with crash reporting, which starts before
+    // anything else and can't wait for a view model. Null in a build with no Firebase project.
+    val context = LocalContext.current
+    var crashReports by remember { mutableStateOf(if (CrashReporting.isAvailable) CrashReporting.isEnabled(context) else null) }
     KpModalSheet(onDismiss = onDismiss) {
         AccountSheetContent(
             state = state,
@@ -153,6 +158,11 @@ fun AccountSheet(
             onSaveHue = onSaveHue,
             onOpenLicences = onOpenLicences,
             onNoApp = onNoApp,
+            crashReports = crashReports,
+            onCrashReportsChange = {
+                CrashReporting.setEnabled(context, it)
+                crashReports = it
+            },
         )
     }
 }
@@ -184,8 +194,11 @@ fun AccountSheetContent(
     onOpenLicences: () -> Unit = {},
     /** When the phone has no app to open a link or an email with: what to tell the person instead. */
     onNoApp: (String) -> Unit = {},
+    /** Whether crash reports are on; null when this build can't send any, and the switch isn't shown. */
+    crashReports: Boolean? = null,
+    onCrashReportsChange: (Boolean) -> Unit = {},
 ) {
-    val saved = (state.profile as? ProfileState.Loaded)?.profile
+    val saved =(state.profile as? ProfileState.Loaded)?.profile
     // Keyed on what's saved, so a successful save (or a reload) resets the fields to it.
     var name by rememberSaveable(saved?.displayName) { mutableStateOf(saved?.displayName.orEmpty()) }
     var emoji by rememberSaveable(saved?.avatarEmoji) { mutableStateOf(saved?.avatarEmoji) }
@@ -411,7 +424,13 @@ fun AccountSheetContent(
             }
         }
 
-        HelpAndAbout(onOpenLicences = onOpenLicences, onNoApp = onNoApp, modifier = Modifier.padding(top = Spacing.xl))
+        HelpAndAbout(
+            onOpenLicences = onOpenLicences,
+            onNoApp = onNoApp,
+            crashReports = crashReports,
+            onCrashReportsChange = onCrashReportsChange,
+            modifier = Modifier.padding(top = Spacing.xl),
+        )
 
         OutlinedButton(
             onClick = onSignOut,
@@ -434,7 +453,13 @@ fun AccountSheetContent(
  * policy and terms the sign-in screen agreed to, the licences, and which version this is.
  */
 @Composable
-private fun HelpAndAbout(onOpenLicences: () -> Unit, onNoApp: (String) -> Unit, modifier: Modifier = Modifier) {
+private fun HelpAndAbout(
+    onOpenLicences: () -> Unit,
+    onNoApp: (String) -> Unit,
+    crashReports: Boolean?,
+    onCrashReportsChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current
     fun openPage(url: String) {
         if (!LegalLinks.open(context, url)) onNoApp("No browser on this phone. The page is at $url")
@@ -466,6 +491,29 @@ private fun HelpAndAbout(onOpenLicences: () -> Unit, onNoApp: (String) -> Unit, 
                 position = RowPosition.Middle,
                 modifier = Modifier.clickable(onClickLabel = "Open the terms of use") { openPage(LegalLinks.TERMS) }.testTag("help_terms"),
             ) { HelpChevron() }
+            if (crashReports != null) {
+                // On unless turned off, as the privacy policy says.
+                SettingRow(
+                    title = "Send crash reports",
+                    detail = "What broke and where, never amounts, names or notes",
+                    position = RowPosition.Middle,
+                    modifier = Modifier
+                        .toggleable(value = crashReports, role = Role.Switch, onValueChange = onCrashReportsChange)
+                        .testTag("help_crash_reports"),
+                ) {
+                    Switch(
+                        checked = crashReports,
+                        onCheckedChange = null,
+                        colors = SwitchDefaults.colors(
+                            checkedTrackColor = WarmAmberPrimary,
+                            checkedThumbColor = CharcoalBg,
+                            uncheckedTrackColor = CharcoalElevated,
+                            uncheckedThumbColor = MutedWarmGray,
+                            uncheckedBorderColor = OutlineInteractive,
+                        ),
+                    )
+                }
+            }
             SettingRow(
                 title = "Open-source licences",
                 detail = "What the app is built on",
