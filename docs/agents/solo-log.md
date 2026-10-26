@@ -39,6 +39,8 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #134 · X10 / REL L6 money confirmations · merged; Confirm haptic follows each successful entry/payment/nonempty batch write; invalid amounts, errors and empty imports stay silent, and disabled buttons stay disabled.
 
+- 2026-10-27 · #142 · X11 / T3.8 Activity search · merged for search: exact-paisa amount magnitude, Indian grouping, related shares/payers/owners and named guests. Edited-by attribution remains a file-boundary handoff: authoritative last-editor identity needs protected DB/sync/server work; ownerProfileId is the original author, not necessarily the editor.
+
 - 2026-10-27 · #141 · X7 / T2.10 confirmation action bars · merged; large text stacks the action below its complete auto-sized amount, while disabled and busy actions retain their guards.
 
 - 2026-10-27 · #140 · X7 / T2.10 Insights money · merged; cash-flow/per-day figures fit full amounts, while large text hides cramped duplicate ring-centre text and keeps the full spoken total; normal cash-flow animations remain.
