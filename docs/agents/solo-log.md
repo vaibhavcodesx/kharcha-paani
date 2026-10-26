@@ -13,4 +13,6 @@ owner or Claude go at the bottom.
 
 ## Log
 
+- 2026-10-27 · #130 · X8 / T3.6 statement re-import · parked: CI 40403130740 proved the original selected-duplicate bug; CI 40404218629 exposed an exact-date match consumed by a neighbouring new purchase. Reserve all exact-day matches before applying the one-day tolerance; do not merge this branch.
+
 ## Questions
