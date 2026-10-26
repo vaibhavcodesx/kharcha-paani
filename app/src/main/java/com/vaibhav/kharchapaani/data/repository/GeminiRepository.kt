@@ -152,8 +152,9 @@ class GeminiRepository(
           one in that list.
         - date: "YYYY-MM-DD" only if the line says when ("yesterday", "on 12 Sep", "last Friday"),
           worked out from today's date; otherwise "".
-        - splitWith: names from the friends list that the line says to split with, spelled exactly as
-          in the list; [] if none.
+        - splitWith: the people the line says this was shared with ("with Rohan", "split with Ankit
+          bhai"). A friend from the list exactly as spelled there; anyone else as written. Never the
+          person themself ("me", "I") and never a group or trip name. [] if none.
         - note: the original line.
 
         Return only this JSON:

@@ -59,6 +59,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   fixed. They never include amounts, names, notes or documents, and stay off in any build without
   the Firebase project. Handled problems (a sync the server refused, a ledger that wouldn't open,
   an unusual AI failure) are reported with their reason only.
+- - Say the split: a quick add that names a group ("petrol 500 Goa trip") now opens in that group
+  with its members ticked, and "with Rohan" works with first names ("Ankit" for Ankit Shah) and
+  with "bhai" or "ji" after the name, from the widget's mic and text field as much as from Home.
+  A group and a friend together ("lunch 900 Goa trip with Rohan") splits with just that friend. A
+  name that matches more than one friend, or nobody, is said on the sheet instead of being dropped.
 
 ### Fixed
 
