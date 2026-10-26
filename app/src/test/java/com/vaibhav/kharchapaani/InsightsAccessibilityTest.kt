@@ -80,6 +80,12 @@ class InsightsAccessibilityTest {
             }
         }
         compose.waitUntil(10000) { dispatcher.scheduler.runCurrent(); vm.monthlyAnalytics.value.totalExpense == amount }
+        val cashFlow = mutableListOf<TextLayoutResult>()
+        compose.onNode(hasText(Money.format(amount)) and hasAnyAncestor(hasTestTag("insights_spent_figure")), useUnmergedTree = true)
+            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(cashFlow) }
+        assertFalse("cash-flow total must fit", cashFlow.single().hasVisualOverflow)
+        assertEquals(1, cashFlow.single().lineCount)
+        compose.onNodeWithContentDescription("Spent ${Money.format(amount)}. Food 100 percent").assertExists()
         compose.onNode(hasScrollAction()).performScrollToNode(hasText("PER DAY SO FAR"))
         val layouts = mutableListOf<TextLayoutResult>()
         compose.onNodeWithText(Money.format(amount / today.dayOfMonth), useUnmergedTree = true)
