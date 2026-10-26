@@ -51,4 +51,8 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #145 · X12 / T3.11 Splits copy · merged; resource-backed labels, counters, existing expense plural choices, menus and spoken actions retain English wording; sort/filter IDs and names as data are unchanged.
 
+- 2026-10-27 · #143 · X12 / T3.11 Home copy · parked: first CI 40415903485 rejected a non-void test signature; corrected implementation CI 40416904970 passed, but integrated CI 40418934304 could not find Today after seeing the streak. Two failures reached the stop rule. Likely fixture follow-up: await the feed as well as analytics before checking day headers; extraction remains unmerged.
+
+- 2026-10-27 · #144 · X12 / T3.11 navigation copy · merged; tabs store resource IDs and Compose resolves visual/spoken labels before callbacks; English labels, stable enum values, tags and the 150% accessibility threshold are unchanged.
+
 ## Questions

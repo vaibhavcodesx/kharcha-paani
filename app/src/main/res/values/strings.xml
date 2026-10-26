@@ -53,4 +53,10 @@
         <item quantity="one">%1$d expense</item>
         <item quantity="other">%1$d expenses</item>
     </plurals>
+
+    <!-- Navigation, including icon-only large-font tabs. -->
+    <string name="nav_activity">Activity</string>
+    <string name="nav_splits">Splits</string>
+    <string name="nav_insights">Insights</string>
+    <string name="nav_add_expense">Add expense</string>
 </resources>
