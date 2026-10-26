@@ -1,4 +1,43 @@
 <resources>
     <string name="app_name">Kharcha Paani</string>
     <string name="widget_description">Quick expense logging and balance overview</string>
+    <!-- Insights and spending charts. Amounts already use Indian grouping. -->
+    <string name="insights_title">Insights</string>
+    <string name="insights_subtitle">Where your money went, month by month</string>
+    <string name="insights_export">Export</string>
+    <string name="insights_empty_month">Nothing logged this month yet.</string>
+    <string name="insights_empty_categories_body">Log an expense and this fills in: where it went, day by day, and what stood out.</string>
+    <string name="insights_per_day_so_far">Per day so far</string>
+    <string name="insights_per_day">Per day</string>
+    <string name="insights_spent">Spent</string>
+    <string name="insights_came_in">Came in</string>
+    <string name="insights_even_cashflow">Exactly as much went out as came in.</string>
+    <string name="insights_by_category">By category</string>
+    <string name="insights_no_categories">Nothing to break down</string>
+    <string name="insights_no_entries">No entries to show.</string>
+    <string name="insights_open">Open</string>
+    <string name="insights_spent_most_at">Spent most at</string>
+    <string name="insights_empty_past">Nothing was logged in %1$s.</string>
+    <string name="insights_no_spending_past">Nothing was spent in %1$s.</string>
+    <string name="insights_more_in">%1$s more came in than went out.</string>
+    <string name="insights_more_out">%1$s more went out than came in.</string>
+    <string name="insights_close_category">Close %1$s</string>
+    <string name="insights_show_entries">Show %1$s entries</string>
+    <string name="insights_your_share">Your share of %1$s</string>
+    <string name="insights_this_month_possessive">this month\'s</string>
+    <string name="insights_month_possessive">%1$s\'s</string>
+    <string name="insights_category_state">%1$d percent of %2$s spending</string>
+    <string name="insights_slice_percent">%1$s %2$d percent</string>
+    <string name="insights_ring_description">%1$s %2$s. %3$s</string>
+    <string name="insights_show_category">Show %1$s</string>
+    <string name="insights_percent">%1$d%%</string>
+    <string name="insights_tap_day">Tap a day to see what it cost</string>
+    <string name="insights_day_amount">%1$d, %2$s</string>
+    <string name="insights_none">none</string>
+    <string name="insights_flow_description">Spending day by day. Busiest day %1$s</string>
+    <string name="insights_show_day">Show %1$d</string>
+    <plurals name="insights_entry_percent">
+        <item quantity="one">%1$d entry · %2$d%%</item>
+        <item quantity="other">%1$d entries · %2$d%%</item>
+    </plurals>
 </resources>
