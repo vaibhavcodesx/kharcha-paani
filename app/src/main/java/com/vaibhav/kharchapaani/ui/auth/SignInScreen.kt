@@ -314,9 +314,9 @@ private fun SignInFailureNotice(
 
 internal fun GoogleSignInFailure.message(): String = when (this) {
     GoogleSignInFailure.NotConfigured -> "Google sign-in isn't set up in this build yet."
-    GoogleSignInFailure.NoGoogleAccount -> "Add a Google account to this phone, then try again."
+    GoogleSignInFailure.NoGoogleAccount -> "If you're offline, connect and try again. Otherwise, add a Google account to this phone."
     GoogleSignInFailure.GoogleUnavailable ->
-        "Google sign-in isn't available right now. Check that Google Play services is up to date."
+        "If you're offline, connect and try again. Otherwise, check that Google Play services is up to date."
     GoogleSignInFailure.Network -> "You're offline. Connect once to sign in."
     GoogleSignInFailure.Rejected -> "Sign-in didn't go through on our end. Try again in a moment."
     GoogleSignInFailure.PickerBlocked ->

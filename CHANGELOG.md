@@ -13,6 +13,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Fixed
+
+- Ambiguous Google picker errors suggest reconnecting before Play services or account advice
+  (X10 / REL L5).
+
 ### Added
 
 - Saving an entry, recording a payment or importing a nonempty statement batch gives a confirmation
