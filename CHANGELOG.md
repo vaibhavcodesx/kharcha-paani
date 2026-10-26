@@ -15,6 +15,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- New splits with one selected friend suggest the last active group where you added an expense
+  together; choosing a group or No group keeps your choice (X5 / TODOS 9).
+
 - Group expense rows show saved colour dots beside the payer and split participants, including
   category expansions; names remain beside the dots (X5 / TODOS 2).
 
