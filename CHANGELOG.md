@@ -31,6 +31,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Navigation tab labels and the Add action description now use Android string resources, with
+  unchanged English wording and TalkBack behavior (X12 / T3.11; navigation).
+
 - Saving an entry, recording a payment or importing a nonempty statement batch gives a confirmation
   haptic only after the ledger write succeeds (X10 / REL L6).
 
