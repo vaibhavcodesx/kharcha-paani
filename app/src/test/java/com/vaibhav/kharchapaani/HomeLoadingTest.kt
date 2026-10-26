@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36])
+@Config(sdk = [36], qualifiers = "w411dp-h2000dp")
 class HomeLoadingTest {
     @get:Rule val compose = createComposeRule()
     private val app = ApplicationProvider.getApplicationContext<Application>()
@@ -80,6 +80,7 @@ class HomeLoadingTest {
         db.transactionDao().insertTransaction(TransactionEntity(type = "expense", amount = 432.0,
             category = "Food", merchant = "Breakfast saved yesterday", paymentMethod = "Cash"))
         open()
+        compose.onNodeWithTag("hero_month_spend_card").assertDoesNotExist()
         compose.onNodeWithText("Your first entry goes here").assertDoesNotExist()
         release.countDown()
         compose.waitUntil(10000) {
@@ -91,6 +92,7 @@ class HomeLoadingTest {
 
     @Test fun `a genuinely empty ledger shows its first entry invitation only after Room answers`() {
         open()
+        compose.onNodeWithTag("hero_month_spend_card").assertDoesNotExist()
         compose.onNodeWithText("Your first entry goes here").assertDoesNotExist()
         release.countDown()
         compose.waitUntil(10000) {
