@@ -79,6 +79,7 @@ class ConfirmAccessibilityTest {
         val layouts = mutableListOf<TextLayoutResult>()
         compose.onNodeWithText(Money.format(amount), useUnmergedTree = true)
             .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        assertEquals(com.vaibhav.kharchapaani.ui.theme.MoneyText.title.color, layouts.single().layoutInput.style.color)
         assertFalse("confirmation money must not ellipsize", layouts.single().hasVisualOverflow)
         assertEquals(1, layouts.single().lineCount)
         compose.runOnIdle {

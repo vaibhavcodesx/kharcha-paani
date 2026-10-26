@@ -43,7 +43,6 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.sp
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -285,7 +284,7 @@ fun GlassActionBar(
         FlowRow(verticalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.fillMaxWidth()) {
             if (summary != null) {
                 Column(Modifier.then(if (largeText) Modifier.fillMaxWidth() else Modifier.weight(1f)).padding(horizontal = Spacing.s)) {
-                    BasicText(summary, style = MoneyText.title.copy(color = LocalContentColor.current,
+                    BasicText(summary, style = MoneyText.title.copy(
                         lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified), maxLines = 1, softWrap = false,
                         autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = MoneyText.title.fontSize))
                     if (!detail.isNullOrBlank()) {
