@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
@@ -101,6 +104,11 @@ fun CategoryRing(
     }
     val grown by animateFloatAsState(1f, animationSpec = tween(600), label = "ring_grow")
     val focused = slices.indexOfFirst { it.category == selected }.takeIf { it >= 0 }
+    val largeText = LocalDensity.current.fontScale > 1.5f
+    val centreSlice = focused?.let { slices[it] }
+    val description = "${centreSlice?.category ?: "Spent"} ${Money.format(centreSlice?.amount ?: total)}. " +
+        slices.joinToString(", ") { "${it.category} ${it.percentage.roundToInt()} percent" }
+
 
     Column(
         modifier = modifier
@@ -125,9 +133,7 @@ fun CategoryRing(
                         }
                     }
                     .semantics {
-                        contentDescription = slices.joinToString(", ") {
-                            "${it.category} ${it.percentage.roundToInt()} percent"
-                        }
+                        contentDescription = description
                     },
             ) {
                 val stroke = RingStroke.toPx()
@@ -161,7 +167,7 @@ fun CategoryRing(
                     start += sweep
                 }
             }
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clearAndSetSemantics {}) {
+            if (!largeText) Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clearAndSetSemantics {}) {
                 val slice = focused?.let { slices[it] }
                 Text(
                     text = (slice?.category ?: "Spent").uppercase(),
@@ -173,12 +179,12 @@ fun CategoryRing(
                 )
                 // The hole is what it is: a month total in MoneyText.title spilled straight over
                 // the arcs around it.
-                Text(
+                BasicText(
                     text = Money.format(slice?.amount ?: total),
-                    style = MoneyText.row,
-                    color = OffWhiteText,
-                    maxLines = 1,
-                    textAlign = TextAlign.Center,
+                    style = MoneyText.row.copy(color = OffWhiteText, textAlign = TextAlign.Center,
+                        lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified),
+                    maxLines = 1, softWrap = false,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = MoneyText.row.fontSize),
                     modifier = Modifier.width(RingSize - RingStroke * 2 - Spacing.s),
                 )
             }
