@@ -184,6 +184,22 @@ object KpIcons {
     }
 
     /** A line climbing to the top right. */
+    val Beverages = kpIcon("Beverages") {
+        tone("M7.5 11h9l-.7 8.1a1 1 0 0 1-1 .9H9.2a1 1 0 0 1-1-.9z")
+        line("M7 6.5h10l-1.2 12.6a1 1 0 0 1-1 .9H9.2a1 1 0 0 1-1-.9z")
+        line("M7.5 11h9")
+        line("M13.5 6.5L15 3h2")
+    }
+    val PackagedGoods = kpIcon("PackagedGoods") {
+        tone("M4 8l8-4 8 4-8 4z")
+        line("M4 8l8-4 8 4v8l-8 4-8-4z")
+        line("M4 8l8 4 8-4M12 12v8")
+    }
+    val SelfCare = kpIcon("SelfCare") {
+        tone("M4.5 17a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0zM14.5 17a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0z")
+        line("M4.5 17a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0zM14.5 17a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0z")
+        line("M8.9 15.1L17 4M15.1 15.1L7 4")
+    }
     val Investment = kpIcon("Investment") {
         tone("M4 17l5-5 4 4 7-7v11H4z")
         line("M4 17l5-5 4 4 7-7")

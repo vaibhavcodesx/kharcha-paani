@@ -25,11 +25,14 @@ object LocalHeuristicParser {
 
     private val categories = listOf(
         listOf("burger", "pizza", "mcd", "mcdonalds", "kfc", "starbucks", "coffee", "tea", "chai", "lunch", "dinner", "breakfast", "swiggy", "zomato", "restaurant", "food", "snack", "subway", "dominos", "biryani") to "Food",
+        listOf("juice", "coke", "pepsi", "soda", "cold drink", "lassi", "shake", "smoothie", "energy drink", "water bottle") to "Beverages",
+        listOf("chips", "biscuit", "biscuits", "namkeen", "kurkure", "lays", "maggi", "chocolate", "packaged") to "Packaged goods",
+        listOf("haircut", "hair cut", "salon", "barber", "parlour", "spa", "massage", "manicure", "pedicure", "grooming", "gym", "fitness", "yoga") to "Self-care",
         listOf("uber", "ola", "rapido", "cab", "auto", "metro", "bus", "train", "flight", "petrol", "diesel", "fuel", "toll", "parking", "transport", "travel") to "Transport",
         listOf("amazon", "flipkart", "myntra", "zara", "h&m", "nike", "clothes", "shoes", "shopping", "mall", "electronics", "blinkit", "zepto", "instamart", "grocery", "groceries") to "Shopping",
         listOf("wifi", "broadband", "electricity", "water", "bill", "recharge", "airtel", "jio", "vi", "subscription", "netflix", "spotify", "youtube", "cloud", "aws", "gcp") to "Bills",
         listOf("movie", "cinema", "pvr", "game", "gaming", "steam", "party", "club", "drinks", "beer", "entertainment", "concert") to "Entertainment",
-        listOf("pharmacy", "medicine", "doctor", "hospital", "gym", "fitness", "supplement", "health", "dental", "clinic") to "Health",
+        listOf("pharmacy", "medicine", "doctor", "hospital", "supplement", "health", "dental", "clinic") to "Health",
         listOf("rent", "maintenance", "flat", "apartment", "pg", "hostel", "landlord") to "Rent",
         listOf("project", "freelance", "salary", "client", "payout", "dividend", "interest", "refund", "cashback", "stipend") to "Income (Client)",
         listOf("teammate", "team", "hackathon", "bounty", "domain", "hosting", "tool") to "Team Payment"

@@ -3,13 +3,16 @@ package com.vaibhav.kharchapaani.ui.components
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
+import com.vaibhav.kharchapaani.ui.theme.CatBeverages
 import com.vaibhav.kharchapaani.ui.theme.CatBills
 import com.vaibhav.kharchapaani.ui.theme.CatEntertainment
 import com.vaibhav.kharchapaani.ui.theme.CatFood
 import com.vaibhav.kharchapaani.ui.theme.CatHealth
 import com.vaibhav.kharchapaani.ui.theme.CatIncome
 import com.vaibhav.kharchapaani.ui.theme.CatOther
+import com.vaibhav.kharchapaani.ui.theme.CatPackagedGoods
 import com.vaibhav.kharchapaani.ui.theme.CatRent
+import com.vaibhav.kharchapaani.ui.theme.CatSelfCare
 import com.vaibhav.kharchapaani.ui.theme.CatShopping
 import com.vaibhav.kharchapaani.ui.theme.CatInvestment
 import com.vaibhav.kharchapaani.ui.theme.CatGroceries
@@ -27,6 +30,9 @@ object CategoryHelper {
             "Transport" -> KpIcons.Transport
             "Shopping" -> KpIcons.Shopping
             "Groceries" -> KpIcons.Groceries
+            "Beverages" -> KpIcons.Beverages
+            "Packaged goods" -> KpIcons.PackagedGoods
+            "Self-care" -> KpIcons.SelfCare
             "Investment" -> KpIcons.Investment
             "Bills" -> KpIcons.Bills
             "Entertainment" -> KpIcons.Entertainment
@@ -44,6 +50,9 @@ object CategoryHelper {
             "Transport" -> CatTransport
             "Shopping" -> CatShopping
             "Groceries" -> CatGroceries
+            "Beverages" -> CatBeverages
+            "Packaged goods" -> CatPackagedGoods
+            "Self-care" -> CatSelfCare
             "Investment" -> CatInvestment
             "Bills" -> CatBills
             "Entertainment" -> CatEntertainment

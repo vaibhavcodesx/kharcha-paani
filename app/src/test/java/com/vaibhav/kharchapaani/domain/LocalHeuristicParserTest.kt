@@ -14,6 +14,16 @@ class LocalHeuristicParserTest {
     }
 
     @Test
+    fun `haircuts and the gym are self-care, juice a beverage, maggi packaged goods`() {
+        assertEquals("Self-care", LocalHeuristicParser.parse("haircut 300").category)
+        assertEquals("Self-care", LocalHeuristicParser.parse("gym 1500").category)
+        assertEquals("Beverages", LocalHeuristicParser.parse("juice 60").category)
+        assertEquals("Packaged goods", LocalHeuristicParser.parse("maggi 14").category)
+        // A doctor is still Health.
+        assertEquals("Health", LocalHeuristicParser.parse("doctor 500").category)
+    }
+
+    @Test
     fun `the specific payment method wins over the general one`() {
         assertEquals("Credit Card", LocalHeuristicParser.parse("shoes 2,999 credit card").paymentMethod)
         assertEquals("GPay", LocalHeuristicParser.parse("chai 20 google pay").paymentMethod)

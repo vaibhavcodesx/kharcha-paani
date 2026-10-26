@@ -17,7 +17,7 @@ beside who paid and who's in it, as the friend rows already do.
 like. The owner didn't want it called "Personal". Name decided (2026-10-26): **"Self-care"**, covering
 haircuts, salon, spa, grooming, gym and wellness. New categories must also reach the AI prompts
 (quick add, bills, statements) so Gemini can choose them, and `CategoriesTest`.
-**Priority:** P2 · **Effort:** S
+**Priority:** P2 · **Effort:** S · **Done** in the more-categories PR (2026-10-26)
 
 ### 3b. Saved cards as payment methods
 
