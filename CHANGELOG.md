@@ -64,12 +64,18 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   with "bhai" or "ji" after the name, from the widget's mic and text field as much as from Home.
   A group and a friend together ("lunch 900 Goa trip with Rohan") splits with just that friend. A
   name that matches more than one friend, or nobody, is said on the sheet instead of being dropped.
+- - A "Send crash reports" switch in Help & about, as the privacy policy promises. Crash reports stay
+  on unless you turn them off, and the switch only appears in builds that can send them.
 
 ### Fixed
 
 - Retracting a settlement, deleting an IOU or deleting a local group now asks first and explains
   what happens to balances or group history. Cancel keeps everything, and the accessibility
   delete-group action uses the same confirmation (X4 / T2.5).
+
+- The ledger no longer appears in Recents thumbnails on Android 13+, while manual screenshots
+  still work. Payment reminders have a generic lock-screen version without names or amounts,
+  and incoming image/PDF shares reject this app's own files and non-content URIs (X3 / T2.6).
 
 - Tapping a category in a group's "Where it went" now opens its expenses; tap again to close,
   or choose another category to switch. Entries open in the editor when editable; archived
@@ -115,6 +121,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   (`gemini-proxy`) that holds the key as a server secret, accepts only signed-in people, and
   passes back Google's reply. Until now the key shipped inside every APK, where anyone could
   copy it.
+
+### Security
+
+- The database now refuses a group expense whose shares don't add up to its amount, whoever writes
+  it. Before, only saving through the app checked, so editing one share or the amount directly could
+  throw off everyone's balance in the group. **(server, staged, not applied)**
 
 ## [1.5.0] - 2026-10-25
 

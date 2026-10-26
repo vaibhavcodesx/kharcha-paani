@@ -74,6 +74,33 @@ class IncomingIntentsTest {
         assertNull(IncomingIntents.route(Intent(Intent.ACTION_SEND).setType("application/pdf").putExtra(Intent.EXTRA_STREAM, ownFile)))
     }
 
+
+    @Test
+    @Config(sdk = [28, 33, 36])
+    fun `shared files never route back into this apps own provider`() {
+        val authority = "${BuildConfig.APPLICATION_ID}.fileprovider"
+        for (type in listOf("image/png", "application/pdf")) {
+            for (host in listOf(authority, authority.uppercase(), "0@$authority")) {
+                val uri = Uri.parse("content://$host/exports/private.csv")
+                assertNull("$type must reject $uri", IncomingIntents.route(
+                    Intent(Intent.ACTION_SEND).setType(type).putExtra(Intent.EXTRA_STREAM, uri),
+                ))
+            }
+        }
+    }
+
+    @Test
+    @Config(sdk = [28, 33, 36])
+    fun `external content providers still route images and PDFs`() {
+        val uri = Uri.parse("content://com.android.providers.media.documents/document/image%3A42")
+        assertEquals(Route.SharedImage(uri), IncomingIntents.route(
+            Intent(Intent.ACTION_SEND).setType("image/png").putExtra(Intent.EXTRA_STREAM, uri),
+        ))
+        assertEquals(Route.SharedPdf(uri), IncomingIntents.route(
+            Intent(Intent.ACTION_SEND).setType("application/pdf").putExtra(Intent.EXTRA_STREAM, uri),
+        ))
+    }
+
     @Test
     fun `invite links stay open to everyone`() {
         val link = "kharchapaani://join/ABCD2345"
