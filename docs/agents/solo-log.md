@@ -30,4 +30,6 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #133 · X10 / REL L5 offline sign-in wording · merged; conditional connection advice comes before account/Play-services advice, without changing authentication or guessing network state.
 
+- 2026-10-27 · #134 · X10 / REL L6 money confirmations · merged; Confirm haptic follows each successful entry/payment/nonempty batch write; invalid amounts, errors and empty imports stay silent, and disabled buttons stay disabled.
+
 ## Questions
