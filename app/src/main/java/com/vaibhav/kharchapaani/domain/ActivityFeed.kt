@@ -48,7 +48,12 @@ object ActivityFeed {
         // with personal expenses or income.
         val settlementItems = if (filter == ALL || filter == SPLITS) {
             settlements
-                .map { ActivityItem.Settlement(it, nameOf(it.fromPersonId), nameOf(it.toPersonId), it.groupId?.let(groupNames::get)) }
+                .map {
+                    ActivityItem.Settlement(
+                        it, nameOf(it.fromPersonId), nameOf(it.toPersonId), it.groupId?.let(groupNames::get),
+                        recordedByName = it.recordedByPersonId?.let { id -> if (id == ME) "You" else names[id] },
+                    )
+                }
                 .filter { item ->
                     query.isBlank() ||
                         item.title.contains(query, ignoreCase = true) ||

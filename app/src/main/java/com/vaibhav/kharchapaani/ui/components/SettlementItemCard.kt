@@ -14,6 +14,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,8 +23,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,7 +51,7 @@ import java.util.Locale
 /**
  * A settlement or IOU in the Home timeline. Money that came to you is green; money you paid or lent
  * is plain; a settlement between two groupmates is muted. Only a party can retract one, so others
- * get no menu; the row isn't tappable for them at all.
+ * get no menu. IOUs can still be expanded to read their full note and attribution.
  */
 @Composable
 fun SettlementItemCard(
@@ -60,6 +64,7 @@ fun SettlementItemCard(
 ) {
     val settlement = item.settlement
     var showMenu by remember { mutableStateOf(false) }
+    var showDetails by remember(settlement.id) { mutableStateOf(false) }
     val outgoing = settlement.fromPersonId == ME
     val incoming = settlement.toPersonId == ME
     val time = remember(settlement.date) { SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(settlement.date)) }
@@ -90,62 +95,82 @@ fun SettlementItemCard(
     // tears a stub off and here it would cut straight through the text. The motif came across
     // without the layout that earns it (round 2, §7).
     Box(modifier.fillMaxWidth().clip(KpShapes.ticket)) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 64.dp)
-                .background(CharcoalCard)
-                .then(
-                    if (item.awaitsMyAnswer) {
-                        Modifier.clickable(onClickLabel = "Confirm or say this isn't right") { onAnswer() }
-                    } else if (item.involvesMe && (settled || item.recordedByMe)) {
-                        Modifier.clickable(onClickLabel = "More options for ${item.title}") { showMenu = true }
-                    } else {
-                        Modifier.semantics(mergeDescendants = true) {}
-                    }
-                )
-                .padding(horizontal = Spacing.l, vertical = Spacing.m)
-                .testTag("settlement_item_${settlement.id}"),
-        ) {
-            Box(
-                contentAlignment = Alignment.Center,
+        Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(KpShapes.small)
-                    .background(accent.copy(alpha = 0.14f)),
+                    .fillMaxWidth()
+                    .heightIn(min = 64.dp)
+                    .background(CharcoalCard)
+                    .then(
+                        if (settlement.isIou) {
+                            Modifier.clickable(
+                                role = Role.Button,
+                                onClickLabel = if (showDetails) "Close IOU details" else "Show IOU details",
+                            ) { showDetails = !showDetails }.semantics {
+                                stateDescription = if (showDetails) "Expanded" else "Collapsed"
+                            }
+                        } else if (item.awaitsMyAnswer) {
+                            Modifier.clickable(onClickLabel = "Confirm or say this isn't right") { onAnswer() }
+                        } else if (item.involvesMe && (settled || item.recordedByMe)) {
+                            Modifier.clickable(onClickLabel = "More options for ${item.title}") { showMenu = true }
+                        } else {
+                            Modifier.semantics(mergeDescendants = true) {}
+                        }
+                    )
+                    .padding(horizontal = Spacing.l, vertical = Spacing.m)
+                    .testTag("settlement_item_${settlement.id}"),
             ) {
-                Icon(
-                    imageVector = if (settlement.isIou) KpIcons.Lend else KpIcons.Settle,
-                    contentDescription = null,
-                    tint = accent,
-                    modifier = Modifier.size(20.dp),
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(KpShapes.small)
+                        .background(accent.copy(alpha = 0.14f)),
+                ) {
+                    Icon(
+                        imageVector = if (settlement.isIou) KpIcons.Lend else KpIcons.Settle,
+                        contentDescription = null,
+                        tint = accent,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
+                    Text(text = item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(text = detail, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (statusLine != null) {
+                        Text(
+                            text = statusLine,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (item.awaitsMyAnswer) WarmAmberLight else MutedWarmGray,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.testTag("settlement_status_${settlement.id}"),
+                        )
+                    }
+                }
+                Text(
+                    text = (if (outgoing) "-" else if (incoming) "+" else "") + Money.format(settlement.amount),
+                    style = if (rejected) MoneyText.row.copy(textDecoration = TextDecoration.LineThrough) else MoneyText.row,
+                    color = when {
+                        !settled -> MutedWarmGray
+                        incoming -> ChartreuseSecondary
+                        outgoing -> OffWhiteText
+                        else -> MutedWarmGray
+                    },
                 )
-            }
-            Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
-                Text(text = item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(text = detail, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (statusLine != null) {
-                    Text(
-                        text = statusLine,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (item.awaitsMyAnswer) WarmAmberLight else MutedWarmGray,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.testTag("settlement_status_${settlement.id}"),
+                if (settlement.isIou) {
+                    Icon(
+                        KpIcons.ChevronDown,
+                        contentDescription = null,
+                        tint = MutedWarmGray,
+                        modifier = Modifier.padding(start = Spacing.s).size(18.dp).rotate(if (showDetails) 180f else 0f),
                     )
                 }
             }
-            Text(
-                text = (if (outgoing) "-" else if (incoming) "+" else "") + Money.format(settlement.amount),
-                style = if (rejected) MoneyText.row.copy(textDecoration = TextDecoration.LineThrough) else MoneyText.row,
-                color = when {
-                    !settled -> MutedWarmGray
-                    incoming -> ChartreuseSecondary
-                    outgoing -> OffWhiteText
-                    else -> MutedWarmGray
-                },
-            )
+            if (settlement.isIou && showDetails) {
+                IouDetails(item, onShowOptions = { showMenu = true }, onAnswer = onAnswer)
+            }
         }
         DropdownMenu(
             expanded = showMenu,
@@ -172,6 +197,42 @@ fun SettlementItemCard(
                     onRetract()
                 },
             )
+        }
+    }
+}
+
+/** The complete stored note; an unknown recorder stays unknown, including older local entries. */
+@Composable
+private fun IouDetails(item: ActivityItem.Settlement, onShowOptions: () -> Unit, onAnswer: () -> Unit) {
+    val settlement = item.settlement
+    val fullDate = remember(settlement.date) {
+        SimpleDateFormat("d MMM yyyy · h:mm a", Locale.getDefault()).format(Date(settlement.date))
+    }
+    val recorder = if (settlement.recordedByPersonId == ME) "you" else item.recordedByName
+    Column(
+        Modifier.fillMaxWidth().background(CharcoalCard).padding(horizontal = Spacing.l, vertical = Spacing.m)
+            .testTag("iou_details_${settlement.id}"),
+    ) {
+        Text(fullDate, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("iou_date_${settlement.id}"))
+        Text(
+            if (recorder == null) "Recorder isn't available for this entry" else "Recorded by $recorder",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = Spacing.xs),
+        )
+        Text(
+            settlement.note.ifBlank { "No note added." },
+            style = MaterialTheme.typography.bodyLarge,
+            color = OffWhiteText,
+            modifier = Modifier.padding(top = Spacing.m).testTag("iou_note_${settlement.id}"),
+        )
+        if (item.awaitsMyAnswer) {
+            TextButton(onClick = onAnswer, modifier = Modifier.testTag("iou_answer_${settlement.id}")) {
+                Text("Confirm or say this isn't right", color = WarmAmberLight)
+            }
+        } else if (item.involvesMe && (settlement.isConfirmed || item.recordedByMe)) {
+            TextButton(onClick = onShowOptions, modifier = Modifier.testTag("iou_options_${settlement.id}")) {
+                Text("More options", color = WarmAmberLight)
+            }
         }
     }
 }

@@ -21,6 +21,8 @@ sealed interface ActivityItem {
         val fromName: String,
         val toName: String,
         val groupName: String?,
+        /** From the actual recorded-by id, not inferred from who paid or received. */
+        val recordedByName: String? = null,
     ) : ActivityItem {
         override val key get() = "settlement_${settlement.id}"
         override val date get() = settlement.date

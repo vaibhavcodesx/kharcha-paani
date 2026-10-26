@@ -125,7 +125,7 @@ class IouDetailsTest {
         show(recorder = null)
         compose.onNodeWithTag("settlement_item_5").performClick()
 
-        compose.onNodeWithText("Recorder wasn't saved for this entry").assertExists()
+        compose.onNodeWithText("Recorder isn't available for this entry").assertExists()
         compose.onNodeWithText("Recorded by Rohan").assertDoesNotExist()
         compose.onNodeWithText("Recorded by you").assertDoesNotExist()
     }

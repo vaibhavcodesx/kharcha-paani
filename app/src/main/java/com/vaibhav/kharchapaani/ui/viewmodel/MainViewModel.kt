@@ -532,6 +532,7 @@ class MainViewModel(
                 fromName = if (settlement.fromPersonId == -1L) "You" else names[settlement.fromPersonId] ?: "Someone",
                 toName = if (settlement.toPersonId == -1L) "You" else names[settlement.toPersonId] ?: "Someone",
                 groupName = settlement.groupId?.let(groupNames::get),
+                recordedByName = settlement.recordedByPersonId?.let { id -> if (id == -1L) "You" else names[id] },
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
