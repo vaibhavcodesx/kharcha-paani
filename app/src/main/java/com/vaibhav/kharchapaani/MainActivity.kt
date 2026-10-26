@@ -739,6 +739,37 @@ fun SplitFlowApp(
         }
     }
 
+    NotificationsSheet(
+        isOpen = isNotificationsOpen,
+        access = notificationAccess,
+        prefs = notificationPrefs,
+        reminder = reminder,
+        onTurnOn = allowNotifications,
+        onPaymentsToConfirmChange = viewModel::setPaymentsToConfirm,
+        onQuietHoursChange = viewModel::setQuietHours,
+        onReminderEnabledChange = viewModel::setReminderEnabled,
+        onReminderTimeChange = viewModel::setReminderTime,
+        onDismiss = { isNotificationsOpen = false },
+    )
+
+    // The app's own offer, at most twice and only while Android would still ask (N1).
+    val offerMoment = notificationMoment
+    if (offerMoment != null) {
+        if (NotificationOffer.shouldOffer(notificationAccess, notificationOffersShown)) {
+            NotificationOfferSheet(
+                moment = offerMoment,
+                reminderTime = ReminderSchedule.label(reminder.minuteOfDay, android.text.format.DateFormat.is24HourFormat(context)),
+                onTurnOn = {
+                    viewModel.notificationOfferShown()
+                    allowNotifications()
+                },
+                onNotNow = viewModel::notificationOfferShown,
+            )
+        } else {
+            LaunchedEffect(offerMoment) { viewModel.clearNotificationMoment() }
+        }
+    }
+
     SettlementAnswerSheet(
         item = answeringSettlement,
         onConfirm = { viewModel.answerSettlement(confirm = true) },
