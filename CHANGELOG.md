@@ -15,6 +15,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Sort Groups by latest activity, name, either balance direction or newest; the choice stays on
+  this phone when you reopen the app (X5 / TODOS 5).
+
 - Tap an IOU card to read its whole note, full date and saved recorder, then tap again to collapse.
   Answer and removal actions remain available; entries without recorder metadata say so instead
   of guessing who added them (X5 / TODOS 4).
