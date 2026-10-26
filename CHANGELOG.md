@@ -86,6 +86,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- Reading an overlapping statement leaves matching saved entries unticked with “Already in your
+  ledger”, while keeping new purchases and deliberate re-selection available (X8 / T3.6).
+
 - Retracting a settlement, deleting an IOU or deleting a local group now asks first and explains
   what happens to balances or group history. Cancel keeps everything, and the accessibility
   delete-group action uses the same confirmation (X4 / T2.5).

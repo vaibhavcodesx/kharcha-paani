@@ -98,6 +98,7 @@ import com.vaibhav.kharchapaani.domain.MonthAnalytics
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.domain.SplitTargets
+import com.vaibhav.kharchapaani.domain.StatementReimports
 import com.vaibhav.kharchapaani.ui.components.NewSubscription
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.format.Money
@@ -1094,7 +1095,9 @@ class MainViewModel(
                 _isParsingStatement.value = false
             }
             when (result) {
-                is StatementReadResult.Success -> _statementParseResult.value = result.statement
+                is StatementReadResult.Success -> _statementParseResult.value = StatementReimports.review(
+                    result.statement, ledgerRepo.allTransactions.first(),
+                )
                 is StatementReadResult.Failed -> {
                     _isImportStatementOpen.value = false
                     _statusMessage.value = statementFailureMessage(result.reason)
