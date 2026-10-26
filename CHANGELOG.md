@@ -40,6 +40,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Shared discard/large-amount dialogs and amount-field spoken labels use Android string resources
   with unchanged English wording (X12 / T3.11; sheet controls).
 
+- Splits, group cards and friend rows use string resources for labels, formatted counts, menus and
+  spoken actions, preserving their English wording (X12 / T3.11; Splits).
+
 - Navigation tab labels and the Add action description now use Android string resources, with
   unchanged English wording and TalkBack behavior (X12 / T3.11; navigation).
 
