@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.db.entity.SettlementStatus
+import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.model.ActivityItem
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
@@ -60,6 +61,7 @@ fun SettlementItemCard(
 ) {
     val settlement = item.settlement
     var showMenu by remember { mutableStateOf(false) }
+    var showRemovalConfirmation by remember(settlement.id) { mutableStateOf(false) }
     val outgoing = settlement.fromPersonId == ME
     val incoming = settlement.toPersonId == ME
     val time = remember(settlement.date) { SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(settlement.date)) }
@@ -75,6 +77,38 @@ fun SettlementItemCard(
     val rejected = settlement.status == SettlementStatus.REJECTED
     // Pending or rejected ones never moved a balance, so their amount doesn't wear the money colours.
     val statusLine = item.statusLine
+    val removeLabel = when {
+        settlement.status == SettlementStatus.PENDING -> "Withdraw"
+        rejected -> "Clear it away"
+        settlement.isIou -> "Delete IOU"
+        else -> "Retract settlement"
+    }
+    if (showRemovalConfirmation) {
+        val amount = Money.format(settlement.amount)
+        val other = item.otherPartyName ?: "this groupmate"
+        val consequence = when {
+            !settled -> "This removes the $amount record with $other. It hasn't counted in your balance."
+            settlement.isIou -> "Removing this $amount IOU takes it out of your balance with $other."
+            else -> "Removing this $amount payment recalculates your balance with $other as if it wasn't recorded. The actual payment isn't reversed."
+        }
+        val scope = when {
+            settlement.syncState == SyncState.LOCAL_ONLY -> "This changes the record on this phone."
+            item.groupName != null -> "This change will sync to ${item.groupName}."
+            else -> "This change will sync to your other devices."
+        }
+        RemovalConfirmationDialog(
+            title = "$removeLabel?",
+            description = "$consequence $scope",
+            confirmLabel = removeLabel,
+            dialogTag = "remove_settlement_dialog",
+            confirmTag = "confirm_remove_settlement",
+            onConfirm = {
+                showRemovalConfirmation = false
+                onRetract()
+            },
+            onDismiss = { showRemovalConfirmation = false },
+        )
+    }
 
     // The row itself opens the menu, so its amount lines up with every other row's instead of
     // sitting left of a ⋯ button.
@@ -156,20 +190,11 @@ fun SettlementItemCard(
         ) {
             DropdownMenuItem(
                 text = {
-                    Text(
-                        when {
-                            // Mine, not yet answered: nothing has counted, so it's withdrawn, not retracted.
-                            settlement.status == SettlementStatus.PENDING -> "Withdraw"
-                            rejected -> "Clear it away"
-                            settlement.isIou -> "Delete IOU"
-                            else -> "Retract settlement"
-                        },
-                        color = OffWhiteText,
-                    )
+                    Text(removeLabel, color = OffWhiteText)
                 },
                 onClick = {
                     showMenu = false
-                    onRetract()
+                    showRemovalConfirmation = true
                 },
             )
         }

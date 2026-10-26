@@ -67,6 +67,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- Retracting a settlement, deleting an IOU or deleting a local group now asks first and explains
+  what happens to balances or group history. Cancel keeps everything, and the accessibility
+  delete-group action uses the same confirmation (X4 / T2.5).
+
 - Tapping a category in a group's "Where it went" now opens its expenses; tap again to close,
   or choose another category to switch. Entries open in the editor when editable; archived
   groups stay read-only, and switching groups clears the selection (X2 / TODOS 7).
