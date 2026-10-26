@@ -81,8 +81,8 @@ fun SettlementItemCard(
     // Pending or rejected ones never moved a balance, so their amount doesn't wear the money colours.
     val statusLine = item.statusLine
 
-    // The row itself opens the menu, so its amount lines up with every other row's instead of
-    // sitting left of a ⋯ button.
+    // The row opens IOU details or payment actions, keeping its amount aligned with other rows
+    // instead of sitting left of a ⋯ button.
     //
     // The ticket motif, extended from the group cards to the other place money changes hands
     // (backlog item 17). Deliberately not the dock, which is navigation, not a receipt.

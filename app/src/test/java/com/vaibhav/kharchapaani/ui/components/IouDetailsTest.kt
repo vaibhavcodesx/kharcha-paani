@@ -43,10 +43,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 /** Room -> the real feed gatherer -> the IOU card, including an explicit unknown recorder. */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
+// Native font metrics are required for the line-wrap/overflow assertions below.
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [36], qualifiers = "w411dp-h891dp")
 class IouDetailsTest {
     @get:Rule
@@ -110,7 +113,7 @@ class IouDetailsTest {
         compose.onNodeWithTag("iou_note_5").assert(hasText(note))
         val layouts = mutableListOf<TextLayoutResult>()
         compose.onNodeWithTag("iou_note_5").performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
-        assertTrue("the long note must wrap across lines", layouts.single().lineCount > 1)
+        assertTrue("the long note must wrap across lines (width=${layouts.single().size.width})", layouts.single().lineCount > 1)
         assertFalse("the note must not be ellipsized or clipped", layouts.single().hasVisualOverflow)
         compose.onNodeWithTag("iou_date_5").assert(hasText("2026", substring = true))
         compose.onNodeWithText("Recorded by Ankit").assertExists()
