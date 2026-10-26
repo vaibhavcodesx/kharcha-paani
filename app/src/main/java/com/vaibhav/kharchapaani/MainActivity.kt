@@ -949,6 +949,7 @@ fun SplitFlowApp(
     // Group Detail Sheet
     GroupDetailSheet(
         groupDetails = selectedGroupForDetail,
+        people = people,
         onAddExpense = { groupId ->
             viewModel.openManualAddForGroup(groupId)
         },

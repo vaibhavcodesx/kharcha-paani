@@ -15,6 +15,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Group expense rows show saved colour dots beside the payer and split participants, including
+  category expansions; names remain beside the dots (X5 / TODOS 2).
+
 - Sort Groups by latest activity, name, either balance direction or newest; the choice stays on
   this phone when you reopen the app (X5 / TODOS 5).
 
