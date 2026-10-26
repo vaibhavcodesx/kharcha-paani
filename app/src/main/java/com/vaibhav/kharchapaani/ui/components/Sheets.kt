@@ -37,6 +37,13 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.sp
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -253,6 +260,7 @@ fun SheetScaffold(
  * ([disabledLabel]) instead of just dimming. [busy] while the action is still writing: the button
  * keeps its label beside a spinner and takes no second tap.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun GlassActionBar(
     label: String,
@@ -265,6 +273,7 @@ fun GlassActionBar(
     buttonTestTag: String? = null,
     busy: Boolean = false,
 ) {
+    val largeText = LocalDensity.current.fontScale > 1.5f
     GlassPanel(
         shape = SquircleShape(28.dp),
         contentPadding = Spacing.xs,
@@ -273,10 +282,12 @@ fun GlassActionBar(
             .padding(Spacing.m)
             .fillMaxWidth(),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        FlowRow(verticalArrangement = Arrangement.spacedBy(Spacing.s), modifier = Modifier.fillMaxWidth()) {
             if (summary != null) {
-                Column(Modifier.weight(1f).padding(horizontal = Spacing.s)) {
-                    Text(summary, style = MoneyText.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Column(Modifier.then(if (largeText) Modifier.fillMaxWidth() else Modifier.weight(1f)).padding(horizontal = Spacing.s)) {
+                    BasicText(summary, style = MoneyText.title.copy(color = LocalContentColor.current,
+                        lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified), maxLines = 1, softWrap = false,
+                        autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = MoneyText.title.fontSize))
                     if (!detail.isNullOrBlank()) {
                         Text(detail, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
@@ -285,7 +296,7 @@ fun GlassActionBar(
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .then(if (summary == null) Modifier.weight(1f) else Modifier)
+                    .then(if (summary == null || largeText) Modifier.weight(1f) else Modifier)
                     .heightIn(min = 52.dp)
                     .clip(KpShapes.action)
                     .background(if (enabled) BrandGradient.diagonal() else SolidColor(CharcoalElevated))
