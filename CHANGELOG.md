@@ -18,10 +18,18 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Group cards grow with large text and keep complete Indian-formatted amounts visible
   (X7 / T2.10, REL M7; Splits).
 
+- Overlapping statement parses use separate date formatters, keeping dates and month labels
+  consistent across threads (X10 / REL L10).
+
+- Home calls the gallery action “Bill photo”, so its label matches what opens (X10 / REL L7).
+
 - Ambiguous Google picker errors suggest reconnecting before Play services or account advice
   (X10 / REL L5).
 
 ### Added
+
+- Saving an entry, recording a payment or importing a nonempty statement batch gives a confirmation
+  haptic only after the ledger write succeeds (X10 / REL L6).
 
 - A confirmed settlement can offer Play’s own review flow after a settling-in week, at most once
   per 180 days; errors, old history and busy screens do not trigger it (X9 / T3.9).

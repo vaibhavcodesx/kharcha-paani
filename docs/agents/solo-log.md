@@ -26,10 +26,17 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #131 · X9 / T3.9 Play reviews · merged; only saved confirmed settlements, one settling-in week and 180-day attempt cooldown, silent SDK failure and no star requests; Play may suppress its dialog.
 
+
 - 2026-10-27 · #132 · X10 / REL L1 cold-start Home · parked: CI 40407939041 timed out on an off-screen feed fixture; corrected viewport CI 40408765164 proves the premature balance header (911 tests, two assertions). Two failed CI runs reached the stop rule. Next: nullable Home snapshot from direct Room flows; render the brand mark until the first feed/people/balance/analytics emission.
 
 - 2026-10-27 · #133 · X10 / REL L5 offline sign-in wording · merged; conditional connection advice comes before account/Play-services advice, without changing authentication or guessing network state.
 
 - 2026-10-27 · #138 · X7 / T2.10 Splits group cards · merged; cards grow, amounts fit without ellipses, large text wraps names and figures, and decorative perforation is omitted above 150% text size.
+
+- 2026-10-27 · #136 · X10 / REL L10 statement dates · merged; formatters are local per call, preserving supported formats, strict date checks and the current time zone; eight threads verify 4,000 dates and labels.
+
+- 2026-10-27 · #135 · X10 / REL L7 bill naming · merged; Bill photo describes the existing gallery picker; capture and cancellation behavior are unchanged.
+
+- 2026-10-27 · #134 · X10 / REL L6 money confirmations · merged; Confirm haptic follows each successful entry/payment/nonempty batch write; invalid amounts, errors and empty imports stay silent, and disabled buttons stay disabled.
 
 ## Questions
