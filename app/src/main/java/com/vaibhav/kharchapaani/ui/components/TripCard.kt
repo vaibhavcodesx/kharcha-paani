@@ -1,5 +1,8 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.background
@@ -80,6 +83,7 @@ fun TripCard(
 ) {
     val largeText = LocalDensity.current.fontScale > 1.5f
     val group = details.group
+    val deleteLabel = stringResource(R.string.splits_delete_name, group.name)
     val owed = details.netBalanceForMe >= 0.005
     val owe = details.netBalanceForMe <= -0.005
     val canDelete = !group.isShared
@@ -92,18 +96,18 @@ fun TripCard(
     // beside the name as a tag instead, where it reads better, has room, and matches the payment
     // pill the transaction rows now use.
     val state = when {
-        group.isArchived -> "Archived"
-        group.isShared -> "Shared"
+        group.isArchived -> stringResource(R.string.splits_archived)
+        group.isShared -> stringResource(R.string.splits_shared)
         else -> null
     }
-    val meta = "${details.members.size + 1} people · " +
-        "${details.transactionsCount} ${if (details.transactionsCount == 1) "expense" else "expenses"}"
+    val meta = stringResource(R.string.splits_group_counts, details.members.size + 1,
+        pluralStringResource(R.plurals.splits_expense_count, details.transactionsCount, details.transactionsCount))
 
     if (canDelete && showDeleteConfirmation) {
         RemovalConfirmationDialog(
-            title = "Delete ${group.name}?",
-            description = "Expenses and settlements stay in your history, without this group. Its member list is removed. This can't be undone.",
-            confirmLabel = "Delete group",
+            title = stringResource(R.string.splits_delete_name_question, group.name),
+            description = stringResource(R.string.splits_delete_group_body),
+            confirmLabel = stringResource(R.string.splits_delete_group),
             dialogTag = "delete_group_dialog",
             confirmTag = "confirm_delete_group",
             onConfirm = {
@@ -127,13 +131,13 @@ fun TripCard(
                 .background(CharcoalCard)
                 .then(if (largeText) Modifier else Modifier.perforation())
                 .combinedClickable(
-                    onClickLabel = "Open ${group.name}",
-                    onLongClickLabel = if (canDelete) "More options" else null,
+                    onClickLabel = stringResource(R.string.splits_open_name, group.name),
+                    onLongClickLabel = if (canDelete) stringResource(R.string.splits_more_options) else null,
                     onLongClick = if (canDelete) ({ showMenu = true }) else null,
                     onClick = onOpen,
                 )
                 .semantics {
-                    if (canDelete) customActions = listOf(CustomAccessibilityAction("Delete ${group.name}") { showDeleteConfirmation = true; true })
+                    if (canDelete) customActions = listOf(CustomAccessibilityAction(deleteLabel) { showDeleteConfirmation = true; true })
                 }
                 .testTag("group_card_${group.id}"),
         ) {
@@ -163,9 +167,9 @@ fun TripCard(
                 Column(Modifier.widthIn(max = 160.dp), horizontalAlignment = Alignment.End) {
                     Text(
                         text = when {
-                            owed -> "YOU'RE OWED"
-                            owe -> "YOU OWE"
-                            else -> "SETTLED"
+                            owed -> stringResource(R.string.splits_group_owed)
+                            owe -> stringResource(R.string.splits_group_owe)
+                            else -> stringResource(R.string.splits_group_settled)
                         },
                         style = EyebrowText,
                     )
@@ -185,8 +189,8 @@ fun TripCard(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.xl),
                 modifier = Modifier.fillMaxWidth().heightIn(min = HalfHeight).padding(horizontal = Spacing.l, vertical = Spacing.s),
             ) {
-                Figure("Spent", Money.format(details.totalExpenses))
-                Figure("Your share", Money.format(details.myShare))
+                Figure(stringResource(R.string.splits_spent), Money.format(details.totalExpenses))
+                Figure(stringResource(R.string.splits_your_share), Money.format(details.myShare))
                 MemberStack(details)
             }
         }
@@ -199,7 +203,7 @@ fun TripCard(
                 modifier = Modifier.align(Alignment.TopEnd),
             ) {
                 DropdownMenuItem(
-                    text = { Text("Delete ${group.name}", color = OffWhiteText) },
+                    text = { Text(deleteLabel, color = OffWhiteText) },
                     onClick = {
                         showMenu = false
                         showDeleteConfirmation = true
