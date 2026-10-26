@@ -115,7 +115,8 @@ class MoneyDirectionColourTest {
             "Food" to CatFood, "Transport" to CatTransport, "Shopping" to CatShopping,
             "Bills" to CatBills, "Entertainment" to CatEntertainment, "Health" to CatHealth,
             "Rent" to CatRent, "Team Payment" to CatTeamPayment, "Groceries" to CatGroceries,
-            "Investment" to CatInvestment, "Income" to CatIncome,
+            "Investment" to CatInvestment, "Income" to CatIncome, "Beverages" to CatBeverages,
+            "Packaged goods" to CatPackagedGoods, "Self-care" to CatSelfCare,
         )
         for (i in palette.indices) {
             for (j in i + 1 until palette.size) {

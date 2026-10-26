@@ -1,0 +1,23 @@
+From chai runs to shared trips, Kharcha Paani helps you keep track of everyday spending and split expenses with friends.
+
+YOUR EVERYDAY SPENDING
+Add entries by hand, type a quick note such as "chai 40 cash", or use voice input. Organise expenses by category and payment method, keep bill photos with entries, and track subscriptions.
+
+SPLITS THAT FIT THE PLAN
+Create groups for a trip, a shared home or a weekend out. Split equally, enter exact amounts or divide by shares. Include friends who aren't on the app, and use invite codes to bring others into shared groups.
+
+A CLEARER HISAAB
+See shared expenses and balances together. Record settle-ups and let the other person confirm them. Share a friendly ask-to-pay message when you choose. For UPI, open a link in your own payment app; Kharcha Paani records expenses and settlements and does not hold or transfer money.
+
+SEE WHERE IT WENT
+Use Insights to explore your monthly spending and category totals. Export a CSV or save a JSON backup when you want a copy of your records.
+
+KEEP ADDING OFFLINE
+After signing in, add entries and view records already on your phone without a connection. Changes sync when you're back online. Sign-in, shared updates and AI features need an internet connection.
+
+OPTIONAL AI HELP
+Use Google Gemini to read quick-add text, bill photos and bank or UPI statements, or ask questions about your spending in Insights. Review suggested entries before saving them. AI can make mistakes and daily usage limits apply; adding entries by hand remains available.
+
+Text, photos, statements and questions submitted for AI processing are sent to Google Gemini. Google may use submitted content to improve its products, and human reviewers may see it. You can choose manual entry instead. Read the in-app notice and privacy policy before using AI features.
+
+Google sign-in is required. Intended for people aged 18 and over.

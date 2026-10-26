@@ -75,6 +75,7 @@ fun TripCard(
     val owe = details.netBalanceForMe <= -0.005
     val canDelete = !group.isShared
     var showMenu by remember { mutableStateOf(false) }
+    var showDeleteConfirmation by remember(group.id) { mutableStateOf(false) }
     val currentOnDelete by rememberUpdatedState(onDelete)
     val accent = remember(group.colorHex) { parseColor(group.colorHex) }
     // Whether the group is shared or archived is a *state*, not a count, and as a third item on
@@ -88,6 +89,21 @@ fun TripCard(
     }
     val meta = "${details.members.size + 1} people · " +
         "${details.transactionsCount} ${if (details.transactionsCount == 1) "expense" else "expenses"}"
+
+    if (canDelete && showDeleteConfirmation) {
+        RemovalConfirmationDialog(
+            title = "Delete ${group.name}?",
+            description = "Expenses and settlements stay in your history, without this group. Its member list is removed. This can't be undone.",
+            confirmLabel = "Delete group",
+            dialogTag = "delete_group_dialog",
+            confirmTag = "confirm_delete_group",
+            onConfirm = {
+                showDeleteConfirmation = false
+                currentOnDelete()
+            },
+            onDismiss = { showDeleteConfirmation = false },
+        )
+    }
 
     Box(modifier.fillMaxWidth()) {
         Column(
@@ -108,7 +124,7 @@ fun TripCard(
                     onClick = onOpen,
                 )
                 .semantics {
-                    if (canDelete) customActions = listOf(CustomAccessibilityAction("Delete ${group.name}") { currentOnDelete(); true })
+                    if (canDelete) customActions = listOf(CustomAccessibilityAction("Delete ${group.name}") { showDeleteConfirmation = true; true })
                 }
                 .testTag("group_card_${group.id}"),
         ) {
@@ -178,7 +194,7 @@ fun TripCard(
                     text = { Text("Delete ${group.name}", color = OffWhiteText) },
                     onClick = {
                         showMenu = false
-                        onDelete()
+                        showDeleteConfirmation = true
                     },
                 )
             }

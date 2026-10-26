@@ -7,6 +7,8 @@ Before starting any work, read:
 1. **PRD.md**, a short page on what the product is and which rules hold.
 2. **docs/production-readiness/README.md**, the current work order. Read §0 "Start here" and §10
    "Owner decisions" first: §10 overrides anything else in it.
+3. **docs/agents/work-split.md**: the remaining work is split with Codex. Take only items from
+   Claude's lane, and don't edit files on a Codex branch.
 
 docs/history/ is archive only: the old September PRD and its status log. Don't take tasks from it.
 docs/original-architecture-dossier.md describes the app as it was before any of this work, so treat

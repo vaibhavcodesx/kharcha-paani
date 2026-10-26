@@ -15,6 +15,13 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Tap an IOU card to read its whole note, full date and saved recorder, then tap again to collapse.
+  Answer and removal actions remain available; entries without recorder metadata say so instead
+  of guessing who added them (X5 / TODOS 4).
+
+- Play Store listing draft: short and full descriptions, a six-screen capture plan and a
+  1024×500 feature graphic brief, with copy validation checks (X1 / T2.9).
+
 - A launch screen with the Kharcha Paani mark on the app's dark background, held while your account
   opens (at most 1.5 s), so the app goes straight from it to Home. The launcher icon has a themed
   (monochrome) version too: just the ₹.
@@ -24,8 +31,69 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   expenses: "Former member" unless you choose to keep your name. A second confirm, and it's done
   at once: you're signed out and the phone keeps nothing of the account. With changes not synced
   yet, it offers to sync them first. **(server, staged, not applied)**
+- Daily AI reads per person, generous enough that normal use never meets them: 50 quick adds,
+  10 bills, 3 statements and 20 Insights questions a day, back at midnight IST. Reaching one says
+  "That's today's AI reads used up. They're back tomorrow; you can still add entries by hand."
+  **(server, staged, not applied)**
+- Statement reads are cleaned on the server before they reach the app: at most 1,000 rows, no
+  amount the database couldn't store, merchant and note cut to 80 and 200 characters.
+- A Notifications screen, from the account sheet: whether your phone shows Kharcha Paani's
+  notifications at all (with a Turn on button that asks, or opens the phone's settings once Android
+  won't ask any more), a switch for payments to confirm (turning it off says what you'd miss), the
+  daily reminder and its time, and quiet hours, 10:30 PM to 8 AM unless you change them, when payment
+  nudges wait till morning.
+- The app now offers to turn notifications on right after something a notification would follow
+  up: joining or creating a shared group, recording a payment in one, or your first own entry with
+  the daily reminder on. It explains what they're for first, offers at most twice, and "Not now"
+  leaves everything working. Before, someone who only used groups was never asked at all.
+- A privacy policy and terms of use (`docs/legal/`, published from `site/`), written from what the
+  app really does: who handles your data (Supabase in Tokyo, Google Gemini on its free tier, Google
+  Sign-In, crash reports), what groupmates see, how long data is kept, how deleting your account
+  works, your rights under India's DPDP Act and a grievance contact who replies within 90 days.
+- The sign-in screen says what continuing agrees to, with the Terms and Privacy policy a tap away,
+  and that the app is for people 18 or older.
+- Help & about at the bottom of the account sheet: send feedback (your mail app opens with the app
+  and phone versions filled in), the privacy policy, the terms, open-source licences, and the
+  version you're on.
+- `docs/legal/play-console-answers.md`: the Data safety and Financial features answers for the Play
+  Console, and the account deletion page for people who no longer have the app.
+- Before the first quick add, bill scan, statement, Insights question or trip read goes to Google
+  Gemini, the app now says so, once: "Bills, statements and quick-add text are read by Google
+  Gemini", that while the app is free Google may use what's sent to improve Gemini and its
+  reviewers may see it, that it's never shown to other users and never sold. "Type it myself"
+  sends nothing: a quick add is filled in on your phone instead, and a bill photo is kept on a
+  blank entry for you to type.
+- "Report this answer" under each AI answer opens your mail app with the answer, so a wrong or
+  offensive one can be reported.
+- Crash reports through Firebase Crashlytics, so problems on people's phones can be found and
+  fixed. They never include amounts, names, notes or documents, and stay off in any build without
+  the Firebase project. Handled problems (a sync the server refused, a ledger that wouldn't open,
+  an unusual AI failure) are reported with their reason only.
+- - Say the split: a quick add that names a group ("petrol 500 Goa trip") now opens in that group
+  with its members ticked, and "with Rohan" works with first names ("Ankit" for Ankit Shah) and
+  with "bhai" or "ji" after the name, from the widget's mic and text field as much as from Home.
+  A group and a friend together ("lunch 900 Goa trip with Rohan") splits with just that friend. A
+  name that matches more than one friend, or nobody, is said on the sheet instead of being dropped.
+- - Three new categories: Beverages, Packaged goods, and Self-care (haircuts, salon, spa, grooming,
+  the gym and wellness), each with its own icon and colour. Quick add, bills and statements can
+  choose them, and so can the phone's own guess: "haircut 300", "juice 60", "maggi 14". The gym
+  now counts as Self-care instead of Health.
+- - A "Send crash reports" switch in Help & about, as the privacy policy promises. Crash reports stay
+  on unless you turn them off, and the switch only appears in builds that can send them.
 
 ### Fixed
+
+- Retracting a settlement, deleting an IOU or deleting a local group now asks first and explains
+  what happens to balances or group history. Cancel keeps everything, and the accessibility
+  delete-group action uses the same confirmation (X4 / T2.5).
+
+- The ledger no longer appears in Recents thumbnails on Android 13+, while manual screenshots
+  still work. Payment reminders have a generic lock-screen version without names or amounts,
+  and incoming image/PDF shares reject this app's own files and non-content URIs (X3 / T2.6).
+
+- Tapping a category in a group's "Where it went" now opens its expenses; tap again to close,
+  or choose another category to switch. Entries open in the editor when editable; archived
+  groups stay read-only, and switching groups clears the selection (X2 / TODOS 7).
 
 - An amount that isn't a plain number ("Infinity", "1e999", a pasted 19-digit number) could be
   saved. Its upload then failed on every sync, so nothing else in the account synced again, and
@@ -45,6 +113,44 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   takes. It now has a Cancel button, Back and a tap outside cancel it too, and what was being read
   is dropped rather than opening later. After 20 seconds it says long statements take up to 3
   minutes and that a shorter date range is quicker.
+- A "payment to confirm" notification stayed up after the payment was answered on your other
+  phone, withdrawn by whoever recorded it, or gone with its group, and tapping it opened a payment
+  that no longer waited for you. Each sync now takes those down.
+- With only the "Payments to confirm" notifications blocked in the phone's settings, a reminder was
+  counted as shown although nothing appeared, so you never got it. It now waits until they're
+  allowed again; the daily reminder checks its own channel the same way.
+- Payment reminders came only after a fully successful sync, so one part of the sync failing
+  stopped all of them. They now go out whatever the sync managed.
+- Both notification channels exist from the first launch, so either can be turned off in the
+  phone's settings before its first notification.
+- A save that failed in a way the app didn't expect (a full phone, signing out while it was
+  saving) could close the app. Every action that writes or sends something now says what happened
+  instead ("Couldn't save. Your phone may be out of space."), and the reading spinner on a quick
+  add or a bill always goes away, even when the read fails. Sharing an invite on a phone with no
+  share sheet no longer crashes.
+- - An equal split with friends now adds up to the amount to the paisa, as a shared group's already
+  did: ₹500 over three is ₹166.66, ₹166.66 and ₹166.68 on whoever paid, not ₹166.67 three times
+  (₹500.01).
+
+### Security
+
+- The Gemini key is no longer in the app. Every AI read goes through a Supabase Edge Function
+  (`gemini-proxy`) that holds the key as a server secret, accepts only signed-in people, and
+  passes back Google's reply. Until now the key shipped inside every APK, where anyone could
+  copy it.
+
+### Security
+
+- The database now refuses a group expense whose shares don't add up to its amount, whoever writes
+  it. Before, only saving through the app checked, so editing one share or the amount directly could
+  throw off everyone's balance in the group. **(server, staged, not applied)**
+
+### Security
+
+- Signed-out callers now get nothing from the database, not even the table access that only the
+  row-level rules were holding back, and new tables or functions aren't opened to them by default.
+  A colour too close to a groupmate's with no display name is now refused like any other, and a
+  profile picture has to be an https link. **(server, staged, not applied)**
 
 ## [1.5.0] - 2026-10-25
 

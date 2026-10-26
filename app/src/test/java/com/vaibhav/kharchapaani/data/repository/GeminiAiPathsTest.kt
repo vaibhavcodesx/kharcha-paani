@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import com.vaibhav.kharchapaani.domain.AiAskResult
 import com.vaibhav.kharchapaani.domain.AiFailure
 import com.vaibhav.kharchapaani.domain.AiPrompt
+import com.vaibhav.kharchapaani.domain.askMessage
 import kotlinx.coroutines.test.runTest
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
@@ -41,7 +42,8 @@ class GeminiAiPathsTest {
     private fun repo(respond: (Interceptor.Chain) -> Response) = GeminiRepository(
         client = OkHttpClient.Builder().addInterceptor { chain -> respond(chain) }.build(),
         endpoint = { model -> "https://example.invalid/v1beta/models/$model:generateContent" },
-        apiKey = { "test-key" },
+        accessToken = { "test-token" },
+        configured = true,
     )
 
     private fun respond(code: Int, body: String): (Interceptor.Chain) -> Response = { chain ->
@@ -114,6 +116,44 @@ class GeminiAiPathsTest {
     }
 
     @Test
+    fun `every read goes to the proxy with the session token and what kind of read it is`() = runTest {
+        val seen = mutableListOf<Pair<String?, String?>>()
+        val repo = repo { chain ->
+            seen += chain.request().header("Authorization") to chain.request().header(GeminiRepository.FEATURE_HEADER)
+            assertNull("the key never travels in the URL", chain.request().url.queryParameter("key"))
+            respond(200, answer("ok"))(chain)
+        }
+
+        repo.parseText("chai 60 cash", now = now, zone = zone)
+        repo.askForAnswer(AiPrompt.MonthInReview, "September's", "")
+
+        assertEquals(listOf("Bearer test-token" to "quick_add", "Bearer test-token" to "insights"), seen)
+    }
+
+    @Test
+    fun `today's reads used up is its own answer, and isn't retried on the lighter model`() = runTest {
+        var calls = 0
+        val result = askWith { chain -> calls++; respond(429, """{"error":{"code":429,"status":"DAILY_CAP"}}""")(chain) }
+
+        assertEquals(AiFailure.DailyLimit, reasonOf(result))
+        assertEquals(1, calls)
+        assertTrue(AiFailure.DailyLimit.askMessage().startsWith("That's today's AI reads used up."))
+    }
+
+    @Test
+    fun `no session to send it with reads as offline, and nothing is sent`() = runTest {
+        var called = false
+        val repo = GeminiRepository(
+            client = OkHttpClient.Builder().addInterceptor { called = true; throw IOException() }.build(),
+            accessToken = { null },
+            configured = true,
+        )
+
+        assertEquals(AiFailure.Offline, reasonOf(repo.askForAnswer(AiPrompt.MonthInReview, "September's", "")))
+        assertFalse(called)
+    }
+
+    @Test
     fun `a refused key isn't retried on another model`() = runTest {
         var calls = 0
         val result = askWith { chain -> calls++; respond(403, """{"error":{"status":"PERMISSION_DENIED"}}""")(chain) }
@@ -127,7 +167,7 @@ class GeminiAiPathsTest {
         var called = false
         val repo = GeminiRepository(
             client = OkHttpClient.Builder().addInterceptor { called = true; throw IOException() }.build(),
-            apiKey = { "" },
+            configured = false,
         )
 
         assertEquals(AiFailure.NoKey, reasonOf(repo.askForAnswer(AiPrompt.MonthInReview, "September's", "")))

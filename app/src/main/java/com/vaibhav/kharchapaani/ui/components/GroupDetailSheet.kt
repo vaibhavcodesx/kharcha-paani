@@ -48,6 +48,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -138,6 +145,7 @@ fun GroupDetailContent(
     aiAvailable: Boolean = true,
 ) {
     val group = groupDetails.group
+    var selectedCategory by rememberSaveable(group.id) { mutableStateOf<String?>(null) }
     val dateFormat = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
     val accent = remember(group.colorHex) { parseColor(group.colorHex) }
     val net = groupDetails.netBalanceForMe
@@ -286,7 +294,34 @@ fun GroupDetailContent(
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 val largest = categories.maxOf { it.amount }.coerceAtLeast(0.01)
                 categories.forEach { summary ->
-                    GroupCategoryRow(summary = summary, fraction = (summary.amount / largest).toFloat())
+                    val isSelected = selectedCategory == summary.category
+                    GroupCategoryRow(
+                        summary = summary,
+                        fraction = (summary.amount / largest).toFloat(),
+                        isSelected = isSelected,
+                        onClick = { selectedCategory = if (isSelected) null else summary.category },
+                    )
+                    if (isSelected) {
+                        val entries = remember(groupDetails.transactions, summary.category) {
+                            groupDetails.transactions.filter {
+                                !it.transaction.type.equals("income", ignoreCase = true) &&
+                                    it.transaction.category == summary.category
+                            }.sortedByDescending { it.transaction.date }
+                        }
+                        Column(
+                            modifier = Modifier.testTag("group_category_entries_${summary.category}"),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            entries.forEachIndexed { index, expense ->
+                                GroupExpenseRow(
+                                    expense = expense,
+                                    detail = "${dateFormat.format(Date(expense.transaction.date))} · ${GroupExpenseCredit.line(expense, groupDetails.members)}",
+                                    position = RowPosition.of(index, entries.size),
+                                    onClick = if (!group.isArchived && expense.canEdit) ({ onEditTransaction(expense) }) else null,
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -549,13 +584,23 @@ private fun DebtRow(debt: SimplifiedDebt, position: RowPosition, onSettleUp: (()
 }
 
 @Composable
-private fun GroupCategoryRow(summary: CategorySummary, fraction: Float) {
+private fun GroupCategoryRow(
+    summary: CategorySummary,
+    fraction: Float,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
     Column(
         Modifier
             .fillMaxWidth()
             .clip(KpShapes.medium)
             .background(CharcoalCard)
-            .semantics(mergeDescendants = true) {}
+            .clickable(
+                role = Role.Button,
+                onClickLabel = if (isSelected) "Close ${summary.category}" else "Show ${summary.category} entries",
+                onClick = onClick,
+            )
+            .semantics(mergeDescendants = true) { selected = isSelected }
             .padding(horizontal = Spacing.l, vertical = Spacing.m)
             .testTag("group_category_${summary.category}"),
     ) {
@@ -570,6 +615,12 @@ private fun GroupCategoryRow(summary: CategorySummary, fraction: Float) {
                 modifier = Modifier.weight(1f).padding(horizontal = Spacing.m),
             )
             Text(Money.format(summary.amount), style = MoneyText.row, color = OffWhiteText)
+            Icon(
+                KpIcons.ChevronDown,
+                contentDescription = null,
+                tint = MutedWarmGray,
+                modifier = Modifier.padding(start = Spacing.s).size(18.dp).rotate(if (isSelected) 180f else 0f),
+            )
         }
         // One hue for a ranked list: the bars compare sizes, the badge already says which category.
         Canvas(Modifier.padding(top = Spacing.s).fillMaxWidth().height(6.dp)) {

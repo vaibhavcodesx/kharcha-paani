@@ -150,6 +150,12 @@ enum class AiFailure {
 
     /** It answered, but with nothing usable (empty, or not the JSON asked for). */
     Unreadable,
+
+    /** Today's AI reads of this kind are used up (decision D2's caps); they come back at midnight IST. */
+    DailyLimit,
+
+    /** The session the request went with was refused: signing in again fixes it. */
+    NeedsSignIn,
     ;
 
     companion object {
@@ -161,6 +167,9 @@ enum class AiFailure {
         fun fromHttp(code: Int, body: String): AiFailure {
             val text = body.uppercase()
             return when {
+                // The proxy's own answers, before Google's: a cap is not a busy model.
+                code == 429 && "DAILY_CAP" in text -> DailyLimit
+                code == 401 && ("UNAUTHENTICATED" in text || "JWT" in text) -> NeedsSignIn
                 code == 429 || "RESOURCE_EXHAUSTED" in text -> RateLimited
                 code == 401 || code == 403 || "API_KEY" in text || "PERMISSION_DENIED" in text -> KeyRefused
                 code >= 500 -> ServerError
@@ -193,6 +202,8 @@ fun AiFailure.askMessage(): String = when (this) {
     AiFailure.Blocked -> "The AI wouldn't answer that one."
     AiFailure.Truncated -> "The answer came back cut off. Try again."
     AiFailure.Unreadable -> "The answer didn't come back readable. Try again."
+    AiFailure.DailyLimit -> "That's today's AI reads used up. They're back tomorrow; you can still add entries by hand."
+    AiFailure.NeedsSignIn -> "Sign out and back in to use AI answers again."
 }
 
 /** The notice above the quick-add sheet when typed text had to be read on the phone instead. */
@@ -200,6 +211,7 @@ fun AiFailure.quickAddNotice(): String = when (this) {
     AiFailure.Offline -> "You're offline, so this is a best guess from your words. Check it before saving."
     AiFailure.RateLimited -> "The AI is busy right now, so this is a best guess from your words. Check it before saving."
     AiFailure.KeyRefused, AiFailure.NoKey -> "The AI isn't available in this copy, so this is a best guess from your words. Check it before saving."
+    AiFailure.DailyLimit -> "That's today's AI reads used up, so this is a best guess from your words. They're back tomorrow."
     else -> "Couldn't reach the AI, so this is a best guess from your words. Check it before saving."
 }
 
@@ -212,4 +224,6 @@ fun AiFailure.receiptNotice(): String = when (this) {
     AiFailure.ServerError -> "The AI service is having trouble, so the bill wasn't read. Fill in the details, or try again."
     AiFailure.Blocked, AiFailure.Truncated, AiFailure.Unreadable ->
         "Couldn't read that bill. Fill in the details, or try a clearer photo."
+    AiFailure.DailyLimit -> "That's today's bill reads used up. Fill in the details; they're back tomorrow."
+    AiFailure.NeedsSignIn -> "Sign out and back in to read bills again. Fill in the details for now."
 }

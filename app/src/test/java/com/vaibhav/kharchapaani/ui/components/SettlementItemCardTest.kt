@@ -42,6 +42,8 @@ class SettlementItemCardTest {
         composeTestRule.onNodeWithText("+₹250").assertIsDisplayed()
         composeTestRule.onNodeWithText("Bob paid you").performClick()
         composeTestRule.onNodeWithText("Retract settlement").performClick()
+        assertEquals(0, retracted)
+        composeTestRule.onNodeWithTag("confirm_remove_settlement").performClick()
         assertEquals(1, retracted)
     }
 

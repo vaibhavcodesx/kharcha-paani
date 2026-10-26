@@ -27,6 +27,9 @@ In this file the audit IDs carry a prefix so they don't collide: **SEC-** (secur
 
 ## 0. Start here (next agent)
 
+**Where things stand and what's next (2026-10-27): [`docs/plan-1.6-to-launch.md`](../plan-1.6-to-launch.md).**
+Read it before this page's tiers; who builds what is in `docs/agents/work-split.md`.
+
 0. **Ask everything up front, then run on autopilot** (the owner's rule, also in CLAUDE.md). Before
    starting, read through the items you plan to do this session and send the owner one batch of
    every question, decision and permission they need: confirming the tier, merges, migrations,
@@ -232,7 +235,7 @@ user sees in the first minute.
   (owner decisions item 3).
 - Sources: PLAY §3a, SEC L-2, owner decisions 3.
 
-**T1.2 Privacy policy, terms, Help & about, and the store answers** · M
+**T1.2 Privacy policy, terms, Help & about, and the store answers** · M · **done in #95**
 - Draft `docs/legal/privacy-policy.md` and `docs/legal/terms.md` from the real data flows: Google
   sign-in; Supabase as processor (state the region); Gemini as processor on the paid tier (receipts,
   statements, ledger text); groupmates see each other's names and UPI IDs; FCM once N3 lands; crash
@@ -248,7 +251,7 @@ user sees in the first minute.
   `docs/legal/play-console-answers.md` for O7.
 - Sources: PLAY B2, §3, §11; REL H5; Notion legal checklist.
 
-**T1.3 Gemini behind an Edge Function, with per-user quotas** · L · **[owner review]**
+**T1.3 Gemini behind an Edge Function, with per-user quotas** · L · **[owner review]** · **done in #101** (migration applied and function deployed 2026-10-26)
 - `supabase/functions/gemini-proxy`: verifies the caller's JWT, checks and increments a per-user daily
   quota (a table keyed by user and day; the number is the owner's call, owner decisions item 4),
   forwards the request to Gemini with the server-side key, validates the response shape, **never logs
@@ -290,7 +293,7 @@ user sees in the first minute.
   strip (REL B1). **Device check in light mode, gesture and 3-button navigation.**
 - Sources: REL B1, M10; PLAY §10.
 
-**T1.6 Crash reporting** · M
+**T1.6 Crash reporting** · M · **done in #98** (the off switch lands with T1.2's Help & about)
 - Recommended: Firebase Crashlytics (FCM in N3 needs Firebase anyway). Initialise without the
   google-services plugin if the owner prefers (options from `.env`, NOTIF open question 4). Upload the
   R8 mapping in `release.yml` (after #71).
@@ -308,7 +311,7 @@ user sees in the first minute.
 - Why: a double tap logs the dinner twice, and on Create group makes two shared groups on the server
   (REL H1).
 
-**T1.8 Nothing crashes on a full disk or a closed database** · M
+**T1.8 Nothing crashes on a full disk or a closed database** · M · **done in #100**
 - A `launchAction(failMessage) { … }` helper in `MainViewModel` (and `SharedGroupsController`) that
   rethrows `CancellationException`, maps known domain exceptions, and otherwise logs, records a
   non-fatal and shows a human message ("Couldn't save. Your phone may be out of space."). Use it for
@@ -321,7 +324,7 @@ user sees in the first minute.
   20 s, the line "Long statements take up to 3 minutes. You can cancel and try a shorter date range."
 - Why: Back does nothing for up to 3–6 minutes today (REL H2).
 
-**T1.10 AI disclosure and the 18+ line** · S
+**T1.10 AI disclosure and the 18+ line** · S · **done in #96** (the 18+ line in #95)
 - A one-time sheet before the first scan, photo, statement or Insights question: "Photos, PDFs and
   text you send are read by Google Gemini to fill in your entry. They aren't used to train Google's
   models. [Continue] [Not now]". Store consent in `AppSettings`; "Not now" keeps manual entry working.
@@ -333,7 +336,7 @@ are never asked for permission and never see "payment to confirm" (NOTIF G1).
 
 ### Tier 2: before applying for production (during the 14-day closed test)
 
-**T2.1 Shares must add up, enforced by the database** · M · **[owner review]** (trigger in the RLS area)
+**T2.1 Shares must add up, enforced by the database** · M · **[owner review]** (trigger in the RLS area) · **done in #106** (applied to live 2026-10-26)
 - `private.check_group_expense_sums(transaction_id)` called from deferred constraint triggers on
   `transactions`, `splits` and `split_shares`; raises 23514 so the app marks the row FAILED. SQL tests:
   a direct PATCH of `share_amount` or `amount` is refused; `save_group_expense` still passes; a
@@ -348,7 +351,7 @@ are never asked for permission and never see "payment to confirm" (NOTIF G1).
 - Per-user write rate limits on `transactions`/`settlements`/`local_settlements` inserts; a member cap
   per group (SEC M-5).
 
-**T2.3 Database hygiene** · S · **[owner review]**
+**T2.3 Database hygiene** · S · **[owner review]** · **PR #107, awaiting owner review**
 - Revoke default privileges from `anon` + a test that `anon` has none (SEC M-4). Fix the hue trigger's
   null-name hole (SEC L-9). Optional `avatar_url` check (SEC L-8).
 
@@ -452,8 +455,8 @@ in the Updates inbox.
 
 | Phase | What | Server? | Tier |
 |---|---|---|---|
-| N0 | Fix what exists: create all channels at start; cancel stale "payment to confirm" notifications (G6); a blocked channel doesn't use up a reminder stage (G3); reminders don't depend on the whole sync passing (G8); tags instead of computed ids (G9) | no | T1 |
-| N1 | Permission state machine + pre-prompt + the four ask moments + Notifications screen | no | T1 |
+| N0 | Fix what exists: create all channels at start; cancel stale "payment to confirm" notifications (G6); a blocked channel doesn't use up a reminder stage (G3); reminders don't depend on the whole sync passing (G8); tags instead of computed ids (G9) | no | T1 · **done in #90** |
+| N1 | Permission state machine + pre-prompt + the four ask moments + Notifications screen | no | T1 · **done in #92** |
 | N2 | `activity` table + triggers + RLS **[owner review]**; Room v11 `inbox_items`; Updates screen; notifications posted from the pull (48 h window, no flood on first sync) | yes | T2 |
 | N3 | FCM client, `push_tokens` / `notification_prefs` / group mutes **[owner review]**, unregister on sign-out | yes | T3 |
 | N4 | `push-dispatch` Edge Function, pg_net trigger, retry sweep **[owner review]**; owner sets Firebase secrets (O11) | yes | T3 |

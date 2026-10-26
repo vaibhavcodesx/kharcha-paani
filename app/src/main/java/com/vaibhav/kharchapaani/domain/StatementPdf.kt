@@ -30,6 +30,9 @@ enum class StatementReadFailure {
     /** HTTP 429: the per-minute rate or the key's free quota. Waiting fixes it; retrying now won't. */
     RateLimited,
 
+    /** Today's statement reads are used up (three a day, decision D2). */
+    DailyLimit,
+
     /** Google refused the key itself. Nothing the person can do. */
     KeyRefused,
 

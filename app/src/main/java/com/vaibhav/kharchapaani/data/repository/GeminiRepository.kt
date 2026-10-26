@@ -1,10 +1,10 @@
 package com.vaibhav.kharchapaani.data.repository
 
+import com.vaibhav.kharchapaani.diagnostics.CrashReporting
 import android.graphics.Bitmap
 import android.util.Base64
 import android.util.Log
 import com.vaibhav.kharchapaani.BuildConfig
-import com.vaibhav.kharchapaani.data.remote.AppIdentity
 import com.vaibhav.kharchapaani.data.model.ParsedTransactionResult
 import com.vaibhav.kharchapaani.data.model.StatementParseResult
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
@@ -41,28 +41,42 @@ import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 
 /**
+ * Gemini, through the gemini-proxy Edge Function (plan T1.3): the app never holds a Gemini key. Each
+ * request is the generateContent request Google takes, sent with the person's session token and
+ * which kind of read it is ([FEATURE_HEADER]); the function spends one of their reads for today,
+ * forwards it with the server's key, and answers with Google's reply.
+ *
  * @param client the HTTP client; tests swap in one whose interceptor answers without a network.
- * @param endpoint builds the generateContent URL for a model, so tests can point it elsewhere.
- * @param apiKey where the key comes from, so tests don't depend on this build having one.
+ * @param endpoint builds the URL for a model, so tests can point it elsewhere.
+ * @param accessToken the signed-in person's session token, read for every request.
+ * @param configured false in a build with no Supabase project, where nothing can be asked.
  */
 class GeminiRepository(
-    /**
-     * This app's package and signing fingerprint, sent with every request so a Gemini key
-     * restricted to this app is accepted. Null in tests and when the signature can't be read;
-     * see [AppIdentity].
-     */
-    appIdentity: AppIdentity? = null,
-    private val client: OkHttpClient = defaultClient(appIdentity),
-    private val endpoint: (model: String) -> String = ::googleEndpoint,
-    private val apiKey: () -> String = ::buildConfigApiKey,
+    private val client: OkHttpClient = defaultClient(),
+    private val endpoint: (model: String) -> String = ::proxyEndpoint,
+    private val accessToken: () -> String? = { null },
+    private val configured: Boolean = proxyConfigured(),
 ) {
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
-    private fun getApiKey(): String = apiKey()
-
     /** Whether this build can ask anything at all. A button that can never work is worse than none. */
-    fun hasApiKey(): Boolean = getApiKey().isNotBlank()
+    fun hasApiKey(): Boolean = configured
+
+    /**
+     * One request to the proxy, or null with no session to send it with: offline at start with an
+     * expired session, the token can't be refreshed until the connection is back.
+     */
+    private fun proxyRequest(url: String, feature: String, body: String): Request? {
+        val token = accessToken()?.takeIf { it.isNotBlank() } ?: return null
+        return Request.Builder()
+            .url(url)
+            .header("Authorization", "Bearer $token")
+            .header("apikey", BuildConfig.SUPABASE_PUBLISHABLE_KEY)
+            .header(FEATURE_HEADER, feature)
+            .post(body.toRequestBody(jsonMediaType))
+            .build()
+    }
 
     suspend fun parseMessyText(
         rawText: String,
@@ -85,13 +99,12 @@ class GeminiRepository(
         zone: ZoneId = ZoneId.systemDefault(),
     ): TextParseOutcome = withContext(Dispatchers.IO) {
         val onPhone = LocalHeuristicParser.parse(rawText, knownFriends).copy(date = now)
-        val apiKey = getApiKey()
-        // No key is this build's normal, not a failure, so no notice.
-        if (apiKey.isBlank()) return@withContext TextParseOutcome(onPhone, failure = null)
+        // No proxy is this build's normal, not a failure, so no notice.
+        if (!configured) return@withContext TextParseOutcome(onPhone, failure = null)
 
         val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
         val body = jsonRequest(listOf(textPart(textPrompt(rawText, knownFriends, choices, today))), temperature = 0.1, json = true, thinking = QUICK_THINKING)
-        when (val outcome = call(body, apiKey, TEXT_TIMEOUT_SECONDS, "text")) {
+        when (val outcome = call(body, FEATURE_QUICK_ADD, TEXT_TIMEOUT_SECONDS, "text")) {
             is CallOutcome.Failed -> TextParseOutcome(onPhone.copy(guessedOnPhone = true), outcome.reason)
             is CallOutcome.Ok -> {
                 val parsed = outcome.json()
@@ -139,8 +152,9 @@ class GeminiRepository(
           one in that list.
         - date: "YYYY-MM-DD" only if the line says when ("yesterday", "on 12 Sep", "last Friday"),
           worked out from today's date; otherwise "".
-        - splitWith: names from the friends list that the line says to split with, spelled exactly as
-          in the list; [] if none.
+        - splitWith: the people the line says this was shared with ("with Rohan", "split with Ankit
+          bhai"). A friend from the list exactly as spelled there; anyone else as written. Never the
+          person themself ("me", "I") and never a group or trip name. [] if none.
         - note: the original line.
 
         Return only this JSON:
@@ -168,15 +182,14 @@ class GeminiRepository(
         now: Long = System.currentTimeMillis(),
         zone: ZoneId = ZoneId.systemDefault(),
     ): ReceiptReadResult = withContext(Dispatchers.IO) {
-        val apiKey = getApiKey()
-        if (apiKey.isBlank()) return@withContext ReceiptReadResult.Failed(AiFailure.NoKey)
+        if (!configured) return@withContext ReceiptReadResult.Failed(AiFailure.NoKey)
 
         val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
         val parts = listOf(
             textPart(receiptPrompt(choices, today)),
             JSONObject().put("inlineData", JSONObject().put("mimeType", "image/jpeg").put("data", bitmapToBase64(bitmap))),
         )
-        when (val outcome = call(jsonRequest(parts, temperature = 0.1, json = true, thinking = QUICK_THINKING), apiKey, RECEIPT_TIMEOUT_SECONDS, "receipt")) {
+        when (val outcome = call(jsonRequest(parts, temperature = 0.1, json = true, thinking = QUICK_THINKING), FEATURE_BILL, RECEIPT_TIMEOUT_SECONDS, "receipt")) {
             is CallOutcome.Failed -> ReceiptReadResult.Failed(outcome.reason)
             is CallOutcome.Ok -> {
                 val parsed = outcome.json() ?: return@withContext ReceiptReadResult.Failed(AiFailure.Unreadable)
@@ -238,8 +251,7 @@ class GeminiRepository(
      * tested without a network.
      */
     suspend fun askForAnswer(prompt: AiPrompt, possessive: String, data: String): AiAskResult = withContext(Dispatchers.IO) {
-        val apiKey = getApiKey()
-        if (apiKey.isBlank()) return@withContext AiAskResult.Failed(AiFailure.NoKey)
+        if (!configured) return@withContext AiAskResult.Failed(AiFailure.NoKey)
 
         val text = """
             ${AI_VOICE.trim()}
@@ -251,7 +263,7 @@ class GeminiRepository(
         """.trimIndent()
         // Low, not zero: these are sentences, and zero makes them read like a form letter.
         val body = jsonRequest(listOf(textPart(text)), temperature = 0.35, json = false, maxOutputTokens = ASK_MAX_OUTPUT_TOKENS)
-        when (val outcome = call(body, apiKey, ASK_TIMEOUT_SECONDS, prompt.name)) {
+        when (val outcome = call(body, FEATURE_INSIGHTS, ASK_TIMEOUT_SECONDS, prompt.name)) {
             is CallOutcome.Failed -> AiAskResult.Failed(outcome.reason)
             is CallOutcome.Ok -> {
                 val truncated = outcome.finishReason == "MAX_TOKENS"
@@ -305,8 +317,8 @@ class GeminiRepository(
      * here, so every one of them tells offline from out-of-quota from a refused key from a block,
      * instead of each catching `Exception` and landing on the same vague message.
      */
-    private fun call(body: JSONObject, apiKey: String, timeoutSeconds: Long, label: String): CallOutcome {
-        val first = callModel(MODEL, body, apiKey, timeoutSeconds, label)
+    private fun call(body: JSONObject, feature: String, timeoutSeconds: Long, label: String): CallOutcome {
+        val first = callModel(MODEL, body, feature, timeoutSeconds, label)
         // Google's "high demand" 503s and per-model rate limits come and go by the minute and are
         // per model. One retry on the lighter model turns most of them into an answer instead of a
         // notice. Anything else (offline, a refused key, a block) would fail the same way again.
@@ -314,14 +326,12 @@ class GeminiRepository(
         Log.w(TAG, "$label: $MODEL unavailable (${first.reason}); retrying on $FALLBACK_MODEL")
         // The fallback gets its own default thinking: it may not take the same levels.
         val plain = JSONObject(body.toString()).apply { optJSONObject("generationConfig")?.remove("thinkingConfig") }
-        return callModel(FALLBACK_MODEL, plain, apiKey, timeoutSeconds, "$label (fallback)")
+        return callModel(FALLBACK_MODEL, plain, feature, timeoutSeconds, "$label (fallback)")
     }
 
-    private fun callModel(model: String, body: JSONObject, apiKey: String, timeoutSeconds: Long, label: String): CallOutcome {
-        val request = Request.Builder()
-            .url("${endpoint(model)}?key=$apiKey")
-            .post(body.toString().toRequestBody(jsonMediaType))
-            .build()
+    private fun callModel(model: String, body: JSONObject, feature: String, timeoutSeconds: Long, label: String): CallOutcome {
+        val request = proxyRequest(endpoint(model), feature, body.toString())
+            ?: return failedCall(label, AiFailure.Offline, "no session to send it with")
         val timed = client.newBuilder()
             .readTimeout(timeoutSeconds, TimeUnit.SECONDS)
             .writeTimeout(timeoutSeconds, TimeUnit.SECONDS)
@@ -361,6 +371,9 @@ class GeminiRepository(
 
     private fun failedCall(label: String, reason: AiFailure, detail: String?): CallOutcome.Failed {
         Log.e(TAG, "$label failed: $reason${detail?.let { " - $it" } ?: ""}")
+        // Being offline, slow or over the day's quota is ordinary; the rest is worth a look. The
+        // reason and which call only: [detail] can quote the request or Google's reply.
+        if (reason !in ORDINARY_FAILURES) CrashReporting.recordProblem("Gemini $label failed: $reason")
         return CallOutcome.Failed(reason)
     }
 
@@ -388,10 +401,9 @@ class GeminiRepository(
         fileName: String = "statement.pdf",
         choices: ParseChoices = ParseChoices.defaults,
     ): StatementReadResult = withContext(Dispatchers.IO) {
-        val apiKey = getApiKey()
         // A failure used to come back as a generated sample statement (two ₹75,000 salaries, Zomato,
         // Netflix, some dated in the future) shown as the person's own, one tap from their ledger.
-        if (apiKey.isBlank()) return@withContext failed(StatementReadFailure.NoKey, "no API key in this build")
+        if (!configured) return@withContext failed(StatementReadFailure.NoKey, "no AI proxy in this build")
         StatementPdf.precheck(pdfBytes)?.let { return@withContext failed(it, "$fileName, ${pdfBytes.size} bytes") }
 
         val base64Pdf = Base64.encodeToString(pdfBytes, Base64.NO_WRAP)
@@ -423,10 +435,8 @@ class GeminiRepository(
             })
         }
 
-        val request = Request.Builder()
-            .url("${endpoint(MODEL)}?key=$apiKey")
-            .post(requestJson.toString().toRequestBody(jsonMediaType))
-            .build()
+        val request = proxyRequest(endpoint(MODEL), FEATURE_STATEMENT, requestJson.toString())
+            ?: return@withContext failed(StatementReadFailure.Offline, "no session to send it with")
         val patientClient = client.newBuilder()
             .readTimeout(STATEMENT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(STATEMENT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -440,6 +450,7 @@ class GeminiRepository(
                     // Google's error body says which of these it is (bad key, quota, a file it
                     // won't take). Dropping it on the floor is what made this undiagnosable.
                     val reason = when (AiFailure.fromHttp(response.code, text)) {
+                        AiFailure.DailyLimit -> StatementReadFailure.DailyLimit
                         AiFailure.RateLimited -> StatementReadFailure.RateLimited
                         AiFailure.KeyRefused -> StatementReadFailure.KeyRefused
                         else -> StatementReadFailure.Rejected
@@ -610,6 +621,12 @@ class GeminiRepository(
     }
 
     companion object {
+        /** Failures that are part of normal life (offline, slow, out of quota, today's cap, no key, signed out): not reported. */
+        private val ORDINARY_FAILURES = setOf(
+            AiFailure.NoKey, AiFailure.Offline, AiFailure.Timeout, AiFailure.RateLimited,
+            AiFailure.DailyLimit, AiFailure.NeedsSignIn,
+        )
+
         /** Short text lines: an entry should be back in seconds or not at all (the phone guesses). */
         internal const val TEXT_TIMEOUT_SECONDS = 25L
 
@@ -664,23 +681,26 @@ class GeminiRepository(
          */
         private const val ASK_MAX_OUTPUT_TOKENS = 8192
 
-        // The statement call derives its own longer-timeout client from this one with
-        // `newBuilder()`, so an interceptor added here reaches every Gemini request there is.
-        private fun defaultClient(appIdentity: AppIdentity?): OkHttpClient = OkHttpClient.Builder()
+        /** Which kind of read a request is, for the day's caps (private.ai_read_caps). */
+        const val FEATURE_HEADER = "X-Kp-Feature"
+        private const val FEATURE_QUICK_ADD = "quick_add"
+        private const val FEATURE_BILL = "bill"
+        private const val FEATURE_STATEMENT = "statement"
+        private const val FEATURE_INSIGHTS = "insights"
+
+        // The statement call derives its own longer-timeout client from this one with `newBuilder()`.
+        private fun defaultClient(): OkHttpClient = OkHttpClient.Builder()
             .connectTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .readTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .addInterceptor(AppIdentity.restrictionInterceptor(appIdentity))
             .build()
 
-        private fun googleEndpoint(model: String): String =
-            "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent"
+        /** The Edge Function, taking Google's own path for the model after its name. */
+        private fun proxyEndpoint(model: String): String =
+            "${BuildConfig.SUPABASE_URL.trimEnd('/')}/functions/v1/gemini-proxy/models/$model:generateContent"
 
-        private fun buildConfigApiKey(): String = try {
-            BuildConfig.GEMINI_API_KEY.takeIf { it.isNotBlank() && it != "MY_GEMINI_API_KEY" }.orEmpty()
-        } catch (e: Exception) {
-            ""
-        }
+        /** False while .env still has the example project (CI, and a fresh checkout). */
+        private fun proxyConfigured(): Boolean = "YOUR_PROJECT_REF" !in BuildConfig.SUPABASE_URL
     }
 }
 

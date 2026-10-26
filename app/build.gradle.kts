@@ -8,6 +8,8 @@ plugins {
   alias(libs.plugins.androidx.room)
   alias(libs.plugins.roborazzi)
   alias(libs.plugins.secrets)
+  // Stamps each build with the id Crashlytics needs; without it the SDK refuses to start.
+  alias(libs.plugins.firebase.crashlytics)
 }
 
 /**
@@ -57,16 +59,6 @@ val releaseSigning: ReleaseSigning? = run {
   ReleaseSigning(resolved.absolutePath, storePassword, keyAlias, keyPassword)
 }
 
-/**
- * `-PomitAiKey` builds an APK with no Gemini key in it at all.
- *
- * The key is compiled into BuildConfig and is extractable from any APK that carries it, so this
- * is the build to hand to someone whose use of it you cannot vouch for. `GeminiRepository`
- * already treats a blank key as "no key", and `MainViewModel.aiAvailable` hides the whole AI
- * section when that is the case, so the app degrades to everything-but-the-AI rather than
- * showing buttons that cannot work.
- */
-val omitAiKey = providers.gradleProperty("omitAiKey").isPresent
 
 android {
   namespace = "com.vaibhav.kharchapaani"
@@ -84,9 +76,6 @@ android {
     versionName = "1.5.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-    // Replaces the field the Secrets plugin would have emitted, so the APK carries no key.
-    if (omitAiKey) buildConfigField("String", "GEMINI_API_KEY", "\"\"")
   }
 
   signingConfigs {
@@ -156,14 +145,18 @@ secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
   ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
-  // Ignored here so the plugin does not emit the field; the empty one below takes its place.
-  if (omitAiKey) ignoreList.add("GEMINI_API_KEY")
+  // Gemini's key lives only on the server now (the gemini-proxy Edge Function, plan T1.3). Kept on
+  // the list so a GEMINI_API_KEY left in an old .env can never be compiled into an APK again.
+  ignoreList.add("GEMINI_API_KEY")
 }
 
 // Some unused dependencies are commented out below instead of being removed.
 // This makes it easy to add them back in the future if needed.
 dependencies {
   coreLibraryDesugaring(libs.desugar.jdk.libs)
+  // Crash reports (plan T1.6): off unless .env has the Firebase project, and the person can turn them off.
+  implementation(platform(libs.firebase.bom))
+  implementation(libs.firebase.crashlytics)
   implementation(platform(libs.androidx.compose.bom))
   // implementation(libs.accompanist.permissions)
   implementation(libs.androidx.activity.compose)

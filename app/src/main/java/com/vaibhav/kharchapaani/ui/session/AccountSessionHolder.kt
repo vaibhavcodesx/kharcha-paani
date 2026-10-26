@@ -1,5 +1,6 @@
 package com.vaibhav.kharchapaani.ui.session
 
+import com.vaibhav.kharchapaani.diagnostics.CrashReporting
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
@@ -71,6 +72,7 @@ class AccountSessionHolder(application: Application) : AndroidViewModel(applicat
                     throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "Couldn't open the ledger for the signed-in account", e)
+                    CrashReporting.recordProblem("Ledger didn't open for the signed-in account", e)
                     AccountSessionState.Failed(userId)
                 }
             }
