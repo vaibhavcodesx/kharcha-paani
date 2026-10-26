@@ -5,6 +5,7 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.vaibhav.kharchapaani.ui.session.AccountDeletion
 import com.vaibhav.kharchapaani.BuildConfig
 import com.vaibhav.kharchapaani.data.auth.AuthRepository
 import com.vaibhav.kharchapaani.data.auth.AuthState
@@ -140,6 +141,35 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     fun signOut(context: Context) {
         viewModelScope.launch { repository.signOut(context) }
+    }
+
+    /**
+     * Deletes the signed-in account (plan T1.1, decision D1), then signs out and removes everything
+     * of it from this phone. The server goes first: if it refuses, nothing here is touched.
+     */
+    fun deleteAccount(context: Context, keepName: Boolean) {
+        val userId = (_uiState.value.authState as? AuthState.SignedIn)?.userId ?: return
+        if (_uiState.value.isDeletingAccount) return
+        _uiState.update { it.copy(isDeletingAccount = true, deleteAccountError = null) }
+        viewModelScope.launch {
+            try {
+                repository.deleteAccount(keepName)
+            } catch (e: IOException) {
+                _uiState.update { it.copy(isDeletingAccount = false, deleteAccountError = "You're offline. Connect and try again; nothing was deleted.") }
+                return@launch
+            } catch (e: RestException) {
+                Log.w(TAG, "Account deletion refused (${e.statusCode})")
+                _uiState.update { it.copy(isDeletingAccount = false, deleteAccountError = "Couldn't delete your account just now. Nothing was deleted; try again in a minute.") }
+                return@launch
+            }
+            repository.signOut(context)
+            AccountDeletion.wipeLocal(context, userId)
+            _uiState.update { it.copy(isDeletingAccount = false) }
+        }
+    }
+
+    fun dismissDeleteAccountError() {
+        _uiState.update { it.copy(deleteAccountError = null) }
     }
 
     private fun loadProfile(userId: String?) {

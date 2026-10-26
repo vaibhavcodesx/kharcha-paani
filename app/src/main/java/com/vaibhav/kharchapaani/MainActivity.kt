@@ -91,6 +91,7 @@ import com.vaibhav.kharchapaani.ui.session.AccountSessionState
 import com.vaibhav.kharchapaani.ui.session.LedgerOpenFailedScreen
 import com.vaibhav.kharchapaani.data.auth.AuthState
 import com.vaibhav.kharchapaani.ui.auth.AccountSheet
+import com.vaibhav.kharchapaani.ui.auth.DeleteAccountSheet
 import com.vaibhav.kharchapaani.ui.auth.NotificationOfferSheet
 import com.vaibhav.kharchapaani.ui.auth.NotificationsSheet
 import com.vaibhav.kharchapaani.domain.NotificationAccess
@@ -275,6 +276,8 @@ class MainActivity : ComponentActivity() {
                     onSaveProfile = authViewModel::saveProfile,
                     onSignOut = { authViewModel.signOut(this@MainActivity) },
                     onSaveHue = authViewModel::saveHue,
+                    onDeleteAccount = { keepName -> authViewModel.deleteAccount(this@MainActivity, keepName) },
+                    onDismissDeleteAccountError = authViewModel::dismissDeleteAccountError,
                 )
                 }
             }
@@ -345,8 +348,11 @@ fun SplitFlowApp(
     onSaveProfile: (name: String, emoji: String?) -> Unit,
     onSignOut: () -> Unit,
     onSaveHue: (hue: Int, automatic: Boolean) -> Unit = { _, _ -> },
+    onDeleteAccount: (keepName: Boolean) -> Unit = {},
+    onDismissDeleteAccountError: () -> Unit = {},
 ) {
     var isAccountSheetOpen by rememberSaveable { mutableStateOf(false) }
+    var isDeleteAccountOpen by rememberSaveable { mutableStateOf(false) }
     val askBeforeDiscarding by viewModel.askBeforeDiscarding.collectAsStateWithLifecycle()
     val upiPayee by viewModel.upiPayee.collectAsStateWithLifecycle()
     val categoryPrefs by viewModel.categoryPrefs.collectAsStateWithLifecycle()
@@ -703,6 +709,10 @@ fun SplitFlowApp(
                 isAccountSheetOpen = false
                 onSignOut()
             },
+            onDeleteAccount = {
+                isAccountSheetOpen = false
+                isDeleteAccountOpen = true
+            },
             onDismiss = { isAccountSheetOpen = false },
             reminder = reminder,
             notificationsAllowed = notificationsAllowed,
@@ -749,6 +759,19 @@ fun SplitFlowApp(
             LaunchedEffect(offerMoment) { viewModel.clearNotificationMoment() }
         }
     }
+
+    DeleteAccountSheet(
+        isOpen = isDeleteAccountOpen,
+        unsyncedChanges = syncStatus.unsyncedChanges,
+        isDeleting = authUiState.isDeletingAccount,
+        error = authUiState.deleteAccountError,
+        onSyncNow = viewModel::requestSync,
+        onDelete = onDeleteAccount,
+        onDismiss = {
+            isDeleteAccountOpen = false
+            onDismissDeleteAccountError()
+        },
+    )
 
     SettlementAnswerSheet(
         item = answeringSettlement,
@@ -926,6 +949,7 @@ fun SplitFlowApp(
     // Group Detail Sheet
     GroupDetailSheet(
         groupDetails = selectedGroupForDetail,
+        people = people,
         onAddExpense = { groupId ->
             viewModel.openManualAddForGroup(groupId)
         },

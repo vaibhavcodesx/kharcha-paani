@@ -64,6 +64,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
+import com.vaibhav.kharchapaani.data.db.entity.SettlementStatus
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.data.model.FullTransaction
 import com.vaibhav.kharchapaani.data.model.GroupWithDetails
@@ -100,6 +101,7 @@ fun GroupDetailSheet(
     tripReview: AskState = AskState.Idle,
     aiAsksLeft: Int = AI_DAILY_CAP,
     aiAvailable: Boolean = true,
+    people: List<PersonEntity> = groupDetails?.members.orEmpty(),
 ) {
     if (groupDetails == null) return
     KpModalSheet(onDismiss = onDismiss) {
@@ -121,6 +123,7 @@ fun GroupDetailSheet(
             tripReview = tripReview,
             aiAsksLeft = aiAsksLeft,
             aiAvailable = aiAvailable,
+            people = people,
         )
     }
 }
@@ -143,8 +146,10 @@ fun GroupDetailContent(
     tripReview: AskState = AskState.Idle,
     aiAsksLeft: Int = AI_DAILY_CAP,
     aiAvailable: Boolean = true,
+    people: List<PersonEntity> = groupDetails.members,
 ) {
     val group = groupDetails.group
+    var settlementsOnly by rememberSaveable(group.id) { mutableStateOf(false) }
     var selectedCategory by rememberSaveable(group.id) { mutableStateOf<String?>(null) }
     val dateFormat = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
     val accent = remember(group.colorHex) { parseColor(group.colorHex) }
@@ -315,6 +320,7 @@ fun GroupDetailContent(
                             entries.forEachIndexed { index, expense ->
                                 GroupExpenseRow(
                                     expense = expense,
+                                    people = people,
                                     detail = "${dateFormat.format(Date(expense.transaction.date))} · ${GroupExpenseCredit.line(expense, groupDetails.members)}",
                                     position = RowPosition.of(index, entries.size),
                                     onClick = if (!group.isArchived && expense.canEdit) ({ onEditTransaction(expense) }) else null,
@@ -329,11 +335,21 @@ fun GroupDetailContent(
         // Expenses *and* settlements. The list used to render transactions alone, so a settlement
         // or an IOU recorded in this group appeared nowhere in it — while the balances at the top
         // counted it, which is the worst of both: the figures moved and the screen didn't say why.
-        val feed = remember(groupDetails) { GroupFeed.of(groupDetails.transactions, groupDetails.settlements) }
+        val feed = remember(groupDetails, settlementsOnly) {
+            GroupFeed.of(if (settlementsOnly) emptyList() else groupDetails.transactions, groupDetails.settlements)
+        }
+        SegmentedControl(
+            options = listOf(false, true),
+            selected = settlementsOnly,
+            label = { if (it) "Settlements" else "All activity" },
+            onSelect = { settlementsOnly = it },
+            testTagFor = { if (it) "group_history_settlements" else "group_history_all" },
+            modifier = Modifier.fillMaxWidth().padding(top = Spacing.xl),
+        )
 
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = Spacing.xl, bottom = Spacing.s)) {
             Text(
-                text = "Activity · ${feed.size}",
+                text = "${if (settlementsOnly) "Settlements" else "Activity"} · ${feed.size}",
                 style = MaterialTheme.typography.titleSmall,
                 color = OffWhiteText,
                 modifier = Modifier.weight(1f).semantics { heading() },
@@ -346,7 +362,7 @@ fun GroupDetailContent(
         }
         if (feed.isEmpty()) {
             Text(
-                text = if (group.isArchived) "Nothing was logged in this group." else "Nothing logged here yet. Add the first expense below.",
+                text = if (settlementsOnly) "No settlements recorded in this group yet." else if (group.isArchived) "Nothing was logged in this group." else "Nothing logged here yet. Add the first expense below.",
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -356,6 +372,7 @@ fun GroupDetailContent(
                 when (entry) {
                     is GroupFeedEntry.Expense -> GroupExpenseRow(
                         expense = entry.transaction,
+                        people = people,
                         detail = "${dateFormat.format(Date(entry.date))} · ${GroupExpenseCredit.line(entry.transaction, groupDetails.members)}",
                         position = position,
                         // Whoever added it or paid for it can edit it (item 11).
@@ -384,6 +401,17 @@ private fun GroupMovementRow(
     val incoming = GroupFeed.isIncoming(settlement)
     val accent = if (incoming) ChartreuseSecondary else WarmAmberLight
     val title = remember(settlement, members) { GroupFeed.describe(settlement, members) }
+    val status = when (settlement.pendingResponse ?: settlement.status) {
+        SettlementStatus.CONFIRMED -> "Confirmed"
+        SettlementStatus.PENDING -> "Waiting for confirmation"
+        SettlementStatus.REJECTED -> "Not confirmed"
+    } + if (settlement.pendingResponse != null) " · waiting to sync" else ""
+    val direction = when {
+        !settlement.isConfirmed -> ""
+        settlement.toPersonId == -1L -> "+"
+        settlement.fromPersonId == -1L -> "-"
+        else -> ""
+    }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -409,15 +437,13 @@ private fun GroupMovementRow(
         Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
             Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
-                text = listOfNotNull(detail, if (settlement.isIou) "IOU" else "Settlement", settlement.note.takeIf { it.isNotBlank() })
+                text = listOfNotNull(detail, status, if (settlement.isIou) "IOU" else "Settlement", settlement.note.takeIf { it.isNotBlank() })
                     .joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
         }
         Text(
-            text = (if (incoming) "+" else "-") + Money.format(settlement.amount),
+            text = direction + Money.format(settlement.amount),
             style = MoneyText.row,
             color = if (incoming) ChartreuseSecondary else OffWhiteText,
         )
@@ -425,7 +451,7 @@ private fun GroupMovementRow(
 }
 
 @Composable
-private fun GroupExpenseRow(expense: FullTransaction, detail: String, position: RowPosition, onClick: (() -> Unit)?) {
+private fun GroupExpenseRow(expense: FullTransaction, people: List<PersonEntity>, detail: String, position: RowPosition, onClick: (() -> Unit)?) {
     val tx = expense.transaction
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -442,6 +468,7 @@ private fun GroupExpenseRow(expense: FullTransaction, detail: String, position: 
         Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
             Text(tx.merchant.ifBlank { tx.category }, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(detail, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            GroupExpensePeople(expense, people)
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(Money.format(tx.amount), style = MoneyText.row, color = OffWhiteText)
