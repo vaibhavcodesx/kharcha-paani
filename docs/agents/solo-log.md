@@ -47,6 +47,6 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #139 · X7 / T2.10 Home money · parked: CI 40412344087 rejected a Boolean-returning render test; corrected CI 40413157415 reaches the missing whole-amount layout assertion. Two failures reached the stop rule. Next: auto-size a single full figure when animated digits cannot fit, retaining normal animation when they do.
 
-- 2026-10-27 · #143 · X12 / T3.11 Home copy · merged; labels, capture notices, empty states, day totals and streaks use resources with unchanged English; stable IDs, filenames and currency formatting remain technical values. Initial CI rejected a non-void test signature, corrected before final validation.
+- 2026-10-27 · #143 · X12 / T3.11 Home copy · parked: first CI 40415903485 rejected a non-void test signature; corrected implementation CI 40416904970 passed, but integrated CI 40418934304 could not find Today after seeing the streak. Two failures reached the stop rule. Likely fixture follow-up: await the feed as well as analytics before checking day headers; extraction remains unmerged.
 
 ## Questions
