@@ -56,9 +56,10 @@ class StatementReimportTest {
     private lateinit var db: AppDatabase
     private lateinit var vm: MainViewModel
     private val pdf = "%PDF-1.7\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF".toByteArray()
+    private var statementJson = """{"transactions":[{"date":"2026-10-01","merchant":"Swiggy","amount":250,"type":"expense","category":"Food","paymentMethod":"UPI"},{"date":"2026-10-02","merchant":"Zomato","amount":400,"type":"expense","category":"Food","paymentMethod":"UPI"}]}"""
     private val gemini = GeminiRepository(
         client = OkHttpClient.Builder().addInterceptor { chain ->
-            val rows = """{"transactions":[{"date":"2026-10-01","merchant":"Swiggy","amount":250,"type":"expense","category":"Food","paymentMethod":"UPI"},{"date":"2026-10-02","merchant":"Zomato","amount":400,"type":"expense","category":"Food","paymentMethod":"UPI"}]}"""
+            val rows = statementJson
             val quoted = org.json.JSONObject.quote(rows)
             Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
                 .body("""{"candidates":[{"finishReason":"STOP","content":{"parts":[{"text":$quoted}]}}]}""".toResponseBody("application/json".toMediaType())).build()
@@ -109,6 +110,28 @@ class StatementReimportTest {
         compose.onNodeWithContentDescription("Import Swiggy").assertIsOff()
         compose.onNodeWithContentDescription("Import Zomato").assertIsOn()
         assertEquals(1, db.transactionDao().getAllTransactionsDirect().size)
+    }
+
+    @Test fun `one saved payment matches only one identical row with a one day date tolerance`() = runBlocking {
+        db.transactionDao().insertTransaction(TransactionEntity(type = "expense", amount = 250.0,
+            category = "Food", merchant = "Swiggy", paymentMethod = "UPI",
+            date = LocalDate.of(2026, 9, 30).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()))
+        statementJson = """{"transactions":[{"date":"2026-10-01","merchant":"Swiggy","amount":250,"type":"expense"},{"date":"2026-10-01","merchant":"Swiggy","amount":250,"type":"expense"},{"date":"2026-10-03","merchant":"Swiggy","amount":250,"type":"expense"}]}"""
+        read()
+        val items = vm.statementParseResult.value!!.allItems
+        assertEquals(3, items.size)
+        assertEquals(1, items.count { !it.isSelected })
+        assertEquals(2, items.count { it.isSelected })
+    }
+
+    @Test fun `a different type amount or far away date does not untick a new purchase`() = runBlocking {
+        val day = LocalDate.of(2026, 10, 1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        for ((type, amount, date) in listOf(Triple("income", 250.0, day), Triple("expense", 251.0, day), Triple("expense", 250.0, day - 4 * 86400000L))) {
+            db.transactionDao().insertTransaction(TransactionEntity(type = type, amount = amount,
+                category = "Food", merchant = "Swiggy", paymentMethod = "UPI", date = date))
+        }
+        read()
+        assertTrue(vm.statementParseResult.value!!.allItems.all { it.isSelected })
     }
 
     @Test fun `importing and reading the same statement again leaves both saved rows unticked`() = runBlocking {
