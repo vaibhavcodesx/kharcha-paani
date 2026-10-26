@@ -3,6 +3,7 @@ package com.vaibhav.kharchapaani.ui.components
 import android.app.Application
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -130,6 +131,13 @@ class GroupSortingTest {
 
     private fun groupsTab() {
         compose.onNodeWithTag("splits_tab_groups").performScrollTo().performClick()
+    }
+
+    @Test
+    fun `resource labels preserve the real group count and current sort caption`() {
+        show()
+        compose.onNodeWithText("Groups · 3").assertExists()
+        compose.onNodeWithTag("group_sort_button").assertTextEquals("Sort: Latest activity")
     }
 
     private fun sort(label: String) {
