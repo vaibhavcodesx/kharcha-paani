@@ -15,6 +15,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Sort Groups by latest activity, name, either balance direction or newest; the choice stays on
+  this phone when you reopen the app (X5 / TODOS 5).
+
 - Groups have a Settlements view for payments and IOUs, including dates, people and confirmation
   status, while All activity keeps the combined history (X5 / TODOS 8).
 
