@@ -44,6 +44,8 @@ If your lane is empty, stop and say so; don't borrow.
 - **T2.2** abuse limits, **T2.4** sync visibility, **T2.6 part 3** (sign-out data removal),
   **T2.7** notifications phase 2, the crash-report off switch.
 - **TODOS 3a, 3b, 6, 10** and the Ledger / Ask-to-pay items in TODOS.
+- **Say the split** ([`docs/designs/say-the-split.md`](../designs/say-the-split.md)): quick add
+  understands "with Rohan and Ankit" and group names. It changes the AI prompt and the on-phone parser.
 - All of Tier 3 unless this page is updated to hand an item over.
 
 ## Files: who may touch what
