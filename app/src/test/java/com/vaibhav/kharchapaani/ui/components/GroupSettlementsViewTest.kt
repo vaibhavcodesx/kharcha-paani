@@ -26,6 +26,7 @@ import androidx.work.testing.WorkManagerTestInitHelper
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.data.db.entity.SettlementStatus
+import com.vaibhav.kharchapaani.data.db.entity.GroupMemberEntity
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
@@ -77,6 +78,8 @@ class GroupSettlementsViewTest {
             db.groupDao().insertGroup(GroupEntity(id = 7, name = "Trip"))
             db.groupDao().insertGroup(GroupEntity(id = 8, name = "Flat"))
             db.personDao().insertPerson(PersonEntity(id = 3, name = "Priya", avatarColor = "#B5EAD7"))
+            db.groupDao().insertGroupMembers(listOf(-1L, 2L, 3L).map { GroupMemberEntity(groupId = 7, personId = it) })
+            db.groupDao().insertGroupMembers(listOf(-1L, 2L).map { GroupMemberEntity(groupId = 8, personId = it) })
             for ((id, status) in listOf(10L to SettlementStatus.CONFIRMED, 11L to SettlementStatus.PENDING, 12L to SettlementStatus.REJECTED)) {
                 db.settlementDao().insertSettlement(SettlementEntity(id = id, fromPersonId = 2, toPersonId = 3, amount = 100.0, date = id, groupId = 7, status = status))
             }
