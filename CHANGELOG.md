@@ -13,6 +13,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Fixed
+
+- Group cards grow with large text and keep complete Indian-formatted amounts visible
+  (X7 / T2.10, REL M7; Splits).
+
 ### Added
 
 - A confirmed settlement can offer Play’s own review flow after a settling-in week, at most once
