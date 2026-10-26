@@ -31,10 +31,14 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #133 · X10 / REL L5 offline sign-in wording · merged; conditional connection advice comes before account/Play-services advice, without changing authentication or guessing network state.
 
+- 2026-10-27 · #136 · X10 / REL L10 statement dates · merged; formatters are local per call, preserving supported formats, strict date checks and the current time zone; eight threads verify 4,000 dates and labels.
+
 - 2026-10-27 · #135 · X10 / REL L7 bill naming · merged; Bill photo describes the existing gallery picker; capture and cancellation behavior are unchanged.
 
 - 2026-10-27 · #134 · X10 / REL L6 money confirmations · merged; Confirm haptic follows each successful entry/payment/nonempty batch write; invalid amounts, errors and empty imports stay silent, and disabled buttons stay disabled.
 
 - 2026-10-27 · #137 · X7 / T2.10 dock · merged; above 150% font size keep full navigation targets and spoken tab names while hiding cramped visual labels; ordinary labels remain at normal sizes.
+
+- 2026-10-27 · #139 · X7 / T2.10 Home money · parked: CI 40412344087 rejected a Boolean-returning render test; corrected CI 40413157415 reaches the missing whole-amount layout assertion. Two failures reached the stop rule. Next: auto-size a single full figure when animated digits cannot fit, retaining normal animation when they do.
 
 ## Questions
