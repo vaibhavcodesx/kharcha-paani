@@ -1,5 +1,6 @@
 -- NOT APPLIED. Staged for owner review (plan T2.3; security audit M-4, L-8, L-9). Tested against live
--- inside a transaction that rolled back: supabase/tests/database_hygiene_test.sql.
+-- inside a transaction that rolled back (2026-10-27, all checks pass after the default-privileges fix
+-- below): supabase/tests/database_hygiene_test.sql.
 --
 -- 1. `anon` gets nothing (M-4). Supabase grants every new table, sequence and function in `public` to
 --    `anon` by default, and `anon` held INSERT/SELECT/UPDATE on almost every table here. Only RLS
@@ -30,7 +31,13 @@ revoke execute on all functions in schema public from anon;
 
 alter default privileges for role postgres in schema public revoke all on tables from anon;
 alter default privileges for role postgres in schema public revoke all on sequences from anon;
-alter default privileges for role postgres in schema public revoke execute on functions from anon, public;
+alter default privileges for role postgres in schema public revoke execute on functions from anon;
+-- EXECUTE for PUBLIC on new functions is a database-wide default, which a schema-scoped revoke can't
+-- take away (the live test showed `=X/postgres` on a new function). So it's revoked database-wide, and
+-- signed-in users and the service role get it back explicitly: new functions, public or private (the
+-- helpers policies call), keep working for them exactly as before.
+alter default privileges for role postgres revoke execute on functions from public;
+alter default privileges for role postgres grant execute on functions to authenticated, service_role;
 
 -- 2. Colour clash with a nameless groupmate
 create or replace function private.check_profile_hue()

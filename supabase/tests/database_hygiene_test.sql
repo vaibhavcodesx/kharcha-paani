@@ -3,8 +3,9 @@
 -- caught; avatar_url is an https link.
 --
 -- Same conventions as rls_groups_test.sql: one transaction ending in ROLLBACK, one result row per
--- check. Not yet run against live: apply the migration inside the same transaction (or after it),
--- then run this; it ends in ROLLBACK.
+-- check. Run against live on 2026-10-27 inside one rolled-back transaction with the migration: all
+-- pass. The first run caught that a new function stayed executable by anon (PUBLIC's default EXECUTE
+-- is database-wide); the migration now revokes it there.
 
 begin;
 
@@ -124,6 +125,11 @@ select public._expect_value('a function made later isn''t executable by anon',
   $q$ select has_function_privilege('anon', 'public.probe_fn()', 'execute')::int $q$, 0);
 select public._expect_value('but signed-in users still get what they always did',
   $q$ select has_table_privilege('authenticated', 'public.probe_table', 'select')::int $q$, 1);
+create function private.probe_private_fn() returns int language sql as $f$ select 1 $f$;
+select public._expect_value('and a function made later still runs for signed-in users',
+  $q$ select has_function_privilege('authenticated', 'public.probe_fn()', 'execute')::int $q$, 1);
+select public._expect_value('a private helper made later still runs for signed-in users (policies call these)',
+  $q$ select has_function_privilege('authenticated', 'private.probe_private_fn()', 'execute')::int $q$, 1);
 
 -- ------------------------------------------------------------
 -- A colour clash with a groupmate who has no name
