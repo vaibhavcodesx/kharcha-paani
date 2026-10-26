@@ -20,6 +20,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Saving an entry, recording a payment or importing a nonempty statement batch gives a confirmation
+  haptic only after the ledger write succeeds (X10 / REL L6).
+
 - A confirmed settlement can offer Play’s own review flow after a settling-in week, at most once
   per 180 days; errors, old history and busy screens do not trigger it (X9 / T3.9).
 
