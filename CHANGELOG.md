@@ -68,8 +68,14 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   the gym and wellness), each with its own icon and colour. Quick add, bills and statements can
   choose them, and so can the phone's own guess: "haircut 300", "juice 60", "maggi 14". The gym
   now counts as Self-care instead of Health.
+- - A "Send crash reports" switch in Help & about, as the privacy policy promises. Crash reports stay
+  on unless you turn them off, and the switch only appears in builds that can send them.
 
 ### Fixed
+
+- The ledger no longer appears in Recents thumbnails on Android 13+, while manual screenshots
+  still work. Payment reminders have a generic lock-screen version without names or amounts,
+  and incoming image/PDF shares reject this app's own files and non-content URIs (X3 / T2.6).
 
 - Tapping a category in a group's "Where it went" now opens its expenses; tap again to close,
   or choose another category to switch. Entries open in the editor when editable; archived
@@ -115,6 +121,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   (`gemini-proxy`) that holds the key as a server secret, accepts only signed-in people, and
   passes back Google's reply. Until now the key shipped inside every APK, where anyone could
   copy it.
+
+### Security
+
+- The database now refuses a group expense whose shares don't add up to its amount, whoever writes
+  it. Before, only saving through the app checked, so editing one share or the amount directly could
+  throw off everyone's balance in the group. **(server, staged, not applied)**
 
 ## [1.5.0] - 2026-10-25
 

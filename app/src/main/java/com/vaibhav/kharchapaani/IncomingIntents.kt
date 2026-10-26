@@ -20,7 +20,7 @@ import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
  * - the app's own actions count only when they come in through [INTERNAL_ENTRY], a non-exported
  *   alias of MainActivity that only this app can start;
  * - shared text needs a `text/` type;
- * - a shared picture or PDF has to be a `content://` URI, the kind a sharing app grants.
+ * - a shared picture or PDF has to be an external `content://` URI, never our own FileProvider.
  */
 object IncomingIntents {
 
@@ -79,8 +79,13 @@ object IncomingIntents {
             @Suppress("DEPRECATION")
             intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
         }
-        // file:// would read this app's own files on someone else's say-so; content:// is what a
-        // sharing app grants access to.
-        return uri?.takeIf { it.scheme == ContentResolver.SCHEME_CONTENT }
+        // Another app may grant its own content, but cannot ask us to read our private files.
+        // Android can prefix an authority with a user id (e.g. 0@provider); compare the provider
+        // itself so that spelling cannot bypass the self-FileProvider check.
+        return uri?.takeIf {
+            val authority = it.authority?.substringAfterLast('@')
+            it.scheme == ContentResolver.SCHEME_CONTENT && !authority.isNullOrBlank() &&
+                !authority.equals("${BuildConfig.APPLICATION_ID}.fileprovider", ignoreCase = true)
+        }
     }
 }

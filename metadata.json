@@ -1,6 +1,0 @@
-{
-  "name": "Kharcha Paani",
-  "description": "Smart personal expense and split tracker with multimodal AI receipt scanning, voice capture, ledger balances, debt simplification, and Notion-style insights.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

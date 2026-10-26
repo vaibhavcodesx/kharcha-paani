@@ -47,7 +47,8 @@ class UpiLinkSafetyTest {
 
     @Test
     fun `a real handle still works`() {
-        assertEquals("9512476357@yespop", UpiLink.cleanId("9512476357@yespop"))
+        // A phone-number handle; the number is made up.
+        assertEquals("9000000001@yespop", UpiLink.cleanId("9000000001@yespop"))
         assertEquals("rohan.mehta-1@okaxis", UpiLink.cleanId("  Rohan.Mehta-1@OKAXIS  "))
     }
 

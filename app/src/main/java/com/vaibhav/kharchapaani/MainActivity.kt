@@ -152,6 +152,10 @@ class MainActivity : ComponentActivity() {
             gateIsLoading && SystemClock.uptimeMillis() - launchedAt < SPLASH_MAX_MILLIS
         }
         super.onCreate(savedInstanceState)
+        // Hide financial details in Recents while allowing screenshots people deliberately share.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            setRecentsScreenshotEnabled(false)
+        }
         applySystemBars()
 
         // On recreation (e.g. rotation) the launch intent was already handled; re-handling it
@@ -305,7 +309,12 @@ class MainActivity : ComponentActivity() {
                 if (route.userId == userId) route.settlementId?.let(viewModel::openSettlementAnswer)
             }
             IncomingIntents.Route.ViewSplits -> viewModel.setTab(1)
-            null -> Unit
+            null -> {
+                if (intent.action == Intent.ACTION_SEND &&
+                    (intent.type?.startsWith("image/") == true || intent.type == "application/pdf")) {
+                    viewModel.showMessage("Couldn't open that file.")
+                }
+            }
         }
     }
 }
