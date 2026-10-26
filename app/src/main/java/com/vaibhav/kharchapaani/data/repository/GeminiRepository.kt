@@ -1,5 +1,6 @@
 package com.vaibhav.kharchapaani.data.repository
 
+import com.vaibhav.kharchapaani.diagnostics.CrashReporting
 import android.graphics.Bitmap
 import android.util.Base64
 import android.util.Log
@@ -369,6 +370,9 @@ class GeminiRepository(
 
     private fun failedCall(label: String, reason: AiFailure, detail: String?): CallOutcome.Failed {
         Log.e(TAG, "$label failed: $reason${detail?.let { " - $it" } ?: ""}")
+        // Being offline, slow or over the day's quota is ordinary; the rest is worth a look. The
+        // reason and which call only: [detail] can quote the request or Google's reply.
+        if (reason !in ORDINARY_FAILURES) CrashReporting.recordProblem("Gemini $label failed: $reason")
         return CallOutcome.Failed(reason)
     }
 
@@ -616,6 +620,12 @@ class GeminiRepository(
     }
 
     companion object {
+        /** Failures that are part of normal life (offline, slow, out of quota, today's cap, no key, signed out): not reported. */
+        private val ORDINARY_FAILURES = setOf(
+            AiFailure.NoKey, AiFailure.Offline, AiFailure.Timeout, AiFailure.RateLimited,
+            AiFailure.DailyLimit, AiFailure.NeedsSignIn,
+        )
+
         /** Short text lines: an entry should be back in seconds or not at all (the phone guesses). */
         internal const val TEXT_TIMEOUT_SECONDS = 25L
 

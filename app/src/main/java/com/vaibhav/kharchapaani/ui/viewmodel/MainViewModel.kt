@@ -1,8 +1,16 @@
 package com.vaibhav.kharchapaani.ui.viewmodel
 
+import kotlinx.coroutines.CancellationException
+import com.vaibhav.kharchapaani.diagnostics.CrashReporting
 import com.vaibhav.kharchapaani.domain.receiptNotice
 import com.vaibhav.kharchapaani.domain.quickAddNotice
 import com.vaibhav.kharchapaani.domain.isSavableAmount
+import com.vaibhav.kharchapaani.domain.NotificationAccess
+import com.vaibhav.kharchapaani.domain.NotificationMoment
+import com.vaibhav.kharchapaani.domain.NotificationOffer
+import com.vaibhav.kharchapaani.domain.NotificationPrefs
+import com.vaibhav.kharchapaani.domain.QuietHours
+import com.vaibhav.kharchapaani.domain.LocalHeuristicParser
 import com.vaibhav.kharchapaani.domain.AiFailure
 import com.vaibhav.kharchapaani.domain.CalendarDay
 import com.vaibhav.kharchapaani.domain.AiAskResult
@@ -140,7 +148,23 @@ class MainViewModel(
 
     private val ledgerRepo = LedgerRepository(db, onLocalTransactionChange = ::requestSync, selfProfileId = userId)
 
-    private val submissions = Submissions(viewModelScope)
+    private val submissions = Submissions(viewModelScope, onFailure = { _statusMessage.value = it })
+
+    /**
+     * A user action that writes or sends something, with the safety net (plan T1.8): anything it
+     * didn't handle (a full disk, a ledger closed by signing out, a bug) is told to the person and
+     * reported instead of taking the app down. Cancellation passes through.
+     */
+    private fun launchAction(block: suspend CoroutineScope.() -> Unit): Job = viewModelScope.launch {
+        try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            CrashReporting.recordProblem("A user action failed", e)
+            _statusMessage.value = Submissions.failureMessage(e)
+        }
+    }
     /** Actions still writing, so their sheet can show its button as busy (see [Submissions]). */
     val submitting: StateFlow<Set<Submit>> = submissions.inFlight
 
@@ -163,7 +187,7 @@ class MainViewModel(
     }
 
     fun retryFailedSync() {
-        viewModelScope.launch {
+        launchAction {
             db.withTransaction {
                 db.syncDao().requeueFailedTransactions()
                 db.syncDao().requeueFailedGroups()
@@ -200,9 +224,46 @@ class MainViewModel(
     val reminder: StateFlow<ReminderSettings> = settings.reminder
         .stateIn(viewModelScope, SharingStarted.Eagerly, ReminderSettings())
 
-    /** Whether the app has already asked for notification permission by itself (it does so once). */
-    val notificationPermissionAsked: StateFlow<Boolean> = settings.notificationPermissionAsked
-        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    /** Times Android's notification dialog was asked for. Until read, as if asked out (never ask early). */
+    val notificationPermissionAsks: StateFlow<Int> = settings.notificationPermissionAsks
+        .stateIn(viewModelScope, SharingStarted.Eagerly, NotificationAccess.MAX_SYSTEM_ASKS)
+
+    /** Times the app offered by itself; until read, as if used up, so nothing is offered early. */
+    val notificationOffersShown: StateFlow<Int> = settings.notificationOffersShown
+        .stateIn(viewModelScope, SharingStarted.Eagerly, NotificationOffer.MAX_OFFERS)
+
+    val notificationPrefs: StateFlow<NotificationPrefs> = settings.notificationPrefs
+        .stateIn(viewModelScope, SharingStarted.Eagerly, NotificationPrefs())
+
+    private val _notificationMoment = MutableStateFlow<NotificationMoment?>(null)
+    /**
+     * Set right after something a notification would follow up on (a group joined or created, a
+     * payment recorded that waits for the other person, the first own entry). The shell offers to
+     * turn notifications on there, if Android would still ask; see [NotificationOffer].
+     */
+    val notificationMoment: StateFlow<NotificationMoment?> = _notificationMoment.asStateFlow()
+
+    fun reachNotificationMoment(moment: NotificationMoment) {
+        if (_notificationMoment.value == null) _notificationMoment.value = moment
+    }
+
+    /** The offer was shown (whatever the answer): it counts against the two. */
+    fun notificationOfferShown() {
+        _notificationMoment.value = null
+        viewModelScope.launch { settings.recordNotificationOffer() }
+    }
+
+    fun clearNotificationMoment() {
+        _notificationMoment.value = null
+    }
+
+    fun setPaymentsToConfirm(on: Boolean) {
+        viewModelScope.launch { settings.setPaymentsToConfirm(on) }
+    }
+
+    fun setQuietHours(quietHours: QuietHours) {
+        viewModelScope.launch { settings.setQuietHours(quietHours) }
+    }
 
     fun setReminderEnabled(enabled: Boolean) {
         viewModelScope.launch {
@@ -218,8 +279,8 @@ class MainViewModel(
         }
     }
 
-    fun markNotificationPermissionAsked() {
-        viewModelScope.launch { settings.markNotificationPermissionAsked() }
+    fun recordNotificationPermissionAsk() {
+        viewModelScope.launch { settings.recordNotificationPermissionAsk() }
     }
 
     init {
@@ -275,14 +336,14 @@ class MainViewModel(
     }
 
     fun cancelSubscription(id: Long) {
-        viewModelScope.launch {
+        launchAction {
             ledgerRepo.cancelSubscription(id)
             _statusMessage.value = "Cancelled. Charges already logged stay."
         }
     }
 
     fun deleteSubscription(id: Long) {
-        viewModelScope.launch { ledgerRepo.deleteSubscription(id) }
+        launchAction { ledgerRepo.deleteSubscription(id) }
     }
 
     private val _isCategoriesOpen = MutableStateFlow(false)
@@ -313,7 +374,7 @@ class MainViewModel(
     }
 
     fun saveUpi(payee: UpiPayee?) {
-        viewModelScope.launch {
+        launchAction {
             settings.setUpiPayee(userId, payee)
             _isUpiOpen.value = false
             // Kept on this phone *and* published to the profile. Local-only was the original
@@ -435,16 +496,16 @@ class MainViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun retractSettlement(settlementId: Long) {
-        viewModelScope.launch {
+        launchAction {
             try {
                 ledgerRepo.deleteSettlement(settlementId)
             } catch (e: ArchivedGroupException) {
                 _statusMessage.value = archivedMessage(e)
-                return@launch
+                return@launchAction
             } catch (e: NotYoursToWithdrawException) {
                 // Theirs to withdraw; mine to answer (design item 10).
                 openSettlementAnswer(settlementId)
-                return@launch
+                return@launchAction
             }
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
@@ -500,12 +561,12 @@ class MainViewModel(
     fun answerSettlement(confirm: Boolean, note: String = "") {
         val id = _answeringSettlementId.value ?: return
         _answeringSettlementId.value = null
-        viewModelScope.launch {
+        launchAction {
             try {
                 ledgerRepo.respondToSettlement(id, confirm, note)
             } catch (e: ArchivedGroupException) {
                 _statusMessage.value = archivedMessage(e)
-                return@launch
+                return@launchAction
             }
             NotificationHelper.clearSettlementReminder(getApplication(), id)
             _statusMessage.value = if (confirm) "Confirmed. It counts for both of you now." else "Marked not right. It won't count."
@@ -826,7 +887,6 @@ class MainViewModel(
         }
         _editingTransactionId.value = tx.id
         resetBillPhoto()
-        loadBillPhoto(tx.id)
         _type.value = tx.type
         _amount.value = if (tx.amount % 1.0 == 0.0) tx.amount.toLong().toString() else tx.amount.toString()
         _merchant.value = tx.merchant
@@ -887,6 +947,9 @@ class MainViewModel(
 
         editBaseline = currentDraft()
         _isConfirmSheetOpen.value = true
+        // After the sheet is open: the load gives up on a sheet that has closed, and started any
+        // earlier it could see this one as not open yet.
+        loadBillPhoto(tx.id)
     }
 
     // The expense as it was when its edit opened, to tell whether closing the sheet loses changes.
@@ -922,45 +985,73 @@ class MainViewModel(
 
     fun parseInputText(rawText: String) {
         if (rawText.isBlank()) return
+        withAiNotice(insteadOfAi = { fillInOnPhone(rawText) }) { readTextWithAi(rawText) }
+    }
+
+    /** "Type it myself" on a quick add: the phone's own guess, and the sheet to check it in. */
+    private fun fillInOnPhone(rawText: String) {
+        resetBillPhoto()
+        applyParsedResult(LocalHeuristicParser.parse(rawText, people.value.map { it.name }).copy(date = System.currentTimeMillis()))
+        if (_paymentMethod.value.isBlank()) _paymentMethod.value = defaultPaymentMethod()
+        _parseNotice.value = "Filled in on your phone. Check the amount and details."
+        _isConfirmSheetOpen.value = true
+    }
+
+    private fun readTextWithAi(rawText: String) {
         viewModelScope.launch {
             _isParsing.value = true
             _parseNotice.value = null
             resetBillPhoto()
-            val friendNames = people.value.map { it.name }
-            val outcome = geminiRepo.parseText(rawText, friendNames, parseChoices())
-            applyParsedResult(outcome.result)
-            // No method said: this account's own default, not "Other".
-            if (outcome.result.paymentMethod.isBlank()) _paymentMethod.value = defaultPaymentMethod()
-            // Why it's a guess, when it is: offline, out of quota and a refused key each say so.
-            _parseNotice.value = outcome.failure?.quickAddNotice()
-            _isParsing.value = false
+            try {
+                val friendNames = people.value.map { it.name }
+                val outcome = geminiRepo.parseText(rawText, friendNames, parseChoices())
+                applyParsedResult(outcome.result)
+                // No method said: this account's own default, not "Other".
+                if (outcome.result.paymentMethod.isBlank()) _paymentMethod.value = defaultPaymentMethod()
+                // Why it's a guess, when it is: offline, out of quota and a refused key each say so.
+                _parseNotice.value = outcome.failure?.quickAddNotice()
+            } finally {
+                // Whatever happened, the sheet never stays stuck on "Reading…".
+                _isParsing.value = false
+            }
             _isConfirmSheetOpen.value = true
         }
     }
 
     fun parseReceiptImage(bitmap: Bitmap) {
+        withAiNotice(insteadOfAi = {
+            // Typed by hand, with the bill still kept beside it.
+            openManualAdd()
+            keepBillPhoto { bitmap }
+        }) { readReceiptWithAi(bitmap) }
+    }
+
+    private fun readReceiptWithAi(bitmap: Bitmap) {
         // The picture that was read is kept with the expense by default; one tap on the row drops it.
         resetBillPhoto()
         keepBillPhoto { bitmap }
         viewModelScope.launch {
             _isParsing.value = true
             _isConfirmSheetOpen.value = true
-            when (val read = geminiRepo.readReceipt(bitmap, parseChoices())) {
-                is ReceiptReadResult.Read -> {
-                    applyParsedResult(read.entry)
-                    _parseNotice.value = when {
-                        read.missingAmount -> "Read the bill, but couldn't find the total. Fill in the amount."
-                        _billPhoto.value != BillPhoto.None -> "Read from your bill. The photo is kept below."
-                        else -> null
+            try {
+                when (val read = geminiRepo.readReceipt(bitmap, parseChoices())) {
+                    is ReceiptReadResult.Read -> {
+                        applyParsedResult(read.entry)
+                        _parseNotice.value = when {
+                            read.missingAmount -> "Read the bill, but couldn't find the total. Fill in the amount."
+                            _billPhoto.value != BillPhoto.None -> "Read from your bill. The photo is kept below."
+                            else -> null
+                        }
+                    }
+                    is ReceiptReadResult.Failed -> {
+                        applyParsedResult(ParsedTransactionResult(type = "expense", amount = 0.0, merchant = "", category = "Other", paymentMethod = "Other", note = "", readFailed = true))
+                        // "Try a clearer photo" was the answer to being offline too.
+                        _parseNotice.value = read.reason.receiptNotice()
                     }
                 }
-                is ReceiptReadResult.Failed -> {
-                    applyParsedResult(ParsedTransactionResult(type = "expense", amount = 0.0, merchant = "", category = "Other", paymentMethod = "Other", note = "", readFailed = true))
-                    // "Try a clearer photo" was the answer to being offline too.
-                    _parseNotice.value = read.reason.receiptNotice()
-                }
+            } finally {
+                _isParsing.value = false
             }
-            _isParsing.value = false
         }
     }
 
@@ -976,6 +1067,12 @@ class MainViewModel(
     private var statementJob: Job? = null
 
     fun parseBankOrUpiStatement(pdfBytes: ByteArray, fileName: String = "statement.pdf") {
+        withAiNotice(insteadOfAi = {
+            _statusMessage.value = "Statements are read by Gemini, so this one wasn't. You can still add entries yourself."
+        }) { readStatementWithAi(pdfBytes, fileName) }
+    }
+
+    private fun readStatementWithAi(pdfBytes: ByteArray, fileName: String) {
         statementJob?.cancel()
         statementJob = viewModelScope.launch {
             _isParsingStatement.value = true
@@ -1533,6 +1630,7 @@ class MainViewModel(
                 ledgerRepo.createGroup(name, description, emoji, colorHex, memberPersonIds)
             }
             dismissCreateGroup()
+            if (shared) reachNotificationMoment(NotificationMoment.CreatedGroup)
             _statusMessage.value = if (shared) {
                 "Created $name. Open it to invite people."
             } else {
@@ -1555,7 +1653,7 @@ class MainViewModel(
             _statusMessage.value = "Shared groups can't be deleted. Open the group to archive or leave it."
             return
         }
-        viewModelScope.launch {
+        launchAction {
             ledgerRepo.deleteGroup(groupId)
             dismissGroupDetail()
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
@@ -1586,7 +1684,7 @@ class MainViewModel(
      * (ask-to-pay). The ask is logged only if an app is picked (ask/AskSentReceiver).
      */
     fun askToPay(context: Context, person: PersonEntity, amount: Double, message: String) {
-        viewModelScope.launch {
+        launchAction {
             val app = getApplication<Application>()
             val qr = upiPayee.value?.let { payee ->
                 withContext(Dispatchers.IO) {
@@ -1615,6 +1713,8 @@ class MainViewModel(
                 return@launch
             }
             dismissSettleUp()
+            // In a shared group it waits for the other person's answer, and theirs for mine.
+            if (isSharedGroup(groupId)) reachNotificationMoment(NotificationMoment.RecordedPayment)
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
     }
@@ -1689,7 +1789,7 @@ class MainViewModel(
     }
 
     fun deleteFriend(personId: Long) {
-        viewModelScope.launch {
+        launchAction {
             ledgerRepo.deletePerson(personId)
             if (_selectedPersonForLedger.value?.id == personId) {
                 _selectedPersonForLedger.value = null
@@ -1715,6 +1815,45 @@ class MainViewModel(
     /** Whether asking is possible at all: no key in the build means the section isn't shown. */
     val aiAvailable: Boolean = geminiRepo.hasApiKey()
 
+    // The one-time notice before anything goes to Gemini (plan T1.10, decision D2).
+    private val aiNoticeAccepted: StateFlow<Boolean> = settings.aiNoticeAccepted
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    private val _isAiNoticeOpen = MutableStateFlow(false)
+    val isAiNoticeOpen: StateFlow<Boolean> = _isAiNoticeOpen.asStateFlow()
+    private var afterAiNotice: (() -> Unit)? = null
+    private var insteadOfAi: (() -> Unit)? = null
+
+    /**
+     * Runs [withAi] if what it sends to Gemini is covered: the notice accepted, or no key in this
+     * build (then nothing leaves the phone). Otherwise shows the notice first; "Type it myself" runs
+     * [insteadOfAi], which never sends anything.
+     */
+    private fun withAiNotice(insteadOfAi: () -> Unit, withAi: () -> Unit) {
+        if (!aiAvailable || aiNoticeAccepted.value) return withAi()
+        afterAiNotice = withAi
+        this.insteadOfAi = insteadOfAi
+        _isAiNoticeOpen.value = true
+    }
+
+    fun acceptAiNotice() {
+        val next = afterAiNotice
+        closeAiNotice()
+        viewModelScope.launch { settings.setAiNoticeAccepted(true) }
+        next?.invoke()
+    }
+
+    fun declineAiNotice() {
+        val instead = insteadOfAi
+        closeAiNotice()
+        instead?.invoke()
+    }
+
+    private fun closeAiNotice() {
+        _isAiNoticeOpen.value = false
+        afterAiNotice = null
+        insteadOfAi = null
+    }
+
     private var askJob: Job? = null
 
     /**
@@ -1726,6 +1865,12 @@ class MainViewModel(
      * running — no queue, because a queued answer lands under a chip nobody is looking at.
      */
     fun askInsights(prompt: AiPrompt) {
+        // Picking an answer already in hand sends nothing, so it needs no notice.
+        if (!_askBoard.value.needsAsking(prompt)) return askInsightsNow(prompt)
+        withAiNotice(insteadOfAi = {}) { askInsightsNow(prompt) }
+    }
+
+    private fun askInsightsNow(prompt: AiPrompt) {
         if (!_askBoard.value.needsAsking(prompt)) {
             _askBoard.value = _askBoard.value.select(prompt)
             return
@@ -1806,6 +1951,10 @@ class MainViewModel(
 
     /** Reads one group, start to finish. Group sheet only — it is about a group. */
     fun askTripReview(groupId: Long) {
+        withAiNotice(insteadOfAi = {}) { askTripReviewNow(groupId) }
+    }
+
+    private fun askTripReviewNow(groupId: Long) {
         tripJob?.cancel()
         tripJob = viewModelScope.launch {
             // Nothing to read yet, so nothing to say: leaving the state alone keeps the button
@@ -1857,11 +2006,11 @@ class MainViewModel(
     }
 
     fun exportCsv(context: Context, range: ExportRange, groupId: Long? = null) {
-        viewModelScope.launch {
+        launchAction {
             val csv = ledgerRepo.exportCsv(range, groupId = groupId)
             if (csv.rows == 0) {
                 _statusMessage.value = if (groupId != null) "Nothing logged in that group to export." else "Nothing logged in that range to export."
-                return@launch
+                return@launchAction
             }
             val uri = writeExport(csv)
             val send = Intent(Intent.ACTION_SEND).apply {
@@ -1885,7 +2034,7 @@ class MainViewModel(
      * phone, or a change of signing key that loses it. See [LocalBackup].
      */
     fun exportLocalBackup(context: Context) {
-        viewModelScope.launch {
+        launchAction {
             // Settings are read here and handed in: the repository owns the database, not
             // DataStore, and the first version of this simply forgot to pass them — which is
             // exactly why every export came back with empty category lists.
@@ -1896,7 +2045,7 @@ class MainViewModel(
             )
             if (backup.isEmpty) {
                 _statusMessage.value = "Nothing on this phone that isn't already backed up to your account."
-                return@launch
+                return@launchAction
             }
             val fileName = LocalBackup.fileName(backup.exportedAt)
             val uri = writeToCache(fileName, LocalBackup.encode(backup))
@@ -1923,16 +2072,16 @@ class MainViewModel(
      * it was picked, with no way to see what it held (security audit, 2026-10-24).
      */
     fun importLocalBackup(context: Context, uri: Uri) {
-        viewModelScope.launch {
+        launchAction {
             val text = when (val read = SharedFiles.readBytes(context.applicationContext, uri, BACKUP_MAX_BYTES)) {
                 is SharedFiles.Read.Bytes -> read.bytes.toString(Charsets.UTF_8)
                 SharedFiles.Read.TooLarge -> {
                     _statusMessage.value = "That file is too big to be a Kharcha Paani backup."
-                    return@launch
+                    return@launchAction
                 }
                 SharedFiles.Read.Unreadable -> {
                     _statusMessage.value = "Couldn't open that file."
-                    return@launch
+                    return@launchAction
                 }
             }
             when (val result = withContext(Dispatchers.Default) { LocalBackup.decode(text) }) {
@@ -1951,7 +2100,7 @@ class MainViewModel(
     fun confirmRestore() {
         val backup = _restorePreview.value ?: return
         _restorePreview.value = null
-        viewModelScope.launch {
+        launchAction {
             val report = backupRepo.restore(backup)
             restoreSettings(backup.settings)
             _statusMessage.value = report.copy(settingsRestored = !backup.settings.isEmpty).message()

@@ -46,6 +46,8 @@ data class SharedGroupsUiState(
     val invite: GroupInviteState? = null,
     val leavingGroupId: Long? = null,
     val message: String? = null,
+    /** Set by a join that went through, until the shell has offered notifications for it. */
+    val justJoined: Boolean = false,
 )
 
 /**
@@ -113,7 +115,7 @@ class SharedGroupsController(
                 onSuccess = {
                     requestSync()
                     val name = join.preview?.groupName ?: "the group"
-                    _state.update { it.copy(join = null, message = "Joined $name. It appears once sync finishes.") }
+                    _state.update { it.copy(join = null, message = "Joined $name. It appears once sync finishes.", justJoined = true) }
                 },
                 onFailure = { error ->
                     _state.update { it.copy(join = it.join?.copy(isJoining = false, error = error.message)) }
@@ -197,6 +199,10 @@ class SharedGroupsController(
 
     fun clearMessage() {
         _state.update { it.copy(message = null) }
+    }
+
+    fun clearJustJoined() {
+        _state.update { it.copy(justJoined = false) }
     }
 
     private suspend fun <T> runRemote(block: suspend () -> T): Result<T> = try {
