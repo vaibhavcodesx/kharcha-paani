@@ -18,6 +18,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Insights keeps the complete per-day amount visible at large text sizes instead of an ellipsis
   (X7 / T2.10, REL M7).
 
+- Home calls the gallery action “Bill photo”, so its label matches what opens (X10 / REL L7).
+
 - Ambiguous Google picker errors suggest reconnecting before Play services or account advice
   (X10 / REL L5).
 
