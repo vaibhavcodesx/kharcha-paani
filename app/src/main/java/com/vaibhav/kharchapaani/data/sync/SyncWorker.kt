@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
+import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.LedgerDatabases
 import com.vaibhav.kharchapaani.data.db.entity.SyncMetaEntity
 import com.vaibhav.kharchapaani.data.remote.BackgroundAuth
@@ -12,6 +13,7 @@ import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.reminder.SettlementReminders
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
+import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -31,24 +33,34 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
         return syncIfSignedIn(requestedUserId = userId, signedInUserId = signedInUserId) {
             val database = LedgerDatabases.open(applicationContext, userId)
-            TransactionSyncEngine(
-                store = RoomTransactionSyncStore(database),
-                remote = SupabaseTransactionRemote(supabase, ownerId = userId),
-                ownerId = userId,
-            ).sync()
-            GroupSyncEngine(database, SupabaseGroupRemote(supabase), selfProfileId = userId).sync()
-            // After personal sync, so a private split's expense is here before its split is pulled.
-            if (LocalFriendSync.ENABLED) LocalLedgerSyncEngine(database, SupabaseLocalLedgerRemote(supabase, userId)).sync()
-            // Only a pass that got through both engines counts as "last synced".
-            database.syncDao().putMeta(SyncMetaEntity(TransactionSyncEngine.LAST_SYNCED_AT, System.currentTimeMillis().toString()))
-            // A pull can change the figures (a groupmate's expense, a restore after reinstalling),
-            // and nothing else would tell the home-screen widgets: they'd keep the old numbers.
-            SplitFlowWidgetProvider.notifyWidgetUpdate(applicationContext)
-            // A groupmate may have chosen a new colour: fit everyone else on this phone around it.
-            LedgerRepository(database, selfProfileId = userId).repairPersonColours()
-            // Payments a groupmate recorded that wait for my answer: the first nudge, then day 3, 6…
-            SettlementReminders.remind(applicationContext, database, userId)
+            try {
+                syncAll(database, supabase, userId)
+            } finally {
+                // Payments a groupmate recorded that wait for my answer: the first nudge, then day
+                // 3, 6… Whatever the pull managed, the ones already on the phone still get theirs:
+                // inside the pass, one failing engine stopped every reminder.
+                runCatching { SettlementReminders.remind(applicationContext, database, userId) }
+                    .onFailure { Log.w(TAG, "Settlement reminders skipped", it) }
+            }
         }
+    }
+
+    private suspend fun syncAll(database: AppDatabase, supabase: SupabaseClient, userId: String) {
+        TransactionSyncEngine(
+            store = RoomTransactionSyncStore(database),
+            remote = SupabaseTransactionRemote(supabase, ownerId = userId),
+            ownerId = userId,
+        ).sync()
+        GroupSyncEngine(database, SupabaseGroupRemote(supabase), selfProfileId = userId).sync()
+        // After personal sync, so a private split's expense is here before its split is pulled.
+        if (LocalFriendSync.ENABLED) LocalLedgerSyncEngine(database, SupabaseLocalLedgerRemote(supabase, userId)).sync()
+        // Only a pass that got through both engines counts as "last synced".
+        database.syncDao().putMeta(SyncMetaEntity(TransactionSyncEngine.LAST_SYNCED_AT, System.currentTimeMillis().toString()))
+        // A pull can change the figures (a groupmate's expense, a restore after reinstalling),
+        // and nothing else would tell the home-screen widgets: they'd keep the old numbers.
+        SplitFlowWidgetProvider.notifyWidgetUpdate(applicationContext)
+        // A groupmate may have chosen a new colour: fit everyone else on this phone around it.
+        LedgerRepository(database, selfProfileId = userId).repairPersonColours()
     }
 
     companion object {
