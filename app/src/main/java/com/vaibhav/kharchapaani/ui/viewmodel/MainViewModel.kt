@@ -1191,6 +1191,7 @@ class MainViewModel(
             }
 
             ledgerRepo.batchInsertTransactions(entities)
+            if (entities.isNotEmpty()) _moneyConfirmations.tryEmit(Unit)
             dismissStatementImportDialog()
             _statusMessage.value = if (entities.size == 1) "Added 1 entry from the statement." else "Added ${entities.size} entries from the statement."
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
@@ -1590,6 +1591,7 @@ class MainViewModel(
             }
             settleBillPhoto(savedId)
             _isConfirmSheetOpen.value = false
+            _moneyConfirmations.tryEmit(Unit)
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
     }
@@ -1760,6 +1762,7 @@ class MainViewModel(
                 return@launch
             }
             dismissSettleUp()
+            _moneyConfirmations.tryEmit(Unit)
             // In a shared group it waits for the other person's answer, and theirs for mine.
             if (isSharedGroup(groupId)) reachNotificationMoment(NotificationMoment.RecordedPayment)
             reviewAfterConfirmedSettlement(settlementId)
