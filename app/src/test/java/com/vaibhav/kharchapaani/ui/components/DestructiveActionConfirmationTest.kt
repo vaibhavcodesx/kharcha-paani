@@ -5,6 +5,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
@@ -106,6 +107,10 @@ class DestructiveActionConfirmationTest {
 
     private fun requestSettlementRemoval(label: String) {
         compose.onNodeWithTag("settlement_item_5").performClick()
+        // Expanded IOUs expose the same removal menu through an explicit options button.
+        if (compose.onAllNodesWithText("More options").fetchSemanticsNodes().isNotEmpty()) {
+            compose.onNodeWithText("More options").performClick()
+        }
         compose.onNodeWithText(label).performClick()
     }
 
