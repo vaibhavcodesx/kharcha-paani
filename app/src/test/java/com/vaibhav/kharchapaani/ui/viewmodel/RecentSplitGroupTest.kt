@@ -122,11 +122,17 @@ class RecentSplitGroupTest {
         Dispatchers.resetMain()
     }
 
+    private fun selectOnly(personId: Long) {
+        vm.setIsSplit(true)
+        // The existing shortcut selects the first alphabetic friend; make an explicit choice.
+        vm.shares.value.filter { it.personId != -1L && it.isSelected }.map { it.personId }
+            .forEach(vm::togglePersonShare)
+        vm.togglePersonShare(personId)
+    }
+
     private fun startWithAnkit() {
         vm.openManualAdd()
-        vm.setIsSplit(true) // The existing first-friend shortcut selects Rohan.
-        vm.togglePersonShare(1)
-        vm.togglePersonShare(2)
+        selectOnly(2)
     }
 
     @Test
@@ -148,9 +154,7 @@ class RecentSplitGroupTest {
     fun `an explicit group is kept when the person selection changes`() {
         vm.openManualAdd()
         vm.updateGroupId(10)
-        vm.setIsSplit(true)
-        vm.togglePersonShare(1)
-        vm.togglePersonShare(2)
+        selectOnly(2)
         assertEquals(10L, vm.groupId.value)
     }
 
@@ -158,9 +162,7 @@ class RecentSplitGroupTest {
     fun `choosing no group explicitly is not undone by picking a friend`() {
         vm.openManualAdd()
         vm.updateGroupId(null)
-        vm.setIsSplit(true)
-        vm.togglePersonShare(1)
-        vm.togglePersonShare(2)
+        selectOnly(2)
         assertNull(vm.groupId.value)
     }
 
@@ -191,9 +193,7 @@ class RecentSplitGroupTest {
     @Test
     fun `a person with no shared history gets no unrelated group`() {
         vm.openManualAdd()
-        vm.setIsSplit(true)
-        vm.togglePersonShare(1)
-        vm.togglePersonShare(3)
+        selectOnly(3)
         assertNull(vm.groupId.value)
     }
 }
