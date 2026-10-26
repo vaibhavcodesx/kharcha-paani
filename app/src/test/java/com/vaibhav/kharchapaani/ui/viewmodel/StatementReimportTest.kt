@@ -134,6 +134,18 @@ class StatementReimportTest {
         assertTrue(vm.statementParseResult.value!!.allItems.all { it.isSelected })
     }
 
+    @Test fun `an exact day match is reserved before a neighbouring new purchase can use it`() = runBlocking {
+        val oldDay = LocalDate.of(2026, 10, 1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val newDay = LocalDate.of(2026, 10, 2).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        db.transactionDao().insertTransaction(TransactionEntity(type = "expense", amount = 250.0,
+            category = "Food", merchant = "Swiggy", paymentMethod = "UPI", date = oldDay))
+        statementJson = """{"transactions":[{"date":"2026-10-02","merchant":"Swiggy","amount":250,"type":"expense"},{"date":"2026-10-01","merchant":"Swiggy","amount":250,"type":"expense"}]}"""
+        read()
+        val items = vm.statementParseResult.value!!.allItems
+        assertFalse("the exact saved date must be the unticked row", items.single { it.date == oldDay }.isSelected)
+        assertTrue("the new neighbouring purchase must remain ticked", items.single { it.date == newDay }.isSelected)
+    }
+
     @Test fun `importing and reading the same statement again leaves both saved rows unticked`() = runBlocking {
         read()
         val first = vm.statementParseResult.value!!.allItems
