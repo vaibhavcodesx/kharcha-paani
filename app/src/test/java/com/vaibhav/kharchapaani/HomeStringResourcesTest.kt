@@ -89,5 +89,6 @@ class HomeStringResourcesTest {
         compose.onNodeWithText("SPENT THIS MONTH").assertExists()
         compose.onNodeWithText("Today").assertExists()
         compose.onNodeWithText("₹20 spent").assertExists()
+        Unit
     }
 }
