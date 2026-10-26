@@ -454,4 +454,25 @@ class GroupSyncEngineTest {
 
     private fun groupExpense(groupId: Long, amount: Double, merchant: String = "Villa") =
         personalTransaction(merchant, syncState = SyncState.LOCAL_ONLY, amount = amount).copy(groupId = groupId)
+
+    @Test
+    fun `someone who deleted their account takes the name they chose, on phones that knew them`() = runBlocking {
+        // Carol was a groupmate here, and has since left every group and deleted her account.
+        val carolHere = groupDao.insertPerson(PersonEntity(name = "Carol Mehta", avatarColor = "#FF7A3D", profileId = carol))
+        remote.formerMembers[carol] = "Former member"
+
+        engine.refreshFormerMembers()
+
+        assertEquals("Former member", groupDao.personById(carolHere)?.name)
+    }
+
+    @Test
+    fun `a former member lookup that fails renames nobody`() = runBlocking {
+        val bobHere = groupDao.insertPerson(PersonEntity(name = "Bob", avatarColor = "#FF7A3D", profileId = bob))
+        remote.online = false
+
+        runCatching { engine.refreshFormerMembers() }
+
+        assertEquals("Bob", groupDao.personById(bobHere)?.name)
+    }
 }
