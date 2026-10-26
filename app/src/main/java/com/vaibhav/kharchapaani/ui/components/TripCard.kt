@@ -9,12 +9,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -59,10 +67,10 @@ import kotlin.math.abs
 
 /**
  * A group as a ticket: who and what above the perforation, the money below. The two halves are the
- * same height, so the perforation meets the notches. Local groups can be deleted from a long-press
+ * same minimum height; large text uses a plain card so content can grow. Local groups can be deleted from a long-press
  * menu; shared ones are archived or left from their detail sheet, never deleted (decision 4).
  */
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun TripCard(
     details: GroupWithDetails,
@@ -70,6 +78,7 @@ fun TripCard(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val largeText = LocalDensity.current.fontScale > 1.5f
     val group = details.group
     val owed = details.netBalanceForMe >= 0.005
     val owe = details.netBalanceForMe <= -0.005
@@ -114,9 +123,9 @@ fun TripCard(
                 // the one nobody is spending on. Dimming the whole card, tag included, says
                 // "still here, no longer current" without a second treatment to learn.
                 .alpha(if (group.isArchived) ARCHIVED_ALPHA else 1f)
-                .clip(Ticket)
+                .clip(if (largeText) KpShapes.large else Ticket)
                 .background(CharcoalCard)
-                .perforation()
+                .then(if (largeText) Modifier else Modifier.perforation())
                 .combinedClickable(
                     onClickLabel = "Open ${group.name}",
                     onLongClickLabel = if (canDelete) "More options" else null,
@@ -130,7 +139,7 @@ fun TripCard(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().height(HalfHeight).padding(horizontal = Spacing.l),
+                modifier = Modifier.fillMaxWidth().heightIn(min = HalfHeight).padding(horizontal = Spacing.l, vertical = Spacing.s),
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
@@ -143,15 +152,15 @@ fun TripCard(
                         Text(
                             text = group.name,
                             style = MaterialTheme.typography.titleMedium,
-                            maxLines = 1,
+                            maxLines = if (largeText) Int.MAX_VALUE else 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false),
                         )
                         state?.let { StateTag(it, Modifier.padding(start = Spacing.s)) }
                     }
-                    Text(meta, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(meta, style = MaterialTheme.typography.bodySmall, maxLines = if (largeText) Int.MAX_VALUE else 1, overflow = TextOverflow.Ellipsis)
                 }
-                Column(horizontalAlignment = Alignment.End) {
+                Column(Modifier.widthIn(max = 160.dp), horizontalAlignment = Alignment.End) {
                     Text(
                         text = when {
                             owed -> "YOU'RE OWED"
@@ -160,7 +169,7 @@ fun TripCard(
                         },
                         style = EyebrowText,
                     )
-                    Text(
+                    GroupMoney(
                         text = Money.format(abs(details.netBalanceForMe)),
                         style = MoneyText.row,
                         color = when {
@@ -171,14 +180,13 @@ fun TripCard(
                     )
                 }
             }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            FlowRow(
+                verticalArrangement = Arrangement.spacedBy(Spacing.s),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.xl),
-                modifier = Modifier.fillMaxWidth().height(HalfHeight).padding(horizontal = Spacing.l),
+                modifier = Modifier.fillMaxWidth().heightIn(min = HalfHeight).padding(horizontal = Spacing.l, vertical = Spacing.s),
             ) {
                 Figure("Spent", Money.format(details.totalExpenses))
                 Figure("Your share", Money.format(details.myShare))
-                Box(Modifier.weight(1f))
                 MemberStack(details)
             }
         }
@@ -206,8 +214,21 @@ fun TripCard(
 private fun Figure(label: String, value: String) {
     Column {
         Text(label.uppercase(), style = EyebrowText)
-        Text(value, style = MoneyText.small, color = OffWhiteText)
+        GroupMoney(value, MoneyText.small, OffWhiteText)
     }
+}
+
+
+/** Keep every digit; an amount never uses an ellipsis, even in a narrow large-text card. */
+@Composable
+private fun GroupMoney(text: String, style: androidx.compose.ui.text.TextStyle, color: androidx.compose.ui.graphics.Color) {
+    BasicText(
+        text = text,
+        style = style.copy(color = color, lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified),
+        maxLines = 1,
+        softWrap = false,
+        autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = style.fontSize),
+    )
 }
 
 /** Up to four members, overlapping, and a "+n" for the rest. "People" already counts you. */

@@ -15,6 +15,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- Insights fits complete cash-flow and per-day amounts at large text sizes; the ring keeps its
+  spoken total and omits cramped duplicate centre text (X7 / T2.10, REL M7).
+
+- Group cards grow with large text and keep complete Indian-formatted amounts visible
+  (X7 / T2.10, REL M7; Splits).
+
 - The dock hides visual tab labels above 150% font size while keeping their spoken names and
   full navigation targets (X7 / T2.10, REL M7).
 
