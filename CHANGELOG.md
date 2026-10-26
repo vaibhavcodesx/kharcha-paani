@@ -37,6 +37,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Shared discard/large-amount dialogs and amount-field spoken labels use Android string resources
+  with unchanged English wording (X12 / T3.11; sheet controls).
+
 - Activity search finds split participants, payers, named guests and rupee amounts, including the
   personal share and Indian grouping (X11 / T3.8).
 
