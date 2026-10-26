@@ -13,6 +13,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Fixed
+
+- The dock hides visual tab labels above 150% font size while keeping their spoken names and
+  full navigation targets (X7 / T2.10, REL M7).
+
 ### Added
 
 - A confirmed settlement can offer Play’s own review flow after a settling-in week, at most once
