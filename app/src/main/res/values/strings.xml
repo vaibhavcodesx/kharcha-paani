@@ -1,4 +1,56 @@
 <resources>
     <string name="app_name">Kharcha Paani</string>
     <string name="widget_description">Quick expense logging and balance overview</string>
+    <!-- Splits, group cards and friend rows. Names are format arguments. -->
+    <string name="splits_title">Splits</string>
+    <string name="splits_subtitle">Who owes whom, with friends and on trips</string>
+    <string name="splits_waiting_you">WAITING FOR YOU</string>
+    <string name="splits_waiting_others">WAITING ON OTHERS</string>
+    <string name="splits_add_friend">Add a friend</string>
+    <string name="splits_no_friends">No friends yet</string>
+    <string name="splits_friends_empty_body">Add anyone you split with — a name and a colour is all it takes, and they don\'t need the app. Splits, IOUs and settling up all work the same. Share a group only when you want them to see it on their own phone.</string>
+    <string name="splits_join">Join</string>
+    <string name="splits_new_group">New group</string>
+    <string name="splits_no_groups">No groups yet</string>
+    <string name="splits_groups_empty_body">Make one for a trip or a flat. A shared group keeps everyone you invite in sync; join one with the code a friend sends.</string>
+    <string name="splits_owed_you">Owed to you</string>
+    <string name="splits_you_owe">You owe</string>
+    <string name="splits_who_pays">Who pays whom</string>
+    <string name="splits_log_iou">Log an IOU</string>
+    <string name="splits_friends_count">Friends · %1$d</string>
+    <string name="splits_groups_count">Groups · %1$d</string>
+    <string name="splits_sort_caption">Sort: %1$s</string>
+    <string name="splits_sort_latest">Latest activity</string>
+    <string name="splits_sort_name">Name</string>
+    <string name="splits_sort_newest">Newest</string>
+    <string name="splits_archived">Archived</string>
+    <string name="splits_shared">Shared</string>
+    <string name="splits_delete_group_body">Expenses and settlements stay in your history, without this group. Its member list is removed. This can\'t be undone.</string>
+    <string name="splits_delete_group">Delete group</string>
+    <string name="splits_more_options">More options</string>
+    <string name="splits_group_owed">YOU\'RE OWED</string>
+    <string name="splits_group_owe">YOU OWE</string>
+    <string name="splits_group_settled">SETTLED</string>
+    <string name="splits_spent">Spent</string>
+    <string name="splits_your_share">Your share</string>
+    <string name="splits_delete_name">Delete %1$s</string>
+    <string name="splits_delete_name_question">Delete %1$s?</string>
+    <string name="splits_open_name">Open %1$s</string>
+    <string name="splits_group_counts">%1$d people · %2$s</string>
+    <string name="splits_friend_owes">Owes you</string>
+    <string name="splits_friend_you_owe">You owe them</string>
+    <string name="splits_friend_settled">All settled</string>
+    <string name="splits_friend_shared_suffix">\u0020· Shared</string>
+    <string name="splits_settle">Settle</string>
+    <string name="splits_record">Record</string>
+    <string name="splits_settle_up">Settle up</string>
+    <string name="splits_record_payment">Record a payment</string>
+    <string name="splits_friend_asked">Owes you · %1$s</string>
+    <string name="splits_friend_history">See history with %1$s</string>
+    <string name="splits_settle_with">Settle up with %1$s</string>
+    <string name="splits_record_with">Record a payment with %1$s</string>
+    <plurals name="splits_expense_count">
+        <item quantity="one">%1$d expense</item>
+        <item quantity="other">%1$d expenses</item>
+    </plurals>
 </resources>

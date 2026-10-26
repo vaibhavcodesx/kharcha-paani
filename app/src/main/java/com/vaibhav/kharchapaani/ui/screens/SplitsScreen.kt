@@ -1,5 +1,6 @@
 package com.vaibhav.kharchapaani.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -107,6 +108,8 @@ fun SplitsScreen(
 ) {
     val owedToMe = personBalances.filter { it.netBalance > 0 }.sumOf { it.netBalance }
     val iOwe = abs(personBalances.filter { it.netBalance < 0 }.sumOf { it.netBalance })
+    val friendsLabel = stringResource(R.string.splits_friends_count, personBalances.size)
+    val groupsLabel = stringResource(R.string.splits_groups_count, groups.size)
     var section by rememberSaveable { mutableStateOf(SplitsSection.Friends) }
     val context = LocalContext.current
     val sortPreferences = remember(context) { GroupSortPreferences(context) }
@@ -133,7 +136,7 @@ fun SplitsScreen(
         contentPadding = PaddingValues(start = Spacing.page, end = Spacing.page, top = Spacing.l, bottom = dockClearance()),
     ) {
         item(key = "header") {
-            ScreenHeader(title = "Splits", supporting = "Who owes whom, with friends and on trips") {
+            ScreenHeader(title = stringResource(R.string.splits_title), supporting = stringResource(R.string.splits_subtitle)) {
                 AccountAvatar(avatar = accountAvatar, syncStatus = syncStatus, onClick = onOpenAccount)
             }
         }
@@ -148,7 +151,7 @@ fun SplitsScreen(
         }
         if (awaitingMe.isNotEmpty()) {
             item(key = "awaiting_me_header") {
-                Text("WAITING FOR YOU", style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s).testTag("awaiting_me_header"))
+                Text(stringResource(R.string.splits_waiting_you), style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s).testTag("awaiting_me_header"))
             }
             itemsIndexed(awaitingMe, key = { _, it -> "awaiting_me_${it.settlement.id}" }) { index, item ->
                 SettlementItemCard(
@@ -162,7 +165,7 @@ fun SplitsScreen(
         }
         if (awaitingThem.isNotEmpty()) {
             item(key = "awaiting_them_header") {
-                Text("WAITING ON OTHERS", style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s))
+                Text(stringResource(R.string.splits_waiting_others), style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s))
             }
             itemsIndexed(awaitingThem, key = { _, it -> "awaiting_them_${it.settlement.id}" }) { index, item ->
                 SettlementItemCard(
@@ -179,8 +182,8 @@ fun SplitsScreen(
                 selected = section,
                 label = {
                     when (it) {
-                        SplitsSection.Friends -> "Friends · ${personBalances.size}"
-                        SplitsSection.Groups -> "Groups · ${groups.size}"
+                        SplitsSection.Friends -> friendsLabel
+                        SplitsSection.Groups -> groupsLabel
                     }
                 },
                 onSelect = { section = it },
@@ -194,7 +197,7 @@ fun SplitsScreen(
                 item(key = "friends_header") {
                     SectionActions {
                         KpButton(
-                            label = "Add a friend",
+                            label = stringResource(R.string.splits_add_friend),
                             onClick = onOpenAddFriend,
                             tier = KpButtonTier.Outline,
                             icon = KpIcons.Group,
@@ -206,8 +209,8 @@ fun SplitsScreen(
                     item(key = "friends_empty") {
                         EmptyState(
                             illustration = R.drawable.kp_empty_friends,
-                            title = "No friends yet",
-                            body = "Add anyone you split with — a name and a colour is all it takes, and they don't need the app. Splits, IOUs and settling up all work the same. Share a group only when you want them to see it on their own phone.",
+                            title = stringResource(R.string.splits_no_friends),
+                            body = stringResource(R.string.splits_friends_empty_body),
                         )
                     }
                 }
@@ -227,13 +230,13 @@ fun SplitsScreen(
                 item(key = "groups_header") {
                     SectionActions {
                         KpButton(
-                            label = "Join",
+                            label = stringResource(R.string.splits_join),
                             onClick = onJoinGroup,
                             tier = KpButtonTier.Ghost,
                             testTag = "join_group_button",
                         )
                         KpButton(
-                            label = "New group",
+                            label = stringResource(R.string.splits_new_group),
                             onClick = onOpenCreateGroup,
                             tier = KpButtonTier.Outline,
                             icon = KpIcons.Add,
@@ -251,8 +254,8 @@ fun SplitsScreen(
                     item(key = "groups_empty") {
                         EmptyState(
                             illustration = R.drawable.kp_empty_groups,
-                            title = "No groups yet",
-                            body = "Make one for a trip or a flat. A shared group keeps everyone you invite in sync; join one with the code a friend sends.",
+                            title = stringResource(R.string.splits_no_groups),
+                            body = stringResource(R.string.splits_groups_empty_body),
                         )
                     }
                 }
@@ -285,9 +288,9 @@ private fun BalanceSummary(
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
             val style = pairedFigureStyle(owedToMe, iOwe)
             // Zero is not a direction: a ₹0 debt in the debt colour reads as a debt at a glance.
-            SummaryFigure("Owed to you", owedToMe, if (owedToMe >= 0.005) MoneyIn else MutedWarmGray, style, Modifier.weight(1f))
+            SummaryFigure(stringResource(R.string.splits_owed_you), owedToMe, if (owedToMe >= 0.005) MoneyIn else MutedWarmGray, style, Modifier.weight(1f))
             Box(Modifier.padding(horizontal = Spacing.xl).width(1.dp).fillMaxHeight().background(CharcoalBorder))
-            SummaryFigure("You owe", iOwe, if (iOwe >= 0.005) MoneyOut else MutedWarmGray, style, Modifier.weight(1f))
+            SummaryFigure(stringResource(R.string.splits_you_owe), iOwe, if (iOwe >= 0.005) MoneyOut else MutedWarmGray, style, Modifier.weight(1f))
         }
         // Two real actions, not a footnote. As bare amber text with no container and no icon they
         // read as a caption under the figures, out of step with every other row in the app, which
@@ -299,7 +302,7 @@ private fun BalanceSummary(
         ) {
             if (owedToMe >= 0.005 || iOwe >= 0.005) {
                 KpButton(
-                    label = "Who pays whom",
+                    label = stringResource(R.string.splits_who_pays),
                     onClick = onOpenSimplifyDebts,
                     tier = KpButtonTier.Ghost,
                     icon = KpIcons.Settle,
@@ -307,7 +310,7 @@ private fun BalanceSummary(
                 )
             }
             KpButton(
-                label = "Log an IOU",
+                label = stringResource(R.string.splits_log_iou),
                 onClick = onOpenIou,
                 tier = KpButtonTier.Ghost,
                 icon = KpIcons.Lend,
@@ -347,12 +350,12 @@ private fun GroupSortPicker(sort: GroupSort, onSelect: (GroupSort) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Box {
         TextButton(onClick = { expanded = true }, modifier = Modifier.testTag("group_sort_button")) {
-            Text("Sort: ${sort.label}")
+            Text(stringResource(R.string.splits_sort_caption, sort.localizedLabel()))
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             GroupSort.entries.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option.label) },
+                    text = { Text(option.localizedLabel()) },
                     modifier = Modifier.semantics { selected = option == sort },
                     onClick = { expanded = false; onSelect(option) },
                 )
@@ -360,3 +363,12 @@ private fun GroupSortPicker(sort: GroupSort, onSelect: (GroupSort) -> Unit) {
         }
     }
 }
+
+@Composable
+private fun GroupSort.localizedLabel(): String = stringResource(when (this) {
+    GroupSort.LatestActivity -> R.string.splits_sort_latest
+    GroupSort.Name -> R.string.splits_sort_name
+    GroupSort.OwedToYou -> R.string.splits_owed_you
+    GroupSort.YouOwe -> R.string.splits_you_owe
+    GroupSort.Newest -> R.string.splits_sort_newest
+})
