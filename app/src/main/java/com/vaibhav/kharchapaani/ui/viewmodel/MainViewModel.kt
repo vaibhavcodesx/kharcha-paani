@@ -97,6 +97,7 @@ import com.vaibhav.kharchapaani.domain.UpiPayee
 import com.vaibhav.kharchapaani.domain.MonthAnalytics
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.SplitRounding
+import com.vaibhav.kharchapaani.domain.SplitTargets
 import com.vaibhav.kharchapaani.ui.components.NewSubscription
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.format.Money
@@ -852,18 +853,22 @@ class MainViewModel(
         _splitMode.value = SplitMode.EQUAL
         _paidByPersonId.value = -1L
 
-        // Initialize shares with members of this group
-        val grp = groups.value.find { it.group.id == targetGroupId }
-        val memberIds = grp?.members?.map { it.id }?.toSet() ?: emptySet()
-        val shareInputs = mutableListOf<ShareInput>()
-        shareInputs.add(ShareInput(personId = -1L, personName = "You", isSelected = true))
-        candidatesFor(targetGroupId).forEach { person ->
-            val isMember = memberIds.contains(person.id)
-            shareInputs.add(ShareInput(personId = person.id, personName = person.name, isSelected = isMember, isGuest = isGuestIn(targetGroupId, person)))
-        }
-        _shares.value = shareInputs
+        _shares.value = sharesForGroup(targetGroupId)
         recalculateShares()
         _isConfirmSheetOpen.value = true
+    }
+
+    /**
+     * A group's split: you, then everyone who can take part. [only] narrows it to the people a quick
+     * add named ("petrol 500 Goa trip with Rohan"); otherwise the group's members are ticked.
+     */
+    private fun sharesForGroup(groupId: Long, only: Set<Long> = emptySet()): List<ShareInput> {
+        val memberIds = groups.value.find { it.group.id == groupId }?.members?.map { it.id }?.toSet().orEmpty()
+        val ticked = only.ifEmpty { memberIds }
+        return listOf(ShareInput(personId = -1L, personName = "You", isSelected = true)) +
+            candidatesFor(groupId).map { person ->
+                ShareInput(personId = person.id, personName = person.name, isSelected = person.id in ticked, isGuest = isGuestIn(groupId, person))
+            }
     }
 
     fun openEditTransaction(fullTx: FullTransaction) {
@@ -991,9 +996,12 @@ class MainViewModel(
     /** "Type it myself" on a quick add: the phone's own guess, and the sheet to check it in. */
     private fun fillInOnPhone(rawText: String) {
         resetBillPhoto()
-        applyParsedResult(LocalHeuristicParser.parse(rawText, people.value.map { it.name }).copy(date = System.currentTimeMillis()))
+        val splitNotice = applyParsedResult(
+            LocalHeuristicParser.parse(rawText, people.value.map { it.name }).copy(date = System.currentTimeMillis()),
+            rawText,
+        )
         if (_paymentMethod.value.isBlank()) _paymentMethod.value = defaultPaymentMethod()
-        _parseNotice.value = "Filled in on your phone. Check the amount and details."
+        _parseNotice.value = listOfNotNull("Filled in on your phone. Check the amount and details.", splitNotice).joinToString(" ")
         _isConfirmSheetOpen.value = true
     }
 
@@ -1005,11 +1013,13 @@ class MainViewModel(
             try {
                 val friendNames = people.value.map { it.name }
                 val outcome = geminiRepo.parseText(rawText, friendNames, parseChoices())
-                applyParsedResult(outcome.result)
+                val splitNotice = applyParsedResult(outcome.result, rawText)
                 // No method said: this account's own default, not "Other".
                 if (outcome.result.paymentMethod.isBlank()) _paymentMethod.value = defaultPaymentMethod()
                 // Why it's a guess, when it is: offline, out of quota and a refused key each say so.
-                _parseNotice.value = outcome.failure?.quickAddNotice()
+                // Then any name in the line that didn't find its friend.
+                _parseNotice.value = listOfNotNull(outcome.failure?.quickAddNotice(), splitNotice)
+                    .joinToString(" ").ifEmpty { null }
             } finally {
                 // Whatever happened, the sheet never stays stuck on "Reading…".
                 _isParsing.value = false
@@ -1171,7 +1181,12 @@ class MainViewModel(
         }
     }
 
-    private fun applyParsedResult(parsed: ParsedTransactionResult) {
+    /**
+     * Fills the sheet from a parsed line. [rawText] is what the person typed or said, where a group
+     * name is looked for ("petrol 500 Goa trip"). Returns what to tell them about the split when a
+     * name in the line didn't find its friend, or null.
+     */
+    private fun applyParsedResult(parsed: ParsedTransactionResult, rawText: String? = null): String? {
         _editingTransactionId.value = null
         lockedShares = null
         _splitLocked.value = false
@@ -1186,30 +1201,26 @@ class MainViewModel(
         _paymentMethod.value = choices.paymentFor(parsed.paymentMethod)
         _note.value = parsed.note
         _date.value = parsed.date
-        _groupId.value = null
 
-        val currentPeople = people.value
-        val shareInputs = mutableListOf<ShareInput>()
-        shareInputs.add(ShareInput(personId = -1L, personName = "You", isSelected = true))
-
-        var hasSplits = false
-        currentPeople.forEach { person ->
-            val isMentioned = parsed.splitWithPersonNames.any { it.equals(person.name, ignoreCase = true) }
-            if (isMentioned) hasSplits = true
-            shareInputs.add(
-                ShareInput(
-                    personId = person.id,
-                    personName = person.name,
-                    isSelected = isMentioned
-                )
-            )
+        val target = SplitTargets.resolve(rawText.orEmpty(), parsed.splitWithPersonNames, people.value, rawGroups.value)
+        val groupId = target.groupId
+        _groupId.value = groupId
+        _shares.value = if (groupId != null) {
+            sharesForGroup(groupId, only = target.personIds)
+        } else {
+            listOf(ShareInput(personId = -1L, personName = "You", isSelected = true)) +
+                people.value.map { ShareInput(personId = it.id, personName = it.name, isSelected = it.id in target.personIds) }
         }
-
-        _isSplit.value = hasSplits
+        _isSplit.value = _shares.value.any { it.personId != -1L && it.isSelected }
         _splitMode.value = SplitMode.EQUAL
         _paidByPersonId.value = -1L
-        _shares.value = shareInputs
         recalculateShares()
+
+        // Named, found, but not someone who can be in this group's split (a member elsewhere).
+        val leftOut = target.personIds.filter { id -> _shares.value.none { it.personId == id } }
+            .mapNotNull { id -> people.value.firstOrNull { it.id == id }?.name }
+        val groupName = groupId?.let { id -> rawGroups.value.firstOrNull { it.id == id }?.name }
+        return SplitTargets.notice(target, leftOut, groupName)
     }
 
     private fun initSharesForCurrentPeople() {

@@ -10,9 +10,10 @@ Lane: Claude (it changes the AI prompt; see `docs/agents/work-split.md`)
 ## Problem statement
 
 People who use Kharcha Paani every day add expenses from the home-screen widget, by voice or by typing,
-within seconds of paying. But quick add doesn't understand who an expense was shared with: the AI prompt
-knows nothing about friends or groups, so "dinner 1800 with Rohan and Ankit" is saved as your own
-expense. Every shared expense then has to be opened again and its split fixed by hand.
+within seconds of paying. Quick add already ticked friends whose name was said exactly as saved,
+but it never picked a group ("petrol 500 Goa trip" landed outside the trip), "Ankit" didn't find
+"Ankit Shah", "Rohan bhai" didn't find Rohan, and a name it couldn't place was dropped silently.
+(Corrected while building: the first draft said quick add knew nothing about friends.) Every shared expense then has to be opened again and its split fixed by hand.
 
 ## Demand evidence
 
@@ -64,12 +65,11 @@ saved without the sheet.** The person checks it and taps Save, as they do now.
 
 ### How it works
 
-1. **The AI returns names, the phone finds the people.** The quick-add prompt (`domain/AiPrompts.kt`,
-   called by `GeminiRepository`) gains two optional fields: `with` (names as said, e.g.
-   `["Rohan", "Ankit"]`) and `group` (a group name as said). The friend list and group names are
-   **not** sent to Gemini: the text already holds whatever the person said, and sending the list
-   would hand Google more personal data than needed (the AI notice and privacy policy cover what the
-   person sends, nothing more).
+1. **The AI returns names, the phone finds the people.** The quick-add prompt (in
+   `GeminiRepository`) already receives the friends' names and returns `splitWith`; it now returns
+   anyone the line names, a friend as spelled in the list and anyone else as written, never the
+   person themself or a group name. Group names are **not** sent: the group is found on the phone,
+   in the raw line, so it works the same offline.
 2. **Matching on the phone.** A new pure function (in `domain/`, unit-tested on its own) matches the
    returned names against the person's friends, guests and groups: case-insensitive, ignoring
    honorifics and suffixes ("bhai", "ji", "da"), first name or full name, and common
