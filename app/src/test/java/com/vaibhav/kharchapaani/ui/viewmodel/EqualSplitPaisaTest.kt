@@ -72,7 +72,9 @@ class EqualSplitPaisaTest {
     @Test
     fun `an equal split over three adds up to the amount, the leftover paisa on you`() = runBlocking {
         viewModel.parseInputText("dinner 500 with rohan and neha")
-        viewModel.declineAiNotice()
+        // No AI in this build: the line is read on the phone, off the main thread, so wait for the sheet.
+        if (viewModel.isAiNoticeOpen.value) viewModel.declineAiNotice()
+        withTimeout(10_000) { while (!viewModel.isConfirmSheetOpen.value || viewModel.isParsing.value) delay(20) }
 
         val shares = viewModel.shares.value.filter { it.isSelected }.associate { it.personId to it.amount }
         assertEquals(setOf(-1L, 1L, 2L), shares.keys)
