@@ -2,6 +2,7 @@ package com.vaibhav.kharchapaani
 
 import android.app.Application
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.room.Room
@@ -77,6 +78,7 @@ class AppShellLaunchTest {
             }
         }
 
+        compose.onNodeWithTag("scan_receipt_button").assertTextEquals("Bill photo")
         compose.onNodeWithTag("dock_add").assertExists()
         for (tab in listOf("tab_splits", "tab_insights", "tab_activity")) {
             compose.onNodeWithTag(tab).performClick()
