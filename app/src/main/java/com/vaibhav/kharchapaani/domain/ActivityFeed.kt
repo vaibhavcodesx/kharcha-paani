@@ -33,7 +33,7 @@ object ActivityFeed {
         // Compare exact paisa, accepting the same grouping/rupee notation the app displays.
         // A sign describes direction on screen; searches find the magnitude in either direction.
         val amountText = term.replace(Regex("[₹,\\s]"), "")
-        val unsigned = if (amountText.firstOrNull() in listOf('+', '-')) amountText.drop(1) else amountText
+        val unsigned = if ((amountText.startsWith("+") || amountText.startsWith("-"))) amountText.drop(1) else amountText
         val queryAmount = Money.parseInput(unsigned)
         fun matchesAmount(amount: Double) = queryAmount != null && amount.isFinite() &&
             roundPaisa(kotlin.math.abs(amount)) == queryAmount
