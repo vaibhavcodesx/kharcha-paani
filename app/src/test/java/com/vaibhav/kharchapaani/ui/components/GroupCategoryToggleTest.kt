@@ -2,6 +2,7 @@ package com.vaibhav.kharchapaani.ui.components
 
 import android.app.Application
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHasNoClickAction
@@ -13,6 +14,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.lifecycle.ViewModelStore
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -121,7 +123,10 @@ class GroupCategoryToggleTest {
 
     private fun toggle(category: String) {
         compose.onNodeWithTag("group_category_$category").performScrollTo()
-            .assertHasClickAction().performClick()
+            .assertHasClickAction()
+            // As in GroupDetailContentTest's Export check: performScrollTo can leave the row's
+            // centre under the floating action bar. Invoke the real row's TalkBack click action.
+            .performSemanticsAction(SemanticsActions.OnClick)
     }
 
     private fun inCategory(category: String, row: String) =
