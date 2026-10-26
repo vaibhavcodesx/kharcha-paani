@@ -62,6 +62,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- Tapping a category in a group's "Where it went" now opens its expenses; tap again to close,
+  or choose another category to switch. Entries open in the editor when editable; archived
+  groups stay read-only, and switching groups clears the selection (X2 / TODOS 7).
+
 - An amount that isn't a plain number ("Infinity", "1e999", a pasted 19-digit number) could be
   saved. Its upload then failed on every sync, so nothing else in the account synced again, and
   drawing it crashed the app. Amount fields now take only digits with up to two decimals, up to
