@@ -67,6 +67,13 @@ interface GroupSyncDao {
     @Query("SELECT * FROM people WHERE id = :id")
     suspend fun personById(id: Long): PersonEntity?
 
+    /** Groupmates this phone knows who are in none of its groups now: they left, or deleted their account. */
+    @Query("SELECT * FROM people WHERE profileId IS NOT NULL AND id NOT IN (SELECT personId FROM group_members)")
+    suspend fun peopleInNoGroup(): List<PersonEntity>
+
+    @Query("UPDATE people SET name = :name WHERE id = :id")
+    suspend fun renamePerson(id: Long, name: String)
+
     /** A friend with no account, matched the way the server's unique index matches: trimmed, any case. */
     @Query("SELECT * FROM people WHERE profileId IS NULL AND lower(trim(name)) = lower(trim(:name)) ORDER BY id LIMIT 1")
     suspend fun localPersonByName(name: String): PersonEntity?

@@ -25,6 +25,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - A launch screen with the Kharcha Paani mark on the app's dark background, held while your account
   opens (at most 1.5 s), so the app goes straight from it to Home. The launcher icon has a themed
   (monochrome) version too: just the ₹.
+- Delete my account, at the bottom of the account sheet. It says what goes (your sign-in, your own
+  expenses, splits with friends who aren't on the app, your profile) and what stays (shared group
+  expenses and payments, so nobody's balance changes), and asks how you appear on past group
+  expenses: "Former member" unless you choose to keep your name. A second confirm, and it's done
+  at once: you're signed out and the phone keeps nothing of the account. With changes not synced
+  yet, it offers to sync them first. **(server, staged, not applied)**
 - Daily AI reads per person, generous enough that normal use never meets them: 50 quick adds,
   10 bills, 3 statements and 20 Insights questions a day, back at midnight IST. Reaching one says
   "That's today's AI reads used up. They're back tomorrow; you can still add entries by hand."

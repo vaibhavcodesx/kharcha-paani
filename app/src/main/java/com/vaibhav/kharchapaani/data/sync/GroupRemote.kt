@@ -8,6 +8,7 @@ import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -39,6 +40,12 @@ interface GroupRemote {
 
     /** Confirms or rejects a settlement the other party recorded (`respond_to_settlement`). */
     suspend fun respondToSettlement(remoteId: String, confirm: Boolean, note: String?)
+
+    /**
+     * The names now on deleted accounts that appear in this person's groups: "Former member", or the
+     * name they chose to keep (decision D1). Empty for profiles that are still accounts.
+     */
+    suspend fun formerMemberNames(profileIds: List<String>): List<RemoteProfile> = emptyList()
 }
 
 class SupabaseGroupRemote(private val supabase: SupabaseClient) : GroupRemote {
@@ -140,6 +147,12 @@ class SupabaseGroupRemote(private val supabase: SupabaseClient) : GroupRemote {
         )
         Unit
     }
+
+    override suspend fun formerMemberNames(profileIds: List<String>): List<RemoteProfile> =
+        supabase.postgrest.rpc(
+            "former_member_names",
+            buildJsonObject { put("p_ids", JsonArray(profileIds.map { JsonPrimitive(it) })) },
+        ).decodeList()
 
     override suspend fun upsertSettlements(rows: List<SettlementUpload>) = rejectingContent {
         supabase.from("settlements").upsert(rows) { onConflict = "id" }
