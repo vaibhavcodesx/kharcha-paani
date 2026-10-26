@@ -24,4 +24,6 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 Â· #129 Â· X6 / T2.8 flexible Play updates Â· merged; no immediate flow, defer during drafts/deletion, download without blocking the ledger, restart only on an explicit tap; actual Play test-track delivery still needs the phone.
 
+- 2026-10-27 · #132 · X10 / REL L1 cold-start Home · parked: CI 40407939041 timed out on an off-screen feed fixture; corrected viewport CI 40408765164 proves the premature balance header (911 tests, two assertions). Two failed CI runs reached the stop rule. Next: nullable Home snapshot from direct Room flows; render the brand mark until the first feed/people/balance/analytics emission.
+
 ## Questions
