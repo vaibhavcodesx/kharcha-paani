@@ -24,4 +24,6 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 Â· #129 Â· X6 / T2.8 flexible Play updates Â· merged; no immediate flow, defer during drafts/deletion, download without blocking the ledger, restart only on an explicit tap; actual Play test-track delivery still needs the phone.
 
+- 2026-10-27 · #131 · X9 / T3.9 Play reviews · merged; only saved confirmed settlements, one settling-in week and 180-day attempt cooldown, silent SDK failure and no star requests; Play may suppress its dialog.
+
 ## Questions

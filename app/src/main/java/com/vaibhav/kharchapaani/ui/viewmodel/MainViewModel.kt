@@ -81,6 +81,8 @@ import com.vaibhav.kharchapaani.domain.DailySpend
 import com.vaibhav.kharchapaani.domain.GroupInsights
 import com.vaibhav.kharchapaani.ui.format.MonthNames
 import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import com.vaibhav.kharchapaani.domain.StatementPdf
@@ -147,6 +149,9 @@ class MainViewModel(
         accessToken = { SupabaseClientProvider.get(application).auth.currentSessionOrNull()?.accessToken },
     ),
 ) : AndroidViewModel(application) {
+
+    private val _reviewMoments = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val reviewMoments = _reviewMoments.asSharedFlow()
 
     private val ledgerRepo = LedgerRepository(db, onLocalTransactionChange = ::requestSync, selfProfileId = userId)
 
@@ -565,6 +570,7 @@ class MainViewModel(
         val id = _answeringSettlementId.value ?: return
         _answeringSettlementId.value = null
         launchAction {
+            val before = db.groupSyncDao().settlementById(id)
             try {
                 ledgerRepo.respondToSettlement(id, confirm, note)
             } catch (e: ArchivedGroupException) {
@@ -573,6 +579,7 @@ class MainViewModel(
             }
             NotificationHelper.clearSettlementReminder(getApplication(), id)
             _statusMessage.value = if (confirm) "Confirmed. It counts for both of you now." else "Marked not right. It won't count."
+            if (confirm && before?.status == SettlementStatus.PENDING) reviewAfterConfirmedSettlement(id)
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
     }
@@ -1736,7 +1743,7 @@ class MainViewModel(
 
     fun recordSettlementPayment(fromPersonId: Long, toPersonId: Long, amount: Double, note: String, groupId: Long? = null) {
         submissions.launch(Submit.RecordSettlement) {
-            try {
+            val settlementId = try {
                 ledgerRepo.recordSettlement(
                     fromPersonId = fromPersonId,
                     toPersonId = toPersonId,
@@ -1752,7 +1759,15 @@ class MainViewModel(
             dismissSettleUp()
             // In a shared group it waits for the other person's answer, and theirs for mine.
             if (isSharedGroup(groupId)) reachNotificationMoment(NotificationMoment.RecordedPayment)
+            reviewAfterConfirmedSettlement(settlementId)
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
+        }
+    }
+
+    private suspend fun reviewAfterConfirmedSettlement(id: Long) {
+        val saved = db.groupSyncDao().settlementById(id) ?: return
+        if (saved.isConfirmed && !saved.isIou && (saved.fromPersonId == -1L || saved.toPersonId == -1L)) {
+            _reviewMoments.tryEmit(Unit)
         }
     }
 

@@ -160,6 +160,8 @@ dependencies {
   implementation(platform(libs.androidx.compose.bom))
   // implementation(libs.accompanist.permissions)
   implementation(libs.androidx.activity.compose)
+  implementation("com.google.android.play:review:2.0.2")
+
   implementation("com.google.android.play:app-update:2.1.0")
   // implementation(libs.androidx.camera.camera2)
   // implementation(libs.androidx.camera.core)
