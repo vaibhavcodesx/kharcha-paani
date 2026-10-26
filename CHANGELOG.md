@@ -13,6 +13,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Fixed
+
+- Home calls the gallery action “Bill photo”, so its label matches what opens (X10 / REL L7).
+
 ### Added
 
 - A confirmed settlement can offer Playâ€™s own review flow after a settling-in week, at most once
