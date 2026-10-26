@@ -217,7 +217,7 @@ Effort is a rough guide: S ≈ under a day, M ≈ 1–2 days, L ≈ 3+ days of a
 Nothing in this tier is optional: each one is a Play rejection, a data-loss bug, or something every
 user sees in the first minute.
 
-**T1.1 Delete my account** · L · **[owner review]** (auth, RLS, service role)
+**T1.1 Delete my account** · L · **[owner review]** (auth, RLS, service role) · **PR #103, awaiting owner review**
 - Edge Function `delete-account` (service role): delete the caller's private rows (`local_splits`,
   `local_settlements`, personal `transactions`), replace their profile on shared records with a
   tombstone ("Former member"), remove their group memberships, delete the `auth.users` row. Several
@@ -351,7 +351,7 @@ are never asked for permission and never see "payment to confirm" (NOTIF G1).
 - Per-user write rate limits on `transactions`/`settlements`/`local_settlements` inserts; a member cap
   per group (SEC M-5).
 
-**T2.3 Database hygiene** · S · **[owner review]**
+**T2.3 Database hygiene** · S · **[owner review]** · **PR #107, awaiting owner review**
 - Revoke default privileges from `anon` + a test that `anon` has none (SEC M-4). Fix the hue trigger's
   null-name hole (SEC L-9). Optional `avatar_url` check (SEC L-8).
 
