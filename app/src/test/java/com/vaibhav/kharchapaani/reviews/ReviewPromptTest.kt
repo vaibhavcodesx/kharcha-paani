@@ -126,7 +126,7 @@ class ReviewPromptTest {
             groupId = 7, status = SettlementStatus.PENDING, recordedByPersonId = 2))
         vm.openSettlementAnswer(60)
         vm.answerSettlement(true)
-        until { db.groupSyncDao().settlementById(60)?.isConfirmed == true }
+        until { db.groupSyncDao().settlementById(60)?.isConfirmed == true && vm.statusMessage.value?.startsWith("Confirmed") == true }
         idle()
         assertEquals(1, manager.requests)
     }

@@ -569,6 +569,7 @@ class MainViewModel(
         val id = _answeringSettlementId.value ?: return
         _answeringSettlementId.value = null
         launchAction {
+            val before = db.groupSyncDao().settlementById(id)
             try {
                 ledgerRepo.respondToSettlement(id, confirm, note)
             } catch (e: ArchivedGroupException) {
@@ -577,6 +578,7 @@ class MainViewModel(
             }
             NotificationHelper.clearSettlementReminder(getApplication(), id)
             _statusMessage.value = if (confirm) "Confirmed. It counts for both of you now." else "Marked not right. It won't count."
+            if (confirm && before?.status == SettlementStatus.PENDING) reviewAfterConfirmedSettlement(id)
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
     }
@@ -1717,7 +1719,7 @@ class MainViewModel(
 
     fun recordSettlementPayment(fromPersonId: Long, toPersonId: Long, amount: Double, note: String, groupId: Long? = null) {
         submissions.launch(Submit.RecordSettlement) {
-            try {
+            val settlementId = try {
                 ledgerRepo.recordSettlement(
                     fromPersonId = fromPersonId,
                     toPersonId = toPersonId,
@@ -1733,7 +1735,15 @@ class MainViewModel(
             dismissSettleUp()
             // In a shared group it waits for the other person's answer, and theirs for mine.
             if (isSharedGroup(groupId)) reachNotificationMoment(NotificationMoment.RecordedPayment)
+            reviewAfterConfirmedSettlement(settlementId)
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
+        }
+    }
+
+    private suspend fun reviewAfterConfirmedSettlement(id: Long) {
+        val saved = db.groupSyncDao().settlementById(id) ?: return
+        if (saved.isConfirmed && !saved.isIou && (saved.fromPersonId == -1L || saved.toPersonId == -1L)) {
+            _reviewMoments.tryEmit(Unit)
         }
     }
 
