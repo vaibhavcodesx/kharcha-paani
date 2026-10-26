@@ -91,6 +91,7 @@ class HomeAccessibilityTest {
             root.draw(Canvas(image))
             val out = File("build/test-results/testDebugUnitTest/screens/home_font_2.png").apply { parentFile?.mkdirs() }
             out.outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            Unit
         }
     }
 }
