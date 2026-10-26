@@ -1,5 +1,6 @@
 package com.vaibhav.kharchapaani.reminder
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -15,6 +16,8 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,6 +59,32 @@ class SettlementReminderNotificationsTest {
                 status = SettlementStatus.PENDING, recordedByPersonId = priya,
             )
         )
+    }
+
+
+    @Test
+    fun `payment details have a redacted lock screen version but keep the full private reminder`() = runBlocking {
+        priyaSaysShePaid()
+        assertEquals(1, SettlementReminders.remind(context, db, userId, now))
+
+        val notification = manager.activeNotifications.single().notification
+        assertEquals(Notification.VISIBILITY_PRIVATE, notification.visibility)
+        val privateText = notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString() +
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
+        assertTrue(privateText.contains("Priya"))
+        assertTrue(privateText.contains("500"))
+        val public = notification.publicVersion
+        assertNotNull("lock screen needs a separate generic notification", public)
+        assertEquals(Notification.VISIBILITY_PUBLIC, public.visibility)
+        val publicText = listOf(
+            Notification.EXTRA_TITLE, Notification.EXTRA_TEXT, Notification.EXTRA_BIG_TEXT,
+            Notification.EXTRA_SUB_TEXT, Notification.EXTRA_SUMMARY_TEXT,
+        ).mapNotNull { public.extras.getCharSequence(it) }.joinToString(" ")
+        assertFalse(publicText.contains("Priya"))
+        assertFalse(publicText.contains("500"))
+        assertEquals("Kharcha Paani", public.extras.getCharSequence(Notification.EXTRA_TITLE).toString())
+        assertEquals("A payment is waiting for your answer", public.extras.getCharSequence(Notification.EXTRA_TEXT).toString())
+        assertEquals(notification.contentIntent, public.contentIntent)
     }
 
     @Test

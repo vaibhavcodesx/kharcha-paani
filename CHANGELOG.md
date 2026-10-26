@@ -69,6 +69,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- The ledger no longer appears in Recents thumbnails on Android 13+, while manual screenshots
+  still work. Payment reminders have a generic lock-screen version without names or amounts,
+  and incoming image/PDF shares reject this app's own files and non-content URIs (X3 / T2.6).
+
 - Tapping a category in a group's "Where it went" now opens its expenses; tap again to close,
   or choose another category to switch. Entries open in the editor when editable; archived
   groups stay read-only, and switching groups clears the selection (X2 / TODOS 7).
