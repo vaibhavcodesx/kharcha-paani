@@ -11,4 +11,10 @@
     <string name="controls_enter_amount">Enter an amount</string>
     <string name="controls_amount_rupees">Amount in rupees</string>
     <string name="controls_cancel">Cancel</string>
+
+    <!-- Navigation, including icon-only large-font tabs. -->
+    <string name="nav_activity">Activity</string>
+    <string name="nav_splits">Splits</string>
+    <string name="nav_insights">Insights</string>
+    <string name="nav_add_expense">Add expense</string>
 </resources>
