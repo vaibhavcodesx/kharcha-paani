@@ -35,6 +35,11 @@ If your lane is empty, stop and say so; don't borrow.
 | X5 | **TODOS 4, 9, 8, 5, 2** | One PR each, in that order: IOU card shows the whole note; preselect a group when splitting with someone; settlements view in a group; sorting groups; member colour dots | |
 | X6 | **T2.8** in-app updates | Play Core `AppUpdateManager`, **flexible updates only** | The server-side minimum version (for immediate updates) is Claude's, later |
 | X7 | **T2.10** accessibility | One PR per screen or area, not one big PR | Last, because it touches many UI files |
+| X8 | **T3.6** statement re-import | Rows already in the ledger come back unticked and say "Already in your ledger" | Added 2026-10-27 |
+| X9 | **T3.9** in-app review prompt | Play's in-app review after a happy moment (a confirmed settlement), at most once in a long while, never after an error | Added 2026-10-27; no copy that asks for stars |
+| X10 | **T3.10, five of its small things**, one PR each | L1 empty-state flash on cold start, L5 offline sign-in error wording, L6 haptics on money confirmations, L7 "Scan bill" naming, L10 thread-safe date parsing | Added 2026-10-27. L2 (`collectAsStateWithLifecycle` everywhere) and L14 (DataStore corruption, in `AppSettings`) stay with Claude |
+
+TODOS 9 (pick a group by default when splitting with someone) is free to do now: #114 has merged.
 
 ### Claude lane
 
@@ -46,7 +51,7 @@ If your lane is empty, stop and say so; don't borrow.
 - **TODOS 3a, 3b, 6, 10** and the Ledger / Ask-to-pay items in TODOS.
 - **Say the split** ([`docs/designs/say-the-split.md`](../designs/say-the-split.md)): quick add
   understands "with Rohan and Ankit" and group names. It changes the AI prompt and the on-phone parser.
-- All of Tier 3 unless this page is updated to hand an item over.
+- All of Tier 3 except what X8–X10 hand over.
 
 ## Files: who may touch what
 
