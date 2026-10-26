@@ -4,12 +4,13 @@ import android.app.Application
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertHasNoClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.lifecycle.ViewModelStore
@@ -139,8 +140,7 @@ class GroupCategoryToggleTest {
         compose.onNode(inCategory("Food", "group_expense_4")).assertDoesNotExist()
         compose.onNode(inCategory("Food", "group_expense_5")).assertDoesNotExist()
         // Full group amounts, not just my one-third share.
-        compose.onNode(hasTestTag("group_category_Food")).assertExists()
-        compose.onNodeWithText("₹1,200").assertExists()
+        compose.onNode(hasTestTag("group_category_Food") and hasText("₹1,200")).assertExists()
 
         toggle("Food")
         compose.onNodeWithTag("group_category_entries_Food").assertDoesNotExist()
@@ -149,6 +149,16 @@ class GroupCategoryToggleTest {
         compose.onNodeWithTag("group_category_entries_Food").assertDoesNotExist()
         compose.onNode(inCategory("Transport", "group_expense_3")).performScrollTo().assertIsDisplayed()
         compose.onNode(inCategory("Transport", "group_expense_1")).assertDoesNotExist()
+    }
+
+    @Test
+    fun `archived categories still open but their expenses stay read only`() {
+        show(archived = true)
+        toggle("Food")
+
+        compose.onNode(inCategory("Food", "group_expense_1")).performScrollTo()
+            .assertIsDisplayed().assertHasNoClickAction()
+        assertEquals("", vm.merchant.value)
     }
 
     @Test
