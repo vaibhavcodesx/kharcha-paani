@@ -31,6 +31,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -453,13 +456,14 @@ private fun StatTile(label: String, value: String, modifier: Modifier = Modifier
     ) {
         Text(label.uppercase(), style = EyebrowText)
         Spacer(Modifier.height(Spacing.xs))
-        Text(
-            value,
-            style = if (money) MoneyText.title else MaterialTheme.typography.titleMedium,
-            color = OffWhiteText,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        if (money) {
+            BasicText(value, style = MoneyText.title.copy(color = OffWhiteText,
+                lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified), maxLines = 1, softWrap = false,
+                autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = MoneyText.title.fontSize))
+        } else {
+            Text(value, style = MaterialTheme.typography.titleMedium, color = OffWhiteText,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
     }
 }
 
