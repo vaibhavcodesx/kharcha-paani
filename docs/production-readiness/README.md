@@ -232,7 +232,7 @@ user sees in the first minute.
   (owner decisions item 3).
 - Sources: PLAY §3a, SEC L-2, owner decisions 3.
 
-**T1.2 Privacy policy, terms, Help & about, and the store answers** · M
+**T1.2 Privacy policy, terms, Help & about, and the store answers** · M · **done in #95**
 - Draft `docs/legal/privacy-policy.md` and `docs/legal/terms.md` from the real data flows: Google
   sign-in; Supabase as processor (state the region); Gemini as processor on the paid tier (receipts,
   statements, ledger text); groupmates see each other's names and UPI IDs; FCM once N3 lands; crash

@@ -64,7 +64,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.vaibhav.kharchapaani.BuildConfig
 import com.vaibhav.kharchapaani.data.auth.AuthState
+import com.vaibhav.kharchapaani.util.LegalLinks
+import com.vaibhav.kharchapaani.util.Support
 import com.vaibhav.kharchapaani.data.auth.Profile
 import com.vaibhav.kharchapaani.domain.ProfileEdit
 import com.vaibhav.kharchapaani.reminder.ReminderSchedule
@@ -122,6 +125,9 @@ fun AccountSheet(
     onOpenNotifications: () -> Unit = {},
     colour: ColourChoice = ColourChoice(),
     onSaveHue: (Int) -> Unit = {},
+    onOpenLicences: () -> Unit = {},
+    /** When the phone has no app to open a link or an email with: what to tell the person instead. */
+    onNoApp: (String) -> Unit = {},
 ) {
     KpModalSheet(onDismiss = onDismiss) {
         AccountSheetContent(
@@ -145,6 +151,8 @@ fun AccountSheet(
             onOpenNotifications = onOpenNotifications,
             colour = colour,
             onSaveHue = onSaveHue,
+            onOpenLicences = onOpenLicences,
+            onNoApp = onNoApp,
         )
     }
 }
@@ -173,6 +181,9 @@ fun AccountSheetContent(
     onOpenNotifications: () -> Unit = {},
     colour: ColourChoice = ColourChoice(),
     onSaveHue: (Int) -> Unit = {},
+    onOpenLicences: () -> Unit = {},
+    /** When the phone has no app to open a link or an email with: what to tell the person instead. */
+    onNoApp: (String) -> Unit = {},
 ) {
     val saved = (state.profile as? ProfileState.Loaded)?.profile
     // Keyed on what's saved, so a successful save (or a reload) resets the fields to it.
@@ -400,6 +411,8 @@ fun AccountSheetContent(
             }
         }
 
+        HelpAndAbout(onOpenLicences = onOpenLicences, onNoApp = onNoApp, modifier = Modifier.padding(top = Spacing.xl))
+
         OutlinedButton(
             onClick = onSignOut,
             shape = KpShapes.medium,
@@ -414,6 +427,64 @@ fun AccountSheetContent(
             Text(text = "Sign out", style = MaterialTheme.typography.titleMedium.copy(color = OffWhiteText))
         }
     }
+}
+
+/**
+ * Help & about (plan T1.2, REL H5): a way to write to us with the details a report needs, the
+ * policy and terms the sign-in screen agreed to, the licences, and which version this is.
+ */
+@Composable
+private fun HelpAndAbout(onOpenLicences: () -> Unit, onNoApp: (String) -> Unit, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    fun openPage(url: String) {
+        if (!LegalLinks.open(context, url)) onNoApp("No browser on this phone. The page is at $url")
+    }
+    Column(modifier) {
+        Eyebrow("Help & about")
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            SettingRow(
+                title = "Send feedback",
+                detail = "Something wrong, or an idea? It goes to the person who makes the app",
+                position = RowPosition.First,
+                modifier = Modifier
+                    .clickable(onClickLabel = "Write feedback by email") {
+                        if (!Support.email(context, subject = "Kharcha Paani feedback", body = "")) {
+                            onNoApp("No email app on this phone. Write to ${Support.EMAIL}")
+                        }
+                    }
+                    .testTag("help_feedback"),
+            ) { HelpChevron() }
+            SettingRow(
+                title = "Privacy policy",
+                detail = "What the app collects, who handles it, and your choices",
+                position = RowPosition.Middle,
+                modifier = Modifier.clickable(onClickLabel = "Open the privacy policy") { openPage(LegalLinks.PRIVACY_POLICY) }.testTag("help_privacy"),
+            ) { HelpChevron() }
+            SettingRow(
+                title = "Terms of use",
+                detail = "The short version of the rules",
+                position = RowPosition.Middle,
+                modifier = Modifier.clickable(onClickLabel = "Open the terms of use") { openPage(LegalLinks.TERMS) }.testTag("help_terms"),
+            ) { HelpChevron() }
+            SettingRow(
+                title = "Open-source licences",
+                detail = "What the app is built on",
+                position = RowPosition.Last,
+                modifier = Modifier.clickable(onClickLabel = "Open the licences", onClick = onOpenLicences).testTag("help_licences"),
+            ) { HelpChevron() }
+        }
+        Text(
+            "Kharcha Paani ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+            style = MaterialTheme.typography.bodySmall,
+            color = SubMutedWarmGray,
+            modifier = Modifier.padding(top = Spacing.s).testTag("help_version"),
+        )
+    }
+}
+
+@Composable
+private fun HelpChevron() {
+    Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
 }
 
 @Composable

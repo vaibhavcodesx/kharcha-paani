@@ -47,6 +47,14 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
+import androidx.compose.ui.platform.LocalContext
+import com.vaibhav.kharchapaani.util.LegalLinks
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.R
@@ -238,7 +246,31 @@ private fun SignInActions(
                 ),
             )
         }
+        AgreementLine()
     }
+}
+
+/**
+ * What continuing agrees to, with the pages themselves one tap away (plan T1.2), and the 18+ line:
+ * Gemini's terms are 18+, and India's DPDP Act needs a parent's consent for anyone younger, which
+ * the app doesn't collect.
+ */
+@Composable
+private fun AgreementLine() {
+    val context = LocalContext.current
+    val linkStyle = TextLinkStyles(SpanStyle(color = OffWhiteText, textDecoration = TextDecoration.Underline))
+    fun link(url: String) = LinkAnnotation.Clickable(tag = url, styles = linkStyle) { LegalLinks.open(context, url) }
+    Text(
+        text = buildAnnotatedString {
+            append("By continuing you agree to the ")
+            withLink(link(LegalLinks.TERMS)) { append("Terms") }
+            append(" and the ")
+            withLink(link(LegalLinks.PRIVACY_POLICY)) { append("Privacy policy") }
+            append(", and confirm you're 18 or older.")
+        },
+        style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray),
+        modifier = Modifier.testTag("sign_in_agreement"),
+    )
 }
 
 @Composable
