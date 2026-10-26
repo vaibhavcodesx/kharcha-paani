@@ -248,7 +248,7 @@ user sees in the first minute.
   `docs/legal/play-console-answers.md` for O7.
 - Sources: PLAY B2, §3, §11; REL H5; Notion legal checklist.
 
-**T1.3 Gemini behind an Edge Function, with per-user quotas** · L · **[owner review]** · **PR #101, awaiting owner review and deploy**
+**T1.3 Gemini behind an Edge Function, with per-user quotas** · L · **[owner review]** · **done in #101** (migration applied and function deployed 2026-10-26)
 - `supabase/functions/gemini-proxy`: verifies the caller's JWT, checks and increments a per-user daily
   quota (a table keyed by user and day; the number is the owner's call, owner decisions item 4),
   forwards the request to Gemini with the server-side key, validates the response shape, **never logs

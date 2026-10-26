@@ -1,4 +1,4 @@
--- NOT APPLIED. Staged for owner review with the gemini-proxy Edge Function (plan T1.3, decision D2).
+-- Applied to live 2026-10-26 with the gemini-proxy Edge Function (owner approved; plan T1.3, D2).
 -- Tested against live inside a transaction that rolled back: supabase/tests/ai_daily_reads_test.sql.
 --
 -- What it is for. Gemini moves behind an Edge Function so the key leaves the app. Before forwarding
