@@ -32,7 +32,7 @@ internal fun GroupExpensePeople(expense: FullTransaction, people: List<PersonEnt
     val me = LocalMyColour.current.color
     val unknown = parseColor("")
     fun name(id: Long?) = if (id == -1L) "You" else people.firstOrNull { it.id == id }?.name ?: "Former member"
-    fun colour(id: Long?) = if (id == -1L) me else people.firstOrNull { it.id == id }?.avatarColor?.let(::parseColor) ?: unknown
+    fun colour(id: Long?) = if (id == -1L) me else people.firstOrNull { it.id == id }?.avatarColor?.let { parseColor(it) } ?: unknown
     val payer = expense.split?.paidByPersonId ?: if (expense.transaction.isOwnedByMe) -1L
         else people.firstOrNull { it.profileId == expense.transaction.ownerProfileId }?.id
     val prefix = "group_expense_${expense.transaction.id}"
