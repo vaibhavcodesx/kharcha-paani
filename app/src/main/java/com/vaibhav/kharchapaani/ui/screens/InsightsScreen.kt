@@ -36,6 +36,7 @@ import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -251,7 +252,7 @@ private fun CashFlow(analytics: MonthlyAnalytics, emptyText: String, modifier: M
     Column(modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
             val style = pairedFigureStyle(analytics.totalExpense, analytics.totalIncome)
-            Figure("Spent", analytics.totalExpense, OffWhiteText, style, Modifier.weight(1f))
+            Figure("Spent", analytics.totalExpense, OffWhiteText, style, Modifier.weight(1f).testTag("insights_spent_figure"))
             Box(Modifier.padding(horizontal = Spacing.xl).width(1.dp).fillMaxHeight().background(CharcoalBorder))
             Figure("Came in", analytics.totalIncome, ChartreuseSecondary, style, Modifier.weight(1f))
         }
@@ -272,7 +273,13 @@ private fun CashFlow(analytics: MonthlyAnalytics, emptyText: String, modifier: M
 private fun Figure(label: String, amount: Double, color: Color, style: androidx.compose.ui.text.TextStyle, modifier: Modifier) {
     Column(modifier.semantics(mergeDescendants = true) {}) {
         Text(label.uppercase(), style = EyebrowText)
-        AnimatedRollingNumber(targetValue = amount, style = style, color = color)
+        if (LocalDensity.current.fontScale > 1.5f) {
+            BasicText(Money.format(amount), style = style.copy(color = color,
+                lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified), maxLines = 1, softWrap = false,
+                autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = style.fontSize))
+        } else {
+            AnimatedRollingNumber(targetValue = amount, style = style, color = color)
+        }
     }
 }
 

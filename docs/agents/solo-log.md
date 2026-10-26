@@ -39,7 +39,7 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #134 · X10 / REL L6 money confirmations · merged; Confirm haptic follows each successful entry/payment/nonempty batch write; invalid amounts, errors and empty imports stay silent, and disabled buttons stay disabled.
 
-- 2026-10-27 · #140 · X7 / T2.10 Insights money · merged; the per-day money tile auto-sizes the full amount on one line without an ellipsis; merchant wording and layout stay unchanged.
+- 2026-10-27 · #140 · X7 / T2.10 Insights money · merged; cash-flow/per-day figures fit full amounts, while large text hides cramped duplicate ring-centre text and keeps the full spoken total; normal cash-flow animations remain.
 
 - 2026-10-27 · #137 · X7 / T2.10 dock · merged; above 150% font size keep full navigation targets and spoken tab names while hiding cramped visual labels; ordinary labels remain at normal sizes.
 

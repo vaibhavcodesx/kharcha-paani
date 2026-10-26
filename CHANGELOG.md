@@ -15,8 +15,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
-- Insights keeps the complete per-day amount visible at large text sizes instead of an ellipsis
-  (X7 / T2.10, REL M7).
+- Insights fits complete cash-flow and per-day amounts at large text sizes; the ring keeps its
+  spoken total and omits cramped duplicate centre text (X7 / T2.10, REL M7).
 
 - Group cards grow with large text and keep complete Indian-formatted amounts visible
   (X7 / T2.10, REL M7; Splits).
