@@ -18,6 +18,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - New splits with one selected friend suggest the last active group where you added an expense
   together; choosing a group or No group keeps your choice (X5 / TODOS 9).
 
+- Tap an IOU card to read its whole note, full date and saved recorder, then tap again to collapse.
+  Answer and removal actions remain available; entries without recorder metadata say so instead
+  of guessing who added them (X5 / TODOS 4).
+
 - Play Store listing draft: short and full descriptions, a six-screen capture plan and a
   1024×500 feature graphic brief, with copy validation checks (X1 / T2.9).
 
@@ -75,6 +79,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   on unless you turn them off, and the switch only appears in builds that can send them.
 
 ### Fixed
+
+- Retracting a settlement, deleting an IOU or deleting a local group now asks first and explains
+  what happens to balances or group history. Cancel keeps everything, and the accessibility
+  delete-group action uses the same confirmation (X4 / T2.5).
 
 - The ledger no longer appears in Recents thumbnails on Android 13+, while manual screenshots
   still work. Payment reminders have a generic lock-screen version without names or amounts,
