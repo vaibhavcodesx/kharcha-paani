@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.ui.format.AskMessage
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -69,6 +71,7 @@ fun FriendRow(
     now: Long = System.currentTimeMillis(),
 ) {
     val person = balance.person
+    val deleteLabel = stringResource(R.string.splits_delete_name, person.name)
     val owesMe = balance.netBalance >= 0.005
     val iOwe = balance.netBalance <= -0.005
     var showMenu by remember { mutableStateOf(false) }
@@ -77,12 +80,13 @@ fun FriendRow(
     // A groupmate belongs to their groups' membership; the ledger won't delete them locally (it would
     // corrupt shared expenses), so the row doesn't pretend it can. They go when they leave.
     val canDelete = person.profileId == null
+    val settlementAction = stringResource(if (owesMe || iOwe) R.string.splits_settle_up else R.string.splits_record_payment)
     val status = when {
-        owesMe && askedAt != null -> "Owes you · ${AskMessage.askedLabel(askedAt, now)}"
-        owesMe -> "Owes you"
-        iOwe -> "You owe them"
-        else -> "All settled"
-    } + if (canDelete) "" else " · Shared"
+        owesMe && askedAt != null -> stringResource(R.string.splits_friend_asked, AskMessage.askedLabel(askedAt, now))
+        owesMe -> stringResource(R.string.splits_friend_owes)
+        iOwe -> stringResource(R.string.splits_friend_you_owe)
+        else -> stringResource(R.string.splits_friend_settled)
+    } + if (canDelete) "" else stringResource(R.string.splits_friend_shared_suffix)
 
     Box(modifier.fillMaxWidth().clip(position.shape)) {
         Row(
@@ -92,15 +96,15 @@ fun FriendRow(
                 .heightIn(min = 72.dp)
                 .background(CharcoalCard)
                 .combinedClickable(
-                    onClickLabel = "See history with ${person.name}",
-                    onLongClickLabel = if (canDelete) "More options" else null,
+                    onClickLabel = stringResource(R.string.splits_friend_history, person.name),
+                    onLongClickLabel = if (canDelete) stringResource(R.string.splits_more_options) else null,
                     onLongClick = if (canDelete) ({ showMenu = true }) else null,
                     onClick = onOpenHistory,
                 )
                 .semantics {
                     customActions = listOfNotNull(
-                        CustomAccessibilityAction(if (owesMe || iOwe) "Settle up" else "Record a payment") { currentOnSettleUp(); true },
-                        if (canDelete) CustomAccessibilityAction("Delete ${person.name}") { currentOnDelete(); true } else null,
+                        CustomAccessibilityAction(settlementAction) { currentOnSettleUp(); true },
+                        if (canDelete) CustomAccessibilityAction(deleteLabel) { currentOnDelete(); true } else null,
                     )
                 }
                 .padding(start = Spacing.l, end = Spacing.s, top = Spacing.m, bottom = Spacing.m)
@@ -123,10 +127,10 @@ fun FriendRow(
             // not the same action, so they no longer carry the same weight.
             val settling = owesMe || iOwe
             KpButton(
-                label = if (settling) "Settle" else "Record",
+                label = if (settling) stringResource(R.string.splits_settle) else stringResource(R.string.splits_record),
                 onClick = onSettleUp,
                 tier = if (settling) KpButtonTier.Outline else KpButtonTier.Ghost,
-                onClickLabel = if (settling) "Settle up with ${person.name}" else "Record a payment with ${person.name}",
+                onClickLabel = if (settling) stringResource(R.string.splits_settle_with, person.name) else stringResource(R.string.splits_record_with, person.name),
                 testTag = "settle_person_${person.id}",
                 modifier = Modifier.padding(start = Spacing.s).widthIn(min = 76.dp),
             )
@@ -139,7 +143,7 @@ fun FriendRow(
             modifier = Modifier.align(Alignment.TopEnd),
         ) {
             DropdownMenuItem(
-                text = { Text("Delete ${person.name}", color = OffWhiteText) },
+                text = { Text(deleteLabel, color = OffWhiteText) },
                 onClick = {
                     showMenu = false
                     onDelete()
