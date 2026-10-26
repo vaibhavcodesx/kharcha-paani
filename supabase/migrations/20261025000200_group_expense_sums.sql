@@ -1,5 +1,5 @@
--- NOT APPLIED. Staged for owner review (plan T2.1, security audit H-2). Additive: one function and
--- three constraint triggers. Tested against live inside a transaction that rolled back:
+-- Applied to live 2026-10-26 (owner approved; plan T2.1, security audit H-2). Additive: one function
+-- and three constraint triggers. Tested against live inside a transaction that rolled back:
 -- supabase/tests/group_expense_sums_test.sql.
 --
 -- What it is for. Only save_group_expense checked that a group expense's shares add up to its amount.
