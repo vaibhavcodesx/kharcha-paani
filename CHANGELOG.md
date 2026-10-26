@@ -15,6 +15,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- New splits with one selected friend suggest the last active group where you added an expense
+  together; choosing a group or No group keeps your choice (X5 / TODOS 9).
+
 - Play Store listing draft: short and full descriptions, a six-screen capture plan and a
   1024×500 feature graphic brief, with copy validation checks (X1 / T2.9).
 

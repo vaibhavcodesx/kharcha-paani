@@ -98,6 +98,7 @@ import com.vaibhav.kharchapaani.domain.MonthAnalytics
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.domain.SplitTargets
+import com.vaibhav.kharchapaani.domain.recentSplitGroup
 import com.vaibhav.kharchapaani.ui.components.NewSubscription
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.format.Money
@@ -629,6 +630,7 @@ class MainViewModel(
     private val _date = MutableStateFlow(System.currentTimeMillis())
     val date: StateFlow<Long> = _date.asStateFlow()
 
+    private var groupChoiceIsExplicit = false
     private val _groupId = MutableStateFlow<Long?>(null)
     val groupId: StateFlow<Long?> = _groupId.asStateFlow()
 
@@ -826,6 +828,7 @@ class MainViewModel(
         _paymentMethod.value = defaultPaymentMethod()
         _note.value = ""
         _date.value = System.currentTimeMillis()
+        groupChoiceIsExplicit = false
         _groupId.value = null
         _isSplit.value = false
         _splitMode.value = SplitMode.EQUAL
@@ -848,6 +851,7 @@ class MainViewModel(
         _paymentMethod.value = defaultPaymentMethod()
         _note.value = ""
         _date.value = System.currentTimeMillis()
+        groupChoiceIsExplicit = true
         _groupId.value = targetGroupId
         _isSplit.value = true
         _splitMode.value = SplitMode.EQUAL
@@ -899,6 +903,7 @@ class MainViewModel(
         _paymentMethod.value = tx.paymentMethod
         _note.value = tx.note
         _date.value = tx.date
+        groupChoiceIsExplicit = true
         _groupId.value = tx.groupId
         _isSplit.value = tx.isSplit
 
@@ -1204,6 +1209,7 @@ class MainViewModel(
 
         val target = SplitTargets.resolve(rawText.orEmpty(), parsed.splitWithPersonNames, people.value, rawGroups.value)
         val groupId = target.groupId
+        groupChoiceIsExplicit = groupId != null
         _groupId.value = groupId
         _shares.value = if (groupId != null) {
             sharesForGroup(groupId, only = target.personIds)
@@ -1271,6 +1277,11 @@ class MainViewModel(
     }
 
     fun updateGroupId(newGroupId: Long?) {
+        groupChoiceIsExplicit = true
+        changeGroupId(newGroupId)
+    }
+
+    private fun changeGroupId(newGroupId: Long?) {
         val wasShared = isSharedGroup(_groupId.value)
         _groupId.value = newGroupId
         if (wasShared || isSharedGroup(newGroupId)) {
@@ -1343,8 +1354,21 @@ class MainViewModel(
             val item = current[index]
             current[index] = item.copy(isSelected = !item.isSelected)
             _shares.value = current
+            suggestRecentGroup()
             recalculateShares()
         }
+    }
+
+    private fun suggestRecentGroup() {
+        if (groupChoiceIsExplicit || _editingTransactionId.value != null ||
+            !_isSplit.value || _type.value != "expense") return
+        val selected = _shares.value.filter { it.isSelected }
+        val friend = selected.filter { it.personId != -1L }.singleOrNull()
+            ?.let { share -> people.value.firstOrNull { it.id == share.personId } }
+        val suggested = if (selected.any { it.personId == -1L } && friend != null) {
+            recentSplitGroup(groups.value, friend)
+        } else null
+        if (suggested != _groupId.value) changeGroupId(suggested)
     }
 
     fun updateExactShareAmount(personId: Long, exactAmount: Double) {
