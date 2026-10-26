@@ -57,4 +57,10 @@
     <string name="entry_still_to_assign">%1$s still to assign</string>
     <string name="entry_over_total">%1$s more than the total</string>
     <string name="entry_percent_problem">Percentages add up to %1$s%%, not 100%%</string>
+
+    <!-- Navigation, including icon-only large-font tabs. -->
+    <string name="nav_activity">Activity</string>
+    <string name="nav_splits">Splits</string>
+    <string name="nav_insights">Insights</string>
+    <string name="nav_add_expense">Add expense</string>
 </resources>

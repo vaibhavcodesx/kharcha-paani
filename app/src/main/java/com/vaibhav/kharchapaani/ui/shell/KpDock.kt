@@ -28,6 +28,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -58,10 +61,10 @@ import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.SquircleShape
 
-enum class AppTab(val label: String, val icon: ImageVector, val testTag: String) {
-    Activity("Activity", KpIcons.Activity, "tab_activity"),
-    Splits("Splits", KpIcons.Splits, "tab_splits"),
-    Insights("Insights", KpIcons.Insights, "tab_insights"),
+enum class AppTab(@StringRes val labelRes: Int, val icon: ImageVector, val testTag: String) {
+    Activity(R.string.nav_activity, KpIcons.Activity, "tab_activity"),
+    Splits(R.string.nav_splits, KpIcons.Splits, "tab_splits"),
+    Insights(R.string.nav_insights, KpIcons.Insights, "tab_insights"),
 }
 
 private val DockHeight = 68.dp
@@ -119,6 +122,7 @@ fun KpDock(
 
 @Composable
 private fun RowScope.DockItem(tab: AppTab, selected: Boolean, onClick: () -> Unit) {
+    val label = stringResource(tab.labelRes)
     val showLabel = LocalDensity.current.fontScale <= 1.5f
     val interactionSource = remember { MutableInteractionSource() }
     val wellAlpha by animateFloatAsState(if (selected) 1f else 0f, label = "dock_well")
@@ -139,7 +143,7 @@ private fun RowScope.DockItem(tab: AppTab, selected: Boolean, onClick: () -> Uni
                 interactionSource = interactionSource,
                 indication = ripple(),
             )
-            .semantics { if (!showLabel) contentDescription = tab.label }
+            .semantics { if (!showLabel) contentDescription = label }
             .testTag(tab.testTag),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -158,7 +162,7 @@ private fun RowScope.DockItem(tab: AppTab, selected: Boolean, onClick: () -> Uni
         }
         if (showLabel) {
             Spacer(Modifier.height(Spacing.xxs))
-            Text(text = tab.label, style = MaterialTheme.typography.labelMedium, color = labelColor)
+            Text(text = label, style = MaterialTheme.typography.labelMedium, color = labelColor)
         }
     }
 }
@@ -178,6 +182,7 @@ private fun Modifier.gradientTint(): Modifier = this
  */
 @Composable
 private fun AddButton(onClick: () -> Unit) {
+    val label = stringResource(R.string.nav_add_expense)
     val interactionSource = remember { MutableInteractionSource() }
     Box(
         modifier = Modifier
@@ -186,7 +191,7 @@ private fun AddButton(onClick: () -> Unit) {
             .clip(KpShapes.action)
             .background(BrandGradient.diagonal())
             .clickable(interactionSource = interactionSource, indication = ripple(color = CharcoalBg), onClick = onClick)
-            .semantics { contentDescription = "Add expense" }
+            .semantics { contentDescription = label }
             .testTag("dock_add"),
         contentAlignment = Alignment.Center,
     ) {

@@ -72,10 +72,10 @@ class DockAccessibilityTest {
     }
     @Test fun `double sized text keeps labelled accessible tabs without clipped visual labels`() {
         show(2f)
-        AppTab.entries.forEach { tab ->
-            compose.onNodeWithTag(tab.testTag).assertContentDescriptionEquals(tab.label).performClick()
+        AppTab.entries.zip(listOf("Activity", "Splits", "Insights")).forEach { (tab, label) ->
+            compose.onNodeWithTag(tab.testTag).assertContentDescriptionEquals(label).performClick()
             compose.onNodeWithTag(tab.testTag).assertIsSelected()
-            compose.onNodeWithText(tab.label, useUnmergedTree = true).assertDoesNotExist()
+            compose.onNodeWithText(label, useUnmergedTree = true).assertDoesNotExist()
         }
         compose.runOnIdle {
             val image = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
@@ -83,11 +83,11 @@ class DockAccessibilityTest {
             val out = File("build/test-results/testDebugUnitTest/screens/dock_font_2.png").apply { parentFile?.mkdirs() }
             out.outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
         }
-        compose.onNodeWithTag("dock_add").performClick()
+        compose.onNodeWithTag("dock_add").assertContentDescriptionEquals("Add expense").performClick()
         assertTrue(vm.isConfirmSheetOpen.value)
     }
     @Test fun `normal size keeps the visual tab labels`() {
         show(1f)
-        AppTab.entries.forEach { compose.onNodeWithText(it.label).assertExists() }
+        listOf("Activity", "Splits", "Insights").forEach { compose.onNodeWithText(it).assertExists() }
     }
 }
