@@ -1,4 +1,41 @@
 <resources>
     <string name="app_name">Kharcha Paani</string>
     <string name="widget_description">Quick expense logging and balance overview</string>
+    <!-- Home and quick capture. Filter values and test tags remain stable internal IDs. -->
+    <string name="home_month_spend">Spent this month</string>
+    <string name="home_came_in">Came in</string>
+    <string name="home_friends_owe">Friends owe you</string>
+    <string name="home_you_owe">You owe</string>
+    <string name="home_all_square">All square</string>
+    <string name="home_simplify">Simplify who pays whom</string>
+    <string name="home_logged_streak">Logged %1$d days in a row</string>
+    <string name="home_activity">Activity</string>
+    <string name="home_search_close">Close search</string>
+    <string name="home_search_action">Search activity</string>
+    <string name="home_search_hint">Merchant, category or note</string>
+    <string name="home_search_empty_title">Nothing matches that</string>
+    <string name="home_filter_empty_title">Nothing here yet</string>
+    <string name="home_empty_title">Your first entry goes here</string>
+    <string name="home_search_empty_body">Try a merchant, a category like Food, or a word from a note.</string>
+    <string name="home_filter_empty_body">Switch back to All to see everything.</string>
+    <string name="home_empty_body">Type what you spent above, like “chai 40 cash”, and it\'s logged with the category and payment filled in.</string>
+    <string name="home_filter_all">All</string>
+    <string name="home_filter_expenses">Expenses</string>
+    <string name="home_filter_income">Income</string>
+    <string name="home_filter_splits">Splits</string>
+    <string name="home_today">Today</string>
+    <string name="home_yesterday">Yesterday</string>
+    <string name="home_day_spent">%1$s spent</string>
+    <string name="home_capture_reading">Reading it…</string>
+    <string name="home_capture_prompt">What did you spend on?</string>
+    <string name="home_capture_log">Log it</string>
+    <string name="home_capture_say">Say it</string>
+    <string name="home_capture_bill_photo">Bill photo</string>
+    <string name="home_capture_statement">Statement</string>
+    <string name="home_capture_iou">IOU</string>
+    <string name="home_capture_voice_prompt">Say what you spent, like “coffee 150 card”</string>
+    <string name="home_capture_voice_unavailable">Voice input isn\'t available on this phone. Type it instead.</string>
+    <string name="home_capture_pdf_too_large">That statement is too big to read in one go. Export a shorter date range and try again.</string>
+    <string name="home_capture_pdf_unreadable">Couldn\'t open that PDF.</string>
+    <string name="home_capture_image_unreadable">Couldn\'t open that image.</string>
 </resources>
