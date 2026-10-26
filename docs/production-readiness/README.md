@@ -351,7 +351,7 @@ are never asked for permission and never see "payment to confirm" (NOTIF G1).
 - Per-user write rate limits on `transactions`/`settlements`/`local_settlements` inserts; a member cap
   per group (SEC M-5).
 
-**T2.3 Database hygiene** · S · **[owner review]**
+**T2.3 Database hygiene** · S · **[owner review]** · **PR #107, awaiting owner review**
 - Revoke default privileges from `anon` + a test that `anon` has none (SEC M-4). Fix the hue trigger's
   null-name hole (SEC L-9). Optional `avatar_url` check (SEC L-8).
 

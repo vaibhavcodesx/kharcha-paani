@@ -142,6 +142,13 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   it. Before, only saving through the app checked, so editing one share or the amount directly could
   throw off everyone's balance in the group. **(server, staged, not applied)**
 
+### Security
+
+- Signed-out callers now get nothing from the database, not even the table access that only the
+  row-level rules were holding back, and new tables or functions aren't opened to them by default.
+  A colour too close to a groupmate's with no display name is now refused like any other, and a
+  profile picture has to be an https link. **(server, staged, not applied)**
+
 ## [1.5.0] - 2026-10-25
 
 ### Added

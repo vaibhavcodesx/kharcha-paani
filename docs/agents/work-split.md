@@ -19,6 +19,28 @@ habit. The owner is Vaibhav Chauhan.
    [`docs/designs/`](../designs/), and the device checklist format in
    [`docs/testing/1.5.0-device-checks.md`](../testing/1.5.0-device-checks.md).
 
+## Codex solo period: 2026-10-27 to 2026-10-30
+
+Claude is away for at least three days; Codex works alone and the owner isn't reviewing code. For
+this period only, these rules replace "Don't merge" below. Everything else on this page still holds.
+
+1. **Codex merges its own PRs**, one at a time, when all of these are true:
+   - the branch has the latest `main` merged in (resolve `CHANGELOG.md` by keeping both entries), and
+     CI (unit-tests, lint, release-bundle) is green on that exact commit;
+   - the PR is in Codex's lane and touches none of the files Codex may not edit (below);
+   - the PR body has its "Check on the phone" list.
+   Squash-merge with the PR title as the commit subject. If CI fails twice on the same item, leave the
+   PR open with a note saying what failed and move to the next item.
+2. **Never** merge anything owner-review, anything of Claude's (#71, #103, Dependabot PRs), or a PR
+   whose CI didn't run. Don't apply anything to Supabase, don't run the release workflow, don't change
+   repository settings.
+3. **Order of work:** finish the lanes in this order: X5's remaining TODOS items (8, 5, 2, 9), X6, X8,
+   X9, X10, then X7, then X11 and X12 below. One item per PR, each from the latest `main`.
+4. **Keep a log:** append one line per merged or parked PR to `docs/agents/solo-log.md`
+   (`2026-10-28 · #123 · X6 in-app updates · merged` / `· parked: <why>`), in the same PR. Claude
+   reads it on return.
+5. **Questions go in the log, not to anyone.** Make the safe, reversible choice and note it.
+
 ## The lanes
 
 An item belongs to one agent. Never start an item from the other lane, even if it looks idle.
@@ -35,6 +57,14 @@ If your lane is empty, stop and say so; don't borrow.
 | X5 | **TODOS 4, 9, 8, 5, 2** | One PR each, in that order: IOU card shows the whole note; preselect a group when splitting with someone; settlements view in a group; sorting groups; member colour dots | |
 | X6 | **T2.8** in-app updates | Play Core `AppUpdateManager`, **flexible updates only** | The server-side minimum version (for immediate updates) is Claude's, later |
 | X7 | **T2.10** accessibility | One PR per screen or area, not one big PR | Last, because it touches many UI files |
+| X8 | **T3.6** statement re-import | Rows already in the ledger come back unticked and say "Already in your ledger" | Added 2026-10-27 |
+| X9 | **T3.9** in-app review prompt | Play's in-app review after a happy moment (a confirmed settlement), at most once in a long while, never after an error | Added 2026-10-27; no copy that asks for stars |
+| X10 | **T3.10, five of its small things**, one PR each | L1 empty-state flash on cold start, L5 offline sign-in error wording, L6 haptics on money confirmations, L7 "Scan bill" naming, L10 thread-safe date parsing | Added 2026-10-27. L2 (`collectAsStateWithLifecycle` everywhere) and L14 (DataStore corruption, in `AppSettings`) stay with Claude |
+
+| X11 | **T3.8** search | Search finds friends by name and entries by amount; shared expenses say "Edited by X · time" | Added 2026-10-27 for the solo period |
+| X12 | **T3.11** strings into `strings.xml` | One screen or area per PR (Home, Splits, Insights, sheets…), no wording changes, `stringResource` in Compose | Added 2026-10-27, after X7; needed before any Hindi build |
+
+TODOS 9 (pick a group by default when splitting with someone) is free to do now: #114 has merged.
 
 ### Claude lane
 
@@ -46,7 +76,7 @@ If your lane is empty, stop and say so; don't borrow.
 - **TODOS 3a, 3b, 6, 10** and the Ledger / Ask-to-pay items in TODOS.
 - **Say the split** ([`docs/designs/say-the-split.md`](../designs/say-the-split.md)): quick add
   understands "with Rohan and Ankit" and group names. It changes the AI prompt and the on-phone parser.
-- All of Tier 3 unless this page is updated to hand an item over.
+- All of Tier 3 except what X8–X10 hand over.
 
 ## Files: who may touch what
 
