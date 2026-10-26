@@ -11,7 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
@@ -36,10 +36,15 @@ class DoubleSubmitTest {
     private val userId = "11111111-2222-3333-4444-555555555555"
     private lateinit var db: AppDatabase
     private lateinit var viewModel: MainViewModel
+    /**
+     * Main runs only when the test says so, so the first save is certainly still under way when the
+     * second tap comes. Unconfined, the first one could finish in between, and the test then saw two.
+     */
+    private val main = StandardTestDispatcher()
 
     @Before
     fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        Dispatchers.setMain(main)
         WorkManagerTestInitHelper.initializeTestWorkManager(application, Configuration.Builder().setExecutor(SynchronousExecutor()).build())
         db = Room.inMemoryDatabaseBuilder(application, AppDatabase::class.java).allowMainThreadQueries().build()
         viewModel = MainViewModel(application, db, userId)
@@ -51,7 +56,13 @@ class DoubleSubmitTest {
         Dispatchers.resetMain()
     }
 
-    private suspend fun until(condition: suspend () -> Boolean) = withTimeout(10_000) { while (!condition()) delay(20) }
+    private suspend fun until(condition: suspend () -> Boolean) = withTimeout(10_000) {
+        while (true) {
+            main.scheduler.advanceUntilIdle()
+            if (condition()) break
+            delay(20)
+        }
+    }
 
     @Test
     fun `two taps on Save save the expense once`() = runBlocking {
@@ -63,7 +74,9 @@ class DoubleSubmitTest {
         viewModel.saveCurrentTransaction()
         until { !viewModel.isConfirmSheetOpen.value }
         // Long enough for a second write that was let through to land.
+        until { true }
         delay(300)
+        main.scheduler.advanceUntilIdle()
 
         assertEquals(1, db.transactionDao().getAllTransactionsDirect().size)
     }
@@ -74,6 +87,7 @@ class DoubleSubmitTest {
         viewModel.createNewGroup("Goa trip", "", "🏖️", "#FF7A3D", emptyList(), shared = true)
         until { db.groupDao().getAllGroupsDirect().isNotEmpty() }
         delay(300)
+        main.scheduler.advanceUntilIdle()
 
         assertEquals(1, db.groupDao().getAllGroupsDirect().size)
     }
