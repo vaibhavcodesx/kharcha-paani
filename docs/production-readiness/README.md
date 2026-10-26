@@ -333,7 +333,7 @@ are never asked for permission and never see "payment to confirm" (NOTIF G1).
 
 ### Tier 2: before applying for production (during the 14-day closed test)
 
-**T2.1 Shares must add up, enforced by the database** · M · **[owner review]** (trigger in the RLS area)
+**T2.1 Shares must add up, enforced by the database** · M · **[owner review]** (trigger in the RLS area) · **done in #106** (applied to live 2026-10-26)
 - `private.check_group_expense_sums(transaction_id)` called from deferred constraint triggers on
   `transactions`, `splits` and `split_shares`; raises 23514 so the app marks the row FAILED. SQL tests:
   a direct PATCH of `share_amount` or `amount` is refused; `save_group_expense` still passes; a

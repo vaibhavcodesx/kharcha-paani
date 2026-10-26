@@ -112,6 +112,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   passes back Google's reply. Until now the key shipped inside every APK, where anyone could
   copy it.
 
+### Security
+
+- The database now refuses a group expense whose shares don't add up to its amount, whoever writes
+  it. Before, only saving through the app checked, so editing one share or the amount directly could
+  throw off everyone's balance in the group. **(server, staged, not applied)**
+
 ## [1.5.0] - 2026-10-25
 
 ### Added
