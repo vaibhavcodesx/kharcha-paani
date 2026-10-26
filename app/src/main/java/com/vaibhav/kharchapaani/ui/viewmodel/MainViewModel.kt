@@ -150,6 +150,9 @@ class MainViewModel(
     ),
 ) : AndroidViewModel(application) {
 
+    private val _moneyConfirmations = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val moneyConfirmations = _moneyConfirmations.asSharedFlow()
+
     private val _reviewMoments = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val reviewMoments = _reviewMoments.asSharedFlow()
 
