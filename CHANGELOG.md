@@ -18,6 +18,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Group cards grow with large text and keep complete Indian-formatted amounts visible
   (X7 / T2.10, REL M7; Splits).
 
+- Ambiguous Google picker errors suggest reconnecting before Play services or account advice
+  (X10 / REL L5).
+
 ### Added
 
 - A confirmed settlement can offer Play’s own review flow after a settling-in week, at most once

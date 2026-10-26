@@ -67,7 +67,7 @@ import kotlin.math.abs
 
 /**
  * A group as a ticket: who and what above the perforation, the money below. The two halves are the
- * same height, so the perforation meets the notches. Local groups can be deleted from a long-press
+ * same minimum height; large text uses a plain card so content can grow. Local groups can be deleted from a long-press
  * menu; shared ones are archived or left from their detail sheet, never deleted (decision 4).
  */
 @OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
@@ -123,9 +123,9 @@ fun TripCard(
                 // the one nobody is spending on. Dimming the whole card, tag included, says
                 // "still here, no longer current" without a second treatment to learn.
                 .alpha(if (group.isArchived) ARCHIVED_ALPHA else 1f)
-                .clip(Ticket)
+                .clip(if (largeText) KpShapes.large else Ticket)
                 .background(CharcoalCard)
-                .perforation()
+                .then(if (largeText) Modifier else Modifier.perforation())
                 .combinedClickable(
                     onClickLabel = "Open ${group.name}",
                     onLongClickLabel = if (canDelete) "More options" else null,
