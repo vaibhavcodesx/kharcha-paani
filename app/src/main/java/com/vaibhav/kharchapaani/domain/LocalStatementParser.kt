@@ -11,7 +11,7 @@ import kotlin.math.abs
 
 object LocalStatementParser {
 
-    private val supportedDateFormats = listOf(
+    private val supportedDateFormats get() = listOf(
         SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US),
         SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US),
         SimpleDateFormat("yyyy-MM-dd", Locale.US),
@@ -26,9 +26,9 @@ object LocalStatementParser {
 
     private val YEAR_FIRST = Regex("^\\d{4}[-/]")
 
-    private val displayDateFormatter = SimpleDateFormat("dd MMM yyyy", Locale.US)
-    private val monthYearFormatter = SimpleDateFormat("MMMM yyyy", Locale.US)
-    private val monthSortFormatter = SimpleDateFormat("yyyyMM", Locale.US)
+    private val displayDateFormatter get() = SimpleDateFormat("dd MMM yyyy", Locale.US)
+    private val monthYearFormatter get() = SimpleDateFormat("MMMM yyyy", Locale.US)
+    private val monthSortFormatter get() = SimpleDateFormat("yyyyMM", Locale.US)
 
     fun parseDateToTimestamp(rawDateStr: String?): Triple<Long, String, String> {
         val cal = readDate(rawDateStr) ?: Calendar.getInstance()
