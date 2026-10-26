@@ -64,6 +64,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
+import com.vaibhav.kharchapaani.data.db.entity.SettlementStatus
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.data.model.FullTransaction
 import com.vaibhav.kharchapaani.data.model.GroupWithDetails
@@ -145,6 +146,7 @@ fun GroupDetailContent(
     aiAvailable: Boolean = true,
 ) {
     val group = groupDetails.group
+    var settlementsOnly by rememberSaveable(group.id) { mutableStateOf(false) }
     var selectedCategory by rememberSaveable(group.id) { mutableStateOf<String?>(null) }
     val dateFormat = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
     val accent = remember(group.colorHex) { parseColor(group.colorHex) }
@@ -329,11 +331,21 @@ fun GroupDetailContent(
         // Expenses *and* settlements. The list used to render transactions alone, so a settlement
         // or an IOU recorded in this group appeared nowhere in it — while the balances at the top
         // counted it, which is the worst of both: the figures moved and the screen didn't say why.
-        val feed = remember(groupDetails) { GroupFeed.of(groupDetails.transactions, groupDetails.settlements) }
+        val feed = remember(groupDetails, settlementsOnly) {
+            GroupFeed.of(if (settlementsOnly) emptyList() else groupDetails.transactions, groupDetails.settlements)
+        }
+        SegmentedControl(
+            options = listOf(false, true),
+            selected = settlementsOnly,
+            label = { if (it) "Settlements" else "All activity" },
+            onSelect = { settlementsOnly = it },
+            testTagFor = { if (it) "group_history_settlements" else "group_history_all" },
+            modifier = Modifier.fillMaxWidth().padding(top = Spacing.xl),
+        )
 
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = Spacing.xl, bottom = Spacing.s)) {
             Text(
-                text = "Activity · ${feed.size}",
+                text = "${if (settlementsOnly) "Settlements" else "Activity"} · ${feed.size}",
                 style = MaterialTheme.typography.titleSmall,
                 color = OffWhiteText,
                 modifier = Modifier.weight(1f).semantics { heading() },
@@ -346,7 +358,7 @@ fun GroupDetailContent(
         }
         if (feed.isEmpty()) {
             Text(
-                text = if (group.isArchived) "Nothing was logged in this group." else "Nothing logged here yet. Add the first expense below.",
+                text = if (settlementsOnly) "No settlements recorded in this group yet." else if (group.isArchived) "Nothing was logged in this group." else "Nothing logged here yet. Add the first expense below.",
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -384,6 +396,17 @@ private fun GroupMovementRow(
     val incoming = GroupFeed.isIncoming(settlement)
     val accent = if (incoming) ChartreuseSecondary else WarmAmberLight
     val title = remember(settlement, members) { GroupFeed.describe(settlement, members) }
+    val status = when (settlement.pendingResponse ?: settlement.status) {
+        SettlementStatus.CONFIRMED -> "Confirmed"
+        SettlementStatus.PENDING -> "Waiting for confirmation"
+        SettlementStatus.REJECTED -> "Not confirmed"
+    } + if (settlement.pendingResponse != null) " · waiting to sync" else ""
+    val direction = when {
+        !settlement.isConfirmed -> ""
+        settlement.toPersonId == -1L -> "+"
+        settlement.fromPersonId == -1L -> "-"
+        else -> ""
+    }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -409,15 +432,13 @@ private fun GroupMovementRow(
         Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
             Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
-                text = listOfNotNull(detail, if (settlement.isIou) "IOU" else "Settlement", settlement.note.takeIf { it.isNotBlank() })
+                text = listOfNotNull(detail, status, if (settlement.isIou) "IOU" else "Settlement", settlement.note.takeIf { it.isNotBlank() })
                     .joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
         }
         Text(
-            text = (if (incoming) "+" else "-") + Money.format(settlement.amount),
+            text = direction + Money.format(settlement.amount),
             style = MoneyText.row,
             color = if (incoming) ChartreuseSecondary else OffWhiteText,
         )
