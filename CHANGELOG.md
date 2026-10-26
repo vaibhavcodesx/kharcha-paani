@@ -40,6 +40,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Entry review and split editing use Android resources for labels, date phrases, spoken actions
   and unchanged validation messages (X12 / T3.11; entry).
 
+- Activity search finds split participants, payers, named guests and rupee amounts, including the
+  personal share and Indian grouping (X11 / T3.8).
+
 - Saving an entry, recording a payment or importing a nonempty statement batch gives a confirmation
   haptic only after the ledger write succeeds (X10 / REL L6).
 

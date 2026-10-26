@@ -39,6 +39,8 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #134 · X10 / REL L6 money confirmations · merged; Confirm haptic follows each successful entry/payment/nonempty batch write; invalid amounts, errors and empty imports stay silent, and disabled buttons stay disabled.
 
+- 2026-10-27 · #142 · X11 / T3.8 Activity search · merged for search: exact-paisa amount magnitude, Indian grouping, related shares/payers/owners and named guests. Edited-by attribution remains a file-boundary handoff: authoritative last-editor identity needs protected DB/sync/server work; ownerProfileId is the original author, not necessarily the editor.
+
 - 2026-10-27 · #141 · X7 / T2.10 confirmation action bars · merged; large text stacks the action below its complete auto-sized amount, while disabled and busy actions retain their guards.
 
 - 2026-10-27 · #140 · X7 / T2.10 Insights money · merged; cash-flow/per-day figures fit full amounts, while large text hides cramped duplicate ring-centre text and keeps the full spoken total; normal cash-flow animations remain.
@@ -46,5 +48,7 @@ owner or Claude go at the bottom.
 - 2026-10-27 · #137 · X7 / T2.10 dock · merged; above 150% font size keep full navigation targets and spoken tab names while hiding cramped visual labels; ordinary labels remain at normal sizes.
 
 - 2026-10-27 · #139 · X7 / T2.10 Home money · parked: CI 40412344087 rejected a Boolean-returning render test; corrected CI 40413157415 reaches the missing whole-amount layout assertion. Two failures reached the stop rule. Next: auto-size a single full figure when animated digits cannot fit, retaining normal animation when they do.
+
+- 2026-10-27 · #147 · X12 / T3.11 entry review copy · merged; entry/split/date/discard labels and shared validation messages use resources with unchanged comparisons, rounding and English; apostrophes and percent signs remain user data.
 
 ## Questions
