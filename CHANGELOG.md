@@ -18,6 +18,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Overlapping statement parses use separate date formatters, keeping dates and month labels
   consistent across threads (X10 / REL L10).
 
+- Ambiguous Google picker errors suggest reconnecting before Play services or account advice
+  (X10 / REL L5).
+
 ### Added
 
 - A confirmed settlement can offer Play’s own review flow after a settling-in week, at most once
