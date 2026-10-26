@@ -106,7 +106,11 @@ class DestructiveActionConfirmationTest {
     }
 
     private fun requestSettlementRemoval(label: String) {
-        compose.onNodeWithTag("settlement_item_5").performClick()
+        // Tapping an IOU toggles its details, so a second request (after Cancel) finds them open
+        // already; tapping again would close them.
+        if (compose.onAllNodesWithText("More options").fetchSemanticsNodes().isEmpty()) {
+            compose.onNodeWithTag("settlement_item_5").performClick()
+        }
         // Expanded IOUs expose the same removal menu through an explicit options button.
         if (compose.onAllNodesWithText("More options").fetchSemanticsNodes().isNotEmpty()) {
             compose.onNodeWithText("More options").performClick()

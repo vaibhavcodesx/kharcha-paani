@@ -15,6 +15,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Tap an IOU card to read its whole note, full date and saved recorder, then tap again to collapse.
+  Answer and removal actions remain available; entries without recorder metadata say so instead
+  of guessing who added them (X5 / TODOS 4).
+
 - Play Store listing draft: short and full descriptions, a six-screen capture plan and a
   1024×500 feature graphic brief, with copy validation checks (X1 / T2.9).
 
