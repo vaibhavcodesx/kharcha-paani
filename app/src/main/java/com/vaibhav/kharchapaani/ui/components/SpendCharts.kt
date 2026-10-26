@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -106,8 +108,10 @@ fun CategoryRing(
     val focused = slices.indexOfFirst { it.category == selected }.takeIf { it >= 0 }
     val largeText = LocalDensity.current.fontScale > 1.5f
     val centreSlice = focused?.let { slices[it] }
-    val description = "${centreSlice?.category ?: "Spent"} ${Money.format(centreSlice?.amount ?: total)}. " +
-        slices.joinToString(", ") { "${it.category} ${it.percentage.roundToInt()} percent" }
+    val spentLabel = stringResource(R.string.insights_spent)
+    val sliceLabels = slices.map { stringResource(R.string.insights_slice_percent, it.category, it.percentage.roundToInt()) }
+    val description = stringResource(R.string.insights_ring_description, centreSlice?.category ?: spentLabel,
+        Money.format(centreSlice?.amount ?: total), sliceLabels.joinToString(", "))
 
 
     Column(
@@ -170,7 +174,7 @@ fun CategoryRing(
             if (!largeText) Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clearAndSetSemantics {}) {
                 val slice = focused?.let { slices[it] }
                 Text(
-                    text = (slice?.category ?: "Spent").uppercase(),
+                    text = (slice?.category ?: spentLabel).uppercase(),
                     style = EyebrowText,
                     maxLines = 1,
                     textAlign = TextAlign.Center,
@@ -235,7 +239,7 @@ private fun RingLegendRow(slice: CategorySummary, selected: Boolean, onClick: ()
         modifier = Modifier
             .fillMaxWidth()
             .clip(KpShapes.small)
-            .clickable(onClickLabel = "Show ${slice.category}", onClick = onClick)
+            .clickable(onClickLabel = stringResource(R.string.insights_show_category, slice.category), onClick = onClick)
             .semantics {
                 role = Role.Button
                 this.selected = selected
@@ -257,7 +261,7 @@ private fun RingLegendRow(slice: CategorySummary, selected: Boolean, onClick: ()
             modifier = Modifier.weight(1f).padding(start = Spacing.s),
         )
         Text(
-            text = "${slice.percentage.roundToInt()}%",
+            text = stringResource(R.string.insights_percent, slice.percentage.roundToInt()),
             style = MoneyText.small,
             color = if (selected) OffWhiteText else MutedWarmGray,
         )
@@ -309,6 +313,11 @@ fun DailyFlowChart(
     val grown by animateFloatAsState(1f, animationSpec = tween(700), label = "flow_grow")
     val dayFormat = remember { DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault()) }
     val pinned = selectedDay?.let { index -> elapsed.getOrNull(index) }
+    val busiest = elapsed.maxByOrNull { it.amount }?.let {
+        stringResource(R.string.insights_day_amount, it.date.dayOfMonth, Money.format(it.amount))
+    } ?: stringResource(R.string.insights_none)
+    val flowDescription = stringResource(R.string.insights_flow_description, busiest)
+
 
     Column(
         modifier
@@ -322,7 +331,7 @@ fun DailyFlowChart(
         Box(Modifier.fillMaxWidth().height(34.dp), contentAlignment = Alignment.CenterStart) {
             if (pinned == null) {
                 Text(
-                    "Tap a day to see what it cost",
+                    stringResource(R.string.insights_tap_day),
                     style = MaterialTheme.typography.bodySmall,
                     color = SubMutedWarmGray,
                 )
@@ -364,8 +373,7 @@ fun DailyFlowChart(
                     }
                 }
                 .semantics {
-                    contentDescription = "Spending day by day. Busiest day " +
-                        (elapsed.maxByOrNull { it.amount }?.let { "${it.date.dayOfMonth}, ${Money.format(it.amount)}" } ?: "none")
+                    contentDescription = flowDescription
                 }
                 .testTag("flow_canvas"),
         ) {
@@ -462,17 +470,18 @@ private fun FlowAxis(days: List<Int>) {
 
 @Composable
 private fun DayCell(day: DaySpend, selected: Boolean, onClick: () -> Unit) {
+    val dayLabel = stringResource(R.string.insights_day_amount, day.date.dayOfMonth, Money.format(day.amount))
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(DayCellWidth)
             .clip(KpShapes.small)
             .background(if (selected) CharcoalElevated else Color.Transparent)
-            .clickable(onClickLabel = "Show ${day.date.dayOfMonth}", onClick = onClick)
+            .clickable(onClickLabel = stringResource(R.string.insights_show_day, day.date.dayOfMonth), onClick = onClick)
             .semantics {
                 role = Role.Button
                 this.selected = selected
-                contentDescription = "${day.date.dayOfMonth}, ${Money.format(day.amount)}"
+                contentDescription = dayLabel
             }
             .padding(vertical = Spacing.xs),
     ) {
