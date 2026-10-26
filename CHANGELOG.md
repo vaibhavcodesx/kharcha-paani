@@ -15,6 +15,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- Home calls the gallery action “Bill photo”, so its label matches what opens (X10 / REL L7).
+
 - Ambiguous Google picker errors suggest reconnecting before Play services or account advice
   (X10 / REL L5).
 

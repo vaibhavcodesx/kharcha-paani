@@ -183,7 +183,7 @@ fun CaptureCard(
         }
         Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.l).height(1.dp).background(CharcoalBorder))
         Row(Modifier.padding(Spacing.xs)) {
-            CaptureMode(KpIcons.Scan, "Scan bill", Modifier.testTag("scan_receipt_button")) { imagePicker.launch("image/*") }
+            CaptureMode(KpIcons.Scan, "Bill photo", Modifier.testTag("scan_receipt_button")) { imagePicker.launch("image/*") }
             CaptureMode(KpIcons.Statement, "Statement", Modifier.testTag("upload_pdf_statement_button")) { pdfPicker.launch("application/pdf") }
             CaptureMode(KpIcons.Lend, "IOU", Modifier.testTag("home_iou_button"), onOpenIou)
         }
