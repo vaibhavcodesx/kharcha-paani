@@ -37,6 +37,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Home labels, capture notices, empty states and formatted totals now use Android string resources
+  with the same English wording (X12 / T3.11; Home).
+
 - Saving an entry, recording a payment or importing a nonempty statement batch gives a confirmation
   haptic only after the ledger write succeeds (X10 / REL L6).
 

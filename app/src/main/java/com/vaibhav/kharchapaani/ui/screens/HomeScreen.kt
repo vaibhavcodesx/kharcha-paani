@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.screens
 
+import com.vaibhav.kharchapaani.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.foundation.layout.Box
@@ -185,7 +187,7 @@ fun HomeScreen(
             }
         }
         days.forEach { day ->
-            stickyHeader(key = "day_${day.date}") { DayHeader(day) }
+            stickyHeader(key = "day_${day.date}") { DayHeader(day, today) }
             itemsIndexed(day.items, key = { _, item -> item.key }) { index, item ->
                 val position = RowPosition.of(index, day.items.size)
                 val rowModifier = Modifier
@@ -230,14 +232,14 @@ private fun FeedHeader(
     Column(modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "Activity",
+                text = stringResource(R.string.home_activity),
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.weight(1f).semantics { heading() },
             )
             IconButton(onClick = onToggleSearch, modifier = Modifier.testTag("home_search_button")) {
                 Icon(
                     imageVector = if (showSearch) KpIcons.Close else KpIcons.Search,
-                    contentDescription = if (showSearch) "Close search" else "Search activity",
+                    contentDescription = if (showSearch) stringResource(R.string.home_search_close) else stringResource(R.string.home_search_action),
                     tint = if (showSearch) WarmAmberPrimary else MutedWarmGray,
                     modifier = Modifier.size(22.dp),
                 )
@@ -279,7 +281,7 @@ private fun FeedHeader(
                         Box(contentAlignment = Alignment.CenterStart) {
                             if (searchQuery.isEmpty()) {
                                 Text(
-                                    "Merchant, category or note",
+                                    stringResource(R.string.home_search_hint),
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = SubMutedWarmGray,
                                     maxLines = 1,
@@ -308,7 +310,12 @@ private fun FilterRow(selected: String, onSelect: (String) -> Unit, modifier: Mo
         listOf(ActivityFeed.ALL, ActivityFeed.EXPENSES, ActivityFeed.INCOME, ActivityFeed.SPLITS).forEach { filter ->
             val isSelected = filter == selected
             Text(
-                text = filter,
+                text = stringResource(when (filter) {
+                    ActivityFeed.EXPENSES -> R.string.home_filter_expenses
+                    ActivityFeed.INCOME -> R.string.home_filter_income
+                    ActivityFeed.SPLITS -> R.string.home_filter_splits
+                    else -> R.string.home_filter_all
+                }),
                 style = MaterialTheme.typography.labelLarge,
                 color = if (isSelected) OffWhiteText else MutedWarmGray,
                 modifier = Modifier
@@ -325,7 +332,7 @@ private fun FilterRow(selected: String, onSelect: (String) -> Unit, modifier: Mo
 
 /** Sticks to the top while its day scrolls by; solid, since rows pass underneath it. */
 @Composable
-private fun DayHeader(day: ActivityDay) {
+private fun DayHeader(day: ActivityDay, today: LocalDate) {
     Row(
         verticalAlignment = Alignment.Bottom,
         modifier = Modifier
@@ -334,9 +341,13 @@ private fun DayHeader(day: ActivityDay) {
             .padding(top = Spacing.xl, bottom = Spacing.s)
             .semantics(mergeDescendants = true) { heading() },
     ) {
-        Text(day.label, style = MaterialTheme.typography.titleSmall, color = OffWhiteText, modifier = Modifier.weight(1f))
+        Text(when (day.date) {
+            today -> stringResource(R.string.home_today)
+            today.minusDays(1) -> stringResource(R.string.home_yesterday)
+            else -> day.label
+        }, style = MaterialTheme.typography.titleSmall, color = OffWhiteText, modifier = Modifier.weight(1f))
         if (day.spent > 0) {
-            Text("${Money.format(day.spent)} spent", style = MoneyText.small)
+            Text(stringResource(R.string.home_day_spent, Money.format(day.spent)), style = MoneyText.small)
         }
     }
 }
@@ -352,18 +363,18 @@ private fun EmptyFeed(searching: Boolean, filtered: Boolean, modifier: Modifier 
     ) {
         Text(
             text = when {
-                searching -> "Nothing matches that"
-                filtered -> "Nothing here yet"
-                else -> "Your first entry goes here"
+                searching -> stringResource(R.string.home_search_empty_title)
+                filtered -> stringResource(R.string.home_filter_empty_title)
+                else -> stringResource(R.string.home_empty_title)
             },
             style = MaterialTheme.typography.titleMedium,
         )
         Spacer(Modifier.height(Spacing.xs))
         Text(
             text = when {
-                searching -> "Try a merchant, a category like Food, or a word from a note."
-                filtered -> "Switch back to All to see everything."
-                else -> "Type what you spent above, like “chai 40 cash”, and it's logged with the category and payment filled in."
+                searching -> stringResource(R.string.home_search_empty_body)
+                filtered -> stringResource(R.string.home_filter_empty_body)
+                else -> stringResource(R.string.home_empty_body)
             },
             style = MaterialTheme.typography.bodyMedium,
         )

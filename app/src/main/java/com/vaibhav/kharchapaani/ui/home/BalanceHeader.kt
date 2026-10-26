@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.home
 
+import com.vaibhav.kharchapaani.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -61,7 +63,7 @@ fun BalanceHeader(
     Column(modifier.fillMaxWidth().testTag("hero_month_spend_card")) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "Spent this month".uppercase(),
+                text = stringResource(R.string.home_month_spend).uppercase(),
                 style = EyebrowText,
                 modifier = Modifier
                     .weight(1f)
@@ -77,7 +79,7 @@ fun BalanceHeader(
         )
         if (dailyStreak >= 2) {
             Text(
-                text = "Logged $dailyStreak days in a row",
+                text = stringResource(R.string.home_logged_streak, dailyStreak),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = Spacing.xs),
             )
@@ -103,7 +105,7 @@ fun MonthStrip(
     val iOwe = netBalance <= -0.005
     Row(modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
         MonthFigure(
-            label = "Came in",
+            label = stringResource(R.string.home_came_in),
             amount = analytics.totalIncome,
             color = MoneyIn,
             modifier = Modifier.weight(1f),
@@ -117,9 +119,9 @@ fun MonthStrip(
         )
         MonthFigure(
             label = when {
-                owedToMe -> "Friends owe you"
-                iOwe -> "You owe"
-                else -> "All square"
+                owedToMe -> stringResource(R.string.home_friends_owe)
+                iOwe -> stringResource(R.string.home_you_owe)
+                else -> stringResource(R.string.home_all_square)
             },
             amount = abs(netBalance),
             color = when {
@@ -158,7 +160,7 @@ private fun MonthFigure(
                             interactionSource = interactionSource,
                             indication = null,
                             role = Role.Button,
-                            onClickLabel = "Simplify who pays whom",
+                            onClickLabel = stringResource(R.string.home_simplify),
                             onClick = onClick,
                         )
                         .testTag("home_simplify_button")
@@ -171,7 +173,7 @@ private fun MonthFigure(
         AnimatedRollingNumber(targetValue = amount, style = MoneyText.title, color = color)
         if (onClick != null) {
             Text(
-                text = "Simplify who pays whom",
+                text = stringResource(R.string.home_simplify),
                 style = MaterialTheme.typography.bodySmall,
                 color = WarmAmberLight,
                 modifier = Modifier.padding(top = Spacing.xxs),
