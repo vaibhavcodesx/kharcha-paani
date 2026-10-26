@@ -7,7 +7,7 @@ enum class GroupSort(val label: String) {
     LatestActivity("Latest activity"), Name("Name"), OwedToYou("Owed to you"), YouOwe("You owe"), Newest("Newest");
 
     fun apply(groups: List<GroupWithDetails>): List<GroupWithDetails> {
-        val order = when (this) {
+        val order: Comparator<GroupWithDetails> = when (this) {
             LatestActivity -> compareByDescending<GroupWithDetails> { it.latestActivity() }
             Name -> compareBy { it.group.name.lowercase(Locale.ROOT) }
             OwedToYou -> compareByDescending { it.netBalanceForMe }
