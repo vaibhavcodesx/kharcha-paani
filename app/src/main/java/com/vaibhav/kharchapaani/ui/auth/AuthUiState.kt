@@ -13,6 +13,10 @@ data class AuthUiState(
     val profileSaveFailed: Boolean = false,
     /** Why the last colour couldn't be saved, in plain words; null when it saved or nothing's tried. */
     val hueSaveError: String? = null,
+    /** True from the second confirm of "Delete my account" until it's done or has failed. */
+    val isDeletingAccount: Boolean = false,
+    /** Why deleting the account didn't happen, in plain words; null otherwise. */
+    val deleteAccountError: String? = null,
 ) {
     /** This account's own colour (design item 11), or null when it hasn't got one yet. */
     val hue: Int?

@@ -18,6 +18,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.selected
+import com.vaibhav.kharchapaani.domain.GroupSort
+import com.vaibhav.kharchapaani.data.settings.GroupSortPreferences
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -102,6 +108,10 @@ fun SplitsScreen(
     val owedToMe = personBalances.filter { it.netBalance > 0 }.sumOf { it.netBalance }
     val iOwe = abs(personBalances.filter { it.netBalance < 0 }.sumOf { it.netBalance })
     var section by rememberSaveable { mutableStateOf(SplitsSection.Friends) }
+    val context = LocalContext.current
+    val sortPreferences = remember(context) { GroupSortPreferences(context) }
+    var groupSort by remember(sortPreferences) { mutableStateOf(sortPreferences.read()) }
+    val sortedGroups = remember(groups, groupSort) { groupSort.apply(groups) }
     var friendToDelete by remember { mutableStateOf<PersonBalance?>(null) }
     // Who needs attention first: the biggest balances either way, then everyone who's settled.
     val friends = remember(personBalances) {
@@ -231,6 +241,12 @@ fun SplitsScreen(
                         )
                     }
                 }
+                item(key = "group_sort") {
+                    GroupSortPicker(groupSort) {
+                        groupSort = it
+                        sortPreferences.write(it)
+                    }
+                }
                 if (groups.isEmpty()) {
                     item(key = "groups_empty") {
                         EmptyState(
@@ -240,7 +256,7 @@ fun SplitsScreen(
                         )
                     }
                 }
-                items(groups, key = { "group_${it.group.id}" }) { details ->
+                items(sortedGroups, key = { "group_${it.group.id}" }) { details ->
                     TripCard(
                         details = details,
                         onOpen = { onSelectGroup(details) },
@@ -325,3 +341,22 @@ private fun SectionActions(actions: @Composable () -> Unit) {
     }
 }
 
+
+@Composable
+private fun GroupSortPicker(sort: GroupSort, onSelect: (GroupSort) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        TextButton(onClick = { expanded = true }, modifier = Modifier.testTag("group_sort_button")) {
+            Text("Sort: ${sort.label}")
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            GroupSort.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option.label) },
+                    modifier = Modifier.semantics { selected = option == sort },
+                    onClick = { expanded = false; onSelect(option) },
+                )
+            }
+        }
+    }
+}

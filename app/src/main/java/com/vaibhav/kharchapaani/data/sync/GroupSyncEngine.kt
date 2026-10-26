@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.data.sync
 
 import android.util.Log
+import io.github.jan.supabase.exceptions.RestException
 import androidx.room.withTransaction
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
@@ -51,6 +52,29 @@ class GroupSyncEngine(
         pullGroups()
         pullGroupExpenses()
         pullSettlements()
+        refreshFormerMembers()
+    }
+
+    /**
+     * Someone who deleted their account is in no group, so their profile no longer comes with any
+     * group's members, and this phone would keep the old name. Their tombstone says what they chose
+     * to be shown as (decision D1). Never stops a sync: before the server has the function, there's
+     * simply nothing to rename.
+     */
+    internal suspend fun refreshFormerMembers() {
+        val former = dao.peopleInNoGroup().filter { it.profileId != selfProfileId }
+        for (chunk in former.chunked(FORMER_MEMBERS_PER_CALL)) {
+            val names = try {
+                remote.formerMemberNames(chunk.mapNotNull { it.profileId }).associateBy { it.id }
+            } catch (e: RestException) {
+                Log.w(TAG, "Couldn't look up former members (${e.statusCode})")
+                return
+            }
+            for (person in chunk) {
+                val name = names[person.profileId]?.displayName?.trim()?.takeIf { it.isNotEmpty() } ?: continue
+                if (name != person.name) dao.renamePerson(person.id, name)
+            }
+        }
     }
 
     internal suspend fun pushGroups() {
@@ -551,6 +575,8 @@ class GroupSyncEngine(
         private val CURSOR_OVERLAP = 5.seconds
         private const val DEFAULT_EMOJI = "👥"
         private const val FALLBACK_NAME = "Group member"
+        /** Matches the server's limit in former_member_names. */
+        private const val FORMER_MEMBERS_PER_CALL = 500
         private const val TAG = "GroupSync"
     }
 }

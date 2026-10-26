@@ -19,6 +19,13 @@ class FakeGroupRemote(private val self: String) : GroupRemote {
     val savedExpenses = mutableListOf<GroupExpenseUpload>()
     val profiles = mutableMapOf<String, RemoteProfile>()
     var online = true
+    /** Deleted accounts' tombstone names, as former_member_names hands them back. */
+    val formerMembers = mutableMapOf<String, String>()
+
+    override suspend fun formerMemberNames(profileIds: List<String>): List<RemoteProfile> {
+        checkOnline()
+        return profileIds.mapNotNull { id -> formerMembers[id]?.let { RemoteProfile(id = id, displayName = it) } }
+    }
     private var clockMillis = 1_800_000_000_000L
 
     fun tick(): String = Instant.fromEpochMilliseconds(clockMillis++).toString()
