@@ -124,11 +124,12 @@ class IouDetailsTest {
     }
 
     @Test
-    fun `an entry with no saved recorder says so rather than attributing it to a party`() {
+    fun `an entry with no saved recorder names nobody rather than guessing`() {
         show(recorder = null)
         compose.onNodeWithTag("settlement_item_5").performClick()
 
-        compose.onNodeWithText("Recorder isn't available for this entry").assertExists()
+        compose.onNodeWithTag("iou_note_5").assertExists()
+        compose.onNodeWithText("Recorded by", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Recorded by Rohan").assertDoesNotExist()
         compose.onNodeWithText("Recorded by you").assertDoesNotExist()
     }

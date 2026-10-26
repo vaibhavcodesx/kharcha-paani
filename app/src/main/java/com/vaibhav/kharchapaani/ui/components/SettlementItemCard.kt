@@ -239,11 +239,14 @@ private fun IouDetails(item: ActivityItem.Settlement, onShowOptions: () -> Unit,
             .testTag("iou_details_${settlement.id}"),
     ) {
         Text(fullDate, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("iou_date_${settlement.id}"))
-        Text(
-            if (recorder == null) "Recorder isn't available for this entry" else "Recorded by $recorder",
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(top = Spacing.xs),
-        )
+        // Older entries don't know who recorded them: say nothing rather than guess.
+        if (recorder != null) {
+            Text(
+                "Recorded by $recorder",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = Spacing.xs),
+            )
+        }
         Text(
             settlement.note.ifBlank { "No note added." },
             style = MaterialTheme.typography.bodyLarge,
