@@ -100,6 +100,7 @@ fun GroupDetailSheet(
     tripReview: AskState = AskState.Idle,
     aiAsksLeft: Int = AI_DAILY_CAP,
     aiAvailable: Boolean = true,
+    people: List<PersonEntity> = groupDetails?.members.orEmpty(),
 ) {
     if (groupDetails == null) return
     KpModalSheet(onDismiss = onDismiss) {
@@ -121,6 +122,7 @@ fun GroupDetailSheet(
             tripReview = tripReview,
             aiAsksLeft = aiAsksLeft,
             aiAvailable = aiAvailable,
+            people = people,
         )
     }
 }
@@ -143,6 +145,7 @@ fun GroupDetailContent(
     tripReview: AskState = AskState.Idle,
     aiAsksLeft: Int = AI_DAILY_CAP,
     aiAvailable: Boolean = true,
+    people: List<PersonEntity> = groupDetails.members,
 ) {
     val group = groupDetails.group
     var selectedCategory by rememberSaveable(group.id) { mutableStateOf<String?>(null) }
@@ -315,6 +318,7 @@ fun GroupDetailContent(
                             entries.forEachIndexed { index, expense ->
                                 GroupExpenseRow(
                                     expense = expense,
+                                    people = people,
                                     detail = "${dateFormat.format(Date(expense.transaction.date))} · ${GroupExpenseCredit.line(expense, groupDetails.members)}",
                                     position = RowPosition.of(index, entries.size),
                                     onClick = if (!group.isArchived && expense.canEdit) ({ onEditTransaction(expense) }) else null,
@@ -356,6 +360,7 @@ fun GroupDetailContent(
                 when (entry) {
                     is GroupFeedEntry.Expense -> GroupExpenseRow(
                         expense = entry.transaction,
+                        people = people,
                         detail = "${dateFormat.format(Date(entry.date))} · ${GroupExpenseCredit.line(entry.transaction, groupDetails.members)}",
                         position = position,
                         // Whoever added it or paid for it can edit it (item 11).
@@ -425,7 +430,7 @@ private fun GroupMovementRow(
 }
 
 @Composable
-private fun GroupExpenseRow(expense: FullTransaction, detail: String, position: RowPosition, onClick: (() -> Unit)?) {
+private fun GroupExpenseRow(expense: FullTransaction, people: List<PersonEntity>, detail: String, position: RowPosition, onClick: (() -> Unit)?) {
     val tx = expense.transaction
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -442,6 +447,7 @@ private fun GroupExpenseRow(expense: FullTransaction, detail: String, position: 
         Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
             Text(tx.merchant.ifBlank { tx.category }, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(detail, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            GroupExpensePeople(expense, people)
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(Money.format(tx.amount), style = MoneyText.row, color = OffWhiteText)

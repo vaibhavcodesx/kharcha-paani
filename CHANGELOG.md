@@ -15,6 +15,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Group expense rows show saved colour dots beside the payer and split participants, including
+  category expansions; names remain beside the dots (X5 / TODOS 2).
+
 - Tap an IOU card to read its whole note, full date and saved recorder, then tap again to collapse.
   Answer and removal actions remain available; entries without recorder metadata say so instead
   of guessing who added them (X5 / TODOS 4).
