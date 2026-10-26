@@ -35,7 +35,8 @@ class GeminiStatementFailureTest {
     private fun repo(respond: (Interceptor.Chain) -> Response) = GeminiRepository(
         client = OkHttpClient.Builder().addInterceptor { chain -> respond(chain) }.build(),
         endpoint = { model -> "https://example.invalid/v1beta/models/$model:generateContent" },
-        apiKey = { "test-key" },
+        accessToken = { "test-token" },
+        configured = true,
     )
 
     private fun ok(body: String): (Interceptor.Chain) -> Response = { chain ->
@@ -228,7 +229,7 @@ class GeminiStatementFailureTest {
 
     @Test
     fun `a build with no key says so instead of blaming the statement`() = runTest {
-        val result = GeminiRepository(apiKey = { "" }).readStatementPdf(pdf)
+        val result = GeminiRepository(configured = false).readStatementPdf(pdf)
 
         assertEquals(StatementReadFailure.NoKey, failureOf(result))
     }

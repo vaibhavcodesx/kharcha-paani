@@ -32,6 +32,20 @@ class LocalHeuristicParserTest {
     }
 
     @Test
+    fun `a friend saved with a full name is found by the first name`() {
+        val result = LocalHeuristicParser.parse("auto 120 with ankit", knownFriends = listOf("Ankit Shah", "Rohan"))
+
+        assertEquals(listOf("Ankit"), result.splitWithPersonNames)
+    }
+
+    @Test
+    fun `a full name said isn't found again by its first name`() {
+        val result = LocalHeuristicParser.parse("lunch 600 rahul mehta", knownFriends = listOf("Rahul Mehta", "Rahul Kumar"))
+
+        assertEquals(listOf("Rahul Mehta"), result.splitWithPersonNames)
+    }
+
+    @Test
     fun `split names are separated on the word and, not the letters`() {
         // "Anand" used to come apart as "An" and "".
         val result = LocalHeuristicParser.parse("pizza 900 split with anand and priya")

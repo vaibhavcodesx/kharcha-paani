@@ -87,6 +87,13 @@ object LocalHeuristicParser {
         val splitFriends = mutableListOf<String>()
         knownFriends.filter { it.isNotBlank() && containsWord(lower, it.trim().lowercase(Locale.getDefault())) }
             .forEach { splitFriends.add(it) }
+        // A friend saved as "Ankit Shah" is just "Ankit" in a quick line. The first name is passed on
+        // as said (SplitTargets asks which one when two friends share it), unless a full name already
+        // said covers it.
+        knownFriends.map { it.trim().substringBefore(' ') }
+            .filter { first -> first.length >= 3 && first !in knownFriends && containsWord(lower, first.lowercase(Locale.getDefault())) }
+            .filter { first -> splitFriends.none { it.trim().substringBefore(' ').equals(first, ignoreCase = true) } }
+            .forEach { splitFriends.add(it) }
         if (splitFriends.isEmpty()) {
             Regex("""split\s+(?:with\s+)?([a-zA-Z\s,&]+)""").find(lower)?.let { match ->
                 match.groupValues[1].split(Regex(""",|&|\band\b"""))

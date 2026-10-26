@@ -14,8 +14,8 @@ beside who paid and who's in it, as the friend rows already do.
 ### 3a. More categories
 
 **What:** Add "Packaged goods", "Beverages", and a category for haircuts, salon, spa, grooming and the
-like. The owner didn't want it called "Personal". Suggested name: **"Grooming"**, or "Self-care" if it
-should also cover gym and wellness; the owner picks. New categories must also reach the AI prompts
+like. The owner didn't want it called "Personal". Name decided (2026-10-26): **"Self-care"**, covering
+haircuts, salon, spa, grooming, gym and wellness. New categories must also reach the AI prompts
 (quick add, bills, statements) so Gemini can choose them, and `CategoriesTest`.
 **Priority:** P2 · **Effort:** S
 
@@ -73,6 +73,22 @@ skippable and never shown again once done or skipped. Later task: after the Play
 **Priority:** P3 · **Effort:** M
 
 ## Ledger
+
+### Equal splits outside shared groups drift by a paisa
+
+**What:** An equal split that isn't in a shared group rounds each share on its own: ₹500 over
+three shows ₹166.67 × 3 = ₹500.01. Use `SplitRounding.equal` (leftover paisa on the payer) for
+every equal split, as shared groups already do.
+
+**Why:** The shares should add up to the amount exactly, everywhere. Found by `SayTheSplitTest`
+(2026-10-26), whose group case uses ₹600 until this is fixed.
+
+**Context:** `MainViewModel.recalculateShares`, the `SplitMode.EQUAL` branch (and EXACT's fill-in
+of empty shares). It's a bug, so the failing test comes first; check what a local split's saved
+shares do to friend balances (`PersonLedgerTest`, `GuestSharesTest`) before and after.
+
+**Effort:** S
+**Priority:** P2
 
 ### One source for the per-friend balance maths
 

@@ -52,17 +52,18 @@ Full reasoning in `docs/distribution.md`. The short version:
    `versionCode` must strictly increase or Android refuses the update.
 2. Commit and push to `main`.
 3. GitHub > **Actions** > **Release APK** > **Run workflow**. Enter the tag
-   (`v1.1.0` — it must match `versionName`), and tick *omit_ai_key* if this is
-   a build for wider sharing.
+   (`v1.1.0` — it must match `versionName`).
 4. The workflow builds, signs, verifies the signature, creates the release and
    attaches the APK.
 
 Building one locally instead:
 
 ```bash
-./gradlew :app:assembleRelease              # with the AI features
-./gradlew :app:assembleRelease -PomitAiKey  # without the Gemini key
+./gradlew :app:assembleRelease
 ```
+
+No build carries a Gemini key: the app reaches Gemini through the `gemini-proxy` Edge Function,
+which holds the key as a server secret (see `supabase/functions/gemini-proxy/README.md`).
 
 This needs a `keystore.properties` at the repo root (gitignored) — see
 `docs/distribution.md`. Without it the build still succeeds but the APK is
@@ -76,7 +77,7 @@ left **unsigned** and will not install.
 1. Open Android Studio
 2. Select **Open** and choose the directory containing this project
 3. Allow Android Studio to fix any incompatibilities as it imports the project.
-4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
+4. Create a file named `.env` in the project directory with the Supabase project's URL and keys (see `.env.example`). AI features go through that project's `gemini-proxy` Edge Function, so no Gemini key goes in `.env`
 5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
 6. Run the app on an emulator or physical device
 7. If you have already published your app in AI Studio, please [request upload key reset](https://support.google.com/googleplay/android-developer/answer/9842756#zippy=%2Crequest-an-upload-key-reset) in Google Play Console.
