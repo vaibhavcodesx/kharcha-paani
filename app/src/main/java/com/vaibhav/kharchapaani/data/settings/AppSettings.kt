@@ -96,6 +96,16 @@ class AppSettings(context: Context) {
         }
     }
 
+    /**
+     * Whether the person has seen and accepted the notice that what they send for reading goes to
+     * Google Gemini (plan T1.10, decision D2). Asked once, before the first thing is sent.
+     */
+    val aiNoticeAccepted: Flow<Boolean> = store.data.map { it[AI_NOTICE_ACCEPTED] ?: false }
+
+    suspend fun setAiNoticeAccepted(accepted: Boolean) {
+        store.edit { it[AI_NOTICE_ACCEPTED] = accepted }
+    }
+
     /** This account's UPI ID and payee name (backlog item 9). Per account, since it's theirs to be paid on. */
     fun upiPayee(userId: String): Flow<UpiPayee?> = store.data.map { prefs ->
         val id = prefs[upiIdKey(userId)]
@@ -155,6 +165,7 @@ class AppSettings(context: Context) {
         val AI_USAGE_COUNT = intPreferencesKey("ai_usage_count")
         fun categoryPrefsKey(userId: String) = stringPreferencesKey("category_prefs_$userId")
         val ASK_BEFORE_DISCARDING = booleanPreferencesKey("ask_before_discarding")
+        val AI_NOTICE_ACCEPTED = booleanPreferencesKey("ai_notice_accepted")
         val REMINDER_ENABLED = booleanPreferencesKey("reminder_enabled")
         val REMINDER_MINUTE = intPreferencesKey("reminder_minute_of_day")
         /** The old single flag; read only to carry it over into [NOTIFICATION_PERMISSION_ASKS]. */

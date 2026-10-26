@@ -1,6 +1,6 @@
 # Kharcha Paani terms of use
 
-Last updated 26 October 2026.
+Last updated 25 October 2026.
 
 These terms are between you and Vaibhav Chauhan, who makes and runs Kharcha Paani ("we", "us"). By
 using the app you agree to them. They're short on purpose.
@@ -46,7 +46,7 @@ You can stop using the app and delete your account at any time (account sheet â†
 
 ## The law
 
-These terms are governed by the laws of India. Disputes go to the courts of Surat, Gujarat.
+These terms are governed by the laws of India. Disputes go to the courts of TODO_CITY, TODO_STATE.
 
 ## Contact
 

@@ -116,6 +116,7 @@ import com.vaibhav.kharchapaani.ui.groups.SharedGroupPanel
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupsController
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupsViewModel
 import com.vaibhav.kharchapaani.ui.components.IouSheet
+import com.vaibhav.kharchapaani.ui.components.AiNoticeSheet
 import com.vaibhav.kharchapaani.ui.components.PersonLedgerSheet
 import com.vaibhav.kharchapaani.ui.components.RestoreBackupDialog
 import com.vaibhav.kharchapaani.ui.components.SettleUpSheet
@@ -739,37 +740,6 @@ fun SplitFlowApp(
         }
     }
 
-    NotificationsSheet(
-        isOpen = isNotificationsOpen,
-        access = notificationAccess,
-        prefs = notificationPrefs,
-        reminder = reminder,
-        onTurnOn = allowNotifications,
-        onPaymentsToConfirmChange = viewModel::setPaymentsToConfirm,
-        onQuietHoursChange = viewModel::setQuietHours,
-        onReminderEnabledChange = viewModel::setReminderEnabled,
-        onReminderTimeChange = viewModel::setReminderTime,
-        onDismiss = { isNotificationsOpen = false },
-    )
-
-    // The app's own offer, at most twice and only while Android would still ask (N1).
-    val offerMoment = notificationMoment
-    if (offerMoment != null) {
-        if (NotificationOffer.shouldOffer(notificationAccess, notificationOffersShown)) {
-            NotificationOfferSheet(
-                moment = offerMoment,
-                reminderTime = ReminderSchedule.label(reminder.minuteOfDay, android.text.format.DateFormat.is24HourFormat(context)),
-                onTurnOn = {
-                    viewModel.notificationOfferShown()
-                    allowNotifications()
-                },
-                onNotNow = viewModel::notificationOfferShown,
-            )
-        } else {
-            LaunchedEffect(offerMoment) { viewModel.clearNotificationMoment() }
-        }
-    }
-
     SettlementAnswerSheet(
         item = answeringSettlement,
         onConfirm = { viewModel.answerSettlement(confirm = true) },
@@ -1023,6 +993,10 @@ fun SplitFlowApp(
         onDismiss = { viewModel.dismissAddFriend() },
         takenColours = phoneColours,
     )
+
+    // Once, before the first thing goes to Gemini (plan T1.10).
+    val isAiNoticeOpen by viewModel.isAiNoticeOpen.collectAsStateWithLifecycle()
+    if (isAiNoticeOpen) AiNoticeSheet(onGotIt = viewModel::acceptAiNotice, onTypeMyself = viewModel::declineAiNotice)
 
     // Bank & UPI Statement Parsing Loading Overlay
     if (isParsingStatement) {

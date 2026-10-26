@@ -7,6 +7,7 @@ import androidx.work.Configuration
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.vaibhav.kharchapaani.data.db.AppDatabase
+import com.vaibhav.kharchapaani.data.settings.AppSettings
 import com.vaibhav.kharchapaani.data.repository.GeminiRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -71,6 +72,8 @@ class StatementCancelTest {
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         WorkManagerTestInitHelper.initializeTestWorkManager(application, Configuration.Builder().setExecutor(SynchronousExecutor()).build())
+        // App settings outlive a test under Robolectric; every test starts before the notice.
+        runBlocking { AppSettings(application).setAiNoticeAccepted(false) }
         db = Room.inMemoryDatabaseBuilder(application, AppDatabase::class.java).allowMainThreadQueries().build()
         viewModel = MainViewModel(application, db, userId, geminiRepo = slowGemini)
     }
@@ -85,6 +88,8 @@ class StatementCancelTest {
     @Test
     fun `dismissing the reading dialog stops the reading, and its answer never shows`() = runBlocking {
         viewModel.parseBankOrUpiStatement(pdf)
+        // The one-time Gemini notice comes first (T1.10).
+        viewModel.acceptAiNotice()
         assertTrue(viewModel.isParsingStatement.value)
 
         // What the dialog's Back and outside tap call.
