@@ -40,6 +40,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Insights and spending charts use string resources for labels, plurals, money sentences and spoken
   descriptions, retaining their English wording (X12 / T3.11; Insights).
 
+- Navigation tab labels and the Add action description now use Android string resources, with
+  unchanged English wording and TalkBack behavior (X12 / T3.11; navigation).
+
 - Activity search finds split participants, payers, named guests and rupee amounts, including the
   personal share and Indian grouping (X11 / T3.8).
 
