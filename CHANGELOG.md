@@ -15,6 +15,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- Money confirmation action bars keep complete amounts and move the action below the summary
+  at large font sizes (X7 / T2.10, REL M7; sheets).
+
+- Insights fits complete cash-flow and per-day amounts at large text sizes; the ring keeps its
+  spoken total and omits cramped duplicate centre text (X7 / T2.10, REL M7).
+
 - Group cards grow with large text and keep complete Indian-formatted amounts visible
   (X7 / T2.10, REL M7; Splits).
 
@@ -33,6 +39,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - Splits, group cards and friend rows use string resources for labels, formatted counts, menus and
   spoken actions, preserving their English wording (X12 / T3.11; Splits).
+
+- Activity search finds split participants, payers, named guests and rupee amounts, including the
+  personal share and Indian grouping (X11 / T3.8).
 
 - Saving an entry, recording a payment or importing a nonempty statement batch gives a confirmation
   haptic only after the ledger write succeeds (X10 / REL L6).
