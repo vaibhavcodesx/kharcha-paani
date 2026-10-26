@@ -15,13 +15,13 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
-- Home money figures fit their available width at large text sizes, keeping every digit and paisa
-  visible instead of squeezing individual animated digits out of view (X7 / T2.10, REL M7).
-
 - Ambiguous Google picker errors suggest reconnecting before Play services or account advice
   (X10 / REL L5).
 
 ### Added
+
+- Regression coverage documents oversized Home money at 200% text size; the production fix remains
+  parked after two failed CI runs (X7 / T2.10, REL M7).
 
 - A confirmed settlement can offer Play’s own review flow after a settling-in week, at most once
   per 180 days; errors, old history and busy screens do not trigger it (X9 / T3.9).
