@@ -15,6 +15,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- Money confirmation action bars keep complete amounts and move the action below the summary
+  at large font sizes (X7 / T2.10, REL M7; sheets).
+
 - Insights fits complete cash-flow and per-day amounts at large text sizes; the ring keeps its
   spoken total and omits cramped duplicate centre text (X7 / T2.10, REL M7).
 
