@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Group movement and expense-credit descriptions resolve from string resources with unchanged people, ownership and English wording (X12 / T3.11).
+
 - Sign-in display labels, failure guidance, agreement fragments and decorative preview captions use string resources with unchanged English (X12 / T3.11).
 
 - App-shell/update notices, invite sharing and ledger-open guidance use string resources with unchanged English and callbacks (X12 / T3.11).

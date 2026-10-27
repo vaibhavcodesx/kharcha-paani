@@ -784,4 +784,19 @@
     <string name="signin_copy_demo_of">of ₹1,920</string>
     <string name="signin_copy_demo_payment">Rohan paid you</string>
     <string name="signin_copy_demo_settled">UPI · settled up</string>
+    <!-- Additional screen strings. -->
+    <string name="group_description_you">You</string>
+    <string name="group_description_someone">Someone</string>
+    <string name="group_description_lent_you">%1$s lent you</string>
+    <string name="group_description_you_lent">You lent %1$s</string>
+    <string name="group_description_lent">%1$s lent %2$s</string>
+    <string name="group_description_paid_you">%1$s paid you</string>
+    <string name="group_description_you_paid">You paid %1$s</string>
+    <string name="group_description_paid">%1$s paid %2$s</string>
+    <string name="group_description_self_paid">You paid</string>
+    <string name="group_description_payer">Paid by %1$s</string>
+    <string name="group_description_adder_payer">Added by %1$s · Paid by %2$s</string>
+    <string name="group_description_you_object">you</string>
+    <string name="group_description_former">a former member</string>
+    <string name="group_description_friend">Friend</string>
 </resources>

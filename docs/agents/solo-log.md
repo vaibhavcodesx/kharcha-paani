@@ -107,4 +107,6 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #171 · X12 / T3.11 sign-in presentation copy · merged; labels, agreement/link spacing, backdrop captions and failure explanations use resources; auth requests, permissions and session behavior are untouched.
 
+- 2026-10-27 · #172 · X12 / T3.11 group descriptions · merged; generated payment/IOU credit and self/former/friend labels use resources; exact amounts and English defaults remain. Initial CI 40431999195 exposed the simplifier overriding a supplied self label; its display parameters now pass through, with custom-label/amount tests.
+
 ## Questions
