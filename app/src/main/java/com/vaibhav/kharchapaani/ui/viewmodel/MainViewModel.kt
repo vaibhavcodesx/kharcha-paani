@@ -2116,7 +2116,7 @@ class MainViewModel(
                 clipData = ClipData.newRawUri(fileName, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(Intent.createChooser(send, uiText(R.string.action_notice_backup_chooser, backup.summary())))
+            context.startActivity(Intent.createChooser(send, uiText(R.string.action_notice_backup_chooser, backup.summary(getApplication<Application>()))))
         }
     }
 
@@ -2144,7 +2144,7 @@ class MainViewModel(
                     return@launchAction
                 }
             }
-            when (val result = withContext(Dispatchers.Default) { LocalBackup.decode(text) }) {
+            when (val result = withContext(Dispatchers.Default) { LocalBackup.decode(getApplication<Application>(), text) }) {
                 is BackupReadResult.Unreadable ->
                     _statusMessage.value = uiText(R.string.action_notice_backup_invalid)
                 is BackupReadResult.TooNew ->
@@ -2163,7 +2163,7 @@ class MainViewModel(
         launchAction {
             val report = backupRepo.restore(backup)
             restoreSettings(backup.settings)
-            _statusMessage.value = report.copy(settingsRestored = !backup.settings.isEmpty).message()
+            _statusMessage.value = report.copy(settingsRestored = !backup.settings.isEmpty).message(getApplication<Application>())
         }
     }
 

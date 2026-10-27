@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Backup summaries, validation reasons and restore reports use string resources with unchanged English, JSON format and additive restore behavior (X12 / T3.11).
+
 - Generated friend-history titles and share/payment descriptions use string resources while retaining the single balance computation and exact amounts (X12 / T3.11).
 
 - Activity movement titles and pending/rejected descriptions use resources with unchanged English, age threshold and response-note quoting (X12 / T3.11).
