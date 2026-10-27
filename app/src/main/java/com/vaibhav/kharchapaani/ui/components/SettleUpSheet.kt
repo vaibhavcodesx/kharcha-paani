@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -70,6 +72,9 @@ fun SettleUpContent(
     onAsk: ((amount: Double, message: String) -> Unit)? = null,
 ) {
     // suggestedAmount > 0: they owe me, so they're the one paying.
+    val theyPaidLabel = stringResource(R.string.payment_they_paid, firstName(person.name))
+    val youPaidLabel = stringResource(R.string.payment_you_paid, firstName(person.name))
+    val defaultUpiNote = stringResource(R.string.payment_upi_note)
     var theyPaid by rememberSaveable(person.id) { mutableStateOf(suggestedAmount >= 0) }
     var amount by rememberSaveable(person.id) { mutableStateOf(if (abs(suggestedAmount) > 0) Money.editable(abs(suggestedAmount)) else "") }
     var note by rememberSaveable(person.id) { mutableStateOf("") }
@@ -90,8 +95,8 @@ fun SettleUpContent(
         modifier = modifier,
         actionBar = {
             GlassActionBar(
-                label = if (groupOptions.involvesGroupmates && !groupOptions.canSync) "Save on this phone only" else "Record settlement",
-                disabledLabel = if (value <= 0) "Add an amount" else "Choose a group",
+                label = if (groupOptions.involvesGroupmates && !groupOptions.canSync) stringResource(R.string.payment_local_only) else stringResource(R.string.payment_record_settlement),
+                disabledLabel = if (value <= 0) stringResource(R.string.payment_add_amount) else stringResource(R.string.payment_choose_group),
                 enabled = value > 0 && !needsGroup,
                 onClick = { if (value > Money.LARGE_AMOUNT) checkLargeAmount = true else record() },
                 buttonTestTag = "confirm_settle_button",
@@ -99,18 +104,18 @@ fun SettleUpContent(
         },
     ) {
         SheetTitle(
-            title = "Settle up with ${person.name}",
+            title = stringResource(R.string.payment_settle_title, person.name),
             supporting = when {
-                suggestedAmount >= 0.005 -> "${person.name} owes you ${Money.format(suggestedAmount)}."
-                suggestedAmount <= -0.005 -> "You owe ${person.name} ${Money.format(-suggestedAmount)}."
-                else -> "You're even right now. Record a payment anyway if one happened."
+                suggestedAmount >= 0.005 -> stringResource(R.string.payment_they_owe, person.name, Money.format(suggestedAmount))
+                suggestedAmount <= -0.005 -> stringResource(R.string.payment_you_owe, person.name, Money.format(-suggestedAmount))
+                else -> stringResource(R.string.payment_even)
             },
         )
         SegmentedControl(
             options = listOf(true, false),
             selected = theyPaid,
             // First names: two segments of "Rohan Mehta paid you" / "You paid Rohan Mehta" barely fit.
-            label = { if (it) "${firstName(person.name)} paid you" else "You paid ${firstName(person.name)}" },
+            label = { if (it) theyPaidLabel else youPaidLabel },
             onSelect = { theyPaid = it },
             accentFor = { if (it) ChartreuseSecondary else WarmAmberPrimary },
             modifier = Modifier.fillMaxWidth(),
@@ -121,8 +126,8 @@ fun SettleUpContent(
             accent = if (theyPaid) ChartreuseSecondary else WarmAmberPrimary,
             testTag = "settle_amount_input",
         )
-        SheetRow(label = "Note") {
-            SheetTextInput(value = note, onValueChange = { note = it }, placeholder = "Optional, like “Goa hotel”")
+        SheetRow(label = stringResource(R.string.payment_note)) {
+            SheetTextInput(value = note, onValueChange = { note = it }, placeholder = stringResource(R.string.payment_note_hint))
         }
         // Ask-to-pay (eng review D2): only where the money comes to you and they actually owe you.
         // Above the QR (owner, 2026-10-23): below it, the ask was off screen until you scrolled.
@@ -141,7 +146,7 @@ fun SettleUpContent(
             person = person,
             myPayee = upiPayee,
             amount = value,
-            note = note.ifBlank { "Kharcha Paani settle up" },
+            note = note.ifBlank { defaultUpiNote },
             moneyComesToMe = theyPaid,
             modifier = Modifier.padding(top = Spacing.m),
         )
@@ -165,7 +170,7 @@ private const val ME = -1L
 @Composable
 private fun AskToPaySection(firstName: String, message: String, onAsk: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth()) {
-        Text("Ask $firstName to pay", style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(R.string.payment_ask_name, firstName), style = MaterialTheme.typography.titleSmall)
         Text(
             message,
             style = MaterialTheme.typography.bodySmall,
@@ -178,10 +183,10 @@ private fun AskToPaySection(firstName: String, message: String, onAsk: () -> Uni
                 .testTag("ask_preview"),
         )
         KpButton(
-            label = "Ask $firstName to pay",
+            label = stringResource(R.string.payment_ask_name, firstName),
             onClick = onAsk,
             fillWidth = true,
-            onClickLabel = "Share this hisaab with $firstName",
+            onClickLabel = stringResource(R.string.payment_share_hisaab, firstName),
             testTag = "ask_to_pay_button",
             modifier = Modifier.padding(top = Spacing.s),
         )

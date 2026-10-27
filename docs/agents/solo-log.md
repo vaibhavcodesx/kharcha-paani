@@ -59,10 +59,34 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #144 · X12 / T3.11 navigation copy · merged; tabs store resource IDs and Compose resolves visual/spoken labels before callbacks; English labels, stable enum values, tags and the 150% accessibility threshold are unchanged.
 
+- 2026-10-27 · #151 · X12 / T3.11 payment forms · merged; IOU, settlement and answer labels use resources with unchanged English, directions and record guards; user notes remain data.
+
 - 2026-10-27 · #150 · X12 / T3.11 export picker copy · merged; resource-backed scope labels and existing count plurals retain English, range IDs/calculation and machine-readable CSV columns; no sharing was triggered by tests. Integrated CI 40427051347 exposed SafetyNetTest racing the submission finally block; await both the message and released guard, without changing production behavior.
 
 - 2026-10-27 · #149 · X12 / T3.11 statement review copy · merged; existing selection/found plurals, row/month actions and reading notices use resources; row flags/data and import behavior are unchanged, and parked X8 is not resumed.
 
 - 2026-10-27 · #148 · X12 / T3.11 shared sheet controls · merged; discard/large-amount/Cancel and amount-field spoken labels use resources with unchanged actions, English and full Indian-formatted amounts.
+
+- 2026-10-27 · #155 · X12 / T3.11 group creation · merged; resource-backed form copy keeps English and local/shared behavior. First CI 40426701681 missed the selected member after a coordinate click; the test now uses the semantic action and asserts selection before saving.
+
+- 2026-10-27 · #154 · X12 / T3.11 group detail · merged; screen labels/statuses/counts and participant captions use resources; domain-generated credit/movement descriptions remain a shared presentation follow-up, and AI output/prompts are untouched.
+
+- 2026-10-27 · #153 · X12 / T3.11 friend and colour forms · merged; visible/spoken labels use resources, default possessives resolve in Compose and names remain data; test-only palette names remain metadata.
+
+- 2026-10-27 · #152 · X12 / T3.11 backup preview · merged; resource-backed count plurals and labels keep English and additive confirmation; domain summary/JSON APIs are unchanged.
+
+- 2026-10-27 · #156 · X12 / T3.11 friend history · merged; resource-backed balance/action/count/empty copy preserves English; repository-generated row descriptions remain a separate presentation extraction.
+
+- 2026-10-27 · #157 · X12 / T3.11 expense timeline · merged; action, bill-photo and participant/visit labels use resources while swipe guards, data and amounts stay unchanged.
+
+- 2026-10-27 · #158 · X12 / T3.11 settlement timeline · merged; resource-backed actions, removal consequences and IOU note controls preserve English, permissions and response data; generated activity titles/statuses are tracked separately in #173.
+
+- 2026-10-27 · #159 · X12 / T3.11 subscriptions · merged; resource-backed form/cycle/schedule/confirmation copy preserves English, dates and stored names; scheduling behavior stays unchanged.
+
+- 2026-10-27 · #160 · X12 / T3.11 shared-group controls · merged; join/invite/leave/recording prompts use resources with existing English plurals and unchanged eligibility, permissions and sync behavior.
+
+- 2026-10-27 · #161 · X12 / T3.11 category controls · merged; resource-backed preference labels keep English, canonical/default IDs and custom names; protected AppSettings stays unchanged.
+
+- 2026-10-27 · #162 · X12 / T3.11 debt management copy · merged; exact English, real-VM friend deletion and empty simplify-state coverage; no debt algorithm changes.
 
 ## Questions

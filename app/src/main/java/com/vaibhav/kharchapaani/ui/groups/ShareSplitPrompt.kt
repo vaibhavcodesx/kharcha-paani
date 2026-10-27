@@ -11,6 +11,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
@@ -36,23 +39,19 @@ fun ShareSplitPrompt(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = CharcoalSurface,
-        title = { Text(if (options.canSync) "Share this split?" else "This split won't sync") },
+        title = { Text(if (options.canSync) stringResource(R.string.shared_group_copy_share_split) else stringResource(R.string.shared_group_copy_wont_sync)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = when {
                         options.canSync && options.guests.isNotEmpty() -> {
                             val names = options.guests.joinToString { it.name }
-                            "Splits reach the other people only inside a shared group. $names " +
-                                "${if (options.guests.size == 1) "isn't" else "aren't"} on Kharcha Paani, so they come along as your " +
-                                "${if (options.guests.size == 1) "guest" else "guests"}: you cover their share in the group, and they owe it to you. Add it to:"
+                            pluralStringResource(R.plurals.shared_group_copy_guests, options.guests.size, names)
                         }
-                        options.canSync -> "Splits reach the other people only inside a shared group. Add it to:"
+                        options.canSync -> stringResource(R.string.shared_group_copy_split_explanation)
                         options.withoutAccount.isNotEmpty() ->
-                            "$noAccount ${if (options.withoutAccount.size == 1) "isn't" else "aren't"} on Kharcha Paani, " +
-                                "so a split including them can only stay on this phone."
-                        else -> "You aren't in an active shared group with everyone in this split. " +
-                            "Create one and invite them to keep splits in sync."
+                            pluralStringResource(R.plurals.shared_group_copy_no_account, options.withoutAccount.size, noAccount)
+                        else -> stringResource(R.string.shared_group_copy_no_everyone)
                     },
                     style = MaterialTheme.typography.bodyMedium.copy(color = MutedWarmGray),
                 )
@@ -63,21 +62,21 @@ fun ShareSplitPrompt(
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text("${group.emoji} ${group.name}", color = OffWhiteText, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.shared_group_copy_group_label, group.emoji, group.name), color = OffWhiteText, fontWeight = FontWeight.Bold)
                         }
                     }
                 } else if (options.withoutAccount.isEmpty()) {
                     TextButton(onClick = onCreateGroup) {
-                        Text("Create a shared group", color = WarmAmberPrimary, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.shared_group_copy_create), color = WarmAmberPrimary, fontWeight = FontWeight.Bold)
                     }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = onKeepLocal) { Text("Save on this phone only", color = MutedWarmGray) }
+            TextButton(onClick = onKeepLocal) { Text(stringResource(R.string.shared_group_copy_keep_local), color = MutedWarmGray) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Back", color = MutedWarmGray) }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.shared_group_copy_back), color = MutedWarmGray) }
         },
     )
 }

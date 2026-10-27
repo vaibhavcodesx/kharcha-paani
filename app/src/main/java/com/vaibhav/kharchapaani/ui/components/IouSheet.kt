@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -56,6 +58,11 @@ fun IouContent(
     // This account's UPI ID, for the code a friend scans when you borrow from them.
     upiPayee: UpiPayee? = null,
 ) {
+    val lentLabel = stringResource(R.string.payment_you_lent)
+    val borrowedLabel = stringResource(R.string.payment_you_borrowed)
+    val lentNote = stringResource(R.string.payment_lent_note)
+    val borrowedNote = stringResource(R.string.payment_borrowed_note)
+    val defaultUpiNote = stringResource(R.string.payment_iou_upi_note)
     var lent by rememberSaveable { mutableStateOf(true) }
     var personId by rememberSaveable { mutableStateOf(people.singleOrNull()?.id ?: NOBODY) }
     var amount by rememberSaveable { mutableStateOf("") }
@@ -69,15 +76,15 @@ fun IouContent(
     val value = Money.parseInput(amount) ?: 0.0
     val needsGroup = groupOptions.canSync && selectedGroupId == null
     val missing = when {
-        people.isEmpty() -> "Add a friend first"
-        person == null -> if (lent) "Choose who you lent to" else "Choose who lent to you"
-        value <= 0 -> "Add an amount"
-        needsGroup -> "Choose a group"
+        people.isEmpty() -> stringResource(R.string.payment_add_friend)
+        person == null -> if (lent) stringResource(R.string.payment_choose_recipient) else stringResource(R.string.payment_choose_lender)
+        value <= 0 -> stringResource(R.string.payment_add_amount)
+        needsGroup -> stringResource(R.string.payment_choose_group)
         else -> null
     }
     fun record() {
         val chosen = person ?: return
-        val note = reason.ifBlank { if (lent) "Informal Loan" else "Borrowed Amount" }
+        val note = reason.ifBlank { if (lent) lentNote else borrowedNote }
         val groupId = selectedGroupId.takeIf { groupOptions.canSync }
         if (lent) onConfirm(ME, chosen.id, value, note, groupId) else onConfirm(chosen.id, ME, value, note, groupId)
     }
@@ -90,7 +97,7 @@ fun IouContent(
         modifier = modifier,
         actionBar = {
             GlassActionBar(
-                label = if (groupOptions.involvesGroupmates && !groupOptions.canSync) "Save on this phone only" else "Record IOU",
+                label = if (groupOptions.involvesGroupmates && !groupOptions.canSync) stringResource(R.string.payment_local_only) else stringResource(R.string.payment_record_iou),
                 disabledLabel = missing ?: "",
                 enabled = missing == null,
                 onClick = { if (value > Money.LARGE_AMOUNT) checkLargeAmount = true else record() },
@@ -98,18 +105,18 @@ fun IouContent(
             )
         },
     ) {
-        SheetTitle(title = "Log an IOU", supporting = "Money lent or borrowed that isn't part of an expense.")
+        SheetTitle(title = stringResource(R.string.payment_iou_title), supporting = stringResource(R.string.payment_iou_body))
         SegmentedControl(
             options = listOf(true, false),
             selected = lent,
-            label = { if (it) "You lent" else "You borrowed" },
+            label = { if (it) lentLabel else borrowedLabel },
             onSelect = { lent = it },
             accentFor = { if (it) WarmAmberPrimary else ChartreuseSecondary },
             modifier = Modifier.fillMaxWidth(),
         )
-        Text(if (lent) "TO" else "FROM", style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.xs))
+        Text(if (lent) stringResource(R.string.payment_to) else stringResource(R.string.payment_from), style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.xs))
         if (people.isEmpty()) {
-            Text("You haven't added any friends yet. Add one from Splits, then log the IOU.", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.payment_no_friends), style = MaterialTheme.typography.bodyMedium)
         } else {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 people.forEach { p ->
@@ -128,8 +135,8 @@ fun IouContent(
             accent = if (lent) WarmAmberPrimary else ChartreuseSecondary,
             testTag = "iou_amount_input",
         )
-        SheetRow(label = "For") {
-            SheetTextInput(value = reason, onValueChange = { reason = it }, placeholder = "Optional, like “hackathon food”")
+        SheetRow(label = stringResource(R.string.payment_for)) {
+            SheetTextInput(value = reason, onValueChange = { reason = it }, placeholder = stringResource(R.string.payment_reason_hint))
         }
         // The same code as settling up, either way round: lend and pay into theirs (or show yours),
         // borrow and they scan yours.
@@ -138,13 +145,13 @@ fun IouContent(
                 person = person,
                 myPayee = upiPayee,
                 amount = value,
-                note = reason.ifBlank { "Kharcha Paani IOU" },
+                note = reason.ifBlank { defaultUpiNote },
                 moneyComesToMe = !lent,
                 modifier = Modifier.padding(top = Spacing.m),
             )
         }
         RecordInGroupSection(
-            otherPersonName = person?.name ?: "them",
+            otherPersonName = person?.name ?: stringResource(R.string.payment_them),
             options = groupOptions,
             selectedGroupId = selectedGroupId,
             onSelectGroup = { selectedGroupId = it },
