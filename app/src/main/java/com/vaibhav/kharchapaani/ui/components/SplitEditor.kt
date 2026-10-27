@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.platform.testTag
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,6 +78,9 @@ fun SplitEditor(
     // Who added the expense, when their guests are in it and only they can change the split.
     splitLockedBy: String? = null,
 ) {
+    val equalLabel = stringResource(R.string.entry_equally)
+    val exactLabel = stringResource(R.string.entry_by_amount)
+    val percentLabel = stringResource(R.string.entry_by_percent)
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -83,16 +89,16 @@ fun SplitEditor(
             .padding(Spacing.l),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
-        Text("PAID BY", style = EyebrowText)
+        Text(stringResource(R.string.entry_paid_by), style = EyebrowText)
         if (payerLockedBy != null) {
             Text(
-                "You paid. Only $payerLockedBy, who added it, can change that.",
+                stringResource(R.string.entry_payer_locked, payerLockedBy),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.testTag("payer_locked_note"),
             )
         } else {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                ChoiceChip(label = "You", selected = paidByPersonId == ME, onClick = { onPaidByPersonIdChange(ME) })
+                ChoiceChip(label = stringResource(R.string.entry_you), selected = paidByPersonId == ME, onClick = { onPaidByPersonIdChange(ME) })
                 // A guest has no account and can't be anyone's payer in a shared group.
                 shares.filter { it.personId != ME && !it.isGuest }.forEach { share ->
                     ChoiceChip(label = share.personName, selected = paidByPersonId == share.personId, onClick = { onPaidByPersonIdChange(share.personId) })
@@ -102,7 +108,7 @@ fun SplitEditor(
 
         if (splitLockedBy != null) {
             Text(
-                "$splitLockedBy's guests are in this split, so only $splitLockedBy can change who's in it or the amounts.",
+                stringResource(R.string.entry_guests_locked, splitLockedBy),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.testTag("split_locked_note"),
             )
@@ -120,9 +126,9 @@ fun SplitEditor(
             selected = splitMode,
             label = {
                 when (it) {
-                    SplitMode.EQUAL -> "Equally"
-                    SplitMode.EXACT -> "By amount"
-                    SplitMode.PERCENTAGE -> "By percent"
+                    SplitMode.EQUAL -> equalLabel
+                    SplitMode.EXACT -> exactLabel
+                    SplitMode.PERCENTAGE -> percentLabel
                 }
             },
             onSelect = onSplitModeChange,
@@ -130,11 +136,11 @@ fun SplitEditor(
         )
 
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = 48.dp)) {
-            Text("SPLIT BETWEEN", style = EyebrowText, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.entry_split_between), style = EyebrowText, modifier = Modifier.weight(1f))
             // A friend added here would be a guest, and only whoever added the expense can change its guests.
             if (payerLockedBy == null) {
                 TextButton(onClick = onOpenAddFriend) {
-                    Text("Add a friend", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+                    Text(stringResource(R.string.entry_add_friend), style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
                 }
             }
         }
@@ -151,7 +157,7 @@ fun SplitEditor(
             }
         }
 
-        val problem = splitProblem(amount, splitMode, shares)
+        val problem = splitProblem(LocalContext.current, amount, splitMode, shares)
         if (problem != null) {
             Text(problem, style = MaterialTheme.typography.bodyMedium, color = WarmAmberLight)
         }
@@ -193,7 +199,7 @@ private fun ShareRow(
                 )
                 if (share.isGuest) {
                     // Not in the group: their share is yours to cover, and they owe it to you.
-                    Text("Your guest · you cover their share", style = MaterialTheme.typography.bodySmall, color = SubMutedWarmGray)
+                    Text(stringResource(R.string.entry_your_guest), style = MaterialTheme.typography.bodySmall, color = SubMutedWarmGray)
                 }
             }
         }
@@ -205,14 +211,14 @@ private fun ShareRow(
                     prefix = "₹",
                     suffix = "",
                     onValueChange = { onExactAmountChange(Money.parseInput(it) ?: 0.0) },
-                    description = "${share.personName}'s amount",
+                    description = stringResource(R.string.entry_person_amount, share.personName),
                 )
                 SplitMode.PERCENTAGE -> NumberBox(
                     value = if (share.percentage > 0) Money.input(share.percentage) else "",
                     prefix = "",
                     suffix = "%",
                     onValueChange = { onPercentageChange(Money.parseInput(it) ?: 0.0) },
-                    description = "${share.personName}'s percentage",
+                    description = stringResource(R.string.entry_person_percentage, share.personName),
                 )
             }
         }
@@ -269,24 +275,24 @@ private const val ME = -1L
  * a shared group meant a sync that could only ever fail, and in a local one meant the unassigned
  * money silently fell out of everyone's balance.
  */
-internal fun splitProblem(amount: String, splitMode: SplitMode, shares: List<ShareInput>): String? {
+internal fun splitProblem(context: android.content.Context, amount: String, splitMode: SplitMode, shares: List<ShareInput>): String? {
     val total = Money.parseInput(amount) ?: 0.0
     val selected = shares.filter { it.isSelected }
-    if (selected.isEmpty()) return "Pick who's in the split"
+    if (selected.isEmpty()) return context.getString(R.string.entry_pick_split_people)
     return when (splitMode) {
         SplitMode.EXACT -> {
             val left = total - selected.sumOf { it.amount }
             when {
                 abs(left) <= 0.005 -> null
-                left > 0 -> "${Money.format(left)} still to assign"
-                else -> "${Money.format(-left)} more than the total"
+                left > 0 -> context.getString(R.string.entry_still_to_assign, Money.format(left))
+                else -> context.getString(R.string.entry_over_total, Money.format(-left))
             }
         }
         SplitMode.PERCENTAGE -> {
             val sum = selected.sumOf { it.percentage }
             // Each share is rounded to 0.1%, so an even split of 3 is 33.3 x 3 = 99.9 (and 99.899...
             // in floating point, which a flat 0.1 tolerance refused). Allow half a step per person.
-            if (abs(100.0 - sum) > 0.05 * selected.size + 1e-9) "Percentages add up to ${String.format(Locale.US, "%.1f", sum)}%, not 100%" else null
+            if (abs(100.0 - sum) > 0.05 * selected.size + 1e-9) context.getString(R.string.entry_percent_problem, String.format(Locale.US, "%.1f", sum)) else null
         }
         SplitMode.EQUAL -> null
     }
