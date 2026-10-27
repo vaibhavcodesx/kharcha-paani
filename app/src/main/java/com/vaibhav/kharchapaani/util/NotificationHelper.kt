@@ -42,18 +42,18 @@ object NotificationHelper {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val channel = NotificationChannel(
             CHANNEL_DAILY_REMINDER,
-            "Daily reminder",
+            context.getString(R.string.notification_daily_channel),
             // Default, not high: it can make a sound, but it never pops over whatever someone is doing.
             NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
-            description = "A nudge in the evening if nothing's been logged that day"
+            description = context.getString(R.string.notification_daily_description)
         }
         val settlements = NotificationChannel(
             CHANNEL_SETTLEMENTS,
-            "Payments to confirm",
+            context.getString(R.string.notification_payment_channel),
             NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
-            description = "When a groupmate says money changed hands with you, until you confirm it or say it isn't right"
+            description = context.getString(R.string.notification_payment_description)
         }
         context.getSystemService(NotificationManager::class.java)?.let {
             it.createNotificationChannel(channel)
@@ -77,8 +77,8 @@ object NotificationHelper {
         val publicVersion = NotificationCompat.Builder(context, CHANNEL_SETTLEMENTS)
             .setSmallIcon(R.drawable.ic_stat_reminder)
             .setColor(0xFFFF7A3D.toInt())
-            .setContentTitle("Kharcha Paani")
-            .setContentText("A payment is waiting for your answer")
+            .setContentTitle(context.getString(R.string.app_name))
+            .setContentText(context.getString(R.string.notification_payment_public))
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
@@ -140,7 +140,7 @@ object NotificationHelper {
     /**
      * False when nothing can show: notifications off for the app (not granted on Android 13+, or
      * turned off), or, given [channelId], that channel blocked. Checking only the app let a blocked
-     * "Payments to confirm" channel swallow reminders that were then counted as shown.
+     * context.getString(R.string.notification_payment_channel) channel swallow reminders that were then counted as shown.
      */
     fun canNotify(context: Context, channelId: String? = null): Boolean {
         val manager = NotificationManagerCompat.from(context)
@@ -170,8 +170,8 @@ object NotificationHelper {
         val notification = NotificationCompat.Builder(context, CHANNEL_DAILY_REMINDER)
             .setSmallIcon(R.drawable.ic_stat_reminder)
             .setColor(0xFFFF7A3D.toInt())
-            .setContentTitle("Nothing logged today")
-            .setContentText("Add today's spending before it slips your mind.")
+            .setContentTitle(context.getString(R.string.notification_daily_title))
+            .setContentText(context.getString(R.string.notification_daily_body))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setAutoCancel(true)
