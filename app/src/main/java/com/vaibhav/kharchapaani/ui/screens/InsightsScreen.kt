@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.screens
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import com.vaibhav.kharchapaani.domain.AskState
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -149,7 +151,8 @@ fun InsightsScreen(
     val selectedEntries = remember(transactions, selected, month) {
         selected?.let { MonthInsights.categoryEntries(transactions, it, month, ZoneId.systemDefault()) }.orEmpty()
     }
-    val possessive = MonthNames.possessive(month, today)
+    val possessive = if (isThisMonth) stringResource(R.string.insights_this_month_possessive)
+        else stringResource(R.string.insights_month_possessive, MonthNames.short(month, today))
 
     LazyColumn(
         modifier = modifier
@@ -158,9 +161,9 @@ fun InsightsScreen(
         contentPadding = PaddingValues(start = Spacing.page, end = Spacing.page, top = Spacing.l, bottom = dockClearance()),
     ) {
         item(key = "header") {
-            ScreenHeader(title = "Insights", supporting = "Where your money went, month by month") {
+            ScreenHeader(title = stringResource(R.string.insights_title), supporting = stringResource(R.string.insights_subtitle)) {
                 KpButton(
-                    label = "Export",
+                    label = stringResource(R.string.insights_export),
                     onClick = onExport,
                     tier = KpButtonTier.Ghost,
                     testTag = "export_csv_button",
@@ -180,7 +183,7 @@ fun InsightsScreen(
         item(key = "cashflow") {
             CashFlow(
                 analytics = analytics,
-                emptyText = if (isThisMonth) "Nothing logged this month yet." else "Nothing was logged in ${MonthNames.short(month, today)}.",
+                emptyText = if (isThisMonth) stringResource(R.string.insights_empty_month) else stringResource(R.string.insights_empty_past, MonthNames.short(month, today)),
                 modifier = Modifier.padding(top = Spacing.xl),
             )
         }
@@ -213,9 +216,9 @@ fun InsightsScreen(
                 onEditTransaction = onEditTransaction,
                 possessive = possessive,
                 emptyText = if (isThisMonth) {
-                    "Log an expense and this fills in: where it went, day by day, and what stood out."
+                    stringResource(R.string.insights_empty_categories_body)
                 } else {
-                    "Nothing was spent in ${MonthNames.short(month, today)}."
+                    stringResource(R.string.insights_no_spending_past, MonthNames.short(month, today))
                 },
                 modifier = Modifier.padding(top = Spacing.xxl),
             )
@@ -224,7 +227,7 @@ fun InsightsScreen(
             Highlights(
                 analytics = analytics,
                 perDay = MonthInsights.dailyAverage(analytics.totalExpense, month, today),
-                perDayLabel = if (isThisMonth) "Per day so far" else "Per day",
+                perDayLabel = if (isThisMonth) stringResource(R.string.insights_per_day_so_far) else stringResource(R.string.insights_per_day),
                 modifier = Modifier.padding(top = Spacing.xxl),
             )
         }
@@ -252,16 +255,16 @@ private fun CashFlow(analytics: MonthlyAnalytics, emptyText: String, modifier: M
     Column(modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
             val style = pairedFigureStyle(analytics.totalExpense, analytics.totalIncome)
-            Figure("Spent", analytics.totalExpense, OffWhiteText, style, Modifier.weight(1f).testTag("insights_spent_figure"))
+            Figure(stringResource(R.string.insights_spent), analytics.totalExpense, OffWhiteText, style, Modifier.weight(1f).testTag("insights_spent_figure"))
             Box(Modifier.padding(horizontal = Spacing.xl).width(1.dp).fillMaxHeight().background(CharcoalBorder))
-            Figure("Came in", analytics.totalIncome, ChartreuseSecondary, style, Modifier.weight(1f))
+            Figure(stringResource(R.string.insights_came_in), analytics.totalIncome, ChartreuseSecondary, style, Modifier.weight(1f))
         }
         Text(
             text = when {
                 analytics.totalIncome <= 0 && analytics.totalExpense <= 0 -> emptyText
-                left >= 0.005 -> "${Money.format(left)} more came in than went out."
-                left <= -0.005 -> "${Money.format(abs(left))} more went out than came in."
-                else -> "Exactly as much went out as came in."
+                left >= 0.005 -> stringResource(R.string.insights_more_in, Money.format(left))
+                left <= -0.005 -> stringResource(R.string.insights_more_out, Money.format(abs(left)))
+                else -> stringResource(R.string.insights_even_cashflow)
             },
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = Spacing.m),
@@ -301,14 +304,14 @@ private fun CategoryBreakdown(
 ) {
     Column(modifier.fillMaxWidth()) {
         Text(
-            "By category",
+            stringResource(R.string.insights_by_category),
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.semantics { heading() }.padding(bottom = Spacing.m),
         )
         if (summaries.isEmpty()) {
             EmptyState(
                 illustration = R.drawable.kp_empty_insights,
-                title = "Nothing to break down",
+                title = stringResource(R.string.insights_no_categories),
                 body = emptyText,
             )
             return@Column
@@ -359,15 +362,16 @@ private fun CategoryBarRow(
     // One amber for all of them meant the badge carried the category and the bar carried nothing.
     val categoryColor = CategoryHelper.getCategoryColor(summary.category)
     val barColor = if (emphasis) categoryColor else categoryColor.copy(alpha = 0.35f)
+    val stateLabel = stringResource(R.string.insights_category_state, summary.percentage.roundToInt(), possessive)
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(position.shape)
             .background(if (isSelected) CharcoalElevated else CharcoalCard)
-            .clickable(role = Role.Button, onClickLabel = if (isSelected) "Close ${summary.category}" else "Show ${summary.category} entries", onClick = onClick)
+            .clickable(role = Role.Button, onClickLabel = if (isSelected) stringResource(R.string.insights_close_category, summary.category) else stringResource(R.string.insights_show_entries, summary.category), onClick = onClick)
             .semantics(mergeDescendants = true) {
                 this.selected = isSelected
-                stateDescription = "${summary.percentage.roundToInt()} percent of $possessive spending"
+                stateDescription = stateLabel
             }
             .padding(horizontal = Spacing.l, vertical = Spacing.m)
             .testTag("category_row_${summary.category}"),
@@ -377,7 +381,7 @@ private fun CategoryBarRow(
             Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
                 Text(summary.category, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    "${summary.count} ${if (summary.count == 1) "entry" else "entries"} · ${summary.percentage.roundToInt()}%",
+                    pluralStringResource(R.plurals.insights_entry_percent, summary.count, summary.count, summary.percentage.roundToInt()),
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
@@ -414,7 +418,7 @@ private fun CategoryEntries(entries: List<FullTransaction>, onEditTransaction: (
             .padding(vertical = Spacing.xs),
     ) {
         if (entries.isEmpty()) {
-            Text("No entries to show.", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(Spacing.l))
+            Text(stringResource(R.string.insights_no_entries), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(Spacing.l))
         }
         entries.forEach { ft ->
             val tx = ft.transaction
@@ -423,14 +427,14 @@ private fun CategoryEntries(entries: List<FullTransaction>, onEditTransaction: (
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
-                    .then(if (onEditTransaction != null) Modifier.clickable(onClickLabel = "Open") { onEditTransaction(ft) } else Modifier)
+                    .then(if (onEditTransaction != null) Modifier.clickable(onClickLabel = stringResource(R.string.insights_open)) { onEditTransaction(ft) } else Modifier)
                     .padding(horizontal = Spacing.l, vertical = Spacing.s),
             ) {
                 Text(dateFormat.format(Date(tx.date)), style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(56.dp))
                 Column(Modifier.weight(1f)) {
                     Text(tx.merchant.ifBlank { tx.category }, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     if (ft.split != null) {
-                        Text("Your share of ${Money.format(tx.amount)}", style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(R.string.insights_your_share, Money.format(tx.amount)), style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 Text(Money.format(ft.myPersonalShare), style = MoneyText.small, color = OffWhiteText)
@@ -444,7 +448,7 @@ private fun CategoryEntries(entries: List<FullTransaction>, onEditTransaction: (
 private fun Highlights(analytics: MonthlyAnalytics, perDay: Double, perDayLabel: String, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
         StatTile(
-            label = "Spent most at",
+            label = stringResource(R.string.insights_spent_most_at),
             value = analytics.topMerchant.takeIf { analytics.totalExpense > 0 && it != "None" } ?: "—",
             modifier = Modifier.weight(1f),
         )
