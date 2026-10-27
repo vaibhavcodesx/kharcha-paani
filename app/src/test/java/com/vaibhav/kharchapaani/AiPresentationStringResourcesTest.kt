@@ -63,7 +63,11 @@ class AiPresentationStringResourcesTest {
             assertEquals(it.label, app.getString(it.labelResource))
             assertEquals(it.eyebrow, app.getString(it.eyebrowResource))
         }
-        AiFailure.entries.forEach { assertEquals(it.askMessage(), app.getString(it.answerMessageResource)) }
+        AiFailure.entries.forEach {
+            assertEquals(it.askMessage(), app.getString(it.answerMessageResource))
+            assertEquals(it.quickAddNotice(), app.getString(it.quickAddNoticeResource))
+            assertEquals(it.receiptNotice(), app.getString(it.receiptNoticeResource))
+        }
     }
     @Test fun `actual empty insights board keeps its questions and empty guidance`(): Unit = runBlocking {
         val hasSpending = db.transactionDao().getAllTransactions().first().isNotEmpty()
