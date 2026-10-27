@@ -393,4 +393,5 @@
     <string name="ask_status_today">Asked today</string>
     <string name="ask_status_yesterday">Asked yesterday</string>
     <string name="ask_status_days">Asked %1$d days ago</string>
+    <string name="ask_payment_code_label">Payment code</string>
 </resources>

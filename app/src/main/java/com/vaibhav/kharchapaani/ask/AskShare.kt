@@ -11,6 +11,7 @@ import android.os.Build
 import android.util.Log
 import androidx.core.content.FileProvider
 import com.vaibhav.kharchapaani.MainActivity
+import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.ui.components.qrBitmap
 import java.io.File
 import java.io.IOException
@@ -47,13 +48,13 @@ object AskShare {
     }
 
     /** The share itself: the code as an image with [message] as its caption, or [message] alone. */
-    fun sendIntent(message: String, qr: Uri?): Intent = Intent(Intent.ACTION_SEND).apply {
+    fun sendIntent(context: Context, message: String, qr: Uri?): Intent = Intent(Intent.ACTION_SEND).apply {
         putExtra(Intent.EXTRA_TEXT, message)
         if (qr != null) {
             // An image type, not */*: messaging apps keep EXTRA_TEXT as the caption only for images.
             type = "image/png"
             putExtra(Intent.EXTRA_STREAM, qr)
-            clipData = ClipData.newRawUri("Payment code", qr)
+            clipData = ClipData.newRawUri(context.getString(R.string.ask_payment_code_label), qr)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         } else {
             type = "text/plain"
