@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Bill-photo row, source-menu and viewer copy use string resources with unchanged English and photo handling (X12 / T3.11).
+
 - UPI setup and payment-code labels use string resources, preserving English, exact amounts and QR/link data (X12 / T3.11).
 
 - Friend-removal and simplified-debt views use string resources with unchanged English, amounts and confirmation behavior (X12 / T3.11).

@@ -573,4 +573,21 @@
     <string name="upi_copy_copy">Copy</string>
     <string name="upi_copy_pay">Pay %1$s in a UPI app</string>
     <string name="upi_copy_chooser">Pay with</string>
+    <!-- Additional screen strings. -->
+    <string name="bill_photo_copy_label">Bill photo</string>
+    <string name="bill_photo_copy_add_description">Add a bill photo</string>
+    <string name="bill_photo_copy_add">Add</string>
+    <string name="bill_photo_copy_optional">\u0020\u0020optional</string>
+    <string name="bill_photo_copy_saving">Saving photo…</string>
+    <string name="bill_photo_copy_thumbnail">Bill photo. Opens it full screen</string>
+    <string name="bill_photo_copy_open">Open the bill photo</string>
+    <string name="bill_photo_copy_local">On this phone only</string>
+    <string name="bill_photo_copy_missing">Photo not on this phone</string>
+    <string name="bill_photo_copy_remove">Remove</string>
+    <string name="bill_photo_copy_take">Take photo</string>
+    <string name="bill_photo_copy_choose">Choose from gallery</string>
+    <string name="bill_photo_copy_take_new">Take new</string>
+    <string name="bill_photo_copy_another">Choose another</string>
+    <string name="bill_photo_copy_remove_description">Remove bill photo</string>
+    <string name="bill_photo_copy_close">Close the bill photo</string>
 </resources>
