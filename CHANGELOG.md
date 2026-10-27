@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Category/payment preference controls use string resources while names, defaults and saved values stay unchanged (X12 / T3.11).
+
 - Shared-group join, invite and recording controls use string resources and existing plural wording without behavior changes (X12 / T3.11).
 
 - Subscription form, schedule and confirmation copy use string resources with unchanged English (X12 / T3.11).
