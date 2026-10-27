@@ -255,4 +255,33 @@
     <string name="payment_says_paid_you">%1$s says they paid you %2$s</string>
     <string name="payment_says_you_paid">%1$s says you paid them %2$s</string>
     <string name="payment_reject_body">It stays on record, marked not right, and doesn\'t count. %1$s sees your note and can fix it.</string>
+    <!-- Additional screen strings. -->
+    <string name="backup_preview_title">Restore this backup?</string>
+    <string name="backup_preview_taken">Taken %1$s, from version %2$s.</string>
+    <string name="backup_preview_explanation">Only what isn\'t on this phone already is added. Nothing here is changed or removed.</string>
+    <string name="backup_preview_restore">Restore</string>
+    <string name="backup_preview_cancel">Cancel</string>
+    <string name="backup_preview_settings">Settings only.</string>
+    <string name="backup_preview_summary">%1$s.</string>
+    <string name="backup_preview_separator">,\u0020</string>
+    <plurals name="backup_preview_friends">
+        <item quantity="one">%1$d friend</item>
+        <item quantity="other">%1$d friends</item>
+    </plurals>
+    <plurals name="backup_preview_groups">
+        <item quantity="one">%1$d group</item>
+        <item quantity="other">%1$d groups</item>
+    </plurals>
+    <plurals name="backup_preview_expenses">
+        <item quantity="one">%1$d expense</item>
+        <item quantity="other">%1$d expenses</item>
+    </plurals>
+    <plurals name="backup_preview_settlements">
+        <item quantity="one">%1$d settlement</item>
+        <item quantity="other">%1$d settlements</item>
+    </plurals>
+    <plurals name="backup_preview_subscriptions">
+        <item quantity="one">%1$d subscription</item>
+        <item quantity="other">%1$d subscriptions</item>
+    </plurals>
 </resources>
