@@ -119,6 +119,8 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #177 · X12 / T3.11 ask display · merged; asked-status and shared-code labels use resources, preserving calendar-day/share behavior. Outgoing message body is untouched; its existing tone conflict and localization remain the Claude handoff below.
 
+- 2026-10-27 · #178 · X12 / T3.11 widget copy · merged; widget labels, full-amount spoken summaries and signed-out guidance use resources; analytics, data sources and widget actions stay unchanged.
+
 ## Questions
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
 - Parked after two failed Android CI runs: #130 statement re-import (reserve all exact matches before near-date matching); #132 cold-start empty flash (derive readiness from a complete repository snapshot); #139 Home large text (fit the whole balance when animated digits cannot fit); #143 Home strings (await the activity feed as well as analytics in the regression fixture). Leave these PRs open for follow-up.

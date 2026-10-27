@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Home-screen widget labels, prompts and spoken amounts use string resources while preserving English, complete amounts and signed-out privacy (X12 / T3.11).
+
 - Friend-row Asked today/yesterday/day-count and shared payment-code labels use string resources with unchanged calendar-day/share behavior; outgoing messages remain untouched (X12 / T3.11).
 
 - Shared-group action and recovery notices use string resources with unchanged English and remote/status handling (X12 / T3.11).
