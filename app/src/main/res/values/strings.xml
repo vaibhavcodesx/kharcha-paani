@@ -155,6 +155,44 @@
     <string name="entry_over_total">%1$s more than the total</string>
     <string name="entry_percent_problem">Percentages add up to %1$s%%, not 100%%</string>
     <!-- Additional screen strings. -->
+    <string name="controls_discard">Discard</string>
+    <string name="controls_keep_editing">Keep editing</string>
+    <string name="controls_large_amount">That\'s %1$s. Right?</string>
+    <string name="controls_extra_zero">Just checking for an extra zero.</string>
+    <string name="controls_yes_save">Yes, save</string>
+    <string name="controls_change_it">Change it</string>
+    <string name="controls_enter_amount">Enter an amount</string>
+    <string name="controls_amount_rupees">Amount in rupees</string>
+    <string name="controls_cancel">Cancel</string>
+    <!-- Additional screen strings. -->
+    <string name="import_tick_entries">Tick entries to import</string>
+    <string name="import_selected">selected</string>
+    <string name="import_from_statement">From your statement</string>
+    <string name="import_spent">Spent</string>
+    <string name="import_came_in">Came in</string>
+    <string name="import_by_month">BY MONTH</string>
+    <string name="import_untick_all">Untick all</string>
+    <string name="import_tick_all">Tick all</string>
+    <string name="import_reading">Reading your statement</string>
+    <string name="import_reading_long">Long statements take up to 3 minutes. You can cancel and try a shorter date range.</string>
+    <string name="import_reading_sorting">Sorting its entries by month. Nothing is added until you check them.</string>
+    <string name="import_cancel">Cancel</string>
+    <string name="import_selection_count">%1$d of %2$d</string>
+    <string name="import_collapse_month">Collapse %1$s</string>
+    <string name="import_expand_month">Expand %1$s</string>
+    <string name="import_whole_month">Import all of %1$s</string>
+    <string name="import_month_summary">%1$d of %2$d · %3$s spent</string>
+    <string name="import_merchant">Import %1$s</string>
+    <string name="import_change_category">Change category, now %1$s</string>
+    <plurals name="import_entry_action">
+        <item quantity="one">Import %1$d entry</item>
+        <item quantity="other">Import %1$d entries</item>
+    </plurals>
+    <plurals name="import_entries_found">
+        <item quantity="one">%1$d entry found</item>
+        <item quantity="other">%1$d entries found</item>
+    </plurals>
+    <!-- Additional screen strings. -->
     <string name="export_scope_month">A month</string>
     <string name="export_scope_dates">Dates</string>
     <string name="export_scope_everything">Everything</string>

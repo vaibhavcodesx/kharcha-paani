@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -37,7 +39,7 @@ internal fun RemovalConfirmationDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", style = MaterialTheme.typography.labelLarge, color = MutedWarmGray)
+                Text(stringResource(R.string.controls_cancel), style = MaterialTheme.typography.labelLarge, color = MutedWarmGray)
             }
         },
         titleContentColor = OffWhiteText,
