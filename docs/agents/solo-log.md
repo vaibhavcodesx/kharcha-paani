@@ -99,4 +99,6 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #167 · X12 / T3.11 licence-screen copy · merged; legal names/URLs unchanged. Initial CI 40429560045 failed the AI-notice fixture after a fixed consent delay; it now awaits persistence, drives StandardTestDispatcher and cancels/awaits its ViewModel before closing Room/resetting Main.
 
+- 2026-10-27 · #168 · X12 / T3.11 shared chrome copy · merged; account avatar, month navigation and sync spoken labels use resources; navigation boundaries and sync state logic are unchanged.
+
 ## Questions
