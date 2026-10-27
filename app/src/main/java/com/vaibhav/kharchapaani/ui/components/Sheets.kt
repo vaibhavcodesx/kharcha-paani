@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.BringIntoViewSpec
@@ -176,12 +178,12 @@ private fun DiscardDialog(guard: DiscardGuard, onKeepEditing: () -> Unit, onDisc
         text = { Text(guard.message, style = MaterialTheme.typography.bodyMedium) },
         confirmButton = {
             TextButton(onClick = onDiscard) {
-                Text("Discard", style = MaterialTheme.typography.labelLarge, color = DestructiveText)
+                Text(stringResource(R.string.controls_discard), style = MaterialTheme.typography.labelLarge, color = DestructiveText)
             }
         },
         dismissButton = {
             TextButton(onClick = onKeepEditing) {
-                Text("Keep editing", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
+                Text(stringResource(R.string.controls_keep_editing), style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
             }
         },
         titleContentColor = OffWhiteText,
@@ -198,16 +200,16 @@ fun LargeAmountDialog(amount: Double, onConfirm: () -> Unit, onDismiss: () -> Un
         onDismissRequest = onDismiss,
         containerColor = CharcoalSurface,
         shape = KpShapes.large,
-        title = { Text("That's ${Money.format(amount)}. Right?", style = MaterialTheme.typography.headlineMedium) },
-        text = { Text("Just checking for an extra zero.", style = MaterialTheme.typography.bodyMedium) },
+        title = { Text(stringResource(R.string.controls_large_amount, Money.format(amount)), style = MaterialTheme.typography.headlineMedium) },
+        text = { Text(stringResource(R.string.controls_extra_zero), style = MaterialTheme.typography.bodyMedium) },
         confirmButton = {
             TextButton(onClick = onConfirm, modifier = Modifier.testTag("large_amount_confirm")) {
-                Text("Yes, save", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
+                Text(stringResource(R.string.controls_yes_save), style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Change it", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
+                Text(stringResource(R.string.controls_change_it), style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
             }
         },
         titleContentColor = OffWhiteText,
@@ -340,6 +342,7 @@ fun BigAmountField(
     autoFocus: Boolean = false,
     testTag: String? = null,
 ) {
+    val amountDescription = stringResource(R.string.controls_amount_rupees)
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     // The amount is the first thing anyone does in this sheet, so the sheet opens ready for it.
@@ -361,7 +364,7 @@ fun BigAmountField(
             // The whole band is the field. It used to be IntrinsicSize.Min with a 2dp floor, so on
             // an empty sheet the only thing you could tap was the width of the "0" itself.
             .clip(KpShapes.large)
-            .clickable(onClickLabel = "Enter an amount", onClick = ::focusAmount)
+            .clickable(onClickLabel = stringResource(R.string.controls_enter_amount), onClick = ::focusAmount)
             .testTag("amount_field_band")
             .padding(vertical = Spacing.xl),
     ) {
@@ -382,7 +385,7 @@ fun BigAmountField(
                     .width(IntrinsicSize.Min)
                     .widthIn(min = 2.dp)
                     .focusRequester(focusRequester)
-                    .semantics { contentDescription = "Amount in rupees" }
+                    .semantics { contentDescription = amountDescription }
                     .then(if (testTag != null) Modifier.testTag(testTag) else Modifier),
             )
         }
