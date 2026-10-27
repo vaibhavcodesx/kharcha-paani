@@ -309,4 +309,14 @@
     <string name="colour_picker_hue">Hue %1$d</string>
     <string name="colour_picker_drag">Drag along the bar. The dimmed band is the app\'s own accent colour.</string>
     <string name="colour_picker_taken">Dimmed colours are too close to someone else\'s, or the app\'s own accent colour.</string>
+    <string name="shell_copy_file_failed">Couldn\'t open that file.</string>
+    <string name="shell_copy_notifications">Open your phone\'s settings and turn on notifications for Kharcha Paani.</string>
+    <string name="shell_copy_undo">Undo</string>
+    <string name="shell_copy_camera_missing">No camera app on this phone. Choose a photo from the gallery instead.</string>
+    <string name="shell_copy_invite">Join \"%1$s\" on Kharcha Paani to split expenses together: %2$s</string>
+    <string name="shell_copy_share_invite">Share invite</string>
+    <string name="shell_copy_ledger_title">Your ledger didn\'t open</string>
+    <string name="shell_copy_ledger_explanation">Nothing was deleted. Try again, and if it keeps happening, restart the app.</string>
+    <string name="shell_copy_ledger_retry">Try again</string>
+    <string name="shell_copy_ledger_sign_out">Sign out</string>
 </resources>
