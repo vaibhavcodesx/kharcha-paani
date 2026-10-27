@@ -1,5 +1,8 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -108,35 +111,35 @@ fun StatementImportContent(
         modifier = modifier,
         actionBar = {
             GlassActionBar(
-                label = if (selected.size == 1) "Import 1 entry" else "Import ${selected.size} entries",
-                disabledLabel = "Tick entries to import",
+                label = pluralStringResource(R.plurals.import_entry_action, selected.size, selected.size),
+                disabledLabel = stringResource(R.string.import_tick_entries),
                 enabled = selected.isNotEmpty(),
                 onClick = { onConfirmImport(selected) },
-                summary = "${selected.size} of ${items.size}",
-                detail = "selected",
+                summary = stringResource(R.string.import_selection_count, selected.size, items.size),
+                detail = stringResource(R.string.import_selected),
                 buttonTestTag = "confirm_import_statement_button",
             )
         },
     ) {
         SheetTitle(
-            eyebrow = "From your statement",
+            eyebrow = stringResource(R.string.import_from_statement),
             title = parseResult.bankOrApp,
             supporting = parseResult.statementPeriod.takeIf { it.isNotBlank() }
-                ?: if (items.size == 1) "1 entry found" else "${items.size} entries found",
+                ?: pluralStringResource(R.plurals.import_entries_found, items.size, items.size),
         )
 
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
             val style = pairedFigureStyle(spent, cameIn)
-            Figure("Spent", Money.format(spent), OffWhiteText, style, Modifier.weight(1f))
+            Figure(stringResource(R.string.import_spent), Money.format(spent), OffWhiteText, style, Modifier.weight(1f))
             Box(Modifier.padding(horizontal = Spacing.xl).width(1.dp).fillMaxHeight().background(CharcoalBorder))
-            Figure("Came in", Money.format(cameIn), ChartreuseSecondary, style, Modifier.weight(1f))
+            Figure(stringResource(R.string.import_came_in), Money.format(cameIn), ChartreuseSecondary, style, Modifier.weight(1f))
         }
 
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = Spacing.xl)) {
-            Text("BY MONTH", style = EyebrowText, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.import_by_month), style = EyebrowText, modifier = Modifier.weight(1f))
             val allSelected = selected.size == items.size
             TextButton(onClick = { items = items.map { it.copy(isSelected = !allSelected) } }, modifier = Modifier.offset(x = Spacing.m)) {
-                Text(if (allSelected) "Untick all" else "Tick all", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+                Text(if (allSelected) stringResource(R.string.import_untick_all) else stringResource(R.string.import_tick_all), style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
             }
         }
 
@@ -155,18 +158,18 @@ fun StatementImportContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(min = 64.dp)
-                            .clickable(onClickLabel = if (isOpen) "Collapse ${group.monthYearKey}" else "Expand ${group.monthYearKey}") { expanded[key] = !isOpen }
+                            .clickable(onClickLabel = if (isOpen) stringResource(R.string.import_collapse_month, group.monthYearKey) else stringResource(R.string.import_expand_month, group.monthYearKey)) { expanded[key] = !isOpen }
                             .padding(start = Spacing.xs, end = Spacing.l),
                     ) {
                         TickBox(
                             checked = allInMonth,
-                            description = "Import all of ${group.monthYearKey}",
+                            description = stringResource(R.string.import_whole_month, group.monthYearKey),
                             onToggle = { checked -> items = items.map { if (it.monthSortKey == key) it.copy(isSelected = checked) else it } },
                         )
                         Column(Modifier.weight(1f)) {
                             Text(group.monthYearKey, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
                             Text(
-                                "${monthItems.count { it.isSelected }} of ${monthItems.size} · ${Money.format(monthSpent)} spent",
+                                stringResource(R.string.import_month_summary, monthItems.count { it.isSelected }, monthItems.size, Money.format(monthSpent)),
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }
@@ -208,11 +211,11 @@ fun StatementTransactionRow(
             .heightIn(min = 56.dp)
             .padding(start = Spacing.xs, end = Spacing.l),
     ) {
-        TickBox(checked = item.isSelected, description = "Import ${item.merchant}", onToggle = onToggleSelected)
+        TickBox(checked = item.isSelected, description = stringResource(R.string.import_merchant, item.merchant), onToggle = onToggleSelected)
         Box {
             CategoryBadge(
                 category = item.category,
-                modifier = Modifier.clickable(onClickLabel = "Change category, now ${item.category}") { categoryMenu = true },
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.import_change_category, item.category)) { categoryMenu = true },
             )
             DropdownMenu(expanded = categoryMenu, onDismissRequest = { categoryMenu = false }, containerColor = CharcoalElevated, shape = KpShapes.medium) {
                 categories.forEach { category ->
@@ -298,19 +301,19 @@ fun StatementParsingLoadingDialog(onCancel: () -> Unit) {
                 .padding(Spacing.xl),
         ) {
             CircularProgressIndicator(color = WarmAmberPrimary, strokeWidth = 3.dp, modifier = Modifier.size(36.dp))
-            Text("Reading your statement", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = Spacing.l))
+            Text(stringResource(R.string.import_reading), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = Spacing.l))
             Text(
                 if (takingLong) {
-                    "Long statements take up to 3 minutes. You can cancel and try a shorter date range."
+                    stringResource(R.string.import_reading_long)
                 } else {
-                    "Sorting its entries by month. Nothing is added until you check them."
+                    stringResource(R.string.import_reading_sorting)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = Spacing.xs).semantics { liveRegion = LiveRegionMode.Polite },
             )
             TextButton(onClick = onCancel, modifier = Modifier.padding(top = Spacing.m).testTag("statement_reading_cancel")) {
-                Text("Cancel", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
+                Text(stringResource(R.string.import_cancel), style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
             }
         }
     }
