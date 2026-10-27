@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani
 
 import android.app.Application
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.vaibhav.kharchapaani.ui.components.CreateGroupContent
@@ -64,7 +65,8 @@ class CreateGroupStringResourcesTest {
         compose.onNodeWithTag("save_group_button").assertIsNotEnabled()
         compose.onNodeWithTag("group_name_input").performTextInput("  Goa's 50% trip  ")
         compose.onNodeWithText("MEMBERS · YOU'RE IN IT").performScrollTo().assertExists()
-        compose.onNodeWithText("Rohan").performScrollTo().performClick()
+        compose.onNodeWithText("Rohan").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("Rohan").assertIsSelected()
         compose.onNodeWithTag("save_group_button").assertTextEquals("Create group").performClick()
         until { vm.submitting.value.isEmpty() }
         val group = db.groupDao().getAllGroupsDirect().single()

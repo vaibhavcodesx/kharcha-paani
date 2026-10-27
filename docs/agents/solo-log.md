@@ -61,4 +61,6 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #148 · X12 / T3.11 shared sheet controls · merged; discard/large-amount/Cancel and amount-field spoken labels use resources with unchanged actions, English and full Indian-formatted amounts.
 
+- 2026-10-27 · #155 · X12 / T3.11 group creation · merged; resource-backed form copy keeps English and local/shared behavior. First CI 40426701681 missed the selected member after a coordinate click; the test now uses the semantic action and asserts selection before saving.
+
 ## Questions
