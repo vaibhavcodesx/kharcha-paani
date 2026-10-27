@@ -22,6 +22,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -78,8 +80,8 @@ fun AddFriendContent(
         modifier = modifier,
         actionBar = {
             GlassActionBar(
-                label = "Add friend",
-                disabledLabel = "Type their name",
+                label = stringResource(R.string.friend_form_add),
+                disabledLabel = stringResource(R.string.friend_form_disabled),
                 enabled = name.isNotBlank(),
                 onClick = { onAdd(name.trim(), colour) },
                 buttonTestTag = "confirm_add_friend_button",
@@ -87,22 +89,22 @@ fun AddFriendContent(
         },
     ) {
         SheetTitle(
-            title = "Add a friend",
-            supporting = "A name and a colour is all it takes — they don't need the app. You can split with them, log IOUs and settle up exactly as with anyone else; it stays your record. Share a group later if you want them to see it too.",
+            title = stringResource(R.string.friend_form_title),
+            supporting = stringResource(R.string.friend_form_supporting),
         )
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
             PersonAvatar(name = name.ifBlank { "?" }, colorHex = colour, size = 56.dp)
-            SheetRow(label = "Name", modifier = Modifier.weight(1f)) {
-                SheetTextInput(value = name, onValueChange = { name = it }, placeholder = "Rohan", fieldTestTag = "add_friend_name_input")
+            SheetRow(label = stringResource(R.string.friend_form_name), modifier = Modifier.weight(1f)) {
+                SheetTextInput(value = name, onValueChange = { name = it }, placeholder = stringResource(R.string.friend_form_placeholder), fieldTestTag = "add_friend_name_input")
             }
         }
-        Text("COLOUR", style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s))
+        Text(stringResource(R.string.friend_form_colour), style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s))
         // Any colour along the spectrum, kept clear of everyone else's (design item 11).
         FriendColourField(
             selected = slot,
             taken = taken,
             onPick = { hue = it.hue; shade = it.shade },
-            whose = name.trim().takeIf { it.isNotEmpty() }?.let { "$it's" } ?: "Their",
+            whose = name.trim().takeIf { it.isNotEmpty() }?.let { stringResource(R.string.friend_colour_possessive, it) } ?: stringResource(R.string.friend_colour_their),
         )
     }
 }

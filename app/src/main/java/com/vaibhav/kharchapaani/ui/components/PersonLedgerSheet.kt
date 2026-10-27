@@ -16,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -64,13 +66,13 @@ fun PersonLedgerContent(
         modifier = modifier,
         actionBar = {
             GlassActionBar(
-                label = if (abs(net) >= 0.005) "Settle up" else "Record a payment",
+                label = if (abs(net) >= 0.005) stringResource(R.string.person_ledger_settle) else stringResource(R.string.person_ledger_payment),
                 enabled = true,
                 onClick = { onSettleUp(person) },
-                summary = if (abs(net) >= 0.005) Money.format(abs(net)) else "All settled",
+                summary = if (abs(net) >= 0.005) Money.format(abs(net)) else stringResource(R.string.person_ledger_settled),
                 detail = when {
-                    net >= 0.005 -> "${person.name} owes you"
-                    net <= -0.005 -> "You owe ${person.name}"
+                    net >= 0.005 -> stringResource(R.string.person_ledger_owes, person.name)
+                    net <= -0.005 -> stringResource(R.string.person_ledger_owe, person.name)
                     else -> null
                 },
                 buttonTestTag = "ledger_settle_up_button",
@@ -83,9 +85,9 @@ fun PersonLedgerContent(
                 Text(person.name, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
                 Text(
                     text = when {
-                        net >= 0.005 -> "Owes you ${Money.format(net)}"
-                        net <= -0.005 -> "You owe ${Money.format(abs(net))}"
-                        else -> "All settled"
+                        net >= 0.005 -> stringResource(R.string.person_ledger_owed_amount, Money.format(net))
+                        net <= -0.005 -> stringResource(R.string.person_ledger_owe_amount, Money.format(abs(net)))
+                        else -> stringResource(R.string.person_ledger_settled)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (net >= 0.005) ChartreuseSecondary else MutedWarmGray,
@@ -93,9 +95,9 @@ fun PersonLedgerContent(
             }
         }
 
-        Text("History · ${ledgerItems.size}", style = MaterialTheme.typography.titleSmall, color = OffWhiteText, modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() })
+        Text(stringResource(R.string.person_ledger_count, ledgerItems.size), style = MaterialTheme.typography.titleSmall, color = OffWhiteText, modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() })
         if (ledgerItems.isEmpty()) {
-            Text("No splits or settlements with ${person.name} yet.", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.person_ledger_empty, person.name), style = MaterialTheme.typography.bodyMedium)
         }
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             ledgerItems.forEachIndexed { index, item ->
@@ -122,7 +124,7 @@ fun PersonLedgerContent(
                     }
                     Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
                         Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text("${dateFormat.format(Date(item.date))} · ${item.subtitle}", style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text(stringResource(R.string.person_ledger_detail, dateFormat.format(Date(item.date)), item.subtitle), style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                     Text(
                         text = Money.format(item.netChange, showPlus = true),
