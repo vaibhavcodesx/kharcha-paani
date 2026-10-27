@@ -52,6 +52,7 @@ class ActionNoticeStringResourcesTest {
         db.close(); Dispatchers.resetMain()
     }
     @Test fun `action notices preserve user names without changing stored data`(): Unit = runBlocking {
+        assertEquals("a groupmate", app.getString(R.string.action_notice_groupmate))
         val name = "Goa's 50% trip"
         vm.createNewGroup(name, "", "🏖️", "#70C1FF", listOf(2L))
         until { vm.submitting.value.isEmpty() }

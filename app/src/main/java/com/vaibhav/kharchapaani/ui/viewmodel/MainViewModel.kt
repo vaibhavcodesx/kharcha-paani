@@ -618,7 +618,7 @@ class MainViewModel(
     /** Who added the expense being edited, when it's a groupmate's that this account paid for. */
     val editingAddedBy: StateFlow<String?> = combine(_editingTransactionId, rawTransactions, people) { id, transactions, people ->
         val tx = id?.let { editing -> transactions.firstOrNull { it.transaction.id == editing } }?.transaction
-        tx?.takeUnless { it.isOwnedByMe }?.let { mine -> people.firstOrNull { it.profileId == mine.ownerProfileId }?.name ?: "a groupmate" }
+        tx?.takeUnless { it.isOwnedByMe }?.let { mine -> people.firstOrNull { it.profileId == mine.ownerProfileId }?.name ?: uiText(R.string.action_notice_groupmate) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val _type = MutableStateFlow("expense")

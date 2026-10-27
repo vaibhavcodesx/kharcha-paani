@@ -348,4 +348,5 @@
         <item quantity="other">Export %1$d entries</item>
     </plurals>
     <string name="action_notice_unknown_owner">the member who added it</string>
+    <string name="action_notice_groupmate">a groupmate</string>
 </resources>
