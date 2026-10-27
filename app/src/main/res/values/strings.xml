@@ -449,4 +449,19 @@
     <string name="subscription_copy_remove">Remove %1$s</string>
     <string name="subscription_copy_cancel_title">Cancel %1$s?</string>
     <string name="subscription_copy_cancel_text">No more charges from %1$s on. The ones already logged stay. This can\'t be undone.</string>
+    <string name="widget_copy_owed">Owed %1$s</string>
+    <string name="widget_copy_owe">You owe %1$s</string>
+    <string name="widget_copy_square">All square</string>
+    <string name="widget_copy_signin">Sign in</string>
+    <string name="widget_copy_signin_hint">Sign in to start logging</string>
+    <string name="widget_copy_prompt">What did you spend on?</string>
+    <string name="widget_copy_spent_description">Spent this month: %1$s</string>
+    <string name="widget_copy_today_description">Spent today: %1$s</string>
+    <string name="widget_copy_log_description">Log an expense</string>
+    <string name="widget_copy_say_description">Say an expense</string>
+    <string name="widget_copy_open_app">Open Kharcha Paani</string>
+    <string name="widget_copy_spent_month">Spent this month</string>
+    <string name="widget_copy_today">Today</string>
+    <string name="widget_copy_log">Log expense</string>
+    <string name="widget_copy_splits_description">Open splits</string>
 </resources>

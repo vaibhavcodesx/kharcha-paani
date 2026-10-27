@@ -11,7 +11,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_bar_background"
-    android:contentDescription="Log an expense"
+    android:contentDescription="@string/widget_copy_log_description"
     android:gravity="center_vertical"
     android:minHeight="56dp"
     android:orientation="horizontal"
@@ -40,7 +40,7 @@
         android:layout_marginStart="12dp"
         android:layout_weight="1"
         android:importantForAccessibility="no"
-        android:text="What did you spend on?" />
+        android:text="@string/widget_copy_prompt" />
 
     <LinearLayout
         android:id="@+id/quick_today_block"
@@ -54,7 +54,7 @@
             style="@style/KpWidgetEyebrow"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Today" />
+            android:text="@string/widget_copy_today" />
 
         <TextView
             android:id="@+id/quick_today"
@@ -71,7 +71,7 @@
         android:layout_height="48dp"
         android:layout_marginStart="10dp"
         android:background="@drawable/widget_circle_surface"
-        android:contentDescription="Say an expense">
+        android:contentDescription="@string/widget_copy_say_description">
 
         <ImageView
             android:layout_width="22dp"

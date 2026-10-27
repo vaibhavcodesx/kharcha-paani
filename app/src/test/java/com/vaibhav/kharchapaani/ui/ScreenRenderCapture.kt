@@ -467,7 +467,7 @@ class ScreenRenderCapture {
         val density = context.resources.displayMetrics.density
         val parent = android.widget.FrameLayout(context)
         val widget = com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider.render(
-            context, com.vaibhav.kharchapaani.widget.WidgetSummary.of(18420.25, 42000.0, 2450.5, todaySpent = 412.0),
+            context, com.vaibhav.kharchapaani.widget.WidgetSummary.of(context, 18420.25, 42000.0, 2450.5, todaySpent = 412.0),
         ).apply(context, parent)
         val width = (340 * density).toInt()
         val height = (170 * density).toInt()
