@@ -28,6 +28,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -87,16 +90,16 @@ fun SharedGroupPanel(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "Shared group",
+                text = stringResource(R.string.shared_group_copy_panel_title),
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.weight(1f).semantics { heading() },
             )
             Text(
                 text = when {
-                    group.isArchived -> "Archived"
-                    group.syncState == SyncState.SYNCED -> "Synced"
-                    group.syncState == SyncState.FAILED -> "Not synced"
-                    else -> "Syncing…"
+                    group.isArchived -> stringResource(R.string.shared_group_copy_archived)
+                    group.syncState == SyncState.SYNCED -> stringResource(R.string.shared_group_copy_synced)
+                    group.syncState == SyncState.FAILED -> stringResource(R.string.shared_group_copy_failed)
+                    else -> stringResource(R.string.shared_group_copy_syncing)
                 },
                 style = MaterialTheme.typography.labelMedium,
                 color = when {
@@ -108,26 +111,26 @@ fun SharedGroupPanel(
             )
         }
 
-        Text("${members.size + 1} PEOPLE", style = EyebrowText)
+        Text(stringResource(R.string.shared_group_copy_people, members.size + 1), style = EyebrowText)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            MemberChip(name = "You", colorHex = LocalMyColour.current.hex)
+            MemberChip(name = stringResource(R.string.shared_group_copy_you), colorHex = LocalMyColour.current.hex)
             members.forEach { MemberChip(name = it.name, colorHex = it.avatarColor, emoji = it.avatarEmoji) }
         }
 
         if (!group.isArchived) {
             InviteSection(invite, onCreateInvite, onShareInvite, onRevokeInvite)
         } else {
-            Text("Archived groups are read-only and can't take new members.", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.shared_group_copy_readonly), style = MaterialTheme.typography.bodyMedium)
         }
 
         Row(Modifier.offset(x = -Spacing.m)) {
             if (isCreator) {
                 TextButton(onClick = { onSetArchived(!group.isArchived) }) {
-                    Text(if (group.isArchived) "Restore group" else "Archive group", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
+                    Text(if (group.isArchived) stringResource(R.string.shared_group_copy_restore) else stringResource(R.string.shared_group_copy_archive), style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
                 }
             }
             TextButton(onClick = { confirmingLeave = true }, enabled = !isLeaving) {
-                Text(if (isLeaving) "Leaving…" else "Leave group", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+                Text(if (isLeaving) stringResource(R.string.shared_group_copy_leaving) else stringResource(R.string.shared_group_copy_leave_group), style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
             }
         }
     }
@@ -137,21 +140,17 @@ fun SharedGroupPanel(
             onDismissRequest = { confirmingLeave = false },
             containerColor = CharcoalSurface,
             shape = KpShapes.large,
-            title = { Text("Leave ${group.name}?", style = MaterialTheme.typography.headlineMedium, color = OffWhiteText) },
+            title = { Text(stringResource(R.string.shared_group_copy_leave_title, group.name), style = MaterialTheme.typography.headlineMedium, color = OffWhiteText) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                     Text(
-                        "Its expenses and settlements will be removed from this phone. Other members keep them, and you can rejoin with a new invite.",
+                        stringResource(R.string.shared_group_copy_leave_explanation),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     if (unsyncedChanges > 0) {
                         // Leaving first would throw these away: the server refuses them from a non-member.
                         Text(
-                            text = if (unsyncedChanges == 1) {
-                                "1 change you made here hasn't synced yet and would be lost. Sync first to keep it."
-                            } else {
-                                "$unsyncedChanges changes you made here haven't synced yet and would be lost. Sync first to keep them."
-                            },
+                            text = pluralStringResource(R.plurals.shared_group_copy_unsynced, unsyncedChanges, unsyncedChanges),
                             style = MaterialTheme.typography.bodyMedium,
                             color = WarmAmberLight,
                         )
@@ -160,17 +159,17 @@ fun SharedGroupPanel(
             },
             confirmButton = {
                 TextButton(onClick = { confirmingLeave = false; onLeave() }) {
-                    Text(if (unsyncedChanges > 0) "Leave anyway" else "Leave", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+                    Text(if (unsyncedChanges > 0) stringResource(R.string.shared_group_copy_leave_anyway) else stringResource(R.string.shared_group_copy_leave), style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
                 }
             },
             dismissButton = {
                 if (unsyncedChanges > 0) {
                     TextButton(onClick = { confirmingLeave = false; onSyncNow() }) {
-                        Text("Sync now", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
+                        Text(stringResource(R.string.shared_group_copy_sync_now), style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
                     }
                 } else {
                     TextButton(onClick = { confirmingLeave = false }) {
-                        Text("Cancel", style = MaterialTheme.typography.labelLarge, color = MutedWarmGray)
+                        Text(stringResource(R.string.shared_group_copy_cancel), style = MaterialTheme.typography.labelLarge, color = MutedWarmGray)
                     }
                 }
             },
@@ -198,22 +197,22 @@ private fun InviteSection(
                     .background(CharcoalBg)
                     .padding(Spacing.l),
             ) {
-                Text("INVITE CODE", style = EyebrowText)
+                Text(stringResource(R.string.shared_group_copy_invite_code), style = EyebrowText)
                 Text(invite.code.chunked(4).joinToString(" "), style = MoneyText.large, color = OffWhiteText)
                 invite.expiresAtMillis?.let {
                     Text(
-                        text = "Anyone with this code can join until ${DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it))}.",
+                        text = stringResource(R.string.shared_group_copy_expires, DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it))),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                PanelButton(label = "Share link", filled = true, onClick = { onShareInvite(link) }, modifier = Modifier.weight(1f))
-                PanelButton(label = "Turn off", filled = false, onClick = onRevokeInvite)
+                PanelButton(label = stringResource(R.string.shared_group_copy_share), filled = true, onClick = { onShareInvite(link) }, modifier = Modifier.weight(1f))
+                PanelButton(label = stringResource(R.string.shared_group_copy_revoke), filled = false, onClick = onRevokeInvite)
             }
         }
         else -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-            PanelButton(label = "Invite people", filled = false, onClick = onCreateInvite, modifier = Modifier.fillMaxWidth())
+            PanelButton(label = stringResource(R.string.shared_group_copy_invite), filled = false, onClick = onCreateInvite, modifier = Modifier.fillMaxWidth())
             invite?.error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = WarmAmberLight) }
         }
     }

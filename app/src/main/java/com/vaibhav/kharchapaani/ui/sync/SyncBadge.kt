@@ -1,5 +1,8 @@
 package com.vaibhav.kharchapaani.ui.sync
 
+import android.content.Context
+import com.vaibhav.kharchapaani.R
+
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -42,10 +45,10 @@ enum class SyncBadge {
         }
 
         /** Spoken with the account button; null when everything's synced. */
-        fun describe(status: SyncStatus): String? = when (of(status)) {
-            Failed -> if (status.failedChanges == 1) "1 change couldn't sync" else "${status.failedChanges} changes couldn't sync"
-            Syncing -> "Syncing"
-            Waiting -> if (status.unsyncedChanges == 1) "1 change waiting to sync" else "${status.unsyncedChanges} changes waiting to sync"
+        fun describe(context: Context, status: SyncStatus): String? = when (of(status)) {
+            Failed -> context.resources.getQuantityString(R.plurals.shared_chrome_failed, status.failedChanges, status.failedChanges)
+            Syncing -> context.getString(R.string.shared_chrome_syncing)
+            Waiting -> context.resources.getQuantityString(R.plurals.shared_chrome_waiting, status.unsyncedChanges, status.unsyncedChanges)
             None -> null
         }
     }
