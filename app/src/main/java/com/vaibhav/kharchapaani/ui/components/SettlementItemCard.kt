@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.testTag
@@ -81,7 +82,8 @@ fun SettlementItemCard(
     val settled = settlement.status == SettlementStatus.CONFIRMED
     val rejected = settlement.status == SettlementStatus.REJECTED
     // Pending or rejected ones never moved a balance, so their amount doesn't wear the money colours.
-    val statusLine = item.statusLine
+    val title = item.title(LocalContext.current)
+    val statusLine = item.statusLine(LocalContext.current)
     val removeLabel = when {
         settlement.status == SettlementStatus.PENDING -> "Withdraw"
         rejected -> "Clear it away"
@@ -147,7 +149,7 @@ fun SettlementItemCard(
                         } else if (item.awaitsMyAnswer) {
                             Modifier.clickable(onClickLabel = "Confirm or say this isn't right") { onAnswer() }
                         } else if (item.involvesMe && (settled || item.recordedByMe)) {
-                            Modifier.clickable(onClickLabel = "More options for ${item.title}") { showMenu = true }
+                            Modifier.clickable(onClickLabel = "More options for ${title}") { showMenu = true }
                         } else {
                             Modifier.semantics(mergeDescendants = true) {}
                         }
@@ -170,7 +172,7 @@ fun SettlementItemCard(
                     )
                 }
                 Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
-                    Text(text = item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(text = title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(text = detail, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     if (statusLine != null) {
                         Text(

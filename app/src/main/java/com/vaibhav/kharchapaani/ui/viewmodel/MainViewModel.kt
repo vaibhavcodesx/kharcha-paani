@@ -19,6 +19,7 @@ import com.vaibhav.kharchapaani.data.repository.ReceiptRepository
 import com.vaibhav.kharchapaani.data.receipts.BillPhoto
 import com.vaibhav.kharchapaani.data.receipts.ReceiptStore
 import android.app.Application
+import com.vaibhav.kharchapaani.R
 import android.content.ClipData
 import android.content.Context
 import com.vaibhav.kharchapaani.ask.AskShare
@@ -502,7 +503,7 @@ class MainViewModel(
         searchQuery,
         selectedFilter
     ) { transactions, settlements, (people, groups), query, filter ->
-        ActivityFeed.build(transactions, settlements, people, groups, query, filter)
+        ActivityFeed.build(getApplication<Application>(), transactions, settlements, people, groups, query, filter)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun retractSettlement(settlementId: Long) {
@@ -538,10 +539,10 @@ class MainViewModel(
         settlements.filter { it.groupId != null }.map { settlement ->
             ActivityItem.Settlement(
                 settlement,
-                fromName = if (settlement.fromPersonId == -1L) "You" else names[settlement.fromPersonId] ?: "Someone",
-                toName = if (settlement.toPersonId == -1L) "You" else names[settlement.toPersonId] ?: "Someone",
+                fromName = if (settlement.fromPersonId == -1L) getApplication<Application>().getString(R.string.activity_description_you) else names[settlement.fromPersonId] ?: getApplication<Application>().getString(R.string.activity_description_someone),
+                toName = if (settlement.toPersonId == -1L) getApplication<Application>().getString(R.string.activity_description_you) else names[settlement.toPersonId] ?: getApplication<Application>().getString(R.string.activity_description_someone),
                 groupName = settlement.groupId?.let(groupNames::get),
-                recordedByName = settlement.recordedByPersonId?.let { id -> if (id == -1L) "You" else names[id] },
+                recordedByName = settlement.recordedByPersonId?.let { id -> if (id == -1L) getApplication<Application>().getString(R.string.activity_description_you) else names[id] },
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

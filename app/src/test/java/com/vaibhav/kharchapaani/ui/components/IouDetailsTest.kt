@@ -93,7 +93,7 @@ class IouDetailsTest {
                 note = note, isIou = true, groupId = 7, recordedByPersonId = recorder, status = status,
             ))
             val repository = LedgerRepository(db)
-            ActivityFeed.build(
+            ActivityFeed.build(application,
                 repository.fullTransactions.first(), repository.allSettlements.first(),
                 repository.allPeople.first(), repository.allGroups.first(), "", ActivityFeed.ALL,
             ).filterIsInstance<ActivityItem.Settlement>().single()

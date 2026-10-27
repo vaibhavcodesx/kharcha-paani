@@ -54,7 +54,7 @@ class ActivitySearchTest {
         vm = MainViewModel(app, db, "11111111-2222-3333-4444-555555555555")
         store.put("main", vm)
         screen.launch { vm.activityFeed.collect {} }
-        until { vm.activityFeed.value.size == 5 && vm.activityFeed.value.filterIsInstance<ActivityItem.Settlement>().single().title.contains("Rohan") }
+        until { vm.activityFeed.value.size == 5 && vm.activityFeed.value.filterIsInstance<ActivityItem.Settlement>().single().title(app).contains("Rohan") }
     }
     private suspend fun until(condition: () -> Boolean) = withTimeout(10000) {
         while (!condition()) { dispatcher.scheduler.runCurrent(); delay(10) }
