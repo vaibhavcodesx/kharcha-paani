@@ -573,4 +573,12 @@
     <string name="upi_copy_copy">Copy</string>
     <string name="upi_copy_pay">Pay %1$s in a UPI app</string>
     <string name="upi_copy_chooser">Pay with</string>
+    <string name="split_notice_join">%1$s and %2$s</string>
+    <string name="split_notice_separator">,\u0020</string>
+    <string name="split_notice_ambiguous">More than one %1$s in your friends, so pick the right one in the split.</string>
+    <string name="split_notice_unknown">Couldn\'t find %1$s in your friends, so they\'re not in the split.</string>
+    <plurals name="split_notice_left_out">
+        <item quantity="one">%1$s isn\'t in %2$s, so they\'re not in its split.</item>
+        <item quantity="other">%1$s aren\'t in %2$s, so they\'re not in its split.</item>
+    </plurals>
 </resources>
