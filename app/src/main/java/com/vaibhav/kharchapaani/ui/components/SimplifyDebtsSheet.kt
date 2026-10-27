@@ -14,6 +14,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -40,11 +42,11 @@ fun SimplifyDebtsSheet(isOpen: Boolean, simplifiedDebts: List<SimplifiedDebt>, o
 fun SimplifyDebtsContent(simplifiedDebts: List<SimplifiedDebt>, modifier: Modifier = Modifier) {
     SheetScaffold(modifier = modifier) {
         SheetTitle(
-            title = "Who pays whom",
+            title = stringResource(R.string.debt_management_title),
             supporting = if (simplifiedDebts.isEmpty()) {
-                "Nobody owes anybody right now."
+                stringResource(R.string.debt_management_empty)
             } else {
-                "The fewest payments that would clear every balance between you and your friends."
+                stringResource(R.string.debt_management_explanation)
             },
         )
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -64,9 +66,9 @@ fun SimplifyDebtsContent(simplifiedDebts: List<SimplifiedDebt>, modifier: Modifi
                     Icon(KpIcons.Lend, contentDescription = null, tint = if (iGet) ChartreuseSecondary else WarmAmberLight, modifier = Modifier.size(20.dp))
                     Text(
                         text = when {
-                            iPay -> "You pay ${debt.toPersonName}"
-                            iGet -> "${debt.fromPersonName} pays you"
-                            else -> "${debt.fromPersonName} pays ${debt.toPersonName}"
+                            iPay -> stringResource(R.string.debt_management_pay, debt.toPersonName)
+                            iGet -> stringResource(R.string.debt_management_receive, debt.fromPersonName)
+                            else -> stringResource(R.string.debt_management_between, debt.fromPersonName, debt.toPersonName)
                         },
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 2,

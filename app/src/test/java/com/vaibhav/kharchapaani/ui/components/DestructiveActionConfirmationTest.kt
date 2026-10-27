@@ -93,7 +93,7 @@ class DestructiveActionConfirmationTest {
         val item = runBlocking {
             val existing = db.groupSyncDao().settlementById(5)!!
             db.groupSyncDao().updateSettlement(existing.copy(isIou = isIou))
-            ActivityFeed.build(
+            ActivityFeed.build(application,
                 repository.fullTransactions.first(), repository.allSettlements.first(),
                 repository.allPeople.first(), repository.allGroups.first(), "", ActivityFeed.ALL,
             ).filterIsInstance<ActivityItem.Settlement>().single()
