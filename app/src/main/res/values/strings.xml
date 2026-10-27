@@ -192,4 +192,23 @@
         <item quantity="one">%1$d entry found</item>
         <item quantity="other">%1$d entries found</item>
     </plurals>
+    <string name="category_control_title">Categories &amp; payment methods</string>
+    <string name="category_control_supporting">Hide the ones you never use and add your own. Entries you\'ve logged keep theirs.</string>
+    <string name="category_control_categories">Categories</string>
+    <string name="category_control_methods">Payment methods</string>
+    <string name="category_control_category">Category</string>
+    <string name="category_control_spending">Spending</string>
+    <string name="category_control_new_spending">New spending category</string>
+    <string name="category_control_income">Income</string>
+    <string name="category_control_new_income">New income category</string>
+    <string name="category_control_paid_with">Paid with</string>
+    <string name="category_control_new_method">New payment method</string>
+    <string name="category_control_new_entries">New entries</string>
+    <string name="category_control_new_explanation">What a new entry starts on. Entries you\'ve logged keep theirs.</string>
+    <string name="category_control_always">Always shown</string>
+    <string name="category_control_hidden">Hidden</string>
+    <string name="category_control_add">Add</string>
+    <string name="category_control_duplicate">That one\'s already there.</string>
+    <string name="category_control_remove">Remove %1$s</string>
+    <string name="category_control_limit">Keep it to %1$d characters.</string>
 </resources>

@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Category/payment preference controls use string resources while names, defaults and saved values stay unchanged (X12 / T3.11).
+
 - Statement review uses string resources for selection counts, existing plurals, actions and reading
   notices, keeping the same English wording and import behavior (X12 / T3.11; import).
 
