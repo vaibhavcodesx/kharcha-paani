@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -42,7 +44,7 @@ fun SettlementAnswerContent(
     modifier: Modifier = Modifier,
 ) {
     val settlement = item.settlement
-    val who = item.otherPartyName ?: "They"
+    val who = item.otherPartyName ?: stringResource(R.string.payment_they)
     val theyPaidMe = settlement.toPersonId == -1L
     var disputing by rememberSaveable(settlement.id) { mutableStateOf(false) }
     var note by rememberSaveable(settlement.id) { mutableStateOf("") }
@@ -52,7 +54,7 @@ fun SettlementAnswerContent(
         modifier = modifier,
         actionBar = {
             GlassActionBar(
-                label = if (disputing) "Send" else "Confirm",
+                label = if (disputing) stringResource(R.string.payment_send) else stringResource(R.string.payment_confirm),
                 enabled = true,
                 onClick = { if (disputing) onReject(note) else onConfirm() },
                 buttonTestTag = if (disputing) "settlement_reject_send" else "settlement_confirm",
@@ -60,35 +62,35 @@ fun SettlementAnswerContent(
         },
     ) {
         SheetTitle(
-            eyebrow = "Waiting for you",
+            eyebrow = stringResource(R.string.payment_waiting_you),
             title = when {
-                settlement.isIou && theyPaidMe -> "$who says they lent you ${Money.format(settlement.amount)}"
-                settlement.isIou -> "$who says you lent them ${Money.format(settlement.amount)}"
-                theyPaidMe -> "$who says they paid you ${Money.format(settlement.amount)}"
-                else -> "$who says you paid them ${Money.format(settlement.amount)}"
+                settlement.isIou && theyPaidMe -> stringResource(R.string.payment_says_lent_you, who, Money.format(settlement.amount))
+                settlement.isIou -> stringResource(R.string.payment_says_you_lent, who, Money.format(settlement.amount))
+                theyPaidMe -> stringResource(R.string.payment_says_paid_you, who, Money.format(settlement.amount))
+                else -> stringResource(R.string.payment_says_you_paid, who, Money.format(settlement.amount))
             },
             supporting = listOfNotNull(day, item.groupName, settlement.note.takeIf { it.isNotBlank() }).joinToString(" · "),
         )
         Text(
             if (disputing) {
-                "It stays on record, marked not right, and doesn't count. $who sees your note and can fix it."
+                stringResource(R.string.payment_reject_body, who)
             } else {
-                "Nothing moves until you answer. Confirm it and it counts for both of you."
+                stringResource(R.string.payment_confirm_body)
             },
             style = MaterialTheme.typography.bodyMedium,
         )
         if (disputing) {
-            SheetRow(label = "What's wrong", modifier = Modifier.padding(top = Spacing.l)) {
+            SheetRow(label = stringResource(R.string.payment_wrong_label), modifier = Modifier.padding(top = Spacing.l)) {
                 SheetTextInput(
                     value = note,
                     onValueChange = { note = it.take(200) },
-                    placeholder = "Optional, like “it was ₹300”",
+                    placeholder = stringResource(R.string.payment_wrong_hint),
                     fieldTestTag = "settlement_reject_note",
                 )
             }
         } else {
             KpButton(
-                label = "That's not right",
+                label = stringResource(R.string.payment_not_right),
                 onClick = { disputing = true },
                 tier = KpButtonTier.Outline,
                 fillWidth = true,
