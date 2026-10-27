@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Action/save/import/export notices use string resources with unchanged English and plural choices; ledger behavior stays unchanged (X12 / T3.11).
+
 - Shared account/month controls and spoken sync summaries use string resources with unchanged English and navigation (X12 / T3.11).
 
 - Open-source licence screen labels use string resources; dependency names, licence names and URLs remain unchanged (X12 / T3.11).

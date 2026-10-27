@@ -99,6 +99,8 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #167 · X12 / T3.11 licence-screen copy · merged; legal names/URLs unchanged. Initial CI 40429560045 failed the AI-notice fixture after a fixed consent delay; it now awaits persistence, drives StandardTestDispatcher and cancels/awaits its ViewModel before closing Room/resetting Main.
 
-- 2026-10-27 · #168 · X12 / T3.11 shared chrome copy · merged; account avatar, month navigation and sync spoken labels use resources; navigation boundaries and sync state logic are unchanged.
+- 2026-10-27 · #168 · X12 / T3.11 shared chrome copy · merged; account avatar, month navigation and sync spoken labels use resources; navigation boundaries and sync state logic are unchanged. Android CI 40440799515 passed all three specified gates; both separate Claude-review jobs failed execution with is_error:true and posted no findings. No workflow or settings change.
+
+- 2026-10-27 · #169 · X12 / T3.11 action notices · merged; save/error, deletion, sharing/import/export and backup notices use resources; submission guards and operation order stay unchanged. Preserve #165 parse-display lookups when resolving the shared ViewModel merge.
 
 ## Questions

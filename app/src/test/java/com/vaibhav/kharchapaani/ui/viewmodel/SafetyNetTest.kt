@@ -67,15 +67,15 @@ class SafetyNetTest {
 
     @Test
     fun `the person is told in words fit for them`() {
-        assertEquals("Couldn't save. Your phone may be out of space.", Submissions.failureMessage(SQLiteFullException("disk full")))
-        assertEquals("Couldn't save just now. Try again.", Submissions.failureMessage(IllegalStateException("closed")))
-        assertEquals("Something went wrong and that wasn't saved. Try again.", Submissions.failureMessage(RuntimeException()))
+        assertEquals("Couldn't save. Your phone may be out of space.", Submissions.failureMessage(SQLiteFullException("disk full"), application))
+        assertEquals("Couldn't save just now. Try again.", Submissions.failureMessage(IllegalStateException("closed"), application))
+        assertEquals("Something went wrong and that wasn't saved. Try again.", Submissions.failureMessage(RuntimeException(), application))
     }
 
     @Test
     fun `a failed action is reported once, frees the action for a retry, and cancellation still cancels`() = runBlocking {
         val messages = mutableListOf<String>()
-        val submissions = Submissions(this, onFailure = { messages += it })
+        val submissions = Submissions(this, application, onFailure = { messages += it })
 
         submissions.launch(Submit.SaveEntry) { throw SQLiteFullException("disk full") }?.join()
         assertEquals(listOf("Couldn't save. Your phone may be out of space."), messages)
