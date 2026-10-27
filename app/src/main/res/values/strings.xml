@@ -255,4 +255,7 @@
     <string name="payment_says_paid_you">%1$s says they paid you %2$s</string>
     <string name="payment_says_you_paid">%1$s says you paid them %2$s</string>
     <string name="payment_reject_body">It stays on record, marked not right, and doesn\'t count. %1$s sees your note and can fix it.</string>
+    <string name="licence_screen_title">Open-source licences</string>
+    <string name="licence_screen_supporting">Kharcha Paani is built on these, each used under its licence. Tap one to read it.</string>
+    <string name="licence_screen_read">Read the %1$s</string>
 </resources>
