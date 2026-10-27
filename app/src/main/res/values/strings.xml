@@ -379,4 +379,15 @@
     <string name="person_ledger_count">History · %1$d</string>
     <string name="person_ledger_empty">No splits or settlements with %1$s yet.</string>
     <string name="person_ledger_detail">%1$s · %2$s</string>
+    <!-- Additional screen strings. -->
+    <string name="timeline_row_edit">Edit</string>
+    <string name="timeline_row_delete">Delete</string>
+    <string name="timeline_row_bill">Has a bill photo</string>
+    <string name="timeline_row_of">of %1$s</string>
+    <string name="timeline_row_between">Split between %1$d</string>
+    <string name="timeline_row_with">Split with %1$s</string>
+    <string name="timeline_row_separator">,\u0020</string>
+    <string name="timeline_row_more">\u0020and %1$d more</string>
+    <string name="timeline_row_visits_description">%1$d this month</string>
+    <string name="timeline_row_visits">%1$d×</string>
 </resources>

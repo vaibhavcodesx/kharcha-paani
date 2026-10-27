@@ -77,4 +77,6 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #156 · X12 / T3.11 friend history · merged; resource-backed balance/action/count/empty copy preserves English; repository-generated row descriptions remain a separate presentation extraction.
 
+- 2026-10-27 · #157 · X12 / T3.11 expense timeline · merged; action, bill-photo and participant/visit labels use resources while swipe guards, data and amounts stay unchanged.
+
 ## Questions
