@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Friend-removal and simplified-debt views use string resources with unchanged English, amounts and confirmation behavior (X12 / T3.11).
+
 - Export-picker labels and existing entry plurals use Android string resources with unchanged
   English wording, ranges and CSV format (X12 / T3.11; export).
 

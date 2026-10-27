@@ -73,6 +73,7 @@ class DebtManagementStringResourcesTest {
         assertTrue(db.personDao().getAllPeopleDirect().isEmpty())
     }
     @Test fun `empty simplified debts keep the existing explanatory sentence`(): Unit = runBlocking {
+        vm.openSimplifyDebts()
         compose.setContent { SplitFlowTheme { SimplifyDebtsContent(vm.simplifiedDebts.value) } }
         compose.onNodeWithText("Who pays whom").assertExists()
         compose.onNodeWithText("Nobody owes anybody right now.").assertExists()
