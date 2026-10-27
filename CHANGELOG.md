@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- AI notice and answer-display copy use string resources with unchanged English; prompt instructions and generated text stay untouched (X12 / T3.11).
+
 - Payment, IOU and settlement-answer form copy uses Android string resources while keeping the
   same English, record directions and confirmation behavior (X12 / T3.11; payment forms).
 
