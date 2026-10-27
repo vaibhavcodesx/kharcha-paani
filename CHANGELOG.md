@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- AI consent, parse-notice and answer-display copy use string resources with unchanged English; prompt instructions and generated text stay untouched (X12 / T3.11).
+
 - Bill-photo row, source-menu and viewer copy use string resources with unchanged English and photo handling (X12 / T3.11).
 
 - UPI setup and payment-code labels use string resources, preserving English, exact amounts and QR/link data (X12 / T3.11).
