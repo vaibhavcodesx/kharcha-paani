@@ -192,4 +192,14 @@
         <item quantity="one">%1$d entry found</item>
         <item quantity="other">%1$d entries found</item>
     </plurals>
+    <string name="timeline_row_edit">Edit</string>
+    <string name="timeline_row_delete">Delete</string>
+    <string name="timeline_row_bill">Has a bill photo</string>
+    <string name="timeline_row_of">of %1$s</string>
+    <string name="timeline_row_between">Split between %1$d</string>
+    <string name="timeline_row_with">Split with %1$s</string>
+    <string name="timeline_row_separator">,\u0020</string>
+    <string name="timeline_row_more">\u0020and %1$d more</string>
+    <string name="timeline_row_visits_description">%1$d this month</string>
+    <string name="timeline_row_visits">%1$d×</string>
 </resources>
