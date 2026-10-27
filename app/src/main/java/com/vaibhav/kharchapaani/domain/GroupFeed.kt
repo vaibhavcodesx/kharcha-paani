@@ -1,5 +1,8 @@
 package com.vaibhav.kharchapaani.domain
 
+import android.content.Context
+import com.vaibhav.kharchapaani.R
+
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.data.model.FullTransaction
@@ -41,19 +44,19 @@ object GroupFeed {
      * Named from this account's side because that is whose sheet it is. A movement between two
      * other members — possible in a group of three or more — is written with both names.
      */
-    fun describe(settlement: SettlementEntity, members: List<PersonEntity>, me: Long = ME): String {
+    fun describe(context: Context, settlement: SettlementEntity, members: List<PersonEntity>, me: Long = ME): String {
         val nameOf = members.associate { it.id to it.name }
-        fun name(id: Long) = if (id == me) "You" else nameOf[id] ?: "Someone"
+        fun name(id: Long) = if (id == me) context.getString(R.string.group_description_you) else nameOf[id] ?: context.getString(R.string.group_description_someone)
         val from = name(settlement.fromPersonId)
         val to = name(settlement.toPersonId)
 
         return when {
-            settlement.isIou && settlement.toPersonId == me -> "$from lent you"
-            settlement.isIou && settlement.fromPersonId == me -> "You lent $to"
-            settlement.isIou -> "$from lent $to"
-            settlement.toPersonId == me -> "$from paid you"
-            settlement.fromPersonId == me -> "You paid $to"
-            else -> "$from paid $to"
+            settlement.isIou && settlement.toPersonId == me -> context.getString(R.string.group_description_lent_you, from)
+            settlement.isIou && settlement.fromPersonId == me -> context.getString(R.string.group_description_you_lent, to)
+            settlement.isIou -> context.getString(R.string.group_description_lent, from, to)
+            settlement.toPersonId == me -> context.getString(R.string.group_description_paid_you, from)
+            settlement.fromPersonId == me -> context.getString(R.string.group_description_you_paid, to)
+            else -> context.getString(R.string.group_description_paid, from, to)
         }
     }
 

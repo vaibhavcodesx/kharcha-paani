@@ -25,6 +25,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -91,6 +93,7 @@ fun SubscriptionsContent(
     modifier: Modifier = Modifier,
     today: LocalDate = LocalDate.now(),
 ) {
+    val cycleLabels = SubscriptionCycle.entries.associateWith { cycleLabel(it) }
     val zone = ZoneId.systemDefault()
     var name by rememberSaveable { mutableStateOf("") }
     var amount by rememberSaveable { mutableStateOf("") }
@@ -119,19 +122,19 @@ fun SubscriptionsContent(
         modifier = modifier,
         actionBar = {
             GlassActionBar(
-                label = "Add subscription",
-                disabledLabel = if (cleanName.isEmpty()) "Name it" else "Add an amount",
+                label = stringResource(R.string.subscription_copy_add),
+                disabledLabel = if (cleanName.isEmpty()) stringResource(R.string.subscription_copy_name_it) else stringResource(R.string.subscription_copy_amount_needed),
                 enabled = ready,
                 onClick = { if (missed.size > 1) askBackdate = true else add(chargeFromStart = true) },
                 summary = if (value > 0) Money.format(value) else null,
-                detail = if (ready) "${cycleLabel(cycle)} · from ${DayFormat.format(start)}" else null,
+                detail = if (ready) stringResource(R.string.subscription_copy_detail, cycleLabel(cycle), DayFormat.format(start)) else null,
                 buttonTestTag = "add_subscription_button",
             )
         },
     ) {
         SheetTitle(
-            title = "Subscriptions",
-            supporting = "Netflix, rent, the gym. Each charge is added to your spending on the day it's due, never before.",
+            title = stringResource(R.string.subscription_copy_title),
+            supporting = stringResource(R.string.subscription_copy_supporting),
         )
 
         if (subscriptions.isNotEmpty()) {
@@ -149,12 +152,12 @@ fun SubscriptionsContent(
             }
         }
 
-        Text("Add one".uppercase(), style = EyebrowText, modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() })
+        Text(stringResource(R.string.subscription_copy_add_one).uppercase(), style = EyebrowText, modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() })
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            SheetRow(label = "Name", position = RowPosition.First) {
-                SheetTextInput(value = name, onValueChange = { name = it }, placeholder = "Netflix", fieldTestTag = "subscription_name_input")
+            SheetRow(label = stringResource(R.string.subscription_copy_name), position = RowPosition.First) {
+                SheetTextInput(value = name, onValueChange = { name = it }, placeholder = stringResource(R.string.subscription_copy_name_example), fieldTestTag = "subscription_name_input")
             }
-            SheetRow(label = "Amount", position = RowPosition.Middle) {
+            SheetRow(label = stringResource(R.string.subscription_copy_amount), position = RowPosition.Middle) {
                 SheetTextInput(
                     value = amount,
                     onValueChange = { typed -> Money.acceptInput(typed)?.let { amount = it } },
@@ -163,30 +166,30 @@ fun SubscriptionsContent(
                     fieldTestTag = "subscription_amount_input",
                 )
             }
-            SheetRow(label = "Every", position = RowPosition.Middle) {
+            SheetRow(label = stringResource(R.string.subscription_copy_every), position = RowPosition.Middle) {
                 SegmentedControl(
                     options = SubscriptionCycle.entries,
                     selected = cycle,
-                    label = { cycleLabel(it) },
+                    label = { cycleLabels.getValue(it) },
                     onSelect = { cycle = it },
                     testTagFor = { "cycle_${it.name}" },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
-            DatePickRow(label = "Starts", date = start, max = today, onPick = { start = it })
+            DatePickRow(label = stringResource(R.string.subscription_copy_starts), date = start, max = today, onPick = { start = it })
         }
         Text(
             text = when {
-                missed.size > 1 -> "Started ${DayFormat.format(start)}: that's ${missed.size} charges so far. You'll be asked whether to add them."
-                else -> "The first charge is added on ${DayFormat.format(start)}."
+                missed.size > 1 -> stringResource(R.string.subscription_copy_past, DayFormat.format(start), missed.size)
+                else -> stringResource(R.string.subscription_copy_first, DayFormat.format(start))
             },
             style = MaterialTheme.typography.bodySmall,
             color = SubMutedWarmGray,
             modifier = Modifier.padding(top = Spacing.s).testTag("subscription_start_note"),
         )
 
-        CategoryPickRow(label = "Category", value = category, choices = Categories.expenseCategories(prefs), onPick = { category = it })
-        CategoryPickRow(label = "Paid with", value = method, choices = Categories.paymentMethods(prefs), onPick = { method = it })
+        CategoryPickRow(label = stringResource(R.string.subscription_copy_category), value = category, choices = Categories.expenseCategories(prefs), onPick = { category = it })
+        CategoryPickRow(label = stringResource(R.string.subscription_copy_method), value = method, choices = Categories.paymentMethods(prefs), onPick = { method = it })
 
         if (askBackdate) {
             AlertDialog(
@@ -194,10 +197,10 @@ fun SubscriptionsContent(
                 containerColor = CharcoalSurface,
                 shape = KpShapes.large,
                 modifier = Modifier.testTag("backdate_dialog"),
-                title = { Text("Add the ${missed.size} charges since ${DayFormat.format(start)}?", style = MaterialTheme.typography.headlineMedium) },
+                title = { Text(stringResource(R.string.subscription_copy_backdate_title, missed.size, DayFormat.format(start)), style = MaterialTheme.typography.headlineMedium) },
                 text = {
                     Text(
-                        "They'll go into those months' spending as ${Money.format(value)} each. Otherwise it starts from the next one.",
+                        stringResource(R.string.subscription_copy_backdate_text, Money.format(value)),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 },
@@ -209,7 +212,7 @@ fun SubscriptionsContent(
                         },
                         modifier = Modifier.testTag("backdate_add_button"),
                     ) {
-                        Text("Add them", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+                        Text(stringResource(R.string.subscription_copy_backdate_add), style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
                     }
                 },
                 dismissButton = {
@@ -220,7 +223,7 @@ fun SubscriptionsContent(
                         },
                         modifier = Modifier.testTag("backdate_skip_button"),
                     ) {
-                        Text("Start from the next one", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
+                        Text(stringResource(R.string.subscription_copy_backdate_skip), style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
                     }
                 },
                 titleContentColor = OffWhiteText,
@@ -258,8 +261,8 @@ private fun SubscriptionRow(
             Text(subscription.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
                 text = when {
-                    next == null -> "Cancelled"
-                    else -> "${cycleLabel(cycle)} · next ${DayFormat.format(next)}"
+                    next == null -> stringResource(R.string.subscription_copy_cancelled)
+                    else -> stringResource(R.string.subscription_copy_next, cycleLabel(cycle), DayFormat.format(next))
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = if (next == null) SubMutedWarmGray else MutedWarmGray,
@@ -269,13 +272,13 @@ private fun SubscriptionRow(
         Text(Money.format(subscription.amount), style = MoneyText.row, color = if (next == null) SubMutedWarmGray else OffWhiteText)
         if (next == null) {
             IconButton(onClick = onDelete, modifier = Modifier.testTag("delete_subscription_${subscription.id}")) {
-                Icon(KpIcons.Delete, contentDescription = "Remove ${subscription.name}", tint = MutedWarmGray, modifier = Modifier.size(20.dp))
+                Icon(KpIcons.Delete, contentDescription = stringResource(R.string.subscription_copy_remove, subscription.name), tint = MutedWarmGray, modifier = Modifier.size(20.dp))
             }
         } else {
             // Asked first: it can't be undone, and the button it leaves behind is Remove.
             var confirming by remember { mutableStateOf(false) }
             TextButton(onClick = { confirming = true }, modifier = Modifier.testTag("cancel_subscription_${subscription.id}")) {
-                Text("Cancel", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+                Text(stringResource(R.string.subscription_copy_cancel), style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
             }
             if (confirming) {
                 AlertDialog(
@@ -283,10 +286,10 @@ private fun SubscriptionRow(
                     containerColor = CharcoalSurface,
                     shape = KpShapes.large,
                     modifier = Modifier.testTag("cancel_subscription_dialog"),
-                    title = { Text("Cancel ${subscription.name}?", style = MaterialTheme.typography.headlineMedium) },
+                    title = { Text(stringResource(R.string.subscription_copy_cancel_title, subscription.name), style = MaterialTheme.typography.headlineMedium) },
                     text = {
                         Text(
-                            "No more charges from ${DayFormat.format(next)} on. The ones already logged stay. This can't be undone.",
+                            stringResource(R.string.subscription_copy_cancel_text, DayFormat.format(next)),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     },
@@ -298,12 +301,12 @@ private fun SubscriptionRow(
                             },
                             modifier = Modifier.testTag("cancel_subscription_confirm"),
                         ) {
-                            Text("Cancel it", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+                            Text(stringResource(R.string.subscription_copy_cancel_it), style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { confirming = false }) {
-                            Text("Keep it", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
+                            Text(stringResource(R.string.subscription_copy_keep), style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
                         }
                     },
                     titleContentColor = OffWhiteText,
@@ -323,7 +326,7 @@ private fun DatePickRow(label: String, date: LocalDate, max: LocalDate, onPick: 
             .heightIn(min = 56.dp)
             .clip(RowPosition.Last.shape)
             .background(CharcoalCard)
-            .clickable(onClickLabel = "Change the start date") {
+            .clickable(onClickLabel = stringResource(R.string.subscription_copy_change_date)) {
                 DatePickerDialog(context, { _, y, m, d -> onPick(LocalDate.of(y, m + 1, d)) }, date.year, date.monthValue - 1, date.dayOfMonth).apply {
                     datePicker.maxDate = max.atTime(23, 59).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
                 }.show()
@@ -364,10 +367,11 @@ private fun CategoryPickRow(label: String, value: String, choices: List<String>,
     }
 }
 
+@Composable
 private fun cycleLabel(cycle: SubscriptionCycle) = when (cycle) {
-    SubscriptionCycle.WEEKLY -> "Weekly"
-    SubscriptionCycle.MONTHLY -> "Monthly"
-    SubscriptionCycle.YEARLY -> "Yearly"
+    SubscriptionCycle.WEEKLY -> stringResource(R.string.subscription_copy_weekly)
+    SubscriptionCycle.MONTHLY -> stringResource(R.string.subscription_copy_monthly)
+    SubscriptionCycle.YEARLY -> stringResource(R.string.subscription_copy_yearly)
 }
 
 private val DayFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)

@@ -22,6 +22,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.testTag
@@ -67,12 +70,13 @@ fun SettlementItemCard(
     var showMenu by remember { mutableStateOf(false) }
     var showDetails by remember(settlement.id) { mutableStateOf(false) }
     var showRemovalConfirmation by remember(settlement.id) { mutableStateOf(false) }
+    val expandedDescription = stringResource(if (showDetails) R.string.settlement_row_expanded else R.string.settlement_row_collapsed)
     val outgoing = settlement.fromPersonId == ME
     val incoming = settlement.toPersonId == ME
     val time = remember(settlement.date) { SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(settlement.date)) }
     val detail = listOfNotNull(
         time,
-        if (settlement.isIou) "IOU" else "Settlement",
+        if (settlement.isIou) stringResource(R.string.settlement_row_iou) else stringResource(R.string.settlement_row_settlement),
         item.groupName,
         settlement.note.takeIf { it.isNotBlank() },
     ).joinToString(" · ")
@@ -81,29 +85,30 @@ fun SettlementItemCard(
     val settled = settlement.status == SettlementStatus.CONFIRMED
     val rejected = settlement.status == SettlementStatus.REJECTED
     // Pending or rejected ones never moved a balance, so their amount doesn't wear the money colours.
-    val statusLine = item.statusLine
+    val title = item.title(LocalContext.current)
+    val statusLine = item.statusLine(LocalContext.current)
     val removeLabel = when {
-        settlement.status == SettlementStatus.PENDING -> "Withdraw"
-        rejected -> "Clear it away"
-        settlement.isIou -> "Delete IOU"
-        else -> "Retract settlement"
+        settlement.status == SettlementStatus.PENDING -> stringResource(R.string.settlement_row_withdraw)
+        rejected -> stringResource(R.string.settlement_row_clear)
+        settlement.isIou -> stringResource(R.string.settlement_row_delete)
+        else -> stringResource(R.string.settlement_row_retract)
     }
     if (showRemovalConfirmation) {
         val amount = Money.format(settlement.amount)
-        val other = item.otherPartyName ?: "this groupmate"
+        val other = item.otherPartyName ?: stringResource(R.string.settlement_row_groupmate)
         val consequence = when {
-            !settled -> "This removes the $amount record with $other. It hasn't counted in your balance."
-            settlement.isIou -> "Removing this $amount IOU takes it out of your balance with $other."
-            else -> "Removing this $amount payment recalculates your balance with $other as if it wasn't recorded. The actual payment isn't reversed."
+            !settled -> stringResource(R.string.settlement_row_not_counted, amount, other)
+            settlement.isIou -> stringResource(R.string.settlement_row_remove_iou, amount, other)
+            else -> stringResource(R.string.settlement_row_remove_payment, amount, other)
         }
         val scope = when {
-            settlement.syncState == SyncState.LOCAL_ONLY -> "This changes the record on this phone."
-            item.groupName != null -> "This change will sync to ${item.groupName}."
-            else -> "This change will sync to your other devices."
+            settlement.syncState == SyncState.LOCAL_ONLY -> stringResource(R.string.settlement_row_local)
+            item.groupName != null -> stringResource(R.string.settlement_row_sync_group, item.groupName.orEmpty())
+            else -> stringResource(R.string.settlement_row_devices)
         }
         RemovalConfirmationDialog(
-            title = "$removeLabel?",
-            description = "$consequence $scope",
+            title = stringResource(R.string.settlement_row_question, removeLabel),
+            description = stringResource(R.string.settlement_row_consequence, consequence, scope),
             confirmLabel = removeLabel,
             dialogTag = "remove_settlement_dialog",
             confirmTag = "confirm_remove_settlement",
@@ -140,14 +145,14 @@ fun SettlementItemCard(
                         if (settlement.isIou) {
                             Modifier.clickable(
                                 role = Role.Button,
-                                onClickLabel = if (showDetails) "Close IOU details" else "Show IOU details",
+                                onClickLabel = if (showDetails) stringResource(R.string.settlement_row_close) else stringResource(R.string.settlement_row_show),
                             ) { showDetails = !showDetails }.semantics {
-                                stateDescription = if (showDetails) "Expanded" else "Collapsed"
+                                stateDescription = expandedDescription
                             }
                         } else if (item.awaitsMyAnswer) {
-                            Modifier.clickable(onClickLabel = "Confirm or say this isn't right") { onAnswer() }
+                            Modifier.clickable(onClickLabel = stringResource(R.string.settlement_row_answer)) { onAnswer() }
                         } else if (item.involvesMe && (settled || item.recordedByMe)) {
-                            Modifier.clickable(onClickLabel = "More options for ${item.title}") { showMenu = true }
+                            Modifier.clickable(onClickLabel = stringResource(R.string.settlement_row_more_for, title)) { showMenu = true }
                         } else {
                             Modifier.semantics(mergeDescendants = true) {}
                         }
@@ -170,7 +175,7 @@ fun SettlementItemCard(
                     )
                 }
                 Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
-                    Text(text = item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(text = title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(text = detail, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     if (statusLine != null) {
                         Text(
@@ -233,7 +238,8 @@ private fun IouDetails(item: ActivityItem.Settlement, onShowOptions: () -> Unit,
     val fullDate = remember(settlement.date) {
         SimpleDateFormat("d MMM yyyy · h:mm a", Locale.getDefault()).format(Date(settlement.date))
     }
-    val recorder = if (settlement.recordedByPersonId == ME) "you" else item.recordedByName
+    val noNote = stringResource(R.string.settlement_row_no_note)
+    val recorder = if (settlement.recordedByPersonId == ME) stringResource(R.string.settlement_row_you) else item.recordedByName
     Column(
         Modifier.fillMaxWidth().background(CharcoalCard).padding(horizontal = Spacing.l, vertical = Spacing.m)
             .testTag("iou_details_${settlement.id}"),
@@ -242,24 +248,24 @@ private fun IouDetails(item: ActivityItem.Settlement, onShowOptions: () -> Unit,
         // Older entries don't know who recorded them: say nothing rather than guess.
         if (recorder != null) {
             Text(
-                "Recorded by $recorder",
+                stringResource(R.string.settlement_row_recorded, recorder),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = Spacing.xs),
             )
         }
         Text(
-            settlement.note.ifBlank { "No note added." },
+            settlement.note.ifBlank { noNote },
             style = MaterialTheme.typography.bodyLarge,
             color = OffWhiteText,
             modifier = Modifier.padding(top = Spacing.m).testTag("iou_note_${settlement.id}"),
         )
         if (item.awaitsMyAnswer) {
             TextButton(onClick = onAnswer, modifier = Modifier.testTag("iou_answer_${settlement.id}")) {
-                Text("Confirm or say this isn't right", color = WarmAmberLight)
+                Text(stringResource(R.string.settlement_row_answer), color = WarmAmberLight)
             }
         } else if (item.involvesMe && (settlement.isConfirmed || item.recordedByMe)) {
             TextButton(onClick = onShowOptions, modifier = Modifier.testTag("iou_options_${settlement.id}")) {
-                Text("More options", color = WarmAmberLight)
+                Text(stringResource(R.string.settlement_row_options), color = WarmAmberLight)
             }
         }
     }

@@ -40,6 +40,7 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class LocalBackupOverCloudRestoreTest {
+    private val copyContext = ApplicationProvider.getApplicationContext<android.content.Context>()
 
     private val owner = "00000000-0000-4000-8000-0000000000a1"
 
@@ -106,7 +107,7 @@ class LocalBackupOverCloudRestoreTest {
         assertEquals(1, report.peopleSkipped)
         assertEquals(2, report.transactionsSkipped)
         assertEquals(2, report.settlementsSkipped)
-        assertEquals("Everything in that backup was already here. Nothing changed.", report.message())
+        assertEquals("Everything in that backup was already here. Nothing changed.", report.message(copyContext))
         assertEquals(1, phoneB.personDao().getAllPeopleDirect().count { it.name.equals("Rohan", ignoreCase = true) })
     }
 

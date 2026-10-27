@@ -15,6 +15,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.Lifecycle
@@ -44,12 +46,17 @@ internal fun FlexibleUpdates(enabled: Boolean, modifier: Modifier = Modifier) {
     LaunchedEffect(enabled, controller) {
         if (enabled && lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) controller.resume()
     }
-    if (ready && enabled) {
-        Snackbar(
-            modifier = modifier.testTag("play_update_ready"),
-            action = {
-                TextButton(onClick = controller::complete, modifier = Modifier.testTag("play_update_restart")) { Text("Restart") }
-            },
-        ) { Text("Update ready. Save any changes, then restart.") }
-    }
+    if (ready && enabled) UpdateReadyNotice(onRestart = controller::complete, modifier = modifier)
+}
+
+@Composable
+internal fun UpdateReadyNotice(onRestart: () -> Unit, modifier: Modifier = Modifier) {
+    Snackbar(
+        modifier = modifier.testTag("play_update_ready"),
+        action = {
+            TextButton(onClick = onRestart, modifier = Modifier.testTag("play_update_restart")) {
+                Text(stringResource(R.string.shell_copy_update_restart))
+            }
+        },
+    ) { Text(stringResource(R.string.shell_copy_update_ready)) }
 }

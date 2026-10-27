@@ -22,6 +22,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -125,6 +127,7 @@ fun UpiPaymentCard(
         // phone, and it is about to become a payment link.
         UpiLink.buildOrNull(payee.upiId, payee.name, shownAmount, note)
     } ?: return
+    val anyAmountLabel = stringResource(R.string.upi_copy_any_amount)
     val clipboard = LocalClipboardManager.current
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -136,13 +139,13 @@ fun UpiPaymentCard(
             .testTag("upi_payment_card"),
     ) {
         Text(
-            text = if (shownAmount != null) "Scan to pay ${Money.format(shownAmount)}" else "Scan to pay ${payee.name}",
+            text = if (shownAmount != null) stringResource(R.string.upi_copy_scan_amount, Money.format(shownAmount)) else stringResource(R.string.upi_copy_scan_name, payee.name),
             style = MaterialTheme.typography.titleMedium,
             color = OffWhiteText,
             textAlign = TextAlign.Center,
         )
         Text(
-            "Any UPI app: GPay, PhonePe, Paytm, BHIM",
+            stringResource(R.string.upi_copy_apps),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(bottom = Spacing.m),
         )
@@ -150,7 +153,7 @@ fun UpiPaymentCard(
             SegmentedControl(
                 options = listOf(true, false),
                 selected = exact,
-                label = { if (it) Money.format(amount) else "Any amount" },
+                label = { if (it) Money.format(amount) else anyAmountLabel },
                 onSelect = { exact = it },
                 testTagFor = { if (it) "upi_qr_exact" else "upi_qr_open" },
                 modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.m),
@@ -158,12 +161,12 @@ fun UpiPaymentCard(
         }
         QrCode(
             text = link,
-            contentDescription = "UPI QR code to pay ${payee.name}" + (shownAmount?.let { " ${Money.format(it)}" } ?: ", any amount"),
+            contentDescription = if (shownAmount != null) stringResource(R.string.upi_copy_qr_exact, payee.name, Money.format(shownAmount)) else stringResource(R.string.upi_copy_qr_any, payee.name),
         )
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = Spacing.s)) {
             Text(payee.upiId, style = MoneyText.small, color = OffWhiteText, modifier = Modifier.testTag("upi_id_text"))
             TextButton(onClick = { clipboard.setText(AnnotatedString(payee.upiId)) }) {
-                Text("Copy", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+                Text(stringResource(R.string.upi_copy_copy), style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
             }
         }
         // A payment link to tap, for the phone that is sending the money. It always carries the
@@ -178,13 +181,13 @@ fun UpiPaymentCard(
         }
         val context = LocalContext.current
         if (payingFromThisPhone && payLink != null && payAmount != null) KpButton(
-            label = "Pay ${Money.format(payAmount)} in a UPI app",
+            label = stringResource(R.string.upi_copy_pay, Money.format(payAmount)),
             onClick = {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(payLink))
                 try {
                     // A chooser rather than the default handler: most phones have several UPI apps
                     // and only one of them has the money in it.
-                    context.startActivity(Intent.createChooser(intent, "Pay with"))
+                    context.startActivity(Intent.createChooser(intent, context.getString(R.string.upi_copy_chooser)))
                 } catch (e: ActivityNotFoundException) {
                     // No UPI app at all. The QR and the copyable ID above still work, so this is a
                     // dead end rather than a failure worth interrupting anyone over.
