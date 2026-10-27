@@ -113,6 +113,8 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #174 · X12 / T3.11 friend-ledger descriptions · merged; generated history titles/statuses use display resources while numeric balance/current-ask calculations keep the same shared computation; notes and full amounts preserved.
 
+- 2026-10-27 · #176 · X12 / T3.11 shared-group notices · merged; join/invite/leave/error notices resolve resources through an injected display-text function; membership, auth and sync rules unchanged. Re-integrated #175 after its squash merge was confirmed; its first approval attempt was rejected on stale pending-check context, then fresh exact-head green checks authorized the successful retry.
+
 - 2026-10-27 · #175 · X12 / T3.11 backup descriptions · merged; summaries, validation reasons and restore reports use resources; backup JSON fields/version and additive restore behavior unchanged. Consolidate the parked/protected/phone handoffs below.
 
 ## Questions

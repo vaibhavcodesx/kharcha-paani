@@ -85,7 +85,7 @@ class SharedGroupsControllerTest {
     }
     private var syncRequests = 0
     private val repository = LedgerRepository(db, selfProfileId = self)
-    private val controller = SharedGroupsController(scope, repository, remote, self, requestSync = { syncRequests++ })
+    private val controller = SharedGroupsController(scope, repository, remote, self, requestSync = { syncRequests++ }, resolveText = { id, args -> context.getString(id, *args) })
 
     @After
     fun tearDown() {
@@ -121,7 +121,7 @@ class SharedGroupsControllerTest {
         controller.onJoinInputChange("ZZ2ZZ3ZZ")
 
         val state = awaitState { it.join?.error != null }
-        assertEquals(SharedGroupsController.INVALID_CODE, state.join?.error)
+        assertEquals(context.getString(SharedGroupsController.INVALID_CODE), state.join?.error)
         assertFalse(state.join!!.canJoin)
     }
 
@@ -141,7 +141,7 @@ class SharedGroupsControllerTest {
         remote.online = false
         controller.openJoin("AB2CD3EF")
 
-        assertEquals(SharedGroupsController.OFFLINE, awaitState { it.join?.error != null }.join?.error)
+        assertEquals(context.getString(SharedGroupsController.OFFLINE), awaitState { it.join?.error != null }.join?.error)
     }
 
     @Test
@@ -184,7 +184,7 @@ class SharedGroupsControllerTest {
 
         controller.leaveGroup(db.groupDao().getGroupByIdDirect(groupId)!!) { error("must not be called") }
 
-        assertEquals(SharedGroupsController.OFFLINE, awaitState { it.message != null }.message)
+        assertEquals(context.getString(SharedGroupsController.OFFLINE), awaitState { it.message != null }.message)
         assertNotNull(db.groupDao().getGroupByIdDirect(groupId))
     }
 }

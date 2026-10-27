@@ -850,4 +850,15 @@
         <item quantity="one">Restored %1$d item; %2$d were already here.</item>
         <item quantity="other">Restored %1$d items; %2$d were already here.</item>
     </plurals>
+    <!-- Additional screen strings. -->
+    <string name="shared_group_notice_default_name">the group</string>
+    <string name="shared_group_notice_joined">Joined %1$s. It appears once sync finishes.</string>
+    <string name="shared_group_notice_not_synced">This group hasn\'t synced yet. Try again in a moment.</string>
+    <string name="shared_group_notice_revoked">Invite link turned off.</string>
+    <string name="shared_group_notice_left">You left %1$s.</string>
+    <string name="shared_group_notice_session">Your session expired. Sign in again.</string>
+    <string name="shared_group_notice_membership">You\'re no longer an active member of this group.</string>
+    <string name="shared_group_notice_problem">Something went wrong (%1$d). Try again.</string>
+    <string name="shared_group_notice_invalid">That invite code is invalid or has expired.</string>
+    <string name="shared_group_notice_offline">You\'re offline. Connect and try again.</string>
 </resources>
