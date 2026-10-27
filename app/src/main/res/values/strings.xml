@@ -542,4 +542,35 @@
     <string name="debt_management_pay">You pay %1$s</string>
     <string name="debt_management_receive">%1$s pays you</string>
     <string name="debt_management_between">%1$s pays %2$s</string>
+    <!-- Additional screen strings. -->
+    <string name="upi_copy_save">Save UPI ID</string>
+    <string name="upi_copy_changes">Save changes</string>
+    <string name="upi_copy_add">Add your UPI ID</string>
+    <string name="upi_copy_check">Check the UPI ID</string>
+    <string name="upi_copy_name_needed">Add a name</string>
+    <string name="upi_copy_saved">Saved</string>
+    <string name="upi_copy_title">Get paid by UPI</string>
+    <string name="upi_copy_supporting">Friends settling up with you can scan your code or copy your ID. People in your shared groups can see it too.</string>
+    <string name="upi_copy_id">UPI ID</string>
+    <string name="upi_copy_placeholder">name@bank</string>
+    <string name="upi_copy_name">Name</string>
+    <string name="upi_copy_name_hint">Shown in their UPI app</string>
+    <string name="upi_copy_invalid">That doesn\'t look like a UPI ID. It\'s usually yourname@bank, like priya@okaxis.</string>
+    <string name="upi_copy_find">Find it in your UPI app\'s profile.</string>
+    <string name="upi_copy_remove">Remove UPI ID</string>
+    <string name="upi_copy_your_code">Your code</string>
+    <string name="upi_copy_their_code">%1$s\'s code</string>
+    <string name="upi_copy_amount_mine">Add an amount to show your code.</string>
+    <string name="upi_copy_amount_theirs">Add an amount to show %1$s\'s code.</string>
+    <string name="upi_copy_add_settings">Add your UPI ID in settings to show a code %1$s can scan to pay you.</string>
+    <string name="upi_copy_no_their_id">%1$s hasn\'t added a UPI ID yet, so there\'s nothing to scan. Add yours in settings to show your code instead, or record the payment once it\'s sent.</string>
+    <string name="upi_copy_any_amount">Any amount</string>
+    <string name="upi_copy_qr_exact">UPI QR code to pay %1$s %2$s</string>
+    <string name="upi_copy_qr_any">UPI QR code to pay %1$s, any amount</string>
+    <string name="upi_copy_scan_amount">Scan to pay %1$s</string>
+    <string name="upi_copy_scan_name">Scan to pay %1$s</string>
+    <string name="upi_copy_apps">Any UPI app: GPay, PhonePe, Paytm, BHIM</string>
+    <string name="upi_copy_copy">Copy</string>
+    <string name="upi_copy_pay">Pay %1$s in a UPI app</string>
+    <string name="upi_copy_chooser">Pay with</string>
 </resources>

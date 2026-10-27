@@ -89,4 +89,6 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #162 · X12 / T3.11 debt management copy · merged; exact English, real-VM friend deletion and empty simplify-state coverage; no debt algorithm changes.
 
+- 2026-10-27 · #163 · X12 / T3.11 UPI card copy · merged; exact English, full amounts and user payee names preserved; QR/URI behavior unchanged.
+
 ## Questions

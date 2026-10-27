@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- UPI setup and payment-code labels use string resources, preserving English, exact amounts and QR/link data (X12 / T3.11).
+
 - Friend-removal and simplified-debt views use string resources with unchanged English, amounts and confirmation behavior (X12 / T3.11).
 
 - Category/payment preference controls use string resources while names, defaults and saved values stay unchanged (X12 / T3.11).
