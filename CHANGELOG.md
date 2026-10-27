@@ -39,6 +39,22 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - AI notice and answer-display copy use string resources with unchanged English; prompt instructions and generated text stay untouched (X12 / T3.11).
 
+- Subscription form, schedule and confirmation copy use string resources with unchanged English (X12 / T3.11).
+
+- Settlement/IOU timeline labels, removal explanations and full-note controls use string resources with unchanged English (X12 / T3.11).
+
+- Timeline expense actions, bill-photo labels and participant/visit descriptions use string resources with unchanged English (X12 / T3.11).
+
+- Friend-history labels, balance sentences and empty copy use string resources with unchanged English (X12 / T3.11).
+
+- Group creation labels and explanations use string resources with unchanged English and member selection (X12 / T3.11).
+
+- Group-detail labels, status lines and participant-dot captions use string resources with unchanged English (X12 / T3.11).
+
+- Friend forms and colour pickers resolve visible and spoken copy from resources without changing English or saved names (X12 / T3.11).
+
+- Backup preview labels and record-count summaries use string resources with the same English (X12 / T3.11).
+
 - Payment, IOU and settlement-answer form copy uses Android string resources while keeping the
   same English, record directions and confirmation behavior (X12 / T3.11; payment forms).
 
