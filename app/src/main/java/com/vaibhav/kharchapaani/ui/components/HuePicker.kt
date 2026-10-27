@@ -14,6 +14,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -47,8 +49,13 @@ fun HuePicker(
     taken: List<Int>,
     onHueChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    whose: String = "Your",
+    whose: String? = null,
 ) {
+    val colourDescription = stringResource(R.string.colour_picker_description, whose ?: stringResource(R.string.colour_picker_your))
+    val nextLabel = stringResource(R.string.colour_picker_next)
+    val previousLabel = stringResource(R.string.colour_picker_previous)
+    val selectionDescription = hue?.let { stringResource(R.string.colour_picker_hue, it) }
+        ?: stringResource(R.string.colour_picker_unchosen)
     val colours = remember { (0 until 360).map { Color(android.graphics.Color.parseColor(Hues.hex(it))) } }
     val free = remember(taken) { BooleanArray(360) { Hues.isFree(it, taken) } }
     val onChange by rememberUpdatedState(onHueChange)
@@ -72,11 +79,11 @@ fun HuePicker(
                 .clip(KpShapes.medium)
                 .testTag("hue_picker")
                 .semantics {
-                    contentDescription = "$whose colour"
-                    stateDescription = hue?.let { "Hue $it" } ?: "Not chosen"
+                    contentDescription = colourDescription
+                    stateDescription = selectionDescription
                     customActions = listOf(
-                        CustomAccessibilityAction("Next colour") { step(1) },
-                        CustomAccessibilityAction("Previous colour") { step(-1) },
+                        CustomAccessibilityAction(nextLabel) { step(1) },
+                        CustomAccessibilityAction(previousLabel) { step(-1) },
                     )
                 }
                 .pointerInput(Unit) { detectTapGestures { pick(it.x, size.width.toFloat()) } }
@@ -94,8 +101,8 @@ fun HuePicker(
             }
         }
         Text(
-            if (taken.isEmpty()) "Drag along the bar. The dimmed band is the app's own accent colour."
-            else "Dimmed colours are too close to someone else's, or the app's own accent colour.",
+            if (taken.isEmpty()) stringResource(R.string.colour_picker_drag)
+            else stringResource(R.string.colour_picker_taken),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = Spacing.s),
         )

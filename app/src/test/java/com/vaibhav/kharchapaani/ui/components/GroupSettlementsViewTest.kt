@@ -140,6 +140,7 @@ class GroupSettlementsViewTest {
         show()
         settlements()
         compose.onNodeWithTag("group_history_settlements").assertIsSelected()
+        compose.onNodeWithText("Settlements · 4").assertExists()
         for (id in listOf(10, 11, 12, 13)) {
             compose.onNodeWithTag("group_settlement_$id").performScrollTo().assertIsDisplayed()
         }

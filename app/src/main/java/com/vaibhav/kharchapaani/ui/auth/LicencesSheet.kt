@@ -9,6 +9,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -50,13 +52,13 @@ fun LicencesSheet(isOpen: Boolean, onDismiss: () -> Unit) {
 fun LicencesContent(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     SheetScaffold(modifier = modifier) {
-        SheetTitle(title = "Open-source licences", supporting = "Kharcha Paani is built on these, each used under its licence. Tap one to read it.")
+        SheetTitle(title = stringResource(R.string.licence_screen_title), supporting = stringResource(R.string.licence_screen_supporting))
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             OpenSourceParts.forEach { part ->
                 Column(
                     Modifier
                         .fillMaxWidth()
-                        .clickable(onClickLabel = "Read the ${part.licence}") { LegalLinks.open(context, part.url) }
+                        .clickable(onClickLabel = stringResource(R.string.licence_screen_read, part.licence)) { LegalLinks.open(context, part.url) }
                         .padding(vertical = 4.dp)
                         .testTag("licence_row"),
                 ) {
