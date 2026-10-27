@@ -13,6 +13,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.ui.components.ChoiceChip
@@ -45,20 +48,20 @@ fun RecordInGroupSection(
             .padding(Spacing.l),
         verticalArrangement = Arrangement.spacedBy(Spacing.s),
     ) {
-        Text(text = "Record in group", style = MaterialTheme.typography.titleSmall)
+        Text(text = stringResource(R.string.shared_group_copy_record), style = MaterialTheme.typography.titleSmall)
         if (options.canSync) {
             Text(
                 text = if (selectedGroupId == null) {
-                    "Choose the group this belongs to so $otherPersonName sees it too."
+                    stringResource(R.string.shared_group_copy_choose, otherPersonName)
                 } else {
-                    "Syncs to everyone in the group."
+                    stringResource(R.string.shared_group_copy_syncs)
                 },
                 style = MaterialTheme.typography.bodyMedium,
             )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 options.groups.forEach { group ->
                     ChoiceChip(
-                        label = "${group.emoji} ${group.name}",
+                        label = stringResource(R.string.shared_group_copy_group_label, group.emoji, group.name),
                         selected = group.id == selectedGroupId,
                         onClick = { onSelectGroup(group.id) },
                     )
@@ -66,12 +69,11 @@ fun RecordInGroupSection(
             }
         } else {
             Text(
-                text = "You and $otherPersonName aren't in an active shared group, so this would stay on this phone. " +
-                    "Create one and invite them to keep it in sync.",
+                text = stringResource(R.string.shared_group_copy_no_shared, otherPersonName),
                 style = MaterialTheme.typography.bodyMedium,
             )
             TextButton(onClick = onCreateGroup, modifier = Modifier.offset(x = -Spacing.m)) {
-                Text("Create a shared group", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+                Text(stringResource(R.string.shared_group_copy_create), style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
             }
         }
     }

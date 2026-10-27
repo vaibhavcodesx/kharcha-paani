@@ -11,6 +11,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.platform.testTag
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.domain.UpiLink
@@ -35,6 +37,8 @@ fun MoneyQrSection(
     moneyComesToMe: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val myCodeLabel = stringResource(R.string.upi_copy_your_code)
+    val theirCodeLabel = stringResource(R.string.upi_copy_their_code, person.name.trim().substringBefore(' ').ifEmpty { person.name })
     val theirPayee = person.upiId?.let(UpiLink::cleanId)?.let { UpiPayee(it, person.name) }
     val firstName = person.name.trim().substringBefore(' ').ifEmpty { person.name }
     val preferMine = if (moneyComesToMe) myPayee != null else theirPayee == null
@@ -46,7 +50,7 @@ fun MoneyQrSection(
             SegmentedControl(
                 options = listOf(true, false),
                 selected = showMine,
-                label = { if (it) "Your code" else "$firstName's code" },
+                label = { if (it) myCodeLabel else theirCodeLabel },
                 onSelect = { showMine = it },
                 testTagFor = { if (it) "qr_mine" else "qr_theirs" },
                 modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.s),
@@ -61,14 +65,14 @@ fun MoneyQrSection(
                 payingFromThisPhone = !showMine,
             )
             payee != null -> Text(
-                "Add an amount to show ${if (showMine) "your" else "$firstName's"} code.",
+                if (showMine) stringResource(R.string.upi_copy_amount_mine) else stringResource(R.string.upi_copy_amount_theirs, firstName),
                 style = MaterialTheme.typography.bodyMedium,
             )
             else -> Text(
                 if (moneyComesToMe) {
-                    "Add your UPI ID in settings to show a code $firstName can scan to pay you."
+                    stringResource(R.string.upi_copy_add_settings, firstName)
                 } else {
-                    "$firstName hasn't added a UPI ID yet, so there's nothing to scan. Add yours in settings to show your code instead, or record the payment once it's sent."
+                    stringResource(R.string.upi_copy_no_their_id, firstName)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.testTag("no_payee_upi"),
