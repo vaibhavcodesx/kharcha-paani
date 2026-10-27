@@ -37,7 +37,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
-- Friend-row Asked today/yesterday/day-count labels use string resources with unchanged calendar-day behavior; outgoing messages remain untouched (X12 / T3.11).
+- Friend-row Asked today/yesterday/day-count and shared payment-code labels use string resources with unchanged calendar-day/share behavior; outgoing messages remain untouched (X12 / T3.11).
 
 - Timeline expense actions, bill-photo labels and participant/visit descriptions use string resources with unchanged English (X12 / T3.11).
 
