@@ -192,4 +192,36 @@
         <item quantity="one">%1$d entry found</item>
         <item quantity="other">%1$d entries found</item>
     </plurals>
+    <string name="subscription_copy_add">Add subscription</string>
+    <string name="subscription_copy_name_it">Name it</string>
+    <string name="subscription_copy_amount_needed">Add an amount</string>
+    <string name="subscription_copy_title">Subscriptions</string>
+    <string name="subscription_copy_supporting">Netflix, rent, the gym. Each charge is added to your spending on the day it\'s due, never before.</string>
+    <string name="subscription_copy_add_one">Add one</string>
+    <string name="subscription_copy_name">Name</string>
+    <string name="subscription_copy_name_example">Netflix</string>
+    <string name="subscription_copy_amount">Amount</string>
+    <string name="subscription_copy_every">Every</string>
+    <string name="subscription_copy_starts">Starts</string>
+    <string name="subscription_copy_category">Category</string>
+    <string name="subscription_copy_method">Paid with</string>
+    <string name="subscription_copy_backdate_add">Add them</string>
+    <string name="subscription_copy_backdate_skip">Start from the next one</string>
+    <string name="subscription_copy_cancelled">Cancelled</string>
+    <string name="subscription_copy_cancel">Cancel</string>
+    <string name="subscription_copy_cancel_it">Cancel it</string>
+    <string name="subscription_copy_keep">Keep it</string>
+    <string name="subscription_copy_change_date">Change the start date</string>
+    <string name="subscription_copy_weekly">Weekly</string>
+    <string name="subscription_copy_monthly">Monthly</string>
+    <string name="subscription_copy_yearly">Yearly</string>
+    <string name="subscription_copy_detail">%1$s · from %2$s</string>
+    <string name="subscription_copy_past">Started %1$s: that\'s %2$d charges so far. You\'ll be asked whether to add them.</string>
+    <string name="subscription_copy_first">The first charge is added on %1$s.</string>
+    <string name="subscription_copy_backdate_title">Add the %1$d charges since %2$s?</string>
+    <string name="subscription_copy_backdate_text">They\'ll go into those months\' spending as %1$s each. Otherwise it starts from the next one.</string>
+    <string name="subscription_copy_next">%1$s · next %2$s</string>
+    <string name="subscription_copy_remove">Remove %1$s</string>
+    <string name="subscription_copy_cancel_title">Cancel %1$s?</string>
+    <string name="subscription_copy_cancel_text">No more charges from %1$s on. The ones already logged stay. This can\'t be undone.</string>
 </resources>
