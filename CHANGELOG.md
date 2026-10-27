@@ -299,6 +299,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Changed
 
+- Known statement-review warnings use display resources with unchanged English, flags and
+  selections; unknown source text stays intact (X12 / T3.11; statement warnings).
+
 - PRD.md is now a short page on what the product is and which rules still hold. The September
   brief it replaced (cloud migration, robustness, premium UI pass), which shipped in v1.0–v1.4, is
   archived in `docs/history/prd-2026-09-cloud-migration.md`. CLAUDE.md now points agents at the

@@ -784,4 +784,8 @@
     <string name="signin_copy_demo_of">of ₹1,920</string>
     <string name="signin_copy_demo_payment">Rohan paid you</string>
     <string name="signin_copy_demo_settled">UPI · settled up</string>
+    <string name="statement_warning_no_date">Couldn\'t read its date: it would be added as today</string>
+    <string name="statement_warning_future">Dated after today</string>
+    <string name="statement_warning_large">Much bigger than the rest of this statement</string>
+    <string name="statement_warning_outside">Outside the statement\'s dates (%1$s)</string>
 </resources>

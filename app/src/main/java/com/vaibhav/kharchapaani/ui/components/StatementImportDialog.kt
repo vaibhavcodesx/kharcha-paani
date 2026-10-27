@@ -55,6 +55,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.vaibhav.kharchapaani.data.model.StatementParseResult
+import com.vaibhav.kharchapaani.domain.StatementChecks
 import com.vaibhav.kharchapaani.domain.Categories
 import com.vaibhav.kharchapaani.domain.CategoryPrefs
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
@@ -180,6 +181,7 @@ fun StatementImportContent(
                             monthItems.forEach { item ->
                                 StatementTransactionRow(
                                     item = item,
+                                    statementPeriod = parseResult.statementPeriod,
                                     // The same choices as everywhere else: an income row offers income categories.
                                     categories = Categories.categoriesFor(if (item.type.equals("income", ignoreCase = true)) "income" else "expense", prefs),
                                     onToggleSelected = { checked -> items = items.map { if (it.id == item.id) it.copy(isSelected = checked) else it } },
@@ -201,6 +203,7 @@ fun StatementTransactionRow(
     onChangeCategory: (String) -> Unit,
     modifier: Modifier = Modifier,
     categories: List<String> = Categories.expenseCategories(CategoryPrefs()),
+    statementPeriod: String = "",
 ) {
     var categoryMenu by remember { mutableStateOf(false) }
     val isIncome = item.type.equals("income", ignoreCase = true)
@@ -238,7 +241,14 @@ fun StatementTransactionRow(
                 overflow = TextOverflow.Ellipsis,
             )
             // Left unticked on purpose (StatementChecks): say why, so ticking it is a decision.
-            item.flag?.let { reason ->
+            val displayFlag = when (item.flag) {
+                StatementChecks.NO_DATE -> stringResource(R.string.statement_warning_no_date)
+                StatementChecks.FUTURE -> stringResource(R.string.statement_warning_future)
+                StatementChecks.LARGE -> stringResource(R.string.statement_warning_large)
+                StatementChecks.outside(statementPeriod.trim()) -> stringResource(R.string.statement_warning_outside, statementPeriod.trim())
+                else -> item.flag
+            }
+            displayFlag?.let { reason ->
                 Text(reason, style = MaterialTheme.typography.bodySmall, color = WarmAmberLight, modifier = Modifier.testTag("statement_flag_${item.id}"))
             }
         }
