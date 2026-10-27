@@ -14,6 +14,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.RoundRect
@@ -47,9 +49,17 @@ fun FriendColourField(
     taken: List<Hues.Slot>,
     onPick: (Hues.Slot) -> Unit,
     modifier: Modifier = Modifier,
-    whose: String = "Their",
+    whose: String? = null,
 ) {
     val rows = Hues.SHADES.size
+    val colourDescription = stringResource(R.string.colour_picker_description, whose ?: stringResource(R.string.friend_colour_their))
+    val nextLabel = stringResource(R.string.colour_picker_next)
+    val previousLabel = stringResource(R.string.colour_picker_previous)
+    val lighterLabel = stringResource(R.string.colour_picker_lighter)
+    val deeperLabel = stringResource(R.string.colour_picker_deeper)
+    val shadeLabels = listOf(stringResource(R.string.colour_picker_light), stringResource(R.string.colour_picker_medium), stringResource(R.string.colour_picker_deep))
+    val selectionDescription = selected?.let { stringResource(R.string.colour_picker_slot, it.hue, shadeLabels[it.shade]) }
+        ?: stringResource(R.string.colour_picker_unchosen)
     val colours = remember { List(rows) { row -> (0 until 360).map { Color(android.graphics.Color.parseColor(Hues.hex(it, Hues.SHADES[row]))) } } }
     val free = remember(taken) { List(rows) { row -> BooleanArray(360) { Hues.isFreeSlot(Hues.Slot(it, row), taken) } } }
     val onChange by rememberUpdatedState(onPick)
@@ -86,13 +96,13 @@ fun FriendColourField(
                 .height(rowHeight * rows + gap * (rows - 1))
                 .testTag("friend_colour_field")
                 .semantics {
-                    contentDescription = "$whose colour"
-                    stateDescription = selected?.let { "Hue ${it.hue}, ${listOf("light", "medium", "deep")[it.shade]}" } ?: "Not chosen"
+                    contentDescription = colourDescription
+                    stateDescription = selectionDescription
                     customActions = listOf(
-                        CustomAccessibilityAction("Next colour") { step(1) },
-                        CustomAccessibilityAction("Previous colour") { step(-1) },
-                        CustomAccessibilityAction("Lighter") { shadeStep(-1) },
-                        CustomAccessibilityAction("Deeper") { shadeStep(1) },
+                        CustomAccessibilityAction(nextLabel) { step(1) },
+                        CustomAccessibilityAction(previousLabel) { step(-1) },
+                        CustomAccessibilityAction(lighterLabel) { shadeStep(-1) },
+                        CustomAccessibilityAction(deeperLabel) { shadeStep(1) },
                     )
                 }
                 .pointerInput(Unit) { detectTapGestures { pick(it.x, it.y, size.width.toFloat(), rowHeight.toPx(), gap.toPx()) } }
@@ -130,7 +140,7 @@ fun FriendColourField(
         }
         val room = remember(taken) { Hues.roomFor(taken) }
         Text(
-            "Across for the colour, down for lighter or deeper. Dimmed spots are too close to someone else's. Room for about $room more.",
+            stringResource(R.string.colour_picker_room, room),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = Spacing.s),
         )
