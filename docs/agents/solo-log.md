@@ -103,4 +103,6 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #169 · X12 / T3.11 action notices · merged; save/error, deletion, sharing/import/export and backup notices use resources; submission guards and operation order stay unchanged. Preserve #165 parse-display lookups when resolving the shared ViewModel merge.
 
+- 2026-10-27 · #170 · X12 / T3.11 app-shell and update notices · merged; copy/resources only for import/share/Undo/permission/settings/ledger-open errors and downloaded-update restart prompt; release policy and foreground guards unchanged.
+
 ## Questions

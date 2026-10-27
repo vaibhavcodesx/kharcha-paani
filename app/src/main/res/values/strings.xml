@@ -747,4 +747,17 @@
     </plurals>
     <string name="action_notice_unknown_owner">the member who added it</string>
     <string name="action_notice_groupmate">a groupmate</string>
+    <!-- Additional screen strings. -->
+    <string name="shell_copy_file_failed">Couldn\'t open that file.</string>
+    <string name="shell_copy_notifications">Open your phone\'s settings and turn on notifications for Kharcha Paani.</string>
+    <string name="shell_copy_undo">Undo</string>
+    <string name="shell_copy_camera_missing">No camera app on this phone. Choose a photo from the gallery instead.</string>
+    <string name="shell_copy_invite">Join \"%1$s\" on Kharcha Paani to split expenses together: %2$s</string>
+    <string name="shell_copy_share_invite">Share invite</string>
+    <string name="shell_copy_ledger_title">Your ledger didn\'t open</string>
+    <string name="shell_copy_ledger_explanation">Nothing was deleted. Try again, and if it keeps happening, restart the app.</string>
+    <string name="shell_copy_ledger_retry">Try again</string>
+    <string name="shell_copy_ledger_sign_out">Sign out</string>
+    <string name="shell_copy_update_restart">Restart</string>
+    <string name="shell_copy_update_ready">Update ready. Save any changes, then restart.</string>
 </resources>

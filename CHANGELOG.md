@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- App-shell/update notices, invite sharing and ledger-open guidance use string resources with unchanged English and callbacks (X12 / T3.11).
+
 - Action/save/import/export notices use string resources with unchanged English and plural choices; ledger behavior stays unchanged (X12 / T3.11).
 
 - Shared account/month controls and spoken sync summaries use string resources with unchanged English and navigation (X12 / T3.11).
