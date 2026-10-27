@@ -57,6 +57,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
@@ -148,6 +150,8 @@ fun GroupDetailContent(
     aiAvailable: Boolean = true,
     people: List<PersonEntity> = groupDetails.members,
 ) {
+    val settlementsLabel = stringResource(R.string.group_detail_settlements)
+    val allActivityLabel = stringResource(R.string.group_detail_all)
     val group = groupDetails.group
     var settlementsOnly by rememberSaveable(group.id) { mutableStateOf(false) }
     var selectedCategory by rememberSaveable(group.id) { mutableStateOf<String?>(null) }
@@ -163,8 +167,8 @@ fun GroupDetailContent(
         modifier = modifier,
         actionBar = {
             GlassActionBar(
-                label = "Add expense",
-                disabledLabel = "Archived groups are read-only",
+                label = stringResource(R.string.group_detail_add),
+                disabledLabel = stringResource(R.string.group_detail_readonly),
                 enabled = !group.isArchived,
                 onClick = { onAddExpense(group.id) },
                 buttonTestTag = "add_group_expense_button",
@@ -199,7 +203,7 @@ fun GroupDetailContent(
             ) {
                 Icon(KpIcons.Statement, contentDescription = null, tint = WarmAmberLight, modifier = Modifier.size(18.dp))
                 Text(
-                    "Archived. Its history stays, but nothing new can be added or changed.",
+                    stringResource(R.string.group_detail_archived),
                     style = MaterialTheme.typography.bodyMedium,
                     color = WarmAmberLight,
                     modifier = Modifier.padding(start = Spacing.s),
@@ -209,15 +213,15 @@ fun GroupDetailContent(
         }
 
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
-            Figure("Spent", Money.format(groupDetails.totalExpenses), OffWhiteText, Modifier.weight(1f))
+            Figure(stringResource(R.string.group_detail_spent), Money.format(groupDetails.totalExpenses), OffWhiteText, Modifier.weight(1f))
             Divider()
-            Figure("Your share", Money.format(groupDetails.myShare), OffWhiteText, Modifier.weight(1f))
+            Figure(stringResource(R.string.group_detail_share), Money.format(groupDetails.myShare), OffWhiteText, Modifier.weight(1f))
             Divider()
             Figure(
                 label = when {
-                    net >= 0.005 -> "You're owed"
-                    net <= -0.005 -> "You owe"
-                    else -> "Settled"
+                    net >= 0.005 -> stringResource(R.string.group_detail_owed)
+                    net <= -0.005 -> stringResource(R.string.group_detail_owe)
+                    else -> stringResource(R.string.group_detail_settled)
                 },
                 value = Money.format(abs(net)),
                 color = if (net >= 0.005) MoneyIn else if (net <= -0.005) MoneyOut else MutedWarmGray,
@@ -230,14 +234,14 @@ fun GroupDetailContent(
         }
 
         if (shares.size > 1) {
-            SectionTitle("Who spent what", top = Spacing.xxl)
+            SectionTitle(stringResource(R.string.group_detail_members), top = Spacing.xxl)
             MemberShareDonut(shares, Modifier.padding(top = Spacing.s))
         }
 
         // The trip read lives here rather than on Insights: it is about a group, and asking it from
         // Insights would need a group picker for no reason (owner decision, 2026-09-19).
         if (aiAvailable && groupDetails.transactionsCount > 0) {
-            SectionTitle("How did this trip go?", top = Spacing.xxl)
+            SectionTitle(stringResource(R.string.group_detail_trip), top = Spacing.xxl)
             Column(
                 Modifier
                     .fillMaxWidth()
@@ -255,12 +259,12 @@ fun GroupDetailContent(
                     onRetry = { onAskTripReview(group.id) },
                     // The Insights wording told you to pick a question, above a card with no
                     // questions on it and a single button.
-                    idleMessage = "A read of the whole group: who carried it, what it cost, how it went.",
+                    idleMessage = stringResource(R.string.group_detail_trip_idle),
                     failure = (tripReview as? AskState.Failed)?.reason,
                 )
                 if (tripReview !is AskState.Answered && tripReview !is AskState.Asking) {
                     KpButton(
-                        label = "Read this trip",
+                        label = stringResource(R.string.group_detail_read),
                         onClick = { onAskTripReview(group.id) },
                         // Outline, not Ghost: Ghost's fill is CharcoalElevated, which against the
                         // CharcoalCard this button sits on is very nearly the same colour, leaving
@@ -276,7 +280,7 @@ fun GroupDetailContent(
         }
 
         if (debts.isNotEmpty()) {
-            SectionTitle("Who owes whom", top = Spacing.xxl)
+            SectionTitle(stringResource(R.string.group_detail_debts), top = Spacing.xxl)
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 debts.forEachIndexed { index, debt ->
                     DebtRow(
@@ -295,7 +299,7 @@ fun GroupDetailContent(
         }
 
         if (categories.isNotEmpty()) {
-            SectionTitle("Where it went", top = Spacing.xxl)
+            SectionTitle(stringResource(R.string.group_detail_categories), top = Spacing.xxl)
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 val largest = categories.maxOf { it.amount }.coerceAtLeast(0.01)
                 categories.forEach { summary ->
@@ -321,7 +325,7 @@ fun GroupDetailContent(
                                 GroupExpenseRow(
                                     expense = expense,
                                     people = people,
-                                    detail = "${dateFormat.format(Date(expense.transaction.date))} · ${GroupExpenseCredit.line(expense, groupDetails.members)}",
+                                    detail = stringResource(R.string.group_detail_date_credit, dateFormat.format(Date(expense.transaction.date)), GroupExpenseCredit.line(expense, groupDetails.members)),
                                     position = RowPosition.of(index, entries.size),
                                     onClick = if (!group.isArchived && expense.canEdit) ({ onEditTransaction(expense) }) else null,
                                 )
@@ -341,7 +345,7 @@ fun GroupDetailContent(
         SegmentedControl(
             options = listOf(false, true),
             selected = settlementsOnly,
-            label = { if (it) "Settlements" else "All activity" },
+            label = { if (it) settlementsLabel else allActivityLabel },
             onSelect = { settlementsOnly = it },
             testTagFor = { if (it) "group_history_settlements" else "group_history_all" },
             modifier = Modifier.fillMaxWidth().padding(top = Spacing.xl),
@@ -349,20 +353,20 @@ fun GroupDetailContent(
 
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = Spacing.xl, bottom = Spacing.s)) {
             Text(
-                text = "${if (settlementsOnly) "Settlements" else "Activity"} · ${feed.size}",
+                text = stringResource(R.string.group_detail_count, if (settlementsOnly) settlementsLabel else stringResource(R.string.group_detail_activity), feed.size),
                 style = MaterialTheme.typography.titleSmall,
                 color = OffWhiteText,
                 modifier = Modifier.weight(1f).semantics { heading() },
             )
             if (groupDetails.transactions.isNotEmpty()) {
                 TextButton(onClick = { onExportGroup(group.id) }, modifier = Modifier.testTag("export_group_button")) {
-                    Text("Export", style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+                    Text(stringResource(R.string.group_detail_export), style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
                 }
             }
         }
         if (feed.isEmpty()) {
             Text(
-                text = if (settlementsOnly) "No settlements recorded in this group yet." else if (group.isArchived) "Nothing was logged in this group." else "Nothing logged here yet. Add the first expense below.",
+                text = if (settlementsOnly) stringResource(R.string.group_detail_empty_settlements) else if (group.isArchived) stringResource(R.string.group_detail_empty_archived) else stringResource(R.string.group_detail_empty),
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -373,7 +377,7 @@ fun GroupDetailContent(
                     is GroupFeedEntry.Expense -> GroupExpenseRow(
                         expense = entry.transaction,
                         people = people,
-                        detail = "${dateFormat.format(Date(entry.date))} · ${GroupExpenseCredit.line(entry.transaction, groupDetails.members)}",
+                        detail = stringResource(R.string.group_detail_date_credit, dateFormat.format(Date(entry.date)), GroupExpenseCredit.line(entry.transaction, groupDetails.members)),
                         position = position,
                         // Whoever added it or paid for it can edit it (item 11).
                         onClick = if (entry.transaction.canEdit) ({ onEditTransaction(entry.transaction) }) else null,
@@ -402,10 +406,10 @@ private fun GroupMovementRow(
     val accent = if (incoming) ChartreuseSecondary else WarmAmberLight
     val title = remember(settlement, members) { GroupFeed.describe(settlement, members) }
     val status = when (settlement.pendingResponse ?: settlement.status) {
-        SettlementStatus.CONFIRMED -> "Confirmed"
-        SettlementStatus.PENDING -> "Waiting for confirmation"
-        SettlementStatus.REJECTED -> "Not confirmed"
-    } + if (settlement.pendingResponse != null) " · waiting to sync" else ""
+        SettlementStatus.CONFIRMED -> stringResource(R.string.group_detail_confirmed)
+        SettlementStatus.PENDING -> stringResource(R.string.group_detail_pending)
+        SettlementStatus.REJECTED -> stringResource(R.string.group_detail_rejected)
+    } + if (settlement.pendingResponse != null) stringResource(R.string.group_detail_waiting_sync) else ""
     val direction = when {
         !settlement.isConfirmed -> ""
         settlement.toPersonId == -1L -> "+"
@@ -437,7 +441,7 @@ private fun GroupMovementRow(
         Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
             Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
-                text = listOfNotNull(detail, status, if (settlement.isIou) "IOU" else "Settlement", settlement.note.takeIf { it.isNotBlank() })
+                text = listOfNotNull(detail, status, if (settlement.isIou) stringResource(R.string.group_detail_iou) else stringResource(R.string.group_detail_settlement), settlement.note.takeIf { it.isNotBlank() })
                     .joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -460,7 +464,7 @@ private fun GroupExpenseRow(expense: FullTransaction, people: List<PersonEntity>
             .heightIn(min = 64.dp)
             .clip(position.shape)
             .background(CharcoalCard)
-            .then(if (onClick != null) Modifier.clickable(onClickLabel = "Edit", onClick = onClick) else Modifier.semantics(mergeDescendants = true) {})
+            .then(if (onClick != null) Modifier.clickable(onClickLabel = stringResource(R.string.group_detail_edit), onClick = onClick) else Modifier.semantics(mergeDescendants = true) {})
             .padding(horizontal = Spacing.l, vertical = Spacing.m)
             .testTag("group_expense_${tx.id}"),
     ) {
@@ -472,7 +476,7 @@ private fun GroupExpenseRow(expense: FullTransaction, people: List<PersonEntity>
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(Money.format(tx.amount), style = MoneyText.row, color = OffWhiteText)
-            Text("yours ${Money.format(expense.myPersonalShare)}", style = MoneyText.small)
+            Text(stringResource(R.string.group_detail_yours, Money.format(expense.myPersonalShare)), style = MoneyText.small)
         }
     }
 }
@@ -550,7 +554,7 @@ private fun MemberShareDonut(shares: List<MemberShare>, modifier: Modifier = Mod
                 }
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("SPENT", style = EyebrowText, maxLines = 1)
+                Text(stringResource(R.string.group_detail_spent_upper), style = EyebrowText, maxLines = 1)
                 Text(Money.format(total), style = MoneyText.small, color = OffWhiteText, maxLines = 1)
             }
         }
@@ -566,7 +570,7 @@ private fun MemberShareDonut(shares: List<MemberShare>, modifier: Modifier = Mod
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f).padding(horizontal = Spacing.s),
                     )
-                    Text("${(share.fraction * 100).roundToInt()}%", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(end = Spacing.s))
+                    Text(stringResource(R.string.group_detail_percent, (share.fraction * 100).roundToInt()), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(end = Spacing.s))
                     Text(Money.format(share.amount), style = MoneyText.small, color = OffWhiteText)
                 }
             }
@@ -588,7 +592,7 @@ private fun DebtRow(debt: SimplifiedDebt, position: RowPosition, onSettleUp: (()
             .testTag("debt_${debt.fromPersonId}_${debt.toPersonId}"),
     ) {
         Text(
-            text = "${debt.fromPersonName} → ${debt.toPersonName}",
+            text = stringResource(R.string.group_detail_direction, debt.fromPersonName, debt.toPersonName),
             style = MaterialTheme.typography.bodyLarge,
             color = OffWhiteText,
             maxLines = 1,
@@ -600,7 +604,7 @@ private fun DebtRow(debt: SimplifiedDebt, position: RowPosition, onSettleUp: (()
             // The most consequential thing on this screen — a real debt between two named people,
             // in an exact amount — and it used to look the same as an inline link.
             KpButton(
-                label = "Settle up",
+                label = stringResource(R.string.group_detail_settle),
                 onClick = onSettleUp,
                 tier = KpButtonTier.Outline,
                 testTag = "settle_${debt.fromPersonId}_${debt.toPersonId}",
@@ -624,7 +628,7 @@ private fun GroupCategoryRow(
             .background(CharcoalCard)
             .clickable(
                 role = Role.Button,
-                onClickLabel = if (isSelected) "Close ${summary.category}" else "Show ${summary.category} entries",
+                onClickLabel = if (isSelected) stringResource(R.string.group_detail_close_category, summary.category) else stringResource(R.string.group_detail_show_category, summary.category),
                 onClick = onClick,
             )
             .semantics(mergeDescendants = true) { selected = isSelected }

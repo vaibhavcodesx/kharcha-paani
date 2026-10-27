@@ -8,6 +8,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
@@ -39,22 +41,22 @@ fun DeleteFriendDialog(
         containerColor = CharcoalSurface,
         shape = KpShapes.large,
         modifier = Modifier.testTag("delete_friend_dialog"),
-        title = { Text("Delete ${person.name}?", style = MaterialTheme.typography.headlineMedium) },
+        title = { Text(stringResource(R.string.debt_management_delete_title, person.name), style = MaterialTheme.typography.headlineMedium) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 if (abs(currentBalance) >= 0.005) {
                     Text(
                         text = if (currentBalance > 0) {
-                            "${person.name} still owes you ${Money.format(currentBalance)}. That balance goes too."
+                            stringResource(R.string.debt_management_owed, person.name, Money.format(currentBalance))
                         } else {
-                            "You still owe ${person.name} ${Money.format(abs(currentBalance))}. That balance goes too."
+                            stringResource(R.string.debt_management_owe, person.name, Money.format(abs(currentBalance)))
                         },
                         style = MaterialTheme.typography.bodyLarge,
                         color = WarmAmberLight,
                     )
                 }
                 Text(
-                    "Settlements and IOUs with them are removed. Expenses you split only with them stay in your history as your own, at what you spent.",
+                    stringResource(R.string.debt_management_consequence),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
@@ -67,12 +69,12 @@ fun DeleteFriendDialog(
                 },
                 modifier = Modifier.testTag("confirm_delete_friend_button"),
             ) {
-                Text("Delete", style = MaterialTheme.typography.labelLarge, color = DestructiveText)
+                Text(stringResource(R.string.debt_management_delete), style = MaterialTheme.typography.labelLarge, color = DestructiveText)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", style = MaterialTheme.typography.labelLarge, color = MutedWarmGray)
+                Text(stringResource(R.string.debt_management_cancel), style = MaterialTheme.typography.labelLarge, color = MutedWarmGray)
             }
         },
         titleContentColor = OffWhiteText,

@@ -15,6 +15,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -31,19 +33,21 @@ import com.vaibhav.kharchapaani.ui.theme.Spacing
 internal fun GroupExpensePeople(expense: FullTransaction, people: List<PersonEntity>) {
     val me = LocalMyColour.current.color
     val unknown = parseColor("")
-    fun name(id: Long?) = if (id == -1L) "You" else people.firstOrNull { it.id == id }?.name ?: "Former member"
+    val you = stringResource(R.string.group_people_you)
+    val former = stringResource(R.string.group_people_former)
+    fun name(id: Long?) = if (id == -1L) you else people.firstOrNull { it.id == id }?.name ?: former
     fun colour(id: Long?) = if (id == -1L) me else people.firstOrNull { it.id == id }?.avatarColor?.let { parseColor(it) } ?: unknown
     val payer = expense.split?.paidByPersonId ?: if (expense.transaction.isOwnedByMe) -1L
         else people.firstOrNull { it.profileId == expense.transaction.ownerProfileId }?.id
     val prefix = "group_expense_${expense.transaction.id}"
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            Text("Paid by", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.group_people_paid), style = MaterialTheme.typography.bodySmall)
             MemberColourName(name(payer), colour(payer), "${prefix}_payer_$payer")
         }
         if (expense.shares.isNotEmpty()) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                Text("Split with", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.group_people_split), style = MaterialTheme.typography.bodySmall)
                 expense.shares.distinctBy { if (it.isGuest) "guest_${it.guestPersonId}_${it.guestName}" else "person_${it.personId}" }
                     .forEachIndexed { index, share ->
                         val id = if (share.isGuest) share.guestPersonId else share.personId
