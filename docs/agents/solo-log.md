@@ -59,6 +59,10 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #144 · X12 / T3.11 navigation copy · merged; tabs store resource IDs and Compose resolves visual/spoken labels before callbacks; English labels, stable enum values, tags and the 150% accessibility threshold are unchanged.
 
+- 2026-10-27 · #149 · X12 / T3.11 statement review copy · merged; existing selection/found plurals, row/month actions and reading notices use resources; row flags/data and import behavior are unchanged, and parked X8 is not resumed.
+
 - 2026-10-27 · #148 · X12 / T3.11 shared sheet controls · merged; discard/large-amount/Cancel and amount-field spoken labels use resources with unchanged actions, English and full Indian-formatted amounts.
+
+- 2026-10-27 · #154 · X12 / T3.11 group detail · merged; screen labels/statuses/counts and participant captions use resources; domain-generated credit/movement descriptions remain a shared presentation follow-up, and AI output/prompts are untouched.
 
 ## Questions
