@@ -13,6 +13,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -61,12 +63,12 @@ fun UpiContent(
         modifier = modifier,
         actionBar = {
             GlassActionBar(
-                label = if (saved == null) "Save UPI ID" else "Save changes",
+                label = if (saved == null) stringResource(R.string.upi_copy_save) else stringResource(R.string.upi_copy_changes),
                 disabledLabel = when {
-                    payee == null && id.isBlank() -> "Add your UPI ID"
-                    cleanId == null -> "Check the UPI ID"
-                    cleanName == null -> "Add a name"
-                    else -> "Saved"
+                    payee == null && id.isBlank() -> stringResource(R.string.upi_copy_add)
+                    cleanId == null -> stringResource(R.string.upi_copy_check)
+                    cleanName == null -> stringResource(R.string.upi_copy_name_needed)
+                    else -> stringResource(R.string.upi_copy_saved)
                 },
                 enabled = changed,
                 onClick = { payee?.let(onSave) },
@@ -75,26 +77,26 @@ fun UpiContent(
         },
     ) {
         SheetTitle(
-            title = "Get paid by UPI",
-            supporting = "Friends settling up with you can scan your code or copy your ID. People in your shared groups can see it too.",
+            title = stringResource(R.string.upi_copy_title),
+            supporting = stringResource(R.string.upi_copy_supporting),
         )
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            SheetRow(label = "UPI ID", position = RowPosition.First) {
+            SheetRow(label = stringResource(R.string.upi_copy_id), position = RowPosition.First) {
                 SheetTextInput(
                     value = id,
                     onValueChange = { id = it },
-                    placeholder = "name@bank",
+                    placeholder = stringResource(R.string.upi_copy_placeholder),
                     keyboardType = KeyboardType.Email,
                     fieldTestTag = "upi_id_input",
                 )
             }
-            SheetRow(label = "Name", position = RowPosition.Last) {
-                SheetTextInput(value = name, onValueChange = { name = it }, placeholder = "Shown in their UPI app", fieldTestTag = "upi_name_input")
+            SheetRow(label = stringResource(R.string.upi_copy_name), position = RowPosition.Last) {
+                SheetTextInput(value = name, onValueChange = { name = it }, placeholder = stringResource(R.string.upi_copy_name_hint), fieldTestTag = "upi_name_input")
             }
         }
         val idInvalid = id.isNotBlank() && cleanId == null
         Text(
-            text = if (idInvalid) "That doesn't look like a UPI ID. It's usually yourname@bank, like priya@okaxis." else "Find it in your UPI app's profile.",
+            text = if (idInvalid) stringResource(R.string.upi_copy_invalid) else stringResource(R.string.upi_copy_find),
             style = MaterialTheme.typography.bodySmall,
             color = if (idInvalid) WarmAmberLight else SubMutedWarmGray,
             modifier = Modifier
@@ -111,7 +113,7 @@ fun UpiContent(
                 onClick = onRemove,
                 modifier = Modifier.fillMaxWidth().padding(top = Spacing.m).testTag("upi_remove_button"),
             ) {
-                Text("Remove UPI ID", style = MaterialTheme.typography.labelLarge, color = DestructiveText)
+                Text(stringResource(R.string.upi_copy_remove), style = MaterialTheme.typography.labelLarge, color = DestructiveText)
             }
         }
     }
