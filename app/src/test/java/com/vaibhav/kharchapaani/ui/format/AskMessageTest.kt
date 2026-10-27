@@ -6,10 +6,18 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.time.LocalDate
 import java.time.ZoneOffset
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36])
 class AskMessageTest {
+    private val context = ApplicationProvider.getApplicationContext<Context>()
 
     private val zone = ZoneOffset.UTC
     private fun on(day: Int) = LocalDate.of(2026, 10, day).atStartOfDay(zone).toInstant().toEpochMilli()
@@ -65,8 +73,8 @@ class AskMessageTest {
     @Test
     fun `the asked line counts calendar days`() {
         val now = on(10) + 9 * 3_600_000L
-        assertEquals("Asked today", AskMessage.askedLabel(on(10), now, zone))
-        assertEquals("Asked yesterday", AskMessage.askedLabel(on(9) + 23 * 3_600_000L, now, zone))
-        assertEquals("Asked 3 days ago", AskMessage.askedLabel(on(7), now, zone))
+        assertEquals("Asked today", AskMessage.askedLabel(context, on(10), now, zone))
+        assertEquals("Asked yesterday", AskMessage.askedLabel(context, on(9) + 23 * 3_600_000L, now, zone))
+        assertEquals("Asked 3 days ago", AskMessage.askedLabel(context, on(7), now, zone))
     }
 }

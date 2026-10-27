@@ -1741,7 +1741,7 @@ class MainViewModel(
                 }
             }
             val firstName = person.name.trim().substringBefore(' ').ifEmpty { person.name }
-            val chooser = AskShare.chooser(app, AskShare.sendIntent(message, qr), person.id, amount, userId, uiText(R.string.action_notice_ask_chooser, firstName))
+            val chooser = AskShare.chooser(app, AskShare.sendIntent(app, message, qr), person.id, amount, userId, uiText(R.string.action_notice_ask_chooser, firstName))
             context.startActivity(chooser)
         }
     }

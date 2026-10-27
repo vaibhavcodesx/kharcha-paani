@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Friend-row Asked today/yesterday/day-count and shared payment-code labels use string resources with unchanged calendar-day/share behavior; outgoing messages remain untouched (X12 / T3.11).
+
 - Shared-group action and recovery notices use string resources with unchanged English and remote/status handling (X12 / T3.11).
 
 - Backup summaries, validation reasons and restore reports use string resources with unchanged English, JSON format and additive restore behavior (X12 / T3.11).
