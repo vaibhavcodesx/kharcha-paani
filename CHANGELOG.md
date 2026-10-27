@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Shared-group action and recovery notices use string resources with unchanged English and remote/status handling (X12 / T3.11).
+
 - Timeline expense actions, bill-photo labels and participant/visit descriptions use string resources with unchanged English (X12 / T3.11).
 
 - Friend-history labels, balance sentences and empty copy use string resources with unchanged English (X12 / T3.11).
