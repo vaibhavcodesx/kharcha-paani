@@ -16,6 +16,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -68,14 +71,14 @@ fun JoinGroupContent(
         modifier = modifier,
         actionBar = {
             GlassActionBar(
-                label = state.preview?.let { "Join ${it.groupName}" } ?: "Join group",
-                disabledLabel = if (state.isJoining) "Joining…" else state.preview?.let { "Join ${it.groupName}" } ?: "Join group",
+                label = state.preview?.let { stringResource(R.string.shared_group_copy_join_named, it.groupName) } ?: stringResource(R.string.shared_group_copy_join),
+                disabledLabel = if (state.isJoining) stringResource(R.string.shared_group_copy_joining) else state.preview?.let { stringResource(R.string.shared_group_copy_join_named, it.groupName) } ?: stringResource(R.string.shared_group_copy_join),
                 enabled = state.canJoin,
                 onClick = onJoin,
             )
         },
     ) {
-        SheetTitle(title = "Join a group", supporting = "Paste the invite link, or type the 8-character code someone shared with you.")
+        SheetTitle(title = stringResource(R.string.shared_group_copy_join_title), supporting = stringResource(R.string.shared_group_copy_join_support))
 
         Box(
             modifier = Modifier
@@ -87,7 +90,7 @@ fun JoinGroupContent(
                 .padding(horizontal = Spacing.l),
             contentAlignment = Alignment.CenterStart,
         ) {
-            if (state.input.isEmpty()) Text("Link or code", style = MaterialTheme.typography.bodyLarge, color = SubMutedWarmGray)
+            if (state.input.isEmpty()) Text(stringResource(R.string.shared_group_copy_input), style = MaterialTheme.typography.bodyLarge, color = SubMutedWarmGray)
             BasicTextField(
                 value = state.input,
                 onValueChange = onInputChange,
@@ -135,9 +138,9 @@ private fun InvitePreviewCard(preview: InvitePreview, modifier: Modifier = Modif
         }
         Column(Modifier.padding(start = Spacing.m)) {
             Text(preview.groupName, style = MaterialTheme.typography.titleMedium)
-            val members = if (preview.memberCount == 1) "1 member" else "${preview.memberCount} members"
-            val inviter = preview.inviterName?.let { "Invited by $it • " }.orEmpty()
-            Text("$inviter$members", style = MaterialTheme.typography.bodyMedium)
+            val members = pluralStringResource(R.plurals.shared_group_copy_members, preview.memberCount, preview.memberCount)
+            val inviter = preview.inviterName?.let { stringResource(R.string.shared_group_copy_inviter, it) }.orEmpty()
+            Text(stringResource(R.string.shared_group_copy_preview_summary, inviter, members), style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

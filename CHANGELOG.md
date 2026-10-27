@@ -39,6 +39,36 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - Open-source licence screen labels use string resources; dependency names, licence names and URLs remain unchanged (X12 / T3.11).
 
+- Notification offers and screen labels use string resources with unchanged English and permission behavior (X12 / T3.11).
+
+- AI consent, parse-notice and answer-display copy use string resources with unchanged English; prompt instructions and generated text stay untouched (X12 / T3.11).
+
+- Bill-photo row, source-menu and viewer copy use string resources with unchanged English and photo handling (X12 / T3.11).
+
+- UPI setup and payment-code labels use string resources, preserving English, exact amounts and QR/link data (X12 / T3.11).
+
+- Friend-removal and simplified-debt views use string resources with unchanged English, amounts and confirmation behavior (X12 / T3.11).
+
+- Category/payment preference controls use string resources while names, defaults and saved values stay unchanged (X12 / T3.11).
+
+- Shared-group join, invite and recording controls use string resources and existing plural wording without behavior changes (X12 / T3.11).
+
+- Subscription form, schedule and confirmation copy use string resources with unchanged English (X12 / T3.11).
+
+- Settlement/IOU timeline labels, removal explanations and full-note controls use string resources with unchanged English (X12 / T3.11).
+
+- Timeline expense actions, bill-photo labels and participant/visit descriptions use string resources with unchanged English (X12 / T3.11).
+
+- Friend-history labels, balance sentences and empty copy use string resources with unchanged English (X12 / T3.11).
+
+- Group creation labels and explanations use string resources with unchanged English and member selection (X12 / T3.11).
+
+- Group-detail labels, status lines and participant-dot captions use string resources with unchanged English (X12 / T3.11).
+
+- Friend forms and colour pickers resolve visible and spoken copy from resources without changing English or saved names (X12 / T3.11).
+
+- Backup preview labels and record-count summaries use string resources with the same English (X12 / T3.11).
+
 - Payment, IOU and settlement-answer form copy uses Android string resources while keeping the
   same English, record directions and confirmation behavior (X12 / T3.11; payment forms).
 

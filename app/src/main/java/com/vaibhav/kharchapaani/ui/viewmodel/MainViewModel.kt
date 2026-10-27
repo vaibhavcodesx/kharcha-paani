@@ -2,8 +2,8 @@ package com.vaibhav.kharchapaani.ui.viewmodel
 
 import kotlinx.coroutines.CancellationException
 import com.vaibhav.kharchapaani.diagnostics.CrashReporting
-import com.vaibhav.kharchapaani.domain.receiptNotice
-import com.vaibhav.kharchapaani.domain.quickAddNotice
+import com.vaibhav.kharchapaani.ui.format.receiptNoticeResource
+import com.vaibhav.kharchapaani.ui.format.quickAddNoticeResource
 import com.vaibhav.kharchapaani.domain.isSavableAmount
 import com.vaibhav.kharchapaani.domain.NotificationAccess
 import com.vaibhav.kharchapaani.domain.NotificationMoment
@@ -19,6 +19,7 @@ import com.vaibhav.kharchapaani.data.repository.ReceiptRepository
 import com.vaibhav.kharchapaani.data.receipts.BillPhoto
 import com.vaibhav.kharchapaani.data.receipts.ReceiptStore
 import android.app.Application
+import com.vaibhav.kharchapaani.R
 import android.content.ClipData
 import android.content.Context
 import com.vaibhav.kharchapaani.ask.AskShare
@@ -1017,7 +1018,7 @@ class MainViewModel(
             rawText,
         )
         if (_paymentMethod.value.isBlank()) _paymentMethod.value = defaultPaymentMethod()
-        _parseNotice.value = listOfNotNull("Filled in on your phone. Check the amount and details.", splitNotice).joinToString(" ")
+        _parseNotice.value = listOfNotNull(getApplication<Application>().getString(R.string.ai_display_local_filled), splitNotice).joinToString(" ")
         _isConfirmSheetOpen.value = true
     }
 
@@ -1034,7 +1035,7 @@ class MainViewModel(
                 if (outcome.result.paymentMethod.isBlank()) _paymentMethod.value = defaultPaymentMethod()
                 // Why it's a guess, when it is: offline, out of quota and a refused key each say so.
                 // Then any name in the line that didn't find its friend.
-                _parseNotice.value = listOfNotNull(outcome.failure?.quickAddNotice(), splitNotice)
+                _parseNotice.value = listOfNotNull(outcome.failure?.let { getApplication<Application>().getString(it.quickAddNoticeResource) }, splitNotice)
                     .joinToString(" ").ifEmpty { null }
             } finally {
                 // Whatever happened, the sheet never stays stuck on "Reading…".
@@ -1064,15 +1065,15 @@ class MainViewModel(
                     is ReceiptReadResult.Read -> {
                         applyParsedResult(read.entry)
                         _parseNotice.value = when {
-                            read.missingAmount -> "Read the bill, but couldn't find the total. Fill in the amount."
-                            _billPhoto.value != BillPhoto.None -> "Read from your bill. The photo is kept below."
+                            read.missingAmount -> getApplication<Application>().getString(R.string.ai_display_receipt_missing_total)
+                            _billPhoto.value != BillPhoto.None -> getApplication<Application>().getString(R.string.ai_display_receipt_photo_kept)
                             else -> null
                         }
                     }
                     is ReceiptReadResult.Failed -> {
                         applyParsedResult(ParsedTransactionResult(type = "expense", amount = 0.0, merchant = "", category = "Other", paymentMethod = "Other", note = "", readFailed = true))
                         // "Try a clearer photo" was the answer to being offline too.
-                        _parseNotice.value = read.reason.receiptNotice()
+                        _parseNotice.value = getApplication<Application>().getString(read.reason.receiptNoticeResource)
                     }
                 }
             } finally {

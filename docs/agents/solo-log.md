@@ -67,4 +67,36 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #148 · X12 / T3.11 shared sheet controls · merged; discard/large-amount/Cancel and amount-field spoken labels use resources with unchanged actions, English and full Indian-formatted amounts.
 
+- 2026-10-27 · #155 · X12 / T3.11 group creation · merged; resource-backed form copy keeps English and local/shared behavior. First CI 40426701681 missed the selected member after a coordinate click; the test now uses the semantic action and asserts selection before saving.
+
+- 2026-10-27 · #154 · X12 / T3.11 group detail · merged; screen labels/statuses/counts and participant captions use resources; domain-generated credit/movement descriptions remain a shared presentation follow-up, and AI output/prompts are untouched.
+
+- 2026-10-27 · #153 · X12 / T3.11 friend and colour forms · merged; visible/spoken labels use resources, default possessives resolve in Compose and names remain data; test-only palette names remain metadata.
+
+- 2026-10-27 · #152 · X12 / T3.11 backup preview · merged; resource-backed count plurals and labels keep English and additive confirmation; domain summary/JSON APIs are unchanged.
+
+- 2026-10-27 · #156 · X12 / T3.11 friend history · merged; resource-backed balance/action/count/empty copy preserves English; repository-generated row descriptions remain a separate presentation extraction.
+
+- 2026-10-27 · #157 · X12 / T3.11 expense timeline · merged; action, bill-photo and participant/visit labels use resources while swipe guards, data and amounts stay unchanged.
+
+- 2026-10-27 · #158 · X12 / T3.11 settlement timeline · merged; resource-backed actions, removal consequences and IOU note controls preserve English, permissions and response data; generated activity titles/statuses are tracked separately in #173.
+
+- 2026-10-27 · #159 · X12 / T3.11 subscriptions · merged; resource-backed form/cycle/schedule/confirmation copy preserves English, dates and stored names; scheduling behavior stays unchanged.
+
+- 2026-10-27 · #160 · X12 / T3.11 shared-group controls · merged; join/invite/leave/recording prompts use resources with existing English plurals and unchanged eligibility, permissions and sync behavior.
+
+- 2026-10-27 · #161 · X12 / T3.11 category controls · merged; resource-backed preference labels keep English, canonical/default IDs and custom names; protected AppSettings stays unchanged.
+
+- 2026-10-27 · #162 · X12 / T3.11 debt management copy · merged; exact English, real-VM friend deletion and empty simplify-state coverage; no debt algorithm changes.
+
+- 2026-10-27 · #163 · X12 / T3.11 UPI card copy · merged; exact English, full amounts and user payee names preserved; QR/URI behavior unchanged.
+
+- 2026-10-27 · #164 · X12 / T3.11 bill-photo copy · merged; exact menu/viewer/spoken English and optional spacing preserved; capture/storage behavior unchanged. First integrated CI 40437543151 exposed SafetyNetTest resetting Dispatchers.Main while its uncancelled ViewModel was reading Room; the fixture now cancels and awaits the real ViewModel before resetting Main, with a StandardTestDispatcher.
+
+- 2026-10-27 · #165 · X12 / T3.11 AI presentation copy · merged; consent, labels, answer errors and parse notices use resources; parity tests preserve English, while protected prompt instructions and generated answers stay untouched. First integrated CI 40438740894 found a missing R import in the added local/bill display lookups; the explicit import fixes compilation.
+
+- 2026-10-27 · #166 · X12 / T3.11 notification-screen copy · merged; exact quiet-hour and nudge English preserved; actual notification-moment dismissal tested. Reminder controls in protected AccountSheet remain a Claude handoff.
+
+- 2026-10-27 · #167 · X12 / T3.11 licence-screen copy · merged; legal names/URLs unchanged. Initial CI 40429560045 failed the AI-notice fixture after a fixed consent delay; it now awaits persistence, drives StandardTestDispatcher and cancels/awaits its ViewModel before closing Room/resetting Main.
+
 ## Questions
