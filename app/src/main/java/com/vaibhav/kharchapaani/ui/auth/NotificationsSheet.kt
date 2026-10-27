@@ -17,6 +17,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -51,7 +53,7 @@ import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 /**
  * Shown before Android's own notification dialog, right after something a notification would follow
  * up on (notifications plan N1). Android's dialog only says "allow notifications?"; this says what
- * they'd be for. "Not now" is a fine answer: everything still works, and the Notifications screen can
+ * they'd be for. stringResource(R.string.notification_screen_not_now) is a fine answer: everything still works, and the Notifications screen can
  * ask again later.
  */
 @Composable
@@ -78,27 +80,28 @@ fun NotificationOfferContent(
     SheetScaffold(
         modifier = modifier,
         actionBar = {
-            GlassActionBar(label = "Turn on notifications", enabled = true, onClick = onTurnOn, buttonTestTag = "notification_offer_turn_on")
+            GlassActionBar(label = stringResource(R.string.notification_screen_offer_on), enabled = true, onClick = onTurnOn, buttonTestTag = "notification_offer_turn_on")
         },
     ) {
         SheetTitle(title = title, supporting = body)
         TextButton(onClick = onNotNow, modifier = Modifier.fillMaxWidth().testTag("notification_offer_not_now")) {
-            Text("Not now", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
+            Text(stringResource(R.string.notification_screen_not_now), style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
         }
     }
 }
 
 /** What each moment's offer says. Only what the app really sends today; never a promise of more. */
+@Composable
 internal fun offerCopy(moment: NotificationMoment, reminderTime: String): Pair<String, String> = when (moment) {
     NotificationMoment.FirstOwnEntry ->
-        "A nudge at $reminderTime?" to
-            "If nothing's logged by then, you'll get one reminder. Change the time or turn it off whenever you like."
+        stringResource(R.string.notification_screen_nudge_title, reminderTime) to
+            stringResource(R.string.notification_screen_nudge_body)
     NotificationMoment.JoinedGroup, NotificationMoment.CreatedGroup ->
-        "Know when a payment needs you" to
-            "When someone in the group says they paid you, you'll get a heads-up so you can confirm it. Only things that need you."
+        stringResource(R.string.notification_screen_group_title) to
+            stringResource(R.string.notification_screen_group_body)
     NotificationMoment.RecordedPayment ->
-        "Hear about payments that need you" to
-            "A payment in a group counts once the other person confirms it. When someone says they paid you, you'll get a heads-up to do the same."
+        stringResource(R.string.notification_screen_payment_title) to
+            stringResource(R.string.notification_screen_payment_body)
 }
 
 /**
@@ -146,26 +149,26 @@ fun NotificationsContent(
 
     SheetScaffold(modifier = modifier) {
         SheetTitle(
-            title = "Notifications",
-            supporting = if (allowed) "What Kharcha Paani tells you, and when." else "They're off for Kharcha Paani, so none of these can show yet.",
+            title = stringResource(R.string.notification_screen_title),
+            supporting = if (allowed) stringResource(R.string.notification_screen_supporting) else stringResource(R.string.notification_screen_off_supporting),
         )
         if (!allowed) {
             SettingRow(
-                title = "Notifications are off",
-                detail = if (access == NotificationAccess.CanAsk) "Turn them on to hear about payments that need you" else "Turn them on in your phone's settings for Kharcha Paani",
+                title = stringResource(R.string.notification_screen_off),
+                detail = if (access == NotificationAccess.CanAsk) stringResource(R.string.notification_screen_enable_hint) else stringResource(R.string.notification_screen_settings_hint),
                 position = RowPosition.Single,
                 modifier = Modifier.padding(bottom = Spacing.l).testTag("notifications_off"),
             ) {
                 TextButton(onClick = onTurnOn, modifier = Modifier.testTag("notifications_turn_on")) {
-                    Text("Turn on", style = MaterialTheme.typography.labelLarge.copy(color = WarmAmberPrimary, fontWeight = FontWeight.Bold))
+                    Text(stringResource(R.string.notification_screen_on), style = MaterialTheme.typography.labelLarge.copy(color = WarmAmberPrimary, fontWeight = FontWeight.Bold))
                 }
             }
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             SettingRow(
-                title = "Payments to confirm",
-                detail = "When a groupmate says money changed hands with you",
+                title = stringResource(R.string.notification_screen_payments),
+                detail = stringResource(R.string.notification_screen_payments_hint),
                 position = RowPosition.First,
                 modifier = Modifier
                     .toggleable(value = prefs.paymentsToConfirm, role = Role.Switch, onValueChange = onPaymentsToConfirmChange)
@@ -184,8 +187,8 @@ fun NotificationsContent(
             )
             val quiet = prefs.quietHours
             SettingRow(
-                title = "Quiet hours",
-                detail = if (quiet.enabled) "${time(quiet.startMinute)} to ${time(quiet.endMinute)} · payment nudges wait till it's over" else "Off",
+                title = stringResource(R.string.notification_screen_quiet),
+                detail = if (quiet.enabled) stringResource(R.string.notification_screen_quiet_detail, time(quiet.startMinute), time(quiet.endMinute)) else stringResource(R.string.notification_screen_quiet_off),
                 position = if (quiet.enabled) RowPosition.Middle else RowPosition.Last,
                 modifier = Modifier
                     .toggleable(value = quiet.enabled, role = Role.Switch, onValueChange = { onQuietHoursChange(quiet.copy(enabled = it)) })
@@ -193,18 +196,18 @@ fun NotificationsContent(
             ) { KpSwitch(quiet.enabled) }
             if (quiet.enabled) {
                 SettingRow(
-                    title = "Starts",
+                    title = stringResource(R.string.notification_screen_starts),
                     detail = time(quiet.startMinute),
                     position = RowPosition.Middle,
-                    modifier = Modifier.clickable(onClickLabel = "Change when quiet hours start") {
+                    modifier = Modifier.clickable(onClickLabel = stringResource(R.string.notification_screen_quiet_start_action)) {
                         pickTime(quiet.startMinute) { onQuietHoursChange(quiet.copy(startMinute = it)) }
                     },
                 ) { Chevron() }
                 SettingRow(
-                    title = "Ends",
+                    title = stringResource(R.string.notification_screen_ends),
                     detail = time(quiet.endMinute),
                     position = RowPosition.Last,
-                    modifier = Modifier.clickable(onClickLabel = "Change when quiet hours end") {
+                    modifier = Modifier.clickable(onClickLabel = stringResource(R.string.notification_screen_quiet_end_action)) {
                         pickTime(quiet.endMinute) { onQuietHoursChange(quiet.copy(endMinute = it)) }
                     },
                 ) { Chevron() }
@@ -213,7 +216,7 @@ fun NotificationsContent(
         if (!prefs.paymentsToConfirm) {
             // D3: these can be turned off, but not without saying what that costs.
             Text(
-                "You won't hear when someone says they paid you. Those payments still wait for you in the group, and don't count until you answer.",
+                stringResource(R.string.notification_screen_payments_off),
                 style = MaterialTheme.typography.bodySmall,
                 color = WarmAmberLight,
                 modifier = Modifier
@@ -223,7 +226,7 @@ fun NotificationsContent(
             )
         } else {
             Text(
-                "Nothing here is ever sent to your friends.",
+                stringResource(R.string.notification_screen_private),
                 style = MaterialTheme.typography.bodySmall,
                 color = SubMutedWarmGray,
                 modifier = Modifier.padding(top = Spacing.m),

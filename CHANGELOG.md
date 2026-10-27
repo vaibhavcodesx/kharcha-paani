@@ -39,6 +39,28 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - App-shell/update notices, invite sharing and ledger-open guidance use string resources with unchanged English and callbacks (X12 / T3.11).
 
+- Action/save/import/export notices use string resources with unchanged English and plural choices; ledger behavior stays unchanged (X12 / T3.11).
+
+- Shared account/month controls and spoken sync summaries use string resources with unchanged English and navigation (X12 / T3.11).
+
+- Open-source licence screen labels use string resources; dependency names, licence names and URLs remain unchanged (X12 / T3.11).
+
+- Notification offers and screen labels use string resources with unchanged English and permission behavior (X12 / T3.11).
+
+- AI consent, parse-notice and answer-display copy use string resources with unchanged English; prompt instructions and generated text stay untouched (X12 / T3.11).
+
+- Bill-photo row, source-menu and viewer copy use string resources with unchanged English and photo handling (X12 / T3.11).
+
+- UPI setup and payment-code labels use string resources, preserving English, exact amounts and QR/link data (X12 / T3.11).
+
+- Friend-removal and simplified-debt views use string resources with unchanged English, amounts and confirmation behavior (X12 / T3.11).
+
+- Category/payment preference controls use string resources while names, defaults and saved values stay unchanged (X12 / T3.11).
+
+- Shared-group join, invite and recording controls use string resources and existing plural wording without behavior changes (X12 / T3.11).
+
+- Subscription form, schedule and confirmation copy use string resources with unchanged English (X12 / T3.11).
+
 - Settlement/IOU timeline labels, removal explanations and full-note controls use string resources with unchanged English (X12 / T3.11).
 
 - Timeline expense actions, bill-photo labels and participant/visit descriptions use string resources with unchanged English (X12 / T3.11).

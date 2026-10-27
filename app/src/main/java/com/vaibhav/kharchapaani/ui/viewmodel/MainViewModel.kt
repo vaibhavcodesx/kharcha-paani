@@ -2,8 +2,8 @@ package com.vaibhav.kharchapaani.ui.viewmodel
 
 import kotlinx.coroutines.CancellationException
 import com.vaibhav.kharchapaani.diagnostics.CrashReporting
-import com.vaibhav.kharchapaani.domain.receiptNotice
-import com.vaibhav.kharchapaani.domain.quickAddNotice
+import com.vaibhav.kharchapaani.ui.format.receiptNoticeResource
+import com.vaibhav.kharchapaani.ui.format.quickAddNoticeResource
 import com.vaibhav.kharchapaani.domain.isSavableAmount
 import com.vaibhav.kharchapaani.domain.NotificationAccess
 import com.vaibhav.kharchapaani.domain.NotificationMoment
@@ -19,6 +19,7 @@ import com.vaibhav.kharchapaani.data.repository.ReceiptRepository
 import com.vaibhav.kharchapaani.data.receipts.BillPhoto
 import com.vaibhav.kharchapaani.data.receipts.ReceiptStore
 import android.app.Application
+import com.vaibhav.kharchapaani.R
 import android.content.ClipData
 import android.content.Context
 import com.vaibhav.kharchapaani.ask.AskShare
@@ -121,7 +122,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
@@ -158,7 +158,7 @@ class MainViewModel(
 
     private val ledgerRepo = LedgerRepository(db, onLocalTransactionChange = ::requestSync, selfProfileId = userId)
 
-    private val submissions = Submissions(viewModelScope, onFailure = { _statusMessage.value = it })
+    private val submissions = Submissions(viewModelScope, getApplication<Application>(), onFailure = { _statusMessage.value = it })
 
     /**
      * A user action that writes or sends something, with the safety net (plan T1.8): anything it
@@ -172,7 +172,7 @@ class MainViewModel(
             throw e
         } catch (e: Exception) {
             CrashReporting.recordProblem("A user action failed", e)
-            _statusMessage.value = Submissions.failureMessage(e)
+            _statusMessage.value = Submissions.failureMessage(e, getApplication<Application>())
         }
     }
     /** Actions still writing, so their sheet can show its button as busy (see [Submissions]). */
@@ -337,9 +337,9 @@ class MainViewModel(
             )
             val added = ledgerRepo.runDueSubscriptions()
             _statusMessage.value = when {
-                added == 1 -> "${new.name} added, with its charge so far."
-                added > 1 -> "${new.name} added, with $added charges so far."
-                else -> "${new.name} added. Its first charge lands when it's due."
+                added == 1 -> uiText(R.string.action_notice_subscription_first, new.name)
+                added > 1 -> uiText(R.string.action_notice_subscription_many, new.name, added)
+                else -> uiText(R.string.action_notice_subscription_next, new.name)
             }
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
@@ -348,7 +348,7 @@ class MainViewModel(
     fun cancelSubscription(id: Long) {
         launchAction {
             ledgerRepo.cancelSubscription(id)
-            _statusMessage.value = "Cancelled. Charges already logged stay."
+            _statusMessage.value = uiText(R.string.action_notice_cancelled)
         }
     }
 
@@ -393,10 +393,10 @@ class MainViewModel(
             // (profiles_select_self_or_groupmate); it is not public.
             val published = runCatching { authRepo.updateUpiId(userId, payee?.upiId) }.isSuccess
             _statusMessage.value = when {
-                payee == null && published -> "UPI ID removed."
-                payee == null -> "Removed here. It'll clear for your groups next time you're online."
-                published -> "UPI ID saved. Groupmates settling up with you will see it."
-                else -> "Saved on this phone. It'll reach your groups next time you're online."
+                payee == null && published -> uiText(R.string.action_notice_upi_removed)
+                payee == null -> uiText(R.string.action_notice_upi_remove_later)
+                published -> uiText(R.string.action_notice_upi_saved)
+                else -> uiText(R.string.action_notice_upi_save_later)
             }
         }
     }
@@ -581,7 +581,7 @@ class MainViewModel(
                 return@launchAction
             }
             NotificationHelper.clearSettlementReminder(getApplication(), id)
-            _statusMessage.value = if (confirm) "Confirmed. It counts for both of you now." else "Marked not right. It won't count."
+            _statusMessage.value = if (confirm) uiText(R.string.action_notice_confirmed) else uiText(R.string.action_notice_rejected)
             if (confirm && before?.status == SettlementStatus.PENDING) reviewAfterConfirmedSettlement(id)
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
@@ -617,7 +617,7 @@ class MainViewModel(
     /** Who added the expense being edited, when it's a groupmate's that this account paid for. */
     val editingAddedBy: StateFlow<String?> = combine(_editingTransactionId, rawTransactions, people) { id, transactions, people ->
         val tx = id?.let { editing -> transactions.firstOrNull { it.transaction.id == editing } }?.transaction
-        tx?.takeUnless { it.isOwnedByMe }?.let { mine -> people.firstOrNull { it.profileId == mine.ownerProfileId }?.name ?: "a groupmate" }
+        tx?.takeUnless { it.isOwnedByMe }?.let { mine -> people.firstOrNull { it.profileId == mine.ownerProfileId }?.name ?: uiText(R.string.action_notice_groupmate) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val _type = MutableStateFlow("expense")
@@ -748,7 +748,7 @@ class MainViewModel(
             if (staged == null) {
                 // The photo that was there stays; this one couldn't be read or written.
                 _billPhoto.value = previous
-                _statusMessage.value = "Couldn't use that photo."
+                _statusMessage.value = uiText(R.string.action_notice_photo_failed)
                 return@launch
             }
             (previous as? BillPhoto.Kept)?.staged?.let(receipts.store::discard)
@@ -781,7 +781,7 @@ class MainViewModel(
     private suspend fun settleBillPhoto(transactionId: Long) {
         when (val photo = _billPhoto.value) {
             is BillPhoto.Kept -> photo.staged?.let { staged ->
-                if (!receipts.attach(transactionId, staged)) _statusMessage.value = "Saved. The bill photo couldn't be kept."
+                if (!receipts.attach(transactionId, staged)) _statusMessage.value = uiText(R.string.action_notice_photo_not_kept)
             }
             BillPhoto.None -> if (hadBillPhotoOnOpen) receipts.remove(transactionId)
             BillPhoto.Missing, BillPhoto.Processing -> Unit
@@ -892,12 +892,12 @@ class MainViewModel(
         _splitLocked.value = false
         // Whoever added a group expense or paid for it can edit it (item 11).
         if (!fullTx.canEdit) {
-            val owner = people.value.firstOrNull { it.profileId == tx.ownerProfileId }?.name ?: "the member who added it"
+            val owner = people.value.firstOrNull { it.profileId == tx.ownerProfileId }?.name ?: uiText(R.string.action_notice_unknown_owner)
             val payer = fullTx.split?.paidByPersonId?.let { id -> people.value.firstOrNull { it.id == id }?.name }
             _statusMessage.value = if (payer != null && payer != owner) {
-                "Only $owner, who added it, or $payer, who paid, can edit this expense."
+                uiText(R.string.action_notice_edit_payer, owner, payer)
             } else {
-                "Only $owner can edit this expense."
+                uiText(R.string.action_notice_edit_owner, owner)
             }
             return
         }
@@ -1017,7 +1017,7 @@ class MainViewModel(
             rawText,
         )
         if (_paymentMethod.value.isBlank()) _paymentMethod.value = defaultPaymentMethod()
-        _parseNotice.value = listOfNotNull("Filled in on your phone. Check the amount and details.", splitNotice).joinToString(" ")
+        _parseNotice.value = listOfNotNull(getApplication<Application>().getString(R.string.ai_display_local_filled), splitNotice).joinToString(" ")
         _isConfirmSheetOpen.value = true
     }
 
@@ -1034,7 +1034,7 @@ class MainViewModel(
                 if (outcome.result.paymentMethod.isBlank()) _paymentMethod.value = defaultPaymentMethod()
                 // Why it's a guess, when it is: offline, out of quota and a refused key each say so.
                 // Then any name in the line that didn't find its friend.
-                _parseNotice.value = listOfNotNull(outcome.failure?.quickAddNotice(), splitNotice)
+                _parseNotice.value = listOfNotNull(outcome.failure?.let { getApplication<Application>().getString(it.quickAddNoticeResource) }, splitNotice)
                     .joinToString(" ").ifEmpty { null }
             } finally {
                 // Whatever happened, the sheet never stays stuck on "Reading…".
@@ -1064,15 +1064,15 @@ class MainViewModel(
                     is ReceiptReadResult.Read -> {
                         applyParsedResult(read.entry)
                         _parseNotice.value = when {
-                            read.missingAmount -> "Read the bill, but couldn't find the total. Fill in the amount."
-                            _billPhoto.value != BillPhoto.None -> "Read from your bill. The photo is kept below."
+                            read.missingAmount -> getApplication<Application>().getString(R.string.ai_display_receipt_missing_total)
+                            _billPhoto.value != BillPhoto.None -> getApplication<Application>().getString(R.string.ai_display_receipt_photo_kept)
                             else -> null
                         }
                     }
                     is ReceiptReadResult.Failed -> {
                         applyParsedResult(ParsedTransactionResult(type = "expense", amount = 0.0, merchant = "", category = "Other", paymentMethod = "Other", note = "", readFailed = true))
                         // "Try a clearer photo" was the answer to being offline too.
-                        _parseNotice.value = read.reason.receiptNotice()
+                        _parseNotice.value = getApplication<Application>().getString(read.reason.receiptNoticeResource)
                     }
                 }
             } finally {
@@ -1085,7 +1085,7 @@ class MainViewModel(
     fun handleSharedImageUri(context: Context, uri: Uri) {
         viewModelScope.launch {
             val bitmap = SharedFiles.decodeImage(context.applicationContext, uri)
-            if (bitmap != null) parseReceiptImage(bitmap) else _statusMessage.value = "Couldn't open that image."
+            if (bitmap != null) parseReceiptImage(bitmap) else _statusMessage.value = uiText(R.string.action_notice_image_failed)
         }
     }
 
@@ -1094,7 +1094,7 @@ class MainViewModel(
 
     fun parseBankOrUpiStatement(pdfBytes: ByteArray, fileName: String = "statement.pdf") {
         withAiNotice(insteadOfAi = {
-            _statusMessage.value = "Statements are read by Gemini, so this one wasn't. You can still add entries yourself."
+            _statusMessage.value = uiText(R.string.action_notice_statement_manual)
         }) { readStatementWithAi(pdfBytes, fileName) }
     }
 
@@ -1123,20 +1123,20 @@ class MainViewModel(
      * them and left the person with nothing to act on.
      */
     private fun statementFailureMessage(reason: StatementReadFailure): String = when (reason) {
-        StatementReadFailure.NoKey -> "Statement reading isn't set up in this build."
-        StatementReadFailure.NotAPdf -> "That file isn't a PDF. Export your statement as a PDF and try again."
-        StatementReadFailure.PasswordProtected -> "That statement is password-protected. Open it, save an unlocked copy, and pick that one."
-        StatementReadFailure.TooLarge -> "That statement is too big to read in one go. Export a shorter date range and try again."
-        StatementReadFailure.Timeout -> "That statement took too long to read. A shorter date range usually goes through."
-        StatementReadFailure.Offline -> "Couldn't reach the internet. Try again once you're back online."
-        StatementReadFailure.Rejected -> "Couldn't read that statement right now. Try again in a minute."
-        StatementReadFailure.RateLimited -> "Too many reads in a short while. Wait a minute, then try that statement again."
-        StatementReadFailure.DailyLimit -> "That's today's statement reads used up. They're back tomorrow; you can still add entries by hand."
-        StatementReadFailure.KeyRefused -> "Statement reading isn't available in this copy of the app right now. It's a setup problem on our side."
-        StatementReadFailure.Blocked -> "Google declined to read that statement. Try exporting it again, or a shorter date range."
-        StatementReadFailure.Truncated -> "That statement has more rows than fit in one read. Export a shorter date range and try again."
-        StatementReadFailure.NothingFound -> "No transactions found in that PDF. Scanned or image-only statements can't be read."
-        StatementReadFailure.Unreadable -> "Couldn't read that statement. Try again, or export it again from your bank or UPI app."
+        StatementReadFailure.NoKey -> uiText(R.string.action_notice_statement_nokey)
+        StatementReadFailure.NotAPdf -> uiText(R.string.action_notice_statement_notapdf)
+        StatementReadFailure.PasswordProtected -> uiText(R.string.action_notice_statement_passwordprotected)
+        StatementReadFailure.TooLarge -> uiText(R.string.action_notice_statement_toolarge)
+        StatementReadFailure.Timeout -> uiText(R.string.action_notice_statement_timeout)
+        StatementReadFailure.Offline -> uiText(R.string.action_notice_statement_offline)
+        StatementReadFailure.Rejected -> uiText(R.string.action_notice_statement_rejected)
+        StatementReadFailure.RateLimited -> uiText(R.string.action_notice_statement_ratelimited)
+        StatementReadFailure.DailyLimit -> uiText(R.string.action_notice_statement_dailylimit)
+        StatementReadFailure.KeyRefused -> uiText(R.string.action_notice_statement_keyrefused)
+        StatementReadFailure.Blocked -> uiText(R.string.action_notice_statement_blocked)
+        StatementReadFailure.Truncated -> uiText(R.string.action_notice_statement_truncated)
+        StatementReadFailure.NothingFound -> uiText(R.string.action_notice_statement_nothingfound)
+        StatementReadFailure.Unreadable -> uiText(R.string.action_notice_statement_unreadable)
     }
 
     /** A PDF shared into the app, read only up to the size a statement can be. */
@@ -1145,7 +1145,7 @@ class MainViewModel(
             when (val read = SharedFiles.readBytes(context.applicationContext, uri, StatementPdf.MAX_BYTES)) {
                 is SharedFiles.Read.Bytes -> parseBankOrUpiStatement(read.bytes, "statement.pdf")
                 SharedFiles.Read.TooLarge -> _statusMessage.value = statementFailureMessage(StatementReadFailure.TooLarge)
-                SharedFiles.Read.Unreadable -> _statusMessage.value = "Couldn't open that PDF."
+                SharedFiles.Read.Unreadable -> _statusMessage.value = uiText(R.string.action_notice_pdf_failed)
             }
         }
     }
@@ -1193,7 +1193,7 @@ class MainViewModel(
             ledgerRepo.batchInsertTransactions(entities)
             if (entities.isNotEmpty()) _moneyConfirmations.tryEmit(Unit)
             dismissStatementImportDialog()
-            _statusMessage.value = if (entities.size == 1) "Added 1 entry from the statement." else "Added ${entities.size} entries from the statement."
+            _statusMessage.value = uiQuantity(R.plurals.action_notice_statement_added, entities.size, entities.size)
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
     }
@@ -1546,7 +1546,7 @@ class MainViewModel(
         } else null
         val locked = lockedShares
         if (locked != null && abs(total - locked.sumOf { it.shareAmount }) >= 0.005) {
-            _statusMessage.value = "Guests are in this split, so only the member who added it can change the amount."
+            _statusMessage.value = uiText(R.string.action_notice_guest_edit)
             return
         }
         val splitShareEntities = when {
@@ -1597,7 +1597,7 @@ class MainViewModel(
     }
 
     private fun archivedMessage(e: ArchivedGroupException) =
-        "${e.groupName} is archived, so its expenses and settlements are read-only."
+        uiText(R.string.action_notice_archived, e.groupName)
 
     /** Takes the row away now; the ledger delete waits for the Undo snackbar to go. */
     fun deleteTransaction(txId: Long) {
@@ -1605,7 +1605,7 @@ class MainViewModel(
         pendingDeletes.hide(txId)
         _undoPrompt.value = UndoPrompt(
             txId = txId,
-            message = tx?.let { "Deleted ${it.merchant.ifBlank { it.category }}" } ?: "Expense deleted",
+            message = tx?.let { uiText(R.string.action_notice_deleted, it.merchant.ifBlank { it.category }) } ?: uiText(R.string.action_notice_expense_deleted),
         )
     }
 
@@ -1681,9 +1681,9 @@ class MainViewModel(
             dismissCreateGroup()
             if (shared) reachNotificationMoment(NotificationMoment.CreatedGroup)
             _statusMessage.value = if (shared) {
-                "Created $name. Open it to invite people."
+                uiText(R.string.action_notice_created_shared, name)
             } else {
-                "Created $name."
+                uiText(R.string.action_notice_created_local, name)
             }
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         }
@@ -1699,7 +1699,7 @@ class MainViewModel(
 
     fun deleteGroup(groupId: Long) {
         if (isSharedGroup(groupId)) {
-            _statusMessage.value = "Shared groups can't be deleted. Open the group to archive or leave it."
+            _statusMessage.value = uiText(R.string.action_notice_shared_delete)
             return
         }
         launchAction {
@@ -1741,7 +1741,7 @@ class MainViewModel(
                 }
             }
             val firstName = person.name.trim().substringBefore(' ').ifEmpty { person.name }
-            val chooser = AskShare.chooser(app, AskShare.sendIntent(message, qr), person.id, amount, userId, "Ask $firstName to pay")
+            val chooser = AskShare.chooser(app, AskShare.sendIntent(message, qr), person.id, amount, userId, uiText(R.string.action_notice_ask_chooser, firstName))
             context.startActivity(chooser)
         }
     }
@@ -1832,7 +1832,7 @@ class MainViewModel(
                 ledgerRepo.addPerson(name, colorHex)
             } catch (e: DuplicateFriendException) {
                 // The sheet stays open so the name can be told apart ("Rahul K").
-                _statusMessage.value = "You already have a friend called ${e.existingName}. Add something to tell them apart, like an initial."
+                _statusMessage.value = uiText(R.string.action_notice_duplicate, e.existingName)
                 return@launch
             }
             if (_isConfirmSheetOpen.value) {
@@ -2067,7 +2067,7 @@ class MainViewModel(
         launchAction {
             val csv = ledgerRepo.exportCsv(range, groupId = groupId)
             if (csv.rows == 0) {
-                _statusMessage.value = if (groupId != null) "Nothing logged in that group to export." else "Nothing logged in that range to export."
+                _statusMessage.value = if (groupId != null) uiText(R.string.action_notice_export_empty_group) else uiText(R.string.action_notice_export_empty_range)
                 return@launchAction
             }
             val uri = writeExport(csv)
@@ -2079,7 +2079,7 @@ class MainViewModel(
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             _isExportOpen.value = false
-            context.startActivity(Intent.createChooser(send, if (csv.rows == 1) "Export 1 entry" else "Export ${csv.rows} entries"))
+            context.startActivity(Intent.createChooser(send, uiQuantity(R.plurals.action_notice_export, csv.rows, csv.rows)))
         }
     }
 
@@ -2102,7 +2102,7 @@ class MainViewModel(
                     .toBackup(askBeforeDiscarding = settings.askBeforeDiscarding.first()),
             )
             if (backup.isEmpty) {
-                _statusMessage.value = "Nothing on this phone that isn't already backed up to your account."
+                _statusMessage.value = uiText(R.string.action_notice_backup_empty)
                 return@launchAction
             }
             val fileName = LocalBackup.fileName(backup.exportedAt)
@@ -2114,7 +2114,7 @@ class MainViewModel(
                 clipData = ClipData.newRawUri(fileName, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(Intent.createChooser(send, "Back up ${backup.summary()}"))
+            context.startActivity(Intent.createChooser(send, uiText(R.string.action_notice_backup_chooser, backup.summary())))
         }
     }
 
@@ -2134,21 +2134,21 @@ class MainViewModel(
             val text = when (val read = SharedFiles.readBytes(context.applicationContext, uri, BACKUP_MAX_BYTES)) {
                 is SharedFiles.Read.Bytes -> read.bytes.toString(Charsets.UTF_8)
                 SharedFiles.Read.TooLarge -> {
-                    _statusMessage.value = "That file is too big to be a Kharcha Paani backup."
+                    _statusMessage.value = uiText(R.string.action_notice_backup_big)
                     return@launchAction
                 }
                 SharedFiles.Read.Unreadable -> {
-                    _statusMessage.value = "Couldn't open that file."
+                    _statusMessage.value = uiText(R.string.action_notice_file_failed)
                     return@launchAction
                 }
             }
             when (val result = withContext(Dispatchers.Default) { LocalBackup.decode(text) }) {
                 is BackupReadResult.Unreadable ->
-                    _statusMessage.value = "That doesn't look like a Kharcha Paani backup."
+                    _statusMessage.value = uiText(R.string.action_notice_backup_invalid)
                 is BackupReadResult.TooNew ->
-                    _statusMessage.value = "That backup was written by a newer version of the app. Update first."
+                    _statusMessage.value = uiText(R.string.action_notice_backup_newer)
                 is BackupReadResult.Invalid ->
-                    _statusMessage.value = "That backup can't be restored: ${result.problem}. Nothing was changed."
+                    _statusMessage.value = uiText(R.string.action_notice_backup_problem, result.problem)
                 is BackupReadResult.Ok -> _restorePreview.value = result.backup
             }
         }
@@ -2205,6 +2205,12 @@ class MainViewModel(
     fun getPersonLedgerFlow(personId: Long): kotlinx.coroutines.flow.Flow<List<PersonLedgerItem>> {
         return ledgerRepo.getLedgerForPerson(personId)
     }
+
+    private fun uiText(@androidx.annotation.StringRes id: Int, vararg args: Any): String =
+        getApplication<Application>().getString(id, *args)
+
+    private fun uiQuantity(@androidx.annotation.PluralsRes id: Int, count: Int, vararg args: Any): String =
+        getApplication<Application>().resources.getQuantityString(id, count, *args)
 
     companion object {
         /** A year of a busy ledger is well under 1 MB of JSON; this is generous and still bounded. */
