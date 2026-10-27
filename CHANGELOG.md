@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Shared-group join, invite and recording controls use string resources and existing plural wording without behavior changes (X12 / T3.11).
+
 - Subscription form, schedule and confirmation copy use string resources with unchanged English (X12 / T3.11).
 
 - Settlement/IOU timeline labels, removal explanations and full-note controls use string resources with unchanged English (X12 / T3.11).
