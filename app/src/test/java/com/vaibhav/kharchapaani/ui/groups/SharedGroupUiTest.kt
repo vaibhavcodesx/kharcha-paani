@@ -13,6 +13,8 @@ import com.vaibhav.kharchapaani.data.sync.InvitePreview
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -21,6 +23,7 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class SharedGroupUiTest {
+    private val copyContext = ApplicationProvider.getApplicationContext<Context>()
 
     @get:Rule
     val composeTestRule = createComposeRule()
@@ -49,14 +52,14 @@ class SharedGroupUiTest {
         composeTestRule.setContent {
             SplitFlowTheme {
                 JoinGroupContent(
-                    state = JoinGroupState(input = "ZZ2ZZ3ZZ", error = SharedGroupsController.INVALID_CODE),
+                    state = JoinGroupState(input = "ZZ2ZZ3ZZ", error = copyContext.getString(SharedGroupsController.INVALID_CODE)),
                     onInputChange = {},
                     onJoin = {},
                 )
             }
         }
 
-        composeTestRule.onNodeWithText(SharedGroupsController.INVALID_CODE).assertIsDisplayed()
+        composeTestRule.onNodeWithText(copyContext.getString(SharedGroupsController.INVALID_CODE)).assertIsDisplayed()
         composeTestRule.onNodeWithText("Join group").assertIsNotEnabled()
     }
 

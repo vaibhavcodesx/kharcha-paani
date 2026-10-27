@@ -39,9 +39,9 @@ class SplitFlowWidgetProvider : KpWidgetProvider() {
             setTextColor(R.id.widget_net_owed_badge, summary.balanceColor)
 
             setImageViewBitmap(R.id.widget_month_spent_figure, GradientFigure.render(context, summary.spent, FIGURE_SP))
-            setContentDescription(R.id.widget_month_spent_figure, "Spent this month: ${summary.spent}")
+            setContentDescription(R.id.widget_month_spent_figure, context.getString(R.string.widget_copy_spent_description, summary.spent))
             setTextViewText(R.id.widget_today, summary.today)
-            setContentDescription(R.id.widget_today, "Spent today: ${summary.today}")
+            setContentDescription(R.id.widget_today, context.getString(R.string.widget_copy_today_description, summary.today))
 
             setOnClickPendingIntent(R.id.widget_root, WidgetIntents.openApp(context))
             setOnClickPendingIntent(R.id.widget_btn_add, WidgetIntents.quickAdd(context))

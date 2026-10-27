@@ -23,6 +23,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -56,17 +58,19 @@ private enum class ListKind { Categories, PaymentMethods }
  */
 @Composable
 fun CategoriesContent(prefs: CategoryPrefs, onChange: ((CategoryPrefs) -> CategoryPrefs) -> Unit, modifier: Modifier = Modifier) {
+    val categoryLabel = stringResource(R.string.category_control_categories)
+    val methodLabel = stringResource(R.string.category_control_methods)
     var kind by rememberSaveable { mutableStateOf(ListKind.Categories) }
 
     SheetScaffold(modifier = modifier) {
         SheetTitle(
-            title = "Categories & payment methods",
-            supporting = "Hide the ones you never use and add your own. Entries you've logged keep theirs.",
+            title = stringResource(R.string.category_control_title),
+            supporting = stringResource(R.string.category_control_supporting),
         )
         SegmentedControl(
             options = ListKind.entries,
             selected = kind,
-            label = { if (it == ListKind.Categories) "Categories" else "Payment methods" },
+            label = { if (it == ListKind.Categories) categoryLabel else methodLabel },
             onSelect = { kind = it },
             testTagFor = { "categories_tab_${it.name}" },
             modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.xl),
@@ -75,7 +79,7 @@ fun CategoriesContent(prefs: CategoryPrefs, onChange: ((CategoryPrefs) -> Catego
         when (kind) {
             ListKind.Categories -> {
                 DefaultChoice(
-                    title = "Category",
+                    title = stringResource(R.string.category_control_category),
                     value = Categories.defaultCategory("expense", prefs),
                     choices = Categories.expenseCategories(prefs),
                     withIcons = true,
@@ -83,13 +87,13 @@ fun CategoriesContent(prefs: CategoryPrefs, onChange: ((CategoryPrefs) -> Catego
                     onPick = { picked -> onChange { it.copy(defaultCategory = picked) } },
                 )
                 ChoiceSection(
-                    title = "Spending",
+                    title = stringResource(R.string.category_control_spending),
                     defaults = Categories.defaultExpense,
                     custom = prefs.customExpense,
                     hidden = prefs.hiddenCategories,
                     locked = setOf(Categories.OTHER),
                     showBadge = true,
-                    addLabel = "New spending category",
+                    addLabel = stringResource(R.string.category_control_new_spending),
                     tag = "expense",
                     existing = Categories.defaultExpense + Categories.defaultIncome + prefs.customExpense + prefs.customIncome,
                     onToggleHidden = { name, hide -> onChange { it.copy(hiddenCategories = if (hide) it.hiddenCategories + name else it.hiddenCategories - name) } },
@@ -97,13 +101,13 @@ fun CategoriesContent(prefs: CategoryPrefs, onChange: ((CategoryPrefs) -> Catego
                     onRemove = { name -> onChange { it.copy(customExpense = it.customExpense - name) } },
                 )
                 ChoiceSection(
-                    title = "Income",
+                    title = stringResource(R.string.category_control_income),
                     defaults = Categories.defaultIncome,
                     custom = prefs.customIncome,
                     hidden = prefs.hiddenCategories,
                     locked = setOf(Categories.OTHER_INCOME),
                     showBadge = true,
-                    addLabel = "New income category",
+                    addLabel = stringResource(R.string.category_control_new_income),
                     tag = "income",
                     existing = Categories.defaultExpense + Categories.defaultIncome + prefs.customExpense + prefs.customIncome,
                     onToggleHidden = { name, hide -> onChange { it.copy(hiddenCategories = if (hide) it.hiddenCategories + name else it.hiddenCategories - name) } },
@@ -114,7 +118,7 @@ fun CategoriesContent(prefs: CategoryPrefs, onChange: ((CategoryPrefs) -> Catego
             }
             ListKind.PaymentMethods -> {
                 DefaultChoice(
-                    title = "Paid with",
+                    title = stringResource(R.string.category_control_paid_with),
                     value = Categories.defaultPaymentMethod(prefs),
                     choices = Categories.paymentMethods(prefs),
                     withIcons = false,
@@ -122,13 +126,13 @@ fun CategoriesContent(prefs: CategoryPrefs, onChange: ((CategoryPrefs) -> Catego
                     onPick = { picked -> onChange { it.copy(defaultPaymentMethod = picked) } },
                 )
                 ChoiceSection(
-                    title = "Payment methods",
+                    title = stringResource(R.string.category_control_methods),
                     defaults = Categories.defaultPaymentMethods,
                     custom = prefs.customPaymentMethods,
                     hidden = prefs.hiddenPaymentMethods,
                     locked = setOf(Categories.OTHER),
                     showBadge = false,
-                    addLabel = "New payment method",
+                    addLabel = stringResource(R.string.category_control_new_method),
                     tag = "payment",
                     existing = Categories.defaultPaymentMethods + prefs.customPaymentMethods,
                     onToggleHidden = { name, hide -> onChange { it.copy(hiddenPaymentMethods = if (hide) it.hiddenPaymentMethods + name else it.hiddenPaymentMethods - name) } },
@@ -156,7 +160,7 @@ private fun DefaultChoice(
 ) {
     var open by rememberSaveable(tag) { mutableStateOf(false) }
     Column(Modifier.padding(bottom = Spacing.xl).testTag(tag)) {
-        Text("New entries".uppercase(), style = EyebrowText, modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() })
+        Text(stringResource(R.string.category_control_new_entries).uppercase(), style = EyebrowText, modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() })
         ExpandableDetail(
             label = title,
             value = value,
@@ -184,7 +188,7 @@ private fun DefaultChoice(
             }
         }
         Text(
-            text = "What a new entry starts on. Entries you've logged keep theirs.",
+            text = stringResource(R.string.category_control_new_explanation),
             style = MaterialTheme.typography.bodySmall,
             color = SubMutedWarmGray,
             modifier = Modifier.padding(top = Spacing.s),
@@ -226,13 +230,13 @@ private fun ChoiceSection(
                     trailing = {
                         when {
                             isCustom -> IconButton(onClick = { onRemove(name) }, modifier = Modifier.testTag("remove_${tag}_$name")) {
-                                Icon(KpIcons.Delete, contentDescription = "Remove $name", tint = MutedWarmGray, modifier = Modifier.size(20.dp))
+                                Icon(KpIcons.Delete, contentDescription = stringResource(R.string.category_control_remove, name), tint = MutedWarmGray, modifier = Modifier.size(20.dp))
                             }
-                            name in locked -> Text("Always shown", style = MaterialTheme.typography.bodySmall, color = SubMutedWarmGray)
+                            name in locked -> Text(stringResource(R.string.category_control_always), style = MaterialTheme.typography.bodySmall, color = SubMutedWarmGray)
                             // A quiet tick, not a switch: a column of bright switches drew the eye away
                             // from the names (seen in the render review).
                             name !in hidden -> Icon(KpIcons.Check, contentDescription = null, tint = WarmAmberLight, modifier = Modifier.padding(end = Spacing.s).size(20.dp))
-                            else -> Text("Hidden", style = MaterialTheme.typography.bodySmall, color = SubMutedWarmGray, modifier = Modifier.padding(end = Spacing.s))
+                            else -> Text(stringResource(R.string.category_control_hidden), style = MaterialTheme.typography.bodySmall, color = SubMutedWarmGray, modifier = Modifier.padding(end = Spacing.s))
                         }
                     },
                     toggle = if (!isCustom && name !in locked) ({ onToggleHidden(name, name !in hidden) }) else null,
@@ -257,13 +261,13 @@ private fun ChoiceSection(
                     enabled = cleanDraft != null,
                     modifier = Modifier.testTag("add_${tag}_button"),
                 ) {
-                    Text("Add", style = MaterialTheme.typography.labelLarge, color = if (cleanDraft != null) WarmAmberLight else SubMutedWarmGray)
+                    Text(stringResource(R.string.category_control_add), style = MaterialTheme.typography.labelLarge, color = if (cleanDraft != null) WarmAmberLight else SubMutedWarmGray)
                 }
             }
         }
         if (draft.isNotBlank() && cleanDraft == null) {
             Text(
-                text = if (draft.trim().length > Categories.MAX_NAME_LENGTH) "Keep it to ${Categories.MAX_NAME_LENGTH} characters." else "That one's already there.",
+                text = if (draft.trim().length > Categories.MAX_NAME_LENGTH) stringResource(R.string.category_control_limit, Categories.MAX_NAME_LENGTH) else stringResource(R.string.category_control_duplicate),
                 style = MaterialTheme.typography.bodySmall,
                 color = WarmAmberLight,
                 modifier = Modifier.padding(top = Spacing.s),

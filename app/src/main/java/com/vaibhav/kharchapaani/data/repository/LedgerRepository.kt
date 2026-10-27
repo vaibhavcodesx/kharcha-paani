@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.data.repository
 
 import android.content.Context
+import com.vaibhav.kharchapaani.R
 import androidx.room.withTransaction
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
@@ -205,7 +206,12 @@ class LedgerRepository(
         }
     }.flowOn(Dispatchers.IO)
 
-    fun getLedgerForPerson(personId: Long): Flow<List<PersonLedgerItem>> = combine(
+    fun getLedgerForPerson(personId: Long, context: Context): Flow<List<PersonLedgerItem>> =
+        ledgerForPerson(personId, context)
+
+    // The same numeric history also answers currentAsks, where display copy is never consumed.
+    // Only the public display path supplies a Context; balances keep using this single computation.
+    private fun ledgerForPerson(personId: Long, context: Context?): Flow<List<PersonLedgerItem>> = combine(
         allTransactions,
         allSplits,
         allSplitShares,
@@ -213,6 +219,8 @@ class LedgerRepository(
     ) { transactions, splits, shares, settlements ->
         val txMap = transactions.associateBy { it.id }
         val sharesBySplit = shares.groupBy { it.splitId }
+        fun label(@androidx.annotation.StringRes id: Int, vararg args: Any): String =
+            context?.getString(id, *args).orEmpty()
 
         balanceEntries(personId, splits, sharesBySplit, settlements).mapNotNull { entry ->
             when (entry) {
@@ -226,9 +234,9 @@ class LedgerRepository(
                         // "You paid ₹150 (Their share)" read as their share being ₹150, and %.0f turned ₹150.50
                         // into ₹151. Both figures, said separately, to the paisa.
                         subtitle = if (entry.owedToMe) {
-                            "You paid ${Money.format(split.totalAmount)} · their share ${Money.format(entry.amount)}"
+                            label(R.string.ledger_description_you_paid_total, Money.format(split.totalAmount), Money.format(entry.amount))
                         } else {
-                            "They paid ${Money.format(split.totalAmount)} · your share ${Money.format(entry.amount)}"
+                            label(R.string.ledger_description_they_paid_total, Money.format(split.totalAmount), Money.format(entry.amount))
                         },
                         amount = entry.amount,
                         netChange = entry.netChange,
@@ -242,7 +250,7 @@ class LedgerRepository(
                         id = "guest_${split.id}",
                         date = tx.date,
                         title = tx.merchant.ifBlank { tx.category },
-                        subtitle = "Your guest in a group · their share ${Money.format(entry.amount)}",
+                        subtitle = label(R.string.ledger_description_guest, Money.format(entry.amount)),
                         amount = entry.amount,
                         netChange = entry.netChange,
                         isSettlement = false
@@ -255,10 +263,10 @@ class LedgerRepository(
                         date = settlement.date,
                         // Worded the way the group feed words it (GroupFeed.describe), from your side.
                         title = when {
-                            entry.owedToMe -> if (settlement.isIou) "You lent them" else "You paid them"
-                            else -> if (settlement.isIou) "They lent you" else "They paid you"
+                            entry.owedToMe -> if (settlement.isIou) label(R.string.ledger_description_you_lent) else label(R.string.ledger_description_you_paid)
+                            else -> if (settlement.isIou) label(R.string.ledger_description_they_lent) else label(R.string.ledger_description_they_paid)
                         },
-                        subtitle = settlementSubtitle(settlement),
+                        subtitle = settlementSubtitle(settlement, context),
                         amount = settlement.amount,
                         netChange = entry.netChange,
                         isSettlement = true
@@ -345,7 +353,7 @@ class LedgerRepository(
         if (latest.isEmpty()) {
             flowOf(emptyMap())
         } else {
-            combine(latest.keys.map { id -> getLedgerForPerson(id).map { id to it } }) { ledgers ->
+            combine(latest.keys.map { id -> ledgerForPerson(id, context = null).map { id to it } }) { ledgers ->
                 ledgers.mapNotNull { (id, rows) ->
                     val askedAt = latest.getValue(id)
                     val stillOwed = HisaabItemiser.itemise(rows) != null
@@ -357,11 +365,13 @@ class LedgerRepository(
     }.flowOn(Dispatchers.IO)
 
     /** A settlement's line in a friend's history, saying when it hasn't counted yet. */
-    private fun settlementSubtitle(settlement: SettlementEntity): String {
-        val base = settlement.note.ifBlank { if (settlement.isIou) "IOU" else "Settled up" }
+    private fun settlementSubtitle(settlement: SettlementEntity, context: Context?): String {
+        fun label(@androidx.annotation.StringRes id: Int, vararg args: Any): String =
+            context?.getString(id, *args).orEmpty()
+        val base = settlement.note.ifBlank { if (settlement.isIou) label(R.string.ledger_description_iou) else label(R.string.ledger_description_settled) }
         return when (settlement.status) {
-            SettlementStatus.PENDING -> "$base · waiting to be confirmed"
-            SettlementStatus.REJECTED -> "$base · marked not right"
+            SettlementStatus.PENDING -> label(R.string.ledger_description_pending, base)
+            SettlementStatus.REJECTED -> label(R.string.ledger_description_rejected, base)
             SettlementStatus.CONFIRMED -> base
         }
     }

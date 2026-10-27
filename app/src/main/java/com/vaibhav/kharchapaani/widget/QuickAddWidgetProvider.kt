@@ -28,7 +28,7 @@ class QuickAddWidgetProvider : KpWidgetProvider() {
         private fun RemoteViews.bindBar(context: Context, summary: WidgetSummary) {
             setTextViewText(R.id.quick_hint, summary.hint)
             setTextViewText(R.id.quick_today, summary.today)
-            setContentDescription(R.id.quick_today_block, "Spent today: ${summary.today}")
+            setContentDescription(R.id.quick_today_block, context.getString(R.string.widget_copy_today_description, summary.today))
             // Signed out, today means nothing; the bar leads to sign-in and says so.
             setViewVisibility(R.id.quick_today_block, if (summary.signedIn) View.VISIBLE else View.GONE)
 

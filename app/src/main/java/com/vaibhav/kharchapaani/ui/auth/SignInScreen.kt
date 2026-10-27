@@ -42,6 +42,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import android.content.Context
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -167,7 +169,7 @@ private fun SignInIntro(progress: () -> Float, modifier: Modifier = Modifier) {
         }
         Spacer(Modifier.height(28.dp))
         Text(
-            text = "Kharcha Paani",
+            text = stringResource(R.string.app_name),
             style = BrandGradient.text(MaterialTheme.typography.displayLarge),
             modifier = Modifier
                 .entrance(progress, EntranceDelay.TITLE)
@@ -175,7 +177,7 @@ private fun SignInIntro(progress: () -> Float, modifier: Modifier = Modifier) {
         )
         Spacer(Modifier.height(Spacing.m))
         Text(
-            text = "Log what you spend, split it with friends, and settle up without the awkward maths.",
+            text = stringResource(R.string.signin_copy_intro),
             style = MaterialTheme.typography.bodyLarge.copy(color = MutedWarmGray),
             modifier = Modifier.entrance(progress, EntranceDelay.LINE),
         )
@@ -202,8 +204,7 @@ private fun SignInActions(
             SignInFailureNotice(failure = failure, onDismiss = onDismissFailure)
         }
         Text(
-            text = "Sign in once to back up your ledger and share live balances with friends. " +
-                "After that it keeps working offline.",
+            text = stringResource(R.string.signin_copy_offline),
             style = MaterialTheme.typography.bodyMedium,
         )
         Button(
@@ -239,7 +240,7 @@ private fun SignInActions(
             }
             Spacer(Modifier.width(Spacing.m))
             Text(
-                text = if (isSigningIn) "Signing in…" else "Continue with Google",
+                text = if (isSigningIn) stringResource(R.string.signin_copy_signing) else stringResource(R.string.signin_copy_continue),
                 style = MaterialTheme.typography.titleMedium.copy(
                     color = GoogleButtonText,
                     fontWeight = FontWeight.SemiBold,
@@ -258,15 +259,20 @@ private fun SignInActions(
 @Composable
 private fun AgreementLine() {
     val context = LocalContext.current
+    val agreement_prefix = stringResource(R.string.signin_copy_agreement_prefix)
+    val agreement_terms = stringResource(R.string.signin_copy_agreement_terms)
+    val agreement_middle = stringResource(R.string.signin_copy_agreement_middle)
+    val agreement_privacy = stringResource(R.string.signin_copy_agreement_privacy)
+    val agreement_suffix = stringResource(R.string.signin_copy_agreement_suffix)
     val linkStyle = TextLinkStyles(SpanStyle(color = OffWhiteText, textDecoration = TextDecoration.Underline))
     fun link(url: String) = LinkAnnotation.Clickable(tag = url, styles = linkStyle) { LegalLinks.open(context, url) }
     Text(
         text = buildAnnotatedString {
-            append("By continuing you agree to the ")
-            withLink(link(LegalLinks.TERMS)) { append("Terms") }
-            append(" and the ")
-            withLink(link(LegalLinks.PRIVACY_POLICY)) { append("Privacy policy") }
-            append(", and confirm you're 18 or older.")
+            append(agreement_prefix)
+            withLink(link(LegalLinks.TERMS)) { append(agreement_terms) }
+            append(agreement_middle)
+            withLink(link(LegalLinks.PRIVACY_POLICY)) { append(agreement_privacy) }
+            append(agreement_suffix)
         },
         style = MaterialTheme.typography.bodySmall.copy(color = MutedWarmGray),
         modifier = Modifier.testTag("sign_in_agreement"),
@@ -297,14 +303,14 @@ private fun SignInFailureNotice(
         )
         Spacer(Modifier.width(Spacing.m))
         Text(
-            text = failure.message(),
+            text = failure.message(LocalContext.current),
             style = MaterialTheme.typography.bodyMedium.copy(color = OffWhiteText),
             modifier = Modifier.weight(1f),
         )
         IconButton(onClick = onDismiss) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "Dismiss",
+                contentDescription = stringResource(R.string.signin_copy_dismiss),
                 tint = MutedWarmGray,
                 modifier = Modifier.size(18.dp),
             )
@@ -312,21 +318,16 @@ private fun SignInFailureNotice(
     }
 }
 
-internal fun GoogleSignInFailure.message(): String = when (this) {
-    GoogleSignInFailure.NotConfigured -> "Google sign-in isn't set up in this build yet."
-    GoogleSignInFailure.NoGoogleAccount -> "If you're offline, connect and try again. Otherwise, add a Google account to this phone."
-    GoogleSignInFailure.GoogleUnavailable ->
-        "If you're offline, connect and try again. Otherwise, check that Google Play services is up to date."
-    GoogleSignInFailure.Network -> "You're offline. Connect once to sign in."
-    GoogleSignInFailure.Rejected -> "Sign-in didn't go through on our end. Try again in a moment."
-    GoogleSignInFailure.PickerBlocked ->
-        "Google didn't open the account picker. It holds it back for a few minutes after it's " +
-            "been closed several times — wait a moment and try again."
-    GoogleSignInFailure.AppNotAccepted ->
-        "Google didn't accept this copy of the app for sign-in. That's a setup problem on our side, " +
-            "not your account. Try again later, or ask whoever sent you the app."
-    GoogleSignInFailure.Dismissed -> "No account picked. Tap Continue with Google when you're ready."
-}
+internal fun GoogleSignInFailure.message(context: Context): String = context.getString(when (this) {
+    GoogleSignInFailure.NotConfigured -> R.string.signin_copy_failure_notconfigured
+    GoogleSignInFailure.NoGoogleAccount -> R.string.signin_copy_failure_nogoogleaccount
+    GoogleSignInFailure.GoogleUnavailable -> R.string.signin_copy_failure_googleunavailable
+    GoogleSignInFailure.Network -> R.string.signin_copy_failure_network
+    GoogleSignInFailure.Rejected -> R.string.signin_copy_failure_rejected
+    GoogleSignInFailure.PickerBlocked -> R.string.signin_copy_failure_pickerblocked
+    GoogleSignInFailure.AppNotAccepted -> R.string.signin_copy_failure_appnotaccepted
+    GoogleSignInFailure.Dismissed -> R.string.signin_copy_failure_dismissed
+})
 
 @Preview(heightDp = 891, widthDp = 411)
 @Composable

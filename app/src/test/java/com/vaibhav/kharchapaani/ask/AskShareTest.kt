@@ -72,10 +72,11 @@ class AskShareTest {
     fun `with a code, the share is an image with the message as its caption`() {
         val uri = Uri.parse("content://${context.packageName}.fileprovider/asks/ask-7.png")
 
-        val send = AskShare.sendIntent("Hey Aaru", uri)
+        val send = AskShare.sendIntent(context, "Hey Aaru", uri)
 
         assertEquals(Intent.ACTION_SEND, send.action)
         assertEquals("image/png", send.type)
+        assertEquals("Payment code", send.clipData!!.description.label.toString())
         assertEquals("Hey Aaru", send.getStringExtra(Intent.EXTRA_TEXT))
         @Suppress("DEPRECATION")
         assertEquals(uri, send.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
@@ -84,7 +85,7 @@ class AskShareTest {
 
     @Test
     fun `without a code, the share is the message alone`() {
-        val send = AskShare.sendIntent("Hey Aaru", null)
+        val send = AskShare.sendIntent(context, "Hey Aaru", null)
 
         assertEquals("text/plain", send.type)
         @Suppress("DEPRECATION")
@@ -105,7 +106,7 @@ class AskShareTest {
             // Mutable, or Android can't add which app was picked.
             assertTrue(shadowOf(callback).flags and android.app.PendingIntent.FLAG_MUTABLE != 0)
         }
-        val chooser = AskShare.chooser(context, AskShare.sendIntent("Hey", null), personId = 7, amount = 340.0, userId = "u", title = "Ask Aaru to pay")
+        val chooser = AskShare.chooser(context, AskShare.sendIntent(context, "Hey", null), personId = 7, amount = 340.0, userId = "u", title = "Ask Aaru to pay")
         assertEquals(Intent.ACTION_CHOOSER, chooser.action)
     }
 
@@ -113,7 +114,7 @@ class AskShareTest {
     fun `the app isn't offered as somewhere to send its own ask`() {
         // It takes shared images (bills to scan), so the sheet listed it, and picking it logged an
         // ask that never reached the friend. Found on the release build's device check.
-        val chooser = AskShare.chooser(context, AskShare.sendIntent("Hey", null), personId = 7, amount = 340.0, userId = "u", title = "Ask Aaru to pay")
+        val chooser = AskShare.chooser(context, AskShare.sendIntent(context, "Hey", null), personId = 7, amount = 340.0, userId = "u", title = "Ask Aaru to pay")
 
         @Suppress("DEPRECATION")
         val excluded = chooser.getParcelableArrayExtra(Intent.EXTRA_EXCLUDE_COMPONENTS)?.map { it as ComponentName }

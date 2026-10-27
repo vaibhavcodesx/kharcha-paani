@@ -1,5 +1,8 @@
 package com.vaibhav.kharchapaani.data.model
 
+import android.content.Context
+import com.vaibhav.kharchapaani.R
+
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.data.db.entity.SettlementStatus
 
@@ -45,36 +48,36 @@ sealed interface ActivityItem {
             get() = involvesMe && settlement.status == SettlementStatus.PENDING &&
                 settlement.recordedByPersonId != null && settlement.recordedByPersonId != ME
 
-        /** " · 9 days" once it has waited a week: the point where withdrawing it is worth offering. */
-        private fun waitedFor(now: Long = System.currentTimeMillis()): String {
+        /** The same age threshold, resolved only when a waiting description is displayed. */
+        private fun waitedFor(context: Context, now: Long): String {
             val days = ((now - settlement.createdAt) / 86_400_000L).toInt()
-            return if (days >= 7) " · $days days. Withdraw it if it's stuck." else ""
+            return if (days >= 7) context.getString(R.string.activity_description_waited, days) else ""
         }
 
         /** Plain words for a settlement that hasn't counted, or null once it has. */
-        val statusLine: String?
-            get() = when (settlement.status) {
-                SettlementStatus.CONFIRMED -> null
-                SettlementStatus.PENDING -> when {
-                    awaitsMyAnswer -> "Waiting for you to confirm"
-                    recordedByMe -> "Waiting for ${otherPartyName ?: "them"} to confirm" + waitedFor()
-                    else -> "Waiting to be confirmed"
-                }
-                SettlementStatus.REJECTED -> {
-                    val who = if (recordedByMe) "${otherPartyName ?: "They"} says" else "You said"
-                    val note = settlement.responseNote?.let { ": “$it”" }.orEmpty()
-                    "$who this isn't right$note"
-                }
+        fun statusLine(context: Context, now: Long = System.currentTimeMillis()): String? = when (settlement.status) {
+            SettlementStatus.CONFIRMED -> null
+            SettlementStatus.PENDING -> when {
+                awaitsMyAnswer -> context.getString(R.string.activity_description_waiting_you)
+                recordedByMe -> context.getString(R.string.activity_description_waiting_named,
+                    otherPartyName ?: context.getString(R.string.activity_description_them)) + waitedFor(context, now)
+                else -> context.getString(R.string.activity_description_waiting)
             }
+            SettlementStatus.REJECTED -> {
+                val note = settlement.responseNote?.let { context.getString(R.string.activity_description_response, it) }.orEmpty()
+                if (recordedByMe) context.getString(R.string.activity_description_rejected_named,
+                    otherPartyName ?: context.getString(R.string.activity_description_they), note)
+                else context.getString(R.string.activity_description_rejected_you, note)
+            }
+        }
 
         /** e.g. "You paid Bob", "Bob lent you", "Carol paid Bob". */
-        val title: String
-            get() {
-                val verb = if (settlement.isIou) "lent" else "paid"
-                val to = if (settlement.toPersonId == ME) "you" else toName
-                val from = if (settlement.fromPersonId == ME) "You" else fromName
-                return "$from $verb $to"
-            }
+        fun title(context: Context): String {
+            val to = if (settlement.toPersonId == ME) context.getString(R.string.activity_description_you_object) else toName
+            val from = if (settlement.fromPersonId == ME) context.getString(R.string.activity_description_you) else fromName
+            return context.getString(if (settlement.isIou) R.string.activity_description_lent else R.string.activity_description_paid, from, to)
+        }
+
     }
 
     private companion object {
