@@ -1017,7 +1017,7 @@ class MainViewModel(
             rawText,
         )
         if (_paymentMethod.value.isBlank()) _paymentMethod.value = defaultPaymentMethod()
-        _parseNotice.value = listOfNotNull("Filled in on your phone. Check the amount and details.", splitNotice).joinToString(" ")
+        _parseNotice.value = listOfNotNull(getApplication<Application>().getString(R.string.ai_display_local_filled), splitNotice).joinToString(" ")
         _isConfirmSheetOpen.value = true
     }
 
@@ -1064,8 +1064,8 @@ class MainViewModel(
                     is ReceiptReadResult.Read -> {
                         applyParsedResult(read.entry)
                         _parseNotice.value = when {
-                            read.missingAmount -> "Read the bill, but couldn't find the total. Fill in the amount."
-                            _billPhoto.value != BillPhoto.None -> "Read from your bill. The photo is kept below."
+                            read.missingAmount -> getApplication<Application>().getString(R.string.ai_display_receipt_missing_total)
+                            _billPhoto.value != BillPhoto.None -> getApplication<Application>().getString(R.string.ai_display_receipt_photo_kept)
                             else -> null
                         }
                     }

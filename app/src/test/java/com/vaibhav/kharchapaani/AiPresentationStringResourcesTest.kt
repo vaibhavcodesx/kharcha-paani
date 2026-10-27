@@ -59,6 +59,9 @@ class AiPresentationStringResourcesTest {
         db.close(); Dispatchers.resetMain()
     }
     @Test fun `AI display resources retain every existing prompt label and error sentence`() {
+        assertEquals("Filled in on your phone. Check the amount and details.", app.getString(R.string.ai_display_local_filled))
+        assertEquals("Read the bill, but couldn't find the total. Fill in the amount.", app.getString(R.string.ai_display_receipt_missing_total))
+        assertEquals("Read from your bill. The photo is kept below.", app.getString(R.string.ai_display_receipt_photo_kept))
         AiPrompt.entries.forEach {
             assertEquals(it.label, app.getString(it.labelResource))
             assertEquals(it.eyebrow, app.getString(it.eyebrowResource))

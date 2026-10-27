@@ -496,4 +496,7 @@
     <string name="ai_display_receipt_blocked">Couldn\'t read that bill. Fill in the details, or try a clearer photo.</string>
     <string name="ai_display_receipt_dailylimit">That\'s today\'s bill reads used up. Fill in the details; they\'re back tomorrow.</string>
     <string name="ai_display_receipt_needssignin">Sign out and back in to read bills again. Fill in the details for now.</string>
+    <string name="ai_display_local_filled">Filled in on your phone. Check the amount and details.</string>
+    <string name="ai_display_receipt_missing_total">Read the bill, but couldn\'t find the total. Fill in the amount.</string>
+    <string name="ai_display_receipt_photo_kept">Read from your bill. The photo is kept below.</string>
 </resources>
