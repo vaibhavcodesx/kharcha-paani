@@ -37,6 +37,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- A dated solo-progress report and Codex restart guide preserve the verified PR queue, parked
+  work and remaining phone/protected-file checks (documentation handoff).
+
 - Home-screen widget labels, prompts and spoken amounts use string resources while preserving English, complete amounts and signed-out privacy (X12 / T3.11).
 
 - Friend-row Asked today/yesterday/day-count and shared payment-code labels use string resources with unchanged calendar-day/share behavior; outgoing messages remain untouched (X12 / T3.11).
