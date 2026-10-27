@@ -105,4 +105,6 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #170 · X12 / T3.11 app-shell and update notices · merged; copy/resources only for import/share/Undo/permission/settings/ledger-open errors and downloaded-update restart prompt; release policy and foreground guards unchanged.
 
+- 2026-10-27 · #171 · X12 / T3.11 sign-in presentation copy · merged; labels, agreement/link spacing, backdrop captions and failure explanations use resources; auth requests, permissions and session behavior are untouched.
+
 ## Questions

@@ -30,6 +30,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
@@ -238,11 +240,11 @@ internal fun LedgerPreview(progress: () -> Float, modifier: Modifier = Modifier)
     ) {
         PreviewRow(
             badge = { CategoryBadge("Food") },
-            title = "Friday dinner",
-            detail = "You paid · split 3 ways",
+            title = stringResource(R.string.signin_copy_demo_meal),
+            detail = stringResource(R.string.signin_copy_demo_split),
             amount = "-₹640",
             amountColor = OffWhiteText,
-            below = "of ₹1,920",
+            below = stringResource(R.string.signin_copy_demo_of),
             modifier = Modifier.entrance(progress, EntranceDelay.PREVIEW_FIRST_ROW),
         )
         Box(
@@ -264,8 +266,8 @@ internal fun LedgerPreview(progress: () -> Float, modifier: Modifier = Modifier)
                     Icon(KpIcons.Settle, contentDescription = null, tint = MoneyIn, modifier = Modifier.size(20.dp))
                 }
             },
-            title = "Rohan paid you",
-            detail = "UPI · settled up",
+            title = stringResource(R.string.signin_copy_demo_payment),
+            detail = stringResource(R.string.signin_copy_demo_settled),
             amount = "+₹640",
             amountColor = MoneyIn,
             below = null,
