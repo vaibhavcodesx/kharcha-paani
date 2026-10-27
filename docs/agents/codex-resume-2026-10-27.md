@@ -12,7 +12,7 @@ Start with the [short owner progress report](../production-readiness/solo-progre
 
 - Actual managed checkout used here: `C:\Users\VAIBHAV\.codex\worktrees\x1-store-listing\Kharcha Paani`.
 - The user-facing original `Z:\V\.The_Future\Vibeeee\Kharcha Paani` was unavailable/empty during this run. Do not overwrite it or reset/clean any checkout. Verify paths and preserve user changes.
-- Documentation branch at wrap: `codex/solo-handoff-2026-10-27`; docs are committed/pushed and linked in its draft PR. It is not a product merge and is intentionally left for resumption/review.
+- Documentation branch at wrap: `codex/solo-handoff-2026-10-27`; docs are committed/pushed in draft [#185](https://github.com/vaibhavcodesx/kharcha-paani/pull/185). It is not a product merge and is intentionally left for resumption/review.
 - Last confirmed product main: `1b5e13a9cb02272bc3ca4f225528d56662c2ef27` ([178](https://github.com/vaibhavcodesx/kharcha-paani/pull/178), widgets).
 - No active local CI watcher or feature mutation remains. GitHub's normal CI for 179 can finish independently. No automation/goal/background agent was created.
 - Previous helpers in the model's tool store are **not durable**. Use this document and the repository/GitHub as truth.
@@ -23,14 +23,14 @@ All are X12 / T3.11. Do not combine them or recreate their branches. Final main 
 
 | PR | Branch | Head at pause | CI snapshot (not a future gate) |
 |---|---|---|---|
-| [#179](https://github.com/vaibhavcodesx/kharcha-paani/pull/179) | `codex/x12-notification-content-strings` | `829cad41f89057bc40d0800f97346e816a73ee4f` | unit-tests: IN_PROGRESS, lint: IN_PROGRESS, release-bundle: IN_PROGRESS |
+| [#179](https://github.com/vaibhavcodesx/kharcha-paani/pull/179) | `codex/x12-notification-content-strings` | `829cad41f89057bc40d0800f97346e816a73ee4f` | unit-tests: SUCCESS, lint: SUCCESS, release-bundle: SUCCESS |
 | [#180](https://github.com/vaibhavcodesx/kharcha-paani/pull/180) | `codex/x12-payment-pill-strings` | `56270274fa176d700f14f299018e53a59e7c0395` | unit-tests: SUCCESS, lint: SUCCESS, release-bundle: SUCCESS |
 | [#181](https://github.com/vaibhavcodesx/kharcha-paani/pull/181) | `codex/x12-support-draft-strings` | `ba7b234a291b69f9e637e6e4ae42ea564aa9e61c` | unit-tests: SUCCESS, lint: SUCCESS, release-bundle: SUCCESS |
 | [#182](https://github.com/vaibhavcodesx/kharcha-paani/pull/182) | `codex/x12-split-notice-strings` | `2316c66f079512ae7ff53de2bb21aa12f99b9e35` | unit-tests: SUCCESS, lint: SUCCESS, release-bundle: SUCCESS |
 | [#183](https://github.com/vaibhavcodesx/kharcha-paani/pull/183) | `codex/x12-statement-warning-strings` | `2078213052ed2014bc03e59161b3ebcbb4d7ae3f` | unit-tests: SUCCESS, lint: SUCCESS, release-bundle: SUCCESS |
 | [#184](https://github.com/vaibhavcodesx/kharcha-paani/pull/184) | `codex/x12-split-self-label` | `3b80236fa07982a3211017c6b838bca4e720c9cb` | unit-tests: SUCCESS, lint: SUCCESS, release-bundle: SUCCESS |
 
-179 already contains the last main shown above. PRs 180–184 have initial green CI on older bases and still need current main merged into them, conflict resolution, a log row, and **new** CI. No failed Android CI run was observed for these six at this snapshot; refresh run histories before counting any newer failure. Two failed Android CI runs on an item mean park it and move on; fixture failures count too.
+179 already contains the last main shown above. Android CI run 40474338813 finished green on the saved head; its separate Claude-review jobs failed execution. The PR remains open at this requested pause. PRs 180–184 have initial green CI on older bases and still need current main merged into them, conflict resolution, a log row, and **new** CI. No failed Android CI run was observed for these six at this snapshot; refresh run histories before counting any newer failure. Two failed Android CI runs on an item mean park it and move on; fixture failures count too.
 
 After these six, perform a final source/resource/scope/log audit. The last audit found only intended data/branding/animation labels and protected/parked Home/account text, plus the two follow-ups now covered by 183 and 184. Do not claim that Hindi translations or all accessibility acceptance are finished.
 

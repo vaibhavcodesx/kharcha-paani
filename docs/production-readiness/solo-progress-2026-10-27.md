@@ -4,6 +4,8 @@
 
 This is an update alongside the [master readiness tracker](README.md), not a replacement for it. Its older status labels have not been edited because that file belongs to Claude. See the [solo log](../agents/solo-log.md) for decisions and the [restart guide](../agents/codex-resume-2026-10-27.md) for exact technical state.
 
+Saved in documentation-only draft [#185](https://github.com/vaibhavcodesx/kharcha-paani/pull/185); product work remains paused.
+
 ## Done in this batch
 
 | Area | What works now on main | PRs |
@@ -22,7 +24,7 @@ English wording and money/data behavior were preserved during the text work. **A
 
 | PR | Remaining area | Resume action |
 |---|---|---|
-| [179](https://github.com/vaibhavcodesx/kharcha-paani/pull/179) | Notification channels, daily/private/public payment-reminder text | Latest main is integrated. Final CI was running at the snapshot; refresh it before any merge. |
+| [179](https://github.com/vaibhavcodesx/kharcha-paani/pull/179) | Notification channels, daily/private/public payment-reminder text | Latest main is integrated. All three Android CI jobs passed on the saved head; refresh main and checks before any merge. |
 | [180](https://github.com/vaibhavcodesx/kharcha-paani/pull/180) | Payment tag spoken label | Integrate the then-latest main and run final CI. |
 | [181](https://github.com/vaibhavcodesx/kharcha-paani/pull/181) | AI-report email draft | Same; no email is sent by the tests. |
 | [182](https://github.com/vaibhavcodesx/kharcha-paani/pull/182) | Unknown/ambiguous split-name notices | Same; matching behavior stays unchanged. |

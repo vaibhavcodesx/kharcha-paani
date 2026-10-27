@@ -121,7 +121,10 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #178 · X12 / T3.11 widget copy · merged; widget labels, full-amount spoken summaries and signed-out guidance use resources; analytics, data sources and widget actions stay unchanged.
 
+- 2026-10-27 · [#185](https://github.com/vaibhavcodesx/kharcha-paani/pull/185) · documentation handoff · draft/open at the owner-requested pause; saved the progress report and exact restart guide. Product snapshot: 50 merged, 6 prepared, 4 parked after two failed Android CI runs. This docs PR is excluded from those product counts and is not a CI-failure park. #179 Android CI finished green; no further product merge was attempted.
+
 ## Questions
+
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
 - Parked after two failed Android CI runs: #130 statement re-import (reserve all exact matches before near-date matching); #132 cold-start empty flash (derive readiness from a complete repository snapshot); #139 Home large text (fit the whole balance when animated digits cannot fit); #143 Home strings (await the activity feed as well as analytics in the regression fixture). Leave these PRs open for follow-up.
 - X12 handoff: Home copy remains in parked #143. Account/reminder rows in protected AccountSheet, auth/profile/deletion behavior copy and #103 remain untouched. Protected AI prompt instructions and generated/source text are not UI resources. This is not a complete Hindi build.
