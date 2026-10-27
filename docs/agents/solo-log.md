@@ -49,6 +49,8 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #139 · X7 / T2.10 Home money · parked: CI 40412344087 rejected a Boolean-returning render test; corrected CI 40413157415 reaches the missing whole-amount layout assertion. Two failures reached the stop rule. Next: auto-size a single full figure when animated digits cannot fit, retaining normal animation when they do.
 
+- 2026-10-27 · #147 · X12 / T3.11 entry review copy · merged; entry/split/date/discard labels and shared validation messages use resources with unchanged comparisons, rounding and English; apostrophes and percent signs remain user data.
+
 - 2026-10-27 · #146 · X12 / T3.11 Insights copy · merged; screen/chart labels, cash-flow sentences, existing entry plurals and spoken descriptions use resources with unchanged English and Indian money formatting.
 
 - 2026-10-27 · #145 · X12 / T3.11 Splits copy · merged; resource-backed labels, counters, existing expense plural choices, menus and spoken actions retain English wording; sort/filter IDs and names as data are unchanged.
@@ -56,5 +58,7 @@ owner or Claude go at the bottom.
 - 2026-10-27 · #143 · X12 / T3.11 Home copy · parked: first CI 40415903485 rejected a non-void test signature; corrected implementation CI 40416904970 passed, but integrated CI 40418934304 could not find Today after seeing the streak. Two failures reached the stop rule. Likely fixture follow-up: await the feed as well as analytics before checking day headers; extraction remains unmerged.
 
 - 2026-10-27 · #144 · X12 / T3.11 navigation copy · merged; tabs store resource IDs and Compose resolves visual/spoken labels before callbacks; English labels, stable enum values, tags and the 150% accessibility threshold are unchanged.
+
+- 2026-10-27 · #151 · X12 / T3.11 payment forms · merged; IOU, settlement and answer labels use resources with unchanged English, directions and record guards; user notes remain data.
 
 ## Questions

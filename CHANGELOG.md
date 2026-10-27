@@ -40,6 +40,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Payment, IOU and settlement-answer form copy uses Android string resources while keeping the
   same English, record directions and confirmation behavior (X12 / T3.11; payment forms).
 
+- Entry review and split editing use Android resources for labels, date phrases, spoken actions
+  and unchanged validation messages (X12 / T3.11; entry).
+
 - Insights and spending charts use string resources for labels, plurals, money sentences and spoken
   descriptions, retaining their English wording (X12 / T3.11; Insights).
 
