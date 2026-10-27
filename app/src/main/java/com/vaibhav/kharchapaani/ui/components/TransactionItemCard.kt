@@ -29,6 +29,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -77,6 +79,8 @@ fun TransactionItemCard(
     visits: Int = 0,
     hasBillPhoto: Boolean = false,
 ) {
+    val editLabel = stringResource(R.string.timeline_row_edit)
+    val deleteLabel = stringResource(R.string.timeline_row_delete)
     val tx = fullTx.transaction
     val isIncome = tx.type == "income"
     val isSplit = fullTx.split != null
@@ -131,8 +135,8 @@ fun TransactionItemCard(
         modifier = modifier.clip(position.shape).onSizeChanged { rowWidth = it.width.toFloat() },
         backgroundContent = {
             when (dismissState.dismissDirection) {
-                SwipeToDismissBoxValue.StartToEnd -> SwipeReveal(WarmAmberPrimary, CharcoalBg, KpIcons.Write, "Edit", Alignment.CenterStart)
-                SwipeToDismissBoxValue.EndToStart -> SwipeReveal(DeleteRed, OffWhiteText, KpIcons.Delete, "Delete", Alignment.CenterEnd)
+                SwipeToDismissBoxValue.StartToEnd -> SwipeReveal(WarmAmberPrimary, CharcoalBg, KpIcons.Write, editLabel, Alignment.CenterStart)
+                SwipeToDismissBoxValue.EndToStart -> SwipeReveal(DeleteRed, OffWhiteText, KpIcons.Delete, deleteLabel, Alignment.CenterEnd)
                 SwipeToDismissBoxValue.Settled -> Unit
             }
         },
@@ -143,12 +147,12 @@ fun TransactionItemCard(
                 .fillMaxWidth()
                 .heightIn(min = 64.dp)
                 .background(CharcoalCard)
-                .clickable(onClickLabel = "Edit", onClick = onEdit)
+                .clickable(onClickLabel = editLabel, onClick = onEdit)
                 .semantics {
                     if (!isReadOnly) {
                         customActions = listOf(
-                            CustomAccessibilityAction("Edit") { currentOnEdit(); true },
-                            CustomAccessibilityAction("Delete") { currentOnDelete(); true },
+                            CustomAccessibilityAction(editLabel) { currentOnEdit(); true },
+                            CustomAccessibilityAction(deleteLabel) { currentOnDelete(); true },
                         )
                     }
                 }
@@ -173,7 +177,7 @@ fun TransactionItemCard(
                     if (hasBillPhoto) {
                         Icon(
                             Icons.Outlined.ReceiptLong,
-                            contentDescription = "Has a bill photo",
+                            contentDescription = stringResource(R.string.timeline_row_bill),
                             tint = MutedWarmGray,
                             modifier = Modifier.padding(start = Spacing.s).size(14.dp),
                         )
@@ -207,7 +211,7 @@ fun TransactionItemCard(
                     },
                 )
                 if (isSplit) {
-                    Text(text = "of ${Money.format(tx.amount)}", style = MoneyText.small)
+                    Text(text = stringResource(R.string.timeline_row_of, Money.format(tx.amount)), style = MoneyText.small)
                 }
             }
         }
