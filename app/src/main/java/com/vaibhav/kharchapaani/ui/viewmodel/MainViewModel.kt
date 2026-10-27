@@ -19,6 +19,7 @@ import com.vaibhav.kharchapaani.data.repository.ReceiptRepository
 import com.vaibhav.kharchapaani.data.receipts.BillPhoto
 import com.vaibhav.kharchapaani.data.receipts.ReceiptStore
 import android.app.Application
+import com.vaibhav.kharchapaani.R
 import android.content.ClipData
 import android.content.Context
 import com.vaibhav.kharchapaani.ask.AskShare

@@ -93,6 +93,6 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #164 · X12 / T3.11 bill-photo copy · merged; exact menu/viewer/spoken English and optional spacing preserved; capture/storage behavior unchanged. First integrated CI 40437543151 exposed SafetyNetTest resetting Dispatchers.Main while its uncancelled ViewModel was reading Room; the fixture now cancels and awaits the real ViewModel before resetting Main, with a StandardTestDispatcher.
 
-- 2026-10-27 · #165 · X12 / T3.11 AI presentation copy · merged; consent, labels, answer errors and parse notices use resources; parity tests preserve English, while protected prompt instructions and generated answers stay untouched.
+- 2026-10-27 · #165 · X12 / T3.11 AI presentation copy · merged; consent, labels, answer errors and parse notices use resources; parity tests preserve English, while protected prompt instructions and generated answers stay untouched. First integrated CI 40438740894 found a missing R import in the added local/bill display lookups; the explicit import fixes compilation.
 
 ## Questions
