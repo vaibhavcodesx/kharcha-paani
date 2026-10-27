@@ -37,6 +37,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Statement review uses string resources for selection counts, existing plurals, actions and reading
+  notices, keeping the same English wording and import behavior (X12 / T3.11; import).
+
 - Shared discard/large-amount dialogs and amount-field spoken labels use Android string resources
   with unchanged English wording (X12 / T3.11; sheet controls).
 
