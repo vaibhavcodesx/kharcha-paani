@@ -192,4 +192,21 @@
         <item quantity="one">%1$d entry found</item>
         <item quantity="other">%1$d entries found</item>
     </plurals>
+    <!-- Additional screen strings. -->
+    <string name="export_scope_month">A month</string>
+    <string name="export_scope_dates">Dates</string>
+    <string name="export_scope_everything">Everything</string>
+    <string name="export_action">Export</string>
+    <string name="export_nothing">Nothing to export</string>
+    <string name="export_title">Export to a spreadsheet</string>
+    <string name="export_body">A CSV file that opens in Sheets, Excel or Numbers, with every entry in the range.</string>
+    <string name="export_from">From</string>
+    <string name="export_change_start">Change start date</string>
+    <string name="export_to">To</string>
+    <string name="export_change_end">Change end date</string>
+    <string name="export_everything_body">Every entry on this phone, from the first you logged.</string>
+    <plurals name="export_entry_count">
+        <item quantity="one">%1$d entry</item>
+        <item quantity="other">%1$d entries</item>
+    </plurals>
 </resources>
