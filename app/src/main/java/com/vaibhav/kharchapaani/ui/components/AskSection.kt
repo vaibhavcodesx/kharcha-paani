@@ -19,6 +19,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
+import com.vaibhav.kharchapaani.ui.format.labelResource
+import com.vaibhav.kharchapaani.ui.format.eyebrowResource
+import com.vaibhav.kharchapaani.ui.format.answerMessageResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
@@ -26,7 +31,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.domain.AiFailure
 import com.vaibhav.kharchapaani.domain.AiPrompt
-import com.vaibhav.kharchapaani.domain.askMessage
 import com.vaibhav.kharchapaani.domain.AskBoard
 import com.vaibhav.kharchapaani.domain.AskState
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -66,7 +70,7 @@ fun AskSection(
             .padding(Spacing.l)
             .testTag("ask_section"),
     ) {
-        Text("Ask about $possessive money", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+        Text(stringResource(R.string.ai_display_heading, possessive), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
         // Wrapped, not scrolled: three chips do not fit one phone-width row, and a horizontal
         // scroller hid the third question behind an edge with nothing to say it was there.
         FlowRow(
@@ -76,7 +80,7 @@ fun AskSection(
         ) {
             prompts.forEach { prompt ->
                 ChoiceChip(
-                    label = prompt.label,
+                    label = stringResource(prompt.labelResource),
                     selected = prompt == board.selected,
                     // A question already answered stays tappable while another is running and when
                     // the day's asks are gone: showing an answer that is already here costs
@@ -115,19 +119,20 @@ fun AskAnswer(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
     /** What the empty state says. The group sheet has one button, not a row of questions. */
-    idleMessage: String = "Pick a question. Nothing runs until you tap one.",
+    idleMessage: String? = null,
     /**
      * Why it failed, when known. "Couldn't get an answer just now" covered being offline, being out
      * of the day's free quota and the key being refused alike, and each wants something different.
      */
     failure: AiFailure? = null,
 ) {
+    val reportQuestion = asked?.let { stringResource(it.labelResource) } ?: stringResource(R.string.ai_display_insights)
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         when {
             state is AskState.Asking -> {
                 // The label goes above the shimmer, where the answer's own label will be — so the
                 // block doesn't reshuffle the moment the text arrives.
-                Text(asked?.eyebrow?.uppercase() ?: "READING", style = EyebrowText)
+                Text(asked?.let { stringResource(it.eyebrowResource).uppercase() } ?: stringResource(R.string.ai_display_reading), style = EyebrowText)
                 listOf(1f, 0.94f, 0.62f).forEach { width ->
                     Box(
                         Modifier
@@ -143,17 +148,17 @@ fun AskAnswer(
             // An answer already in hand outranks every other state, including the day's cap:
             // it is here, it cost an ask, and there is no reason to replace it with a notice.
             state is AskState.Answered -> {
-                if (asked != null) Text(asked.eyebrow.uppercase(), style = EyebrowText)
+                if (asked != null) Text(stringResource(asked.eyebrowResource).uppercase(), style = EyebrowText)
                 Text(state.text, style = MaterialTheme.typography.bodyLarge)
                 // Play's AI-generated content policy: an answer can be reported from where it's read.
                 val context = LocalContext.current
                 Text(
-                    "Report this answer",
+                    stringResource(R.string.ai_display_report),
                     style = MaterialTheme.typography.labelMedium,
                     color = SubMutedWarmGray,
                     modifier = Modifier
-                        .clickable(onClickLabel = "Report this answer by email") {
-                            Support.reportAiAnswer(context, asked?.label ?: "Insights", state.text)
+                        .clickable(onClickLabel = stringResource(R.string.ai_display_report_action)) {
+                            Support.reportAiAnswer(context, reportQuestion, state.text)
                         }
                         .padding(vertical = Spacing.xs)
                         .testTag("ai_answer_report"),
@@ -161,22 +166,22 @@ fun AskAnswer(
             }
 
             !hasSpending -> Text(
-                "Log a few expenses first; there's nothing to read yet.",
+                stringResource(R.string.ai_display_no_spending),
                 style = MaterialTheme.typography.bodyMedium,
             )
 
             asksLeft <= 0 -> Text(
-                "That's today's readings used up. They start again tomorrow.",
+                stringResource(R.string.ai_display_cap),
                 style = MaterialTheme.typography.bodyMedium,
             )
 
             // No retry where retrying can't help: a build with no key, or a key Google refuses.
             state is AskState.Failed && (failure == AiFailure.NoKey || failure == AiFailure.KeyRefused) ->
-                Text(failure?.askMessage().orEmpty(), style = MaterialTheme.typography.bodyMedium, color = WarmAmberLight)
+                Text(failure?.let { stringResource(it.answerMessageResource) }.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = WarmAmberLight)
 
-            state is AskState.Failed -> RetryLine(failure?.askMessage() ?: "Couldn't get an answer just now.", onRetry)
+            state is AskState.Failed -> RetryLine(failure?.let { stringResource(it.answerMessageResource) } ?: stringResource(R.string.ai_display_failure), onRetry)
 
-            else -> Text(idleMessage, style = MaterialTheme.typography.bodyMedium)
+            else -> Text(idleMessage ?: stringResource(R.string.ai_display_idle), style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -184,11 +189,11 @@ fun AskAnswer(
 @Composable
 private fun RetryLine(message: String, onRetry: () -> Unit) {
     // The message takes what's left, so a longer, specific reason wraps instead of pushing
-    // "Try again" off the card.
+    // stringResource(R.string.ai_display_retry) off the card.
     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
         Text(message, style = MaterialTheme.typography.bodyMedium, color = WarmAmberLight, modifier = Modifier.weight(1f, fill = false))
         KpButton(
-            label = "Try again",
+            label = stringResource(R.string.ai_display_retry),
             onClick = onRetry,
             tier = KpButtonTier.Link,
             testTag = "ask_retry",

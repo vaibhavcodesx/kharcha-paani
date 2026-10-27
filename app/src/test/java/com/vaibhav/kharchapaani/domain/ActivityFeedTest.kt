@@ -10,8 +10,16 @@ import com.vaibhav.kharchapaani.data.model.ActivityItem
 import com.vaibhav.kharchapaani.data.model.FullTransaction
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36])
 class ActivityFeedTest {
+    private val context = ApplicationProvider.getApplicationContext<Context>()
 
     private val bob = PersonEntity(id = 2, name = "Bob", avatarColor = "#fff")
     private val carol = PersonEntity(id = 3, name = "Carol", avatarColor = "#fff")
@@ -32,7 +40,7 @@ class ActivityFeedTest {
     )
 
     private fun feed(query: String = "", filter: String = ActivityFeed.ALL) =
-        ActivityFeed.build(transactions, settlements, listOf(bob, carol), listOf(goa), query, filter)
+        ActivityFeed.build(context, transactions, settlements, listOf(bob, carol), listOf(goa), query, filter)
 
     @Test
     fun `settlements and IOUs appear alongside transactions, newest first`() {
@@ -44,7 +52,7 @@ class ActivityFeedTest {
 
     @Test
     fun `settlement rows read naturally from this account's point of view`() {
-        val titles = feed().filterIsInstance<ActivityItem.Settlement>().associate { it.settlement.id to it.title }
+        val titles = feed().filterIsInstance<ActivityItem.Settlement>().associate { it.settlement.id to it.title(context) }
 
         assertEquals(mapOf(12L to "Carol paid Bob", 10L to "You paid Bob", 11L to "Bob lent you"), titles)
         assertEquals("Goa", feed().filterIsInstance<ActivityItem.Settlement>().single { it.settlement.id == 10L }.groupName)
@@ -71,7 +79,7 @@ class ActivityFeedTest {
             )
         }
 
-        val readOnly = ActivityFeed.build(listOf(mine, theirs, inArchived, theyAddedIPaid), emptyList(), emptyList(), listOf(archived), "", ActivityFeed.ALL)
+        val readOnly = ActivityFeed.build(context, listOf(mine, theirs, inArchived, theyAddedIPaid), emptyList(), emptyList(), listOf(archived), "", ActivityFeed.ALL)
             .filterIsInstance<ActivityItem.Transaction>()
             .associate { it.fullTransaction.transaction.merchant to it.isReadOnly }
 

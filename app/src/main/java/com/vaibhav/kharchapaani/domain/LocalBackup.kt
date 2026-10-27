@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.domain
 
+import android.content.Context
+import com.vaibhav.kharchapaani.R
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -77,13 +79,13 @@ data class LocalBackup(
             settlements.isEmpty() && transactions.isEmpty() && settings.isEmpty
 
     /** What the UI reports, in the order a person would check it. */
-    fun summary(): String = listOfNotNull(
-        people.size.takeIf { it > 0 }?.let { "$it ${if (it == 1) "friend" else "friends"}" },
-        groups.size.takeIf { it > 0 }?.let { "$it ${if (it == 1) "group" else "groups"}" },
-        transactions.size.takeIf { it > 0 }?.let { "$it ${if (it == 1) "expense" else "expenses"}" },
-        settlements.size.takeIf { it > 0 }?.let { "$it ${if (it == 1) "settlement" else "settlements"}" },
-        subscriptions.size.takeIf { it > 0 }?.let { "$it ${if (it == 1) "subscription" else "subscriptions"}" },
-    ).joinToString(", ").ifEmpty { "settings only" }
+    fun summary(context: Context): String = listOfNotNull(
+        people.size.takeIf { it > 0 }?.let { context.resources.getQuantityString(R.plurals.backup_preview_friends, it, it) },
+        groups.size.takeIf { it > 0 }?.let { context.resources.getQuantityString(R.plurals.backup_preview_groups, it, it) },
+        transactions.size.takeIf { it > 0 }?.let { context.resources.getQuantityString(R.plurals.backup_preview_expenses, it, it) },
+        settlements.size.takeIf { it > 0 }?.let { context.resources.getQuantityString(R.plurals.backup_preview_settlements, it, it) },
+        subscriptions.size.takeIf { it > 0 }?.let { context.resources.getQuantityString(R.plurals.backup_preview_subscriptions, it, it) },
+    ).joinToString(context.getString(R.string.backup_preview_separator)).ifEmpty { context.getString(R.string.backup_description_settings_only) }
 
     companion object {
         const val FORMAT_VERSION = 2
@@ -103,11 +105,11 @@ data class LocalBackup(
          * A file chosen by hand from a picker is the one entirely arbitrary input here, so every
          * failure is a message rather than a crash.
          */
-        fun decode(text: String): BackupReadResult = try {
+        fun decode(context: Context, text: String): BackupReadResult = try {
             val backup = json.decodeFromString<LocalBackup>(text)
             when {
                 backup.version > FORMAT_VERSION -> BackupReadResult.TooNew(backup.version)
-                else -> backup.problem()?.let(BackupReadResult::Invalid) ?: BackupReadResult.Ok(backup)
+                else -> backup.problem(context)?.let(BackupReadResult::Invalid) ?: BackupReadResult.Ok(backup)
             }
         } catch (e: Exception) {
             BackupReadResult.Unreadable
@@ -122,29 +124,29 @@ data class LocalBackup(
          * its numbers: an edited or damaged file could put a negative or infinite amount, or shares
          * that don't add up, straight into the ledger, where every balance is a sum of them.
          */
-        private fun LocalBackup.problem(): String? {
+        private fun LocalBackup.problem(context: Context): String? {
             transactions.forEach { t ->
                 val what = t.merchant.ifBlank { t.category }
-                if (!t.amount.isMoney()) return "an expense ($what) has no proper amount"
-                if (t.type != "expense" && t.type != "income") return "an entry ($what) is neither an expense nor income"
+                if (!t.amount.isMoney()) return context.getString(R.string.backup_description_amount, what)
+                if (t.type != "expense" && t.type != "income") return context.getString(R.string.backup_description_type, what)
                 val split = t.split ?: return@forEach
-                if (!split.totalAmount.isMoney()) return "the split of $what has no proper total"
-                if (split.splitType.lowercase() !in SPLIT_TYPES) return "the split of $what is of an unknown kind (${split.splitType})"
-                if (split.shares.isEmpty()) return "the split of $what has nobody in it"
+                if (!split.totalAmount.isMoney()) return context.getString(R.string.backup_description_total, what)
+                if (split.splitType.lowercase() !in SPLIT_TYPES) return context.getString(R.string.backup_description_kind, what, split.splitType)
+                if (split.shares.isEmpty()) return context.getString(R.string.backup_description_nobody, what)
                 if (split.shares.any { !it.amount.isFinite() || it.amount < 0 || it.percentage?.let { p -> !p.isFinite() || p !in 0.0..100.0 } == true }) {
-                    return "a share of $what isn't a proper amount"
+                    return context.getString(R.string.backup_description_share, what)
                 }
                 // More than the total is nonsense: someone would owe money nobody spent. Less is fine,
                 // since a share of someone no longer on the phone is left out of the file. A paisa a
                 // share of slack: older splits stored each share rounded on its own.
                 if (split.shares.sumOf { it.amount } > split.totalAmount + 0.01 * split.shares.size + 0.001) {
-                    return "the shares of $what add up to more than its total"
+                    return context.getString(R.string.backup_description_shares_total, what)
                 }
             }
-            settlements.forEach { if (!it.amount.isMoney()) return "a payment has no proper amount" }
+            settlements.forEach { if (!it.amount.isMoney()) return context.getString(R.string.backup_description_payment) }
             subscriptions.forEach { s ->
-                if (!s.amount.isMoney()) return "the subscription ${s.name} has no proper amount"
-                if (SubscriptionCycle.entries.none { it.name == s.cycle }) return "the subscription ${s.name} has an unknown cycle (${s.cycle})"
+                if (!s.amount.isMoney()) return context.getString(R.string.backup_description_subscription, s.name)
+                if (SubscriptionCycle.entries.none { it.name == s.cycle }) return context.getString(R.string.backup_description_cycle, s.name, s.cycle)
             }
             return null
         }
@@ -331,11 +333,11 @@ data class RestoreReport(
      * Says what was skipped as well as what was added. A restore run twice should be visibly a
      * no-op the second time, not a success that leaves you unsure whether it duplicated the lot.
      */
-    fun message(): String = when {
-        added == 0 && skipped == 0 && settingsRestored -> "Settings restored. Nothing else in that backup was missing."
-        added == 0 && skipped > 0 -> "Everything in that backup was already here. Nothing changed."
-        added == 0 -> "Nothing to restore from that backup."
-        skipped == 0 -> "Restored $added ${if (added == 1) "item" else "items"}."
-        else -> "Restored $added ${if (added == 1) "item" else "items"}; $skipped were already here."
+    fun message(context: Context): String = when {
+        added == 0 && skipped == 0 && settingsRestored -> context.getString(R.string.backup_description_settings_restored)
+        added == 0 && skipped > 0 -> context.getString(R.string.backup_description_already)
+        added == 0 -> context.getString(R.string.backup_description_empty)
+        skipped == 0 -> context.resources.getQuantityString(R.plurals.backup_description_restored, added, added)
+        else -> context.resources.getQuantityString(R.plurals.backup_description_restored_skipped, added, added, skipped)
     }
 }

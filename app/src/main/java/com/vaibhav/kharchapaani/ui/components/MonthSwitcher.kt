@@ -13,6 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.testTag
@@ -49,7 +51,7 @@ fun MonthSwitcher(
             .padding(horizontal = Spacing.xs),
     ) {
         StepButton(
-            label = "Previous month",
+            label = stringResource(R.string.shared_chrome_previous),
             enabled = month > earliest,
             rotation = 90f,
             onClick = { onMonthChange(month.minusMonths(1)) },
@@ -66,7 +68,7 @@ fun MonthSwitcher(
                 .testTag("month_label"),
         )
         StepButton(
-            label = "Next month",
+            label = stringResource(R.string.shared_chrome_next),
             enabled = month < latest,
             rotation = -90f,
             onClick = { onMonthChange(month.plusMonths(1)) },

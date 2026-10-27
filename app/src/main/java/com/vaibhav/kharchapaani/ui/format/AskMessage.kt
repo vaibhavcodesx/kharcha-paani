@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.format
 
+import android.content.Context
+import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.domain.HisaabItemiser
 import java.time.Instant
 import java.time.LocalDate
@@ -39,12 +41,12 @@ object AskMessage {
         }
 
     /** "Asked today", "Asked yesterday", "Asked 3 days ago": calendar days, not 24-hour blocks. */
-    fun askedLabel(askedAt: Long, now: Long, zone: ZoneId = ZoneId.systemDefault()): String {
+    fun askedLabel(context: Context, askedAt: Long, now: Long, zone: ZoneId = ZoneId.systemDefault()): String {
         val days = ChronoUnit.DAYS.between(dateOf(askedAt, zone), dateOf(now, zone)).coerceAtLeast(0)
         return when (days) {
-            0L -> "Asked today"
-            1L -> "Asked yesterday"
-            else -> "Asked $days days ago"
+            0L -> context.getString(R.string.ask_status_today)
+            1L -> context.getString(R.string.ask_status_yesterday)
+            else -> context.getString(R.string.ask_status_days, days)
         }
     }
 

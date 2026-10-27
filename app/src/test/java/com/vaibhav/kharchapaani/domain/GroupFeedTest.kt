@@ -8,6 +8,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * A group's history has to show the money that moved, not only the money that was spent.
@@ -17,7 +22,10 @@ import org.junit.Test
  * it. The figures moved and the screen gave no reason, which is a worse failure than simply not
  * supporting settlements would have been.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36])
 class GroupFeedTest {
+    private val context = ApplicationProvider.getApplicationContext<Context>()
 
     private val me = -1L
     private val rohan = PersonEntity(id = 2, name = "Rohan", avatarColor = "#70C1FF")
@@ -68,28 +76,28 @@ class GroupFeedTest {
 
     @Test
     fun `a settlement is described from your side`() {
-        assertEquals("Rohan paid you", GroupFeed.describe(settlement(1, 1L, from = rohan.id, to = me), members))
-        assertEquals("You paid Rohan", GroupFeed.describe(settlement(1, 1L, from = me, to = rohan.id), members))
+        assertEquals("Rohan paid you", GroupFeed.describe(context, settlement(1, 1L, from = rohan.id, to = me), members))
+        assertEquals("You paid Rohan", GroupFeed.describe(context, settlement(1, 1L, from = me, to = rohan.id), members))
     }
 
     @Test
     fun `an IOU says lent, because it is not a payment`() {
-        assertEquals("Rohan lent you", GroupFeed.describe(settlement(1, 1L, rohan.id, me, isIou = true), members))
-        assertEquals("You lent Rohan", GroupFeed.describe(settlement(1, 1L, me, rohan.id, isIou = true), members))
+        assertEquals("Rohan lent you", GroupFeed.describe(context, settlement(1, 1L, rohan.id, me, isIou = true), members))
+        assertEquals("You lent Rohan", GroupFeed.describe(context, settlement(1, 1L, me, rohan.id, isIou = true), members))
     }
 
     @Test
     fun `money between two other members names both of them`() {
         // Possible in any group of three or more, and "Someone paid someone" would be useless.
-        assertEquals("Rohan paid Meera", GroupFeed.describe(settlement(1, 1L, rohan.id, meera.id), members))
-        assertEquals("Rohan lent Meera", GroupFeed.describe(settlement(1, 1L, rohan.id, meera.id, isIou = true), members))
+        assertEquals("Rohan paid Meera", GroupFeed.describe(context, settlement(1, 1L, rohan.id, meera.id), members))
+        assertEquals("Rohan lent Meera", GroupFeed.describe(context, settlement(1, 1L, rohan.id, meera.id, isIou = true), members))
     }
 
     @Test
     fun `a member who has since left is not rendered as a blank`() {
         val gone = settlement(1, 1L, from = 99L, to = me)
 
-        assertEquals("Someone paid you", GroupFeed.describe(gone, members))
+        assertEquals("Someone paid you", GroupFeed.describe(context, gone, members))
     }
 
     @Test
