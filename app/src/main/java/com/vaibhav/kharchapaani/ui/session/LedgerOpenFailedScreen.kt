@@ -19,6 +19,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
@@ -53,12 +55,12 @@ fun LedgerOpenFailedScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = "Your ledger didn't open",
+                text = stringResource(R.string.shell_copy_ledger_title),
                 style = MaterialTheme.typography.headlineLarge,
                 modifier = Modifier.semantics { heading() },
             )
             Text(
-                text = "Nothing was deleted. Try again, and if it keeps happening, restart the app.",
+                text = stringResource(R.string.shell_copy_ledger_explanation),
                 style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
             )
             Button(
@@ -70,7 +72,7 @@ fun LedgerOpenFailedScreen(
                     .fillMaxWidth()
                     .heightIn(min = 52.dp),
             ) {
-                Text("Try again", style = MaterialTheme.typography.titleMedium.copy(color = CharcoalBg))
+                Text(stringResource(R.string.shell_copy_ledger_retry), style = MaterialTheme.typography.titleMedium.copy(color = CharcoalBg))
             }
             OutlinedButton(
                 onClick = onSignOut,
@@ -80,7 +82,7 @@ fun LedgerOpenFailedScreen(
                     .fillMaxWidth()
                     .heightIn(min = 52.dp),
             ) {
-                Text("Sign out", style = MaterialTheme.typography.titleMedium.copy(color = OffWhiteText))
+                Text(stringResource(R.string.shell_copy_ledger_sign_out), style = MaterialTheme.typography.titleMedium.copy(color = OffWhiteText))
             }
         }
     }

@@ -27,6 +27,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -86,34 +88,34 @@ fun CreateGroupContent(
         modifier = modifier,
         actionBar = {
             GlassActionBar(
-                label = "Create group",
-                disabledLabel = if (tooLong) "Name is too long" else "Name the group",
+                label = stringResource(R.string.create_group_save),
+                disabledLabel = if (tooLong) stringResource(R.string.create_group_too_long) else stringResource(R.string.create_group_disabled),
                 enabled = name.isNotBlank() && !tooLong,
                 onClick = { onSaveGroup(name.trim(), about.trim(), icon, DEFAULT_COLOUR, if (shared) emptyList() else memberIds.toList(), shared) },
                 buttonTestTag = "save_group_button",
             )
         },
     ) {
-        SheetTitle(title = "New group", supporting = "For a trip, a flat, or anything you split more than once.")
+        SheetTitle(title = stringResource(R.string.create_group_title), supporting = stringResource(R.string.create_group_supporting))
 
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            SheetRow(label = "Name", position = RowPosition.First) {
-                SheetTextInput(value = name, onValueChange = { name = it }, placeholder = "Goa 2026", fieldTestTag = "group_name_input")
+            SheetRow(label = stringResource(R.string.create_group_name), position = RowPosition.First) {
+                SheetTextInput(value = name, onValueChange = { name = it }, placeholder = stringResource(R.string.create_group_placeholder), fieldTestTag = "group_name_input")
             }
-            SheetRow(label = "About", position = RowPosition.Last) {
-                SheetTextInput(value = about, onValueChange = { about = it }, placeholder = "Optional")
+            SheetRow(label = stringResource(R.string.create_group_about), position = RowPosition.Last) {
+                SheetTextInput(value = about, onValueChange = { about = it }, placeholder = stringResource(R.string.create_group_optional))
             }
         }
         if (tooLong) {
             Text(
-                "Shared group names can be up to $MAX_SHARED_NAME characters.",
+                stringResource(R.string.create_group_limit, MAX_SHARED_NAME),
                 style = MaterialTheme.typography.bodyMedium,
                 color = WarmAmberLight,
                 modifier = Modifier.padding(top = Spacing.s),
             )
         }
 
-        Text("ICON", style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s))
+        Text(stringResource(R.string.create_group_icon), style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s))
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
@@ -146,12 +148,12 @@ fun CreateGroupContent(
                 .padding(Spacing.l),
         ) {
             Column(Modifier.weight(1f).padding(end = Spacing.m)) {
-                Text("Share with others", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.create_group_share), style = MaterialTheme.typography.titleSmall)
                 Text(
                     text = if (shared) {
-                        "Everyone you invite sees and adds expenses. You'll get an invite link once it's created."
+                        stringResource(R.string.create_group_shared)
                     } else {
-                        "Only on this phone. The friends in it don't need the app."
+                        stringResource(R.string.create_group_local)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -170,9 +172,9 @@ fun CreateGroupContent(
         }
 
         if (!shared) {
-            Text("MEMBERS · YOU'RE IN IT", style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s))
+            Text(stringResource(R.string.create_group_members), style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s))
             if (allPeople.isEmpty()) {
-                Text("No friends added yet. You can add members after creating it.", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.create_group_no_friends), style = MaterialTheme.typography.bodyMedium)
             } else {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                     allPeople.forEach { person ->
