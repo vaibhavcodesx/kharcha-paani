@@ -75,4 +75,6 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #152 · X12 / T3.11 backup preview · merged; resource-backed count plurals and labels keep English and additive confirmation; domain summary/JSON APIs are unchanged.
 
+- 2026-10-27 · #156 · X12 / T3.11 friend history · merged; resource-backed balance/action/count/empty copy preserves English; repository-generated row descriptions remain a separate presentation extraction.
+
 ## Questions

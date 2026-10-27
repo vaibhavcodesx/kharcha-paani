@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Friend-history labels, balance sentences and empty copy use string resources with unchanged English (X12 / T3.11).
+
 - Group creation labels and explanations use string resources with unchanged English and member selection (X12 / T3.11).
 
 - Group-detail labels, status lines and participant-dot captions use string resources with unchanged English (X12 / T3.11).
