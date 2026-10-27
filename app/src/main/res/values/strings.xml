@@ -379,4 +379,26 @@
     <string name="person_ledger_count">History · %1$d</string>
     <string name="person_ledger_empty">No splits or settlements with %1$s yet.</string>
     <string name="person_ledger_detail">%1$s · %2$s</string>
+    <string name="backup_description_settings_only">settings only</string>
+    <string name="backup_description_amount">an expense (%1$s) has no proper amount</string>
+    <string name="backup_description_type">an entry (%1$s) is neither an expense nor income</string>
+    <string name="backup_description_total">the split of %1$s has no proper total</string>
+    <string name="backup_description_kind">the split of %1$s is of an unknown kind (%2$s)</string>
+    <string name="backup_description_nobody">the split of %1$s has nobody in it</string>
+    <string name="backup_description_share">a share of %1$s isn\'t a proper amount</string>
+    <string name="backup_description_shares_total">the shares of %1$s add up to more than its total</string>
+    <string name="backup_description_payment">a payment has no proper amount</string>
+    <string name="backup_description_subscription">the subscription %1$s has no proper amount</string>
+    <string name="backup_description_cycle">the subscription %1$s has an unknown cycle (%2$s)</string>
+    <string name="backup_description_settings_restored">Settings restored. Nothing else in that backup was missing.</string>
+    <string name="backup_description_already">Everything in that backup was already here. Nothing changed.</string>
+    <string name="backup_description_empty">Nothing to restore from that backup.</string>
+    <plurals name="backup_description_restored">
+        <item quantity="one">Restored %1$d item.</item>
+        <item quantity="other">Restored %1$d items.</item>
+    </plurals>
+    <plurals name="backup_description_restored_skipped">
+        <item quantity="one">Restored %1$d item; %2$d were already here.</item>
+        <item quantity="other">Restored %1$d items; %2$d were already here.</item>
+    </plurals>
 </resources>

@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Backup summaries, validation reasons and restore reports use string resources with unchanged English, JSON format and additive restore behavior (X12 / T3.11).
+
 - Friend-history labels, balance sentences and empty copy use string resources with unchanged English (X12 / T3.11).
 
 - Group creation labels and explanations use string resources with unchanged English and member selection (X12 / T3.11).

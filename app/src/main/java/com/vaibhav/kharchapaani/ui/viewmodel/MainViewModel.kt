@@ -2114,7 +2114,7 @@ class MainViewModel(
                 clipData = ClipData.newRawUri(fileName, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(Intent.createChooser(send, "Back up ${backup.summary()}"))
+            context.startActivity(Intent.createChooser(send, "Back up ${backup.summary(getApplication<Application>())}"))
         }
     }
 
@@ -2142,7 +2142,7 @@ class MainViewModel(
                     return@launchAction
                 }
             }
-            when (val result = withContext(Dispatchers.Default) { LocalBackup.decode(text) }) {
+            when (val result = withContext(Dispatchers.Default) { LocalBackup.decode(getApplication<Application>(), text) }) {
                 is BackupReadResult.Unreadable ->
                     _statusMessage.value = "That doesn't look like a Kharcha Paani backup."
                 is BackupReadResult.TooNew ->
@@ -2161,7 +2161,7 @@ class MainViewModel(
         launchAction {
             val report = backupRepo.restore(backup)
             restoreSettings(backup.settings)
-            _statusMessage.value = report.copy(settingsRestored = !backup.settings.isEmpty).message()
+            _statusMessage.value = report.copy(settingsRestored = !backup.settings.isEmpty).message(getApplication<Application>())
         }
     }
 
