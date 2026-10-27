@@ -49,6 +49,8 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #139 · X7 / T2.10 Home money · parked: CI 40412344087 rejected a Boolean-returning render test; corrected CI 40413157415 reaches the missing whole-amount layout assertion. Two failures reached the stop rule. Next: auto-size a single full figure when animated digits cannot fit, retaining normal animation when they do.
 
+- 2026-10-27 · #147 · X12 / T3.11 entry review copy · merged; entry/split/date/discard labels and shared validation messages use resources with unchanged comparisons, rounding and English; apostrophes and percent signs remain user data.
+
 - 2026-10-27 · #146 · X12 / T3.11 Insights copy · merged; screen/chart labels, cash-flow sentences, existing entry plurals and spoken descriptions use resources with unchanged English and Indian money formatting.
 
 - 2026-10-27 · #145 · X12 / T3.11 Splits copy · merged; resource-backed labels, counters, existing expense plural choices, menus and spoken actions retain English wording; sort/filter IDs and names as data are unchanged.

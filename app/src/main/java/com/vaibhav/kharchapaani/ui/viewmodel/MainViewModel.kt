@@ -1499,7 +1499,7 @@ class MainViewModel(
         // shares were saved as friends owing me (correctness audit, 2026-10-24).
         val splitting = _isSplit.value && _type.value != "income"
         // The sheet disables Save and says why; this keeps any other caller from saving it anyway.
-        if (splitting) splitProblem(_amount.value, _splitMode.value, _shares.value)?.let {
+        if (splitting) splitProblem(getApplication<Application>(), _amount.value, _splitMode.value, _shares.value)?.let {
             _statusMessage.value = it
             return
         }
