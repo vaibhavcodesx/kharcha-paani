@@ -39,6 +39,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - Backup preview labels and record-count summaries use string resources with the same English (X12 / T3.11).
 
+- Shared discard/large-amount dialogs and amount-field spoken labels use Android string resources
+  with unchanged English wording (X12 / T3.11; sheet controls).
+
 - Entry review and split editing use Android resources for labels, date phrases, spoken actions
   and unchanged validation messages (X12 / T3.11; entry).
 

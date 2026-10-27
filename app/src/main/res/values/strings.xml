@@ -154,6 +154,17 @@
     <string name="entry_still_to_assign">%1$s still to assign</string>
     <string name="entry_over_total">%1$s more than the total</string>
     <string name="entry_percent_problem">Percentages add up to %1$s%%, not 100%%</string>
+    <!-- Additional screen strings. -->
+    <string name="controls_discard">Discard</string>
+    <string name="controls_keep_editing">Keep editing</string>
+    <string name="controls_large_amount">That\'s %1$s. Right?</string>
+    <string name="controls_extra_zero">Just checking for an extra zero.</string>
+    <string name="controls_yes_save">Yes, save</string>
+    <string name="controls_change_it">Change it</string>
+    <string name="controls_enter_amount">Enter an amount</string>
+    <string name="controls_amount_rupees">Amount in rupees</string>
+    <string name="controls_cancel">Cancel</string>
+    <!-- Additional screen strings. -->
     <string name="backup_preview_title">Restore this backup?</string>
     <string name="backup_preview_taken">Taken %1$s, from version %2$s.</string>
     <string name="backup_preview_explanation">Only what isn\'t on this phone already is added. Nothing here is changed or removed.</string>
