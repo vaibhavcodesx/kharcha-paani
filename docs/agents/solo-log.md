@@ -81,4 +81,6 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #158 · X12 / T3.11 settlement timeline · merged; resource-backed actions, removal consequences and IOU note controls preserve English, permissions and response data; generated activity titles/statuses are tracked separately in #173.
 
+- 2026-10-27 · #159 · X12 / T3.11 subscriptions · merged; resource-backed form/cycle/schedule/confirmation copy preserves English, dates and stored names; scheduling behavior stays unchanged.
+
 ## Questions
