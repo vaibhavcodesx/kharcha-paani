@@ -82,7 +82,11 @@ class SafetyNetTest {
         // on the way, the shape of every unplanned failure the net is for.
         viewModel.addSubscription(NewSubscription("Netflix", 0.0, "Entertainment", "UPI", SubscriptionCycle.MONTHLY, LocalDate.of(2026, 10, 1)), chargeFromStart = true)
 
-        withTimeout(10_000) { while (viewModel.statusMessage.value == null) delay(20) }
+        // onFailure publishes the message before finally releases the submission guard.
+        // Await both outcomes instead of racing that final state update on the IO thread.
+        withTimeout(10_000) {
+            while (viewModel.statusMessage.value == null || Submit.AddSubscription in viewModel.submitting.value) delay(20)
+        }
         assertEquals("Something went wrong and that wasn't saved. Try again.", viewModel.statusMessage.value)
         assertTrue("the action can be tried again", Submit.AddSubscription !in viewModel.submitting.value)
     }

@@ -59,7 +59,7 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #144 · X12 / T3.11 navigation copy · merged; tabs store resource IDs and Compose resolves visual/spoken labels before callbacks; English labels, stable enum values, tags and the 150% accessibility threshold are unchanged.
 
-- 2026-10-27 · #150 · X12 / T3.11 export picker copy · merged; resource-backed scope labels and existing count plurals retain English, range IDs/calculation and machine-readable CSV columns; no sharing was triggered by tests.
+- 2026-10-27 · #150 · X12 / T3.11 export picker copy · merged; resource-backed scope labels and existing count plurals retain English, range IDs/calculation and machine-readable CSV columns; no sharing was triggered by tests. Integrated CI 40427051347 exposed SafetyNetTest racing the submission finally block; await both the message and released guard, without changing production behavior.
 
 - 2026-10-27 · #149 · X12 / T3.11 statement review copy · merged; existing selection/found plurals, row/month actions and reading notices use resources; row flags/data and import behavior are unchanged, and parked X8 is not resumed.
 
