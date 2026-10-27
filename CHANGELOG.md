@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Sign-in display labels, failure guidance, agreement fragments and decorative preview captions use string resources with unchanged English (X12 / T3.11).
+
 - Friend forms and colour pickers resolve visible and spoken copy from resources without changing English or saved names (X12 / T3.11).
 
 - Backup preview labels and record-count summaries use string resources with the same English (X12 / T3.11).

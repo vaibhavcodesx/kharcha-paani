@@ -309,4 +309,27 @@
     <string name="colour_picker_hue">Hue %1$d</string>
     <string name="colour_picker_drag">Drag along the bar. The dimmed band is the app\'s own accent colour.</string>
     <string name="colour_picker_taken">Dimmed colours are too close to someone else\'s, or the app\'s own accent colour.</string>
+    <string name="signin_copy_intro">Log what you spend, split it with friends, and settle up without the awkward maths.</string>
+    <string name="signin_copy_signing">Signing in…</string>
+    <string name="signin_copy_continue">Continue with Google</string>
+    <string name="signin_copy_dismiss">Dismiss</string>
+    <string name="signin_copy_offline">Sign in once to back up your ledger and share live balances with friends. After that it keeps working offline.</string>
+    <string name="signin_copy_agreement_prefix">By continuing you agree to the\u0020</string>
+    <string name="signin_copy_agreement_terms">Terms</string>
+    <string name="signin_copy_agreement_middle">\u0020and the\u0020</string>
+    <string name="signin_copy_agreement_privacy">Privacy policy</string>
+    <string name="signin_copy_agreement_suffix">, and confirm you\'re 18 or older.</string>
+    <string name="signin_copy_failure_notconfigured">Google sign-in isn\'t set up in this build yet.</string>
+    <string name="signin_copy_failure_nogoogleaccount">If you\'re offline, connect and try again. Otherwise, add a Google account to this phone.</string>
+    <string name="signin_copy_failure_googleunavailable">If you\'re offline, connect and try again. Otherwise, check that Google Play services is up to date.</string>
+    <string name="signin_copy_failure_network">You\'re offline. Connect once to sign in.</string>
+    <string name="signin_copy_failure_rejected">Sign-in didn\'t go through on our end. Try again in a moment.</string>
+    <string name="signin_copy_failure_pickerblocked">Google didn\'t open the account picker. It holds it back for a few minutes after it\'s been closed several times — wait a moment and try again.</string>
+    <string name="signin_copy_failure_appnotaccepted">Google didn\'t accept this copy of the app for sign-in. That\'s a setup problem on our side, not your account. Try again later, or ask whoever sent you the app.</string>
+    <string name="signin_copy_failure_dismissed">No account picked. Tap Continue with Google when you\'re ready.</string>
+    <string name="signin_copy_demo_meal">Friday dinner</string>
+    <string name="signin_copy_demo_split">You paid · split 3 ways</string>
+    <string name="signin_copy_demo_of">of ₹1,920</string>
+    <string name="signin_copy_demo_payment">Rohan paid you</string>
+    <string name="signin_copy_demo_settled">UPI · settled up</string>
 </resources>
