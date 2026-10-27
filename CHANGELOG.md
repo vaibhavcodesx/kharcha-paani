@@ -39,6 +39,23 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - Friend-history labels, balance sentences and empty copy use string resources with unchanged English (X12 / T3.11).
 
+- Group creation labels and explanations use string resources with unchanged English and member selection (X12 / T3.11).
+
+- Group-detail labels, status lines and participant-dot captions use string resources with unchanged English (X12 / T3.11).
+
+- Friend forms and colour pickers resolve visible and spoken copy from resources without changing English or saved names (X12 / T3.11).
+
+- Backup preview labels and record-count summaries use string resources with the same English (X12 / T3.11).
+
+- Payment, IOU and settlement-answer form copy uses Android string resources while keeping the
+  same English, record directions and confirmation behavior (X12 / T3.11; payment forms).
+
+- Export-picker labels and existing entry plurals use Android string resources with unchanged
+  English wording, ranges and CSV format (X12 / T3.11; export).
+
+- Statement review uses string resources for selection counts, existing plurals, actions and reading
+  notices, keeping the same English wording and import behavior (X12 / T3.11; import).
+
 - Shared discard/large-amount dialogs and amount-field spoken labels use Android string resources
   with unchanged English wording (X12 / T3.11; sheet controls).
 
