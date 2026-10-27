@@ -1,5 +1,9 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
+import com.vaibhav.kharchapaani.R
 import android.app.DatePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -40,7 +44,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
-enum class ExportScope(val label: String) { Month("A month"), Dates("Dates"), Everything("Everything") }
+enum class ExportScope(@StringRes val labelRes: Int) { Month(R.string.export_scope_month), Dates(R.string.export_scope_dates), Everything(R.string.export_scope_everything) }
 
 @Composable
 fun ExportSheet(
@@ -93,6 +97,7 @@ fun ExportContent(
     onExport: (ExportRange) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val scopeLabels = ExportScope.entries.associateWith { stringResource(it.labelRes) }
     val range = when (scope) {
         ExportScope.Month -> ExportRange.Month(month)
         ExportScope.Dates -> ExportRange.Dates(from, to)
@@ -104,22 +109,22 @@ fun ExportContent(
         modifier = modifier,
         actionBar = {
             GlassActionBar(
-                label = "Export",
-                disabledLabel = "Nothing to export",
+                label = stringResource(R.string.export_action),
+                disabledLabel = stringResource(R.string.export_nothing),
                 enabled = count > 0,
                 onClick = { onExport(range) },
                 // Just the count: the range is on show right above the bar.
-                summary = if (count == 1) "1 entry" else "$count entries",
+                summary = pluralStringResource(R.plurals.export_entry_count, count, count),
                 buttonTestTag = "export_button",
             )
         },
     ) {
-        SheetTitle(title = "Export to a spreadsheet", supporting = "A CSV file that opens in Sheets, Excel or Numbers, with every entry in the range.")
+        SheetTitle(title = stringResource(R.string.export_title), supporting = stringResource(R.string.export_body))
 
         SegmentedControl(
             options = ExportScope.entries,
             selected = scope,
-            label = { it.label },
+            label = { scopeLabels.getValue(it) },
             onSelect = onScopeChange,
             testTagFor = { "export_scope_${it.name}" },
             modifier = Modifier.fillMaxWidth(),
@@ -135,8 +140,8 @@ fun ExportContent(
             )
             ExportScope.Dates -> Column(Modifier.padding(top = Spacing.l), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 DateRow(
-                    label = "From",
-                    clickLabel = "Change start date",
+                    label = stringResource(R.string.export_from),
+                    clickLabel = stringResource(R.string.export_change_start),
                     date = from,
                     max = today,
                     position = RowPosition.First,
@@ -145,8 +150,8 @@ fun ExportContent(
                     onPick = { picked -> onDatesChange(picked, if (picked.isAfter(to)) picked else to) },
                 )
                 DateRow(
-                    label = "To",
-                    clickLabel = "Change end date",
+                    label = stringResource(R.string.export_to),
+                    clickLabel = stringResource(R.string.export_change_end),
                     date = to,
                     max = today,
                     position = RowPosition.Last,
@@ -155,7 +160,7 @@ fun ExportContent(
                 )
             }
             ExportScope.Everything -> Text(
-                "Every entry on this phone, from the first you logged.",
+                stringResource(R.string.export_everything_body),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = Spacing.l),
             )
