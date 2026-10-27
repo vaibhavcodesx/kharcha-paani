@@ -68,7 +68,7 @@ object GroupInsights {
     /** Who owes whom inside this group, after settlements, in as few payments as the greedy pass finds. */
     fun owesWhom(expenses: List<FullTransaction>, settlements: List<SettlementEntity>, members: List<PersonEntity>, myName: String = "You", formerName: String = "Former member"): List<SimplifiedDebt> {
         val names = members.associateBy { it.id }
-        return DebtSimplifier.simplifyPositions(GroupBalances.netPositions(expenses, settlements)) { personId ->
+        return DebtSimplifier.simplifyPositions(GroupBalances.netPositions(expenses, settlements), myName = myName) { personId ->
             if (personId == ME) myName else names[personId]?.name ?: formerName
         }
     }

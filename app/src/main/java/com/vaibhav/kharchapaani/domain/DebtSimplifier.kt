@@ -73,9 +73,9 @@ object DebtSimplifier {
      *
      * @param netPositions personId -> net position (positive = owed money, negative = owes money)
      */
-    fun simplifyPositions(netPositions: Map<Long, Double>, nameOf: (Long) -> String): List<SimplifiedDebt> {
+    fun simplifyPositions(netPositions: Map<Long, Double>, myName: String = "You", nameOf: (Long) -> String): List<SimplifiedDebt> {
         val meId = -1L
-        val meName = "You"
+        val meName = myName
 
         val creditors = mutableListOf<PersonNet>()
         val debtors = mutableListOf<PersonNet>()
