@@ -76,6 +76,7 @@ class AskShareTest {
 
         assertEquals(Intent.ACTION_SEND, send.action)
         assertEquals("image/png", send.type)
+        assertEquals("Payment code", send.clipData!!.description.label.toString())
         assertEquals("Hey Aaru", send.getStringExtra(Intent.EXTRA_TEXT))
         @Suppress("DEPRECATION")
         assertEquals(uri, send.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
