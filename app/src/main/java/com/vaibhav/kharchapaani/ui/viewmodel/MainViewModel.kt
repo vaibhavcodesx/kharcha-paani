@@ -2,8 +2,8 @@ package com.vaibhav.kharchapaani.ui.viewmodel
 
 import kotlinx.coroutines.CancellationException
 import com.vaibhav.kharchapaani.diagnostics.CrashReporting
-import com.vaibhav.kharchapaani.domain.receiptNotice
-import com.vaibhav.kharchapaani.domain.quickAddNotice
+import com.vaibhav.kharchapaani.ui.format.receiptNoticeResource
+import com.vaibhav.kharchapaani.ui.format.quickAddNoticeResource
 import com.vaibhav.kharchapaani.domain.isSavableAmount
 import com.vaibhav.kharchapaani.domain.NotificationAccess
 import com.vaibhav.kharchapaani.domain.NotificationMoment
@@ -1034,7 +1034,7 @@ class MainViewModel(
                 if (outcome.result.paymentMethod.isBlank()) _paymentMethod.value = defaultPaymentMethod()
                 // Why it's a guess, when it is: offline, out of quota and a refused key each say so.
                 // Then any name in the line that didn't find its friend.
-                _parseNotice.value = listOfNotNull(outcome.failure?.quickAddNotice(), splitNotice)
+                _parseNotice.value = listOfNotNull(outcome.failure?.let { getApplication<Application>().getString(it.quickAddNoticeResource) }, splitNotice)
                     .joinToString(" ").ifEmpty { null }
             } finally {
                 // Whatever happened, the sheet never stays stuck on "Reading…".
@@ -1072,7 +1072,7 @@ class MainViewModel(
                     is ReceiptReadResult.Failed -> {
                         applyParsedResult(ParsedTransactionResult(type = "expense", amount = 0.0, merchant = "", category = "Other", paymentMethod = "Other", note = "", readFailed = true))
                         // "Try a clearer photo" was the answer to being offline too.
-                        _parseNotice.value = read.reason.receiptNotice()
+                        _parseNotice.value = getApplication<Application>().getString(read.reason.receiptNoticeResource)
                     }
                 }
             } finally {

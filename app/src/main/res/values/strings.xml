@@ -483,4 +483,17 @@
     <string name="ai_display_notice_manual">Type it myself</string>
     <string name="ai_display_notice_title">Bills, statements and quick-add text are read by Google Gemini</string>
     <string name="ai_display_notice_body">That\'s how the app fills in amounts for you. While Kharcha Paani is free, Google may use what\'s sent to improve Gemini, and its reviewers may see it. It\'s never shown to other users, and we never sell your data. Prefer not to? Type entries yourself: everything else works the same.</string>
+    <string name="ai_display_quickadd_offline">You\'re offline, so this is a best guess from your words. Check it before saving.</string>
+    <string name="ai_display_quickadd_ratelimited">The AI is busy right now, so this is a best guess from your words. Check it before saving.</string>
+    <string name="ai_display_quickadd_keyrefused">The AI isn\'t available in this copy, so this is a best guess from your words. Check it before saving.</string>
+    <string name="ai_display_quickadd_dailylimit">That\'s today\'s AI reads used up, so this is a best guess from your words. They\'re back tomorrow.</string>
+    <string name="ai_display_quickadd_fallback">Couldn\'t reach the AI, so this is a best guess from your words. Check it before saving.</string>
+    <string name="ai_display_receipt_nokey">Bill reading isn\'t available in this copy of the app. Fill in the details.</string>
+    <string name="ai_display_receipt_offline">You\'re offline, so the bill wasn\'t read. Fill in the details, or try again when you\'re connected.</string>
+    <string name="ai_display_receipt_timeout">Reading the bill took too long. Fill in the details, or try again.</string>
+    <string name="ai_display_receipt_ratelimited">The AI is busy right now, so the bill wasn\'t read. Fill in the details, or try again in a few minutes.</string>
+    <string name="ai_display_receipt_servererror">The AI service is having trouble, so the bill wasn\'t read. Fill in the details, or try again.</string>
+    <string name="ai_display_receipt_blocked">Couldn\'t read that bill. Fill in the details, or try a clearer photo.</string>
+    <string name="ai_display_receipt_dailylimit">That\'s today\'s bill reads used up. Fill in the details; they\'re back tomorrow.</string>
+    <string name="ai_display_receipt_needssignin">Sign out and back in to read bills again. Fill in the details for now.</string>
 </resources>

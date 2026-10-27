@@ -40,3 +40,27 @@ val AiFailure.answerMessageResource: Int
         AiFailure.DailyLimit -> R.string.ai_display_answermessageresource_dailylimit
         AiFailure.NeedsSignIn -> R.string.ai_display_answermessageresource_needssignin
     }
+
+@get:StringRes
+val AiFailure.quickAddNoticeResource: Int
+    get() = when (this) {
+    AiFailure.Offline -> R.string.ai_display_quickadd_offline
+    AiFailure.RateLimited -> R.string.ai_display_quickadd_ratelimited
+    AiFailure.KeyRefused, AiFailure.NoKey -> R.string.ai_display_quickadd_keyrefused
+    AiFailure.DailyLimit -> R.string.ai_display_quickadd_dailylimit
+    else -> R.string.ai_display_quickadd_fallback
+}
+
+@get:StringRes
+val AiFailure.receiptNoticeResource: Int
+    get() = when (this) {
+    AiFailure.NoKey, AiFailure.KeyRefused -> R.string.ai_display_receipt_nokey
+    AiFailure.Offline -> R.string.ai_display_receipt_offline
+    AiFailure.Timeout -> R.string.ai_display_receipt_timeout
+    AiFailure.RateLimited -> R.string.ai_display_receipt_ratelimited
+    AiFailure.ServerError -> R.string.ai_display_receipt_servererror
+    AiFailure.Blocked, AiFailure.Truncated, AiFailure.Unreadable ->
+        R.string.ai_display_receipt_blocked
+    AiFailure.DailyLimit -> R.string.ai_display_receipt_dailylimit
+    AiFailure.NeedsSignIn -> R.string.ai_display_receipt_needssignin
+}
