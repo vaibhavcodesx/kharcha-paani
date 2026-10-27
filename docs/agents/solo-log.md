@@ -97,4 +97,6 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #166 · X12 / T3.11 notification-screen copy · merged; exact quiet-hour and nudge English preserved; actual notification-moment dismissal tested. Reminder controls in protected AccountSheet remain a Claude handoff.
 
+- 2026-10-27 · #167 · X12 / T3.11 licence-screen copy · merged; legal names/URLs unchanged. Initial CI 40429560045 failed the AI-notice fixture after a fixed consent delay; it now awaits persistence, drives StandardTestDispatcher and cancels/awaits its ViewModel before closing Room/resetting Main.
+
 ## Questions
