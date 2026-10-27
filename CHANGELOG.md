@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Shared account/month controls and spoken sync summaries use string resources with unchanged English and navigation (X12 / T3.11).
+
 - Backup preview labels and record-count summaries use string resources with the same English (X12 / T3.11).
 
 - Payment, IOU and settlement-answer form copy uses Android string resources while keeping the

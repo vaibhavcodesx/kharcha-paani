@@ -284,4 +284,16 @@
         <item quantity="one">%1$d subscription</item>
         <item quantity="other">%1$d subscriptions</item>
     </plurals>
+    <string name="shared_chrome_account">Account</string>
+    <string name="shared_chrome_previous">Previous month</string>
+    <string name="shared_chrome_next">Next month</string>
+    <string name="shared_chrome_syncing">Syncing</string>
+    <plurals name="shared_chrome_failed">
+        <item quantity="one">%1$d change couldn\'t sync</item>
+        <item quantity="other">%1$d changes couldn\'t sync</item>
+    </plurals>
+    <plurals name="shared_chrome_waiting">
+        <item quantity="one">%1$d change waiting to sync</item>
+        <item quantity="other">%1$d changes waiting to sync</item>
+    </plurals>
 </resources>
