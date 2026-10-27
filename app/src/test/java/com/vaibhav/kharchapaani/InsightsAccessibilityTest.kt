@@ -90,6 +90,7 @@ class InsightsAccessibilityTest {
         val layouts = mutableListOf<TextLayoutResult>()
         compose.onNodeWithText(Money.format(amount / today.dayOfMonth), useUnmergedTree = true)
             .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        compose.onNodeWithText("1 entry · 100%").assertExists()
         assertFalse("per-day money must not ellipsize", layouts.single().hasVisualOverflow)
         assertEquals(1, layouts.single().lineCount)
         compose.runOnIdle {
@@ -100,4 +101,19 @@ class InsightsAccessibilityTest {
             Unit
         }
     }
+    @Test fun `resource plurals preserve the count and percentage of real category entries`() = runBlocking {
+        repeat(2) {
+            db.transactionDao().insertTransaction(TransactionEntity(type = "expense", amount = 100.0,
+                category = "Food", merchant = "Tea", paymentMethod = "Cash"))
+        }
+        compose.setContent { SplitFlowTheme {
+            val analytics by vm.monthlyAnalytics.collectAsState()
+            InsightsScreen(analytics = analytics, onAsk = {}, onExport = {}, aiAvailable = false)
+        } }
+        compose.waitUntil(10000) { dispatcher.scheduler.runCurrent(); vm.monthlyAnalytics.value.totalExpense == 200.0 }
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("2 entries · 100%"))
+        compose.onNodeWithText("2 entries · 100%").assertExists()
+        Unit
+    }
+
 }
