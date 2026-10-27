@@ -427,4 +427,6 @@
     <string name="shell_copy_ledger_explanation">Nothing was deleted. Try again, and if it keeps happening, restart the app.</string>
     <string name="shell_copy_ledger_retry">Try again</string>
     <string name="shell_copy_ledger_sign_out">Sign out</string>
+    <string name="shell_copy_update_restart">Restart</string>
+    <string name="shell_copy_update_ready">Update ready. Save any changes, then restart.</string>
 </resources>

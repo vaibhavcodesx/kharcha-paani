@@ -37,7 +37,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
-- App-shell notices, invite sharing and ledger-open guidance use string resources with unchanged English and callbacks (X12 / T3.11).
+- App-shell/update notices, invite sharing and ledger-open guidance use string resources with unchanged English and callbacks (X12 / T3.11).
 
 - Settlement/IOU timeline labels, removal explanations and full-note controls use string resources with unchanged English (X12 / T3.11).
 
