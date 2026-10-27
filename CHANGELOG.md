@@ -39,6 +39,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - Friend forms and colour pickers resolve visible and spoken copy from resources without changing English or saved names (X12 / T3.11).
 
+- Shared discard/large-amount dialogs and amount-field spoken labels use Android string resources
+  with unchanged English wording (X12 / T3.11; sheet controls).
+
 - Entry review and split editing use Android resources for labels, date phrases, spoken actions
   and unchanged validation messages (X12 / T3.11; entry).
 
