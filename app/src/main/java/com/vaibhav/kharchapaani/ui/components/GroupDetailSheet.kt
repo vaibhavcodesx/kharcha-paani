@@ -160,8 +160,10 @@ fun GroupDetailContent(
     val accent = remember(group.colorHex) { parseColor(group.colorHex) }
     val net = groupDetails.netBalanceForMe
     val myColour = LocalMyColour.current.hex
-    val shares = remember(groupDetails, myColour) { GroupInsights.memberShares(groupDetails.transactions, groupDetails.members, myColor = myColour) }
-    val debts = remember(groupDetails) { GroupInsights.owesWhom(groupDetails.transactions, groupDetails.settlements, groupDetails.members) }
+    val myName = stringResource(R.string.group_people_you)
+    val formerName = stringResource(R.string.group_people_former)
+    val shares = remember(groupDetails, myColour, myName, formerName) { GroupInsights.memberShares(groupDetails.transactions, groupDetails.members, myName = myName, myColor = myColour, formerName = formerName) }
+    val debts = remember(groupDetails, myName, formerName) { GroupInsights.owesWhom(groupDetails.transactions, groupDetails.settlements, groupDetails.members, myName = myName, formerName = formerName) }
     val categories = remember(groupDetails) { GroupInsights.categoryTotals(groupDetails.transactions) }
 
     SheetScaffold(
