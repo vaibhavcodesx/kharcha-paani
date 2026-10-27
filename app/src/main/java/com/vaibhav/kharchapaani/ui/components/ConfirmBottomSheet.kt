@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import androidx.compose.animation.AnimatedVisibility
@@ -145,10 +147,10 @@ fun ConfirmBottomSheet(
 ) {
     if (!isOpen) return
     val focusManager = LocalFocusManager.current
-    val noun = if (type == "income") "income" else "expense"
+    val noun = stringResource(if (type == "income") R.string.entry_income_noun else R.string.entry_expense_noun)
     val discardGuard = DiscardGuard(
-        title = if (isEditing) "Discard your changes?" else "Discard this $noun?",
-        message = if (isEditing) "The $noun stays as it was." else "What you've entered won't be saved.",
+        title = if (isEditing) stringResource(R.string.entry_discard_changes) else stringResource(R.string.entry_discard_noun, noun),
+        message = if (isEditing) stringResource(R.string.entry_kept_as_was, noun) else stringResource(R.string.entry_discard_unsaved),
         hasUnsavedInput = hasUnsavedInput,
     )
     KpModalSheet(onDismiss = onDismiss, discardGuard = discardGuard) {
@@ -237,13 +239,17 @@ fun ConfirmSheetContent(
     val categoryChoices = if (category.isBlank() || category in categories) categories else listOf(category) + categories
     val paymentChoices = if (paymentMethod.isBlank() || paymentMethod in paymentMethods) paymentMethods else listOf(paymentMethod) + paymentMethods
     val isIncome = type == "income"
+    val incomeLabel = stringResource(R.string.entry_income)
+    val expenseLabel = stringResource(R.string.entry_expense)
+    val splitLabel = stringResource(R.string.entry_split_it)
+    val justMeLabel = stringResource(R.string.entry_just_me)
     val accent = if (isIncome) ChartreuseSecondary else WarmAmberPrimary
     var open by rememberSaveable { mutableStateOf<Detail?>(null) }
     fun toggle(detail: Detail) {
         open = if (open == detail) null else detail
     }
     val context = LocalContext.current
-    val dateText = remember(date) { describeDate(date) }
+    val dateText = describeDate(context, date)
     val group = availableGroups.firstOrNull { it.id == groupId }
     var checkLargeAmount by remember { mutableStateOf<Double?>(null) }
     checkLargeAmount?.let { large ->
@@ -262,10 +268,10 @@ fun ConfirmSheetContent(
         actionBar = if (isParsing) null else {
             {
                 val value = Money.parseInput(amount) ?: 0.0
-                val splitIssue = if (isSplit && value > 0) splitProblem(amount, splitMode, shares) else null
+                val splitIssue = if (isSplit && value > 0) splitProblem(context, amount, splitMode, shares) else null
                 GlassActionBar(
-                    label = if (isEditing) "Update" else "Save",
-                    disabledLabel = splitIssue ?: "Add an amount",
+                    label = if (isEditing) stringResource(R.string.entry_update) else stringResource(R.string.entry_save),
+                    disabledLabel = splitIssue ?: stringResource(R.string.entry_add_amount),
                     enabled = value > 0 && splitIssue == null,
                     onClick = { if (value > Money.LARGE_AMOUNT) checkLargeAmount = value else onSave() },
                     summary = if (value > 0) Money.format(value) else "₹0",
@@ -280,9 +286,9 @@ fun ConfirmSheetContent(
         // same thing twice.
         Text(
             text = when {
-                addedBy != null -> "EDITING · ADDED BY ${addedBy.uppercase()}"
-                isEditing -> "EDITING"
-                else -> "NEW ENTRY"
+                addedBy != null -> stringResource(R.string.entry_editing_added_by, addedBy.uppercase())
+                isEditing -> stringResource(R.string.entry_editing)
+                else -> stringResource(R.string.entry_new)
             },
             style = EyebrowText,
             modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() },
@@ -292,7 +298,7 @@ fun ConfirmSheetContent(
             SegmentedControl(
                 options = listOf("expense", "income"),
                 selected = type,
-                label = { if (it == "income") "Income" else "Expense" },
+                label = { if (it == "income") incomeLabel else expenseLabel },
                 onSelect = onTypeChange,
                 accentFor = { if (it == "income") ChartreuseSecondary else WarmAmberPrimary },
                 modifier = Modifier.fillMaxWidth(),
@@ -331,16 +337,16 @@ fun ConfirmSheetContent(
 
         // What was understood, one row per detail.
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            SheetRow(label = "Merchant", position = RowPosition.First, icon = KpIcons.Merchant) {
+            SheetRow(label = stringResource(R.string.entry_merchant), position = RowPosition.First, icon = KpIcons.Merchant) {
                 SheetTextInput(
                     value = merchant,
                     onValueChange = onMerchantChange,
-                    placeholder = if (isIncome) "Who paid you" else "Where or what",
+                    placeholder = if (isIncome) stringResource(R.string.entry_who_paid_you) else stringResource(R.string.entry_where_what),
                     fieldTestTag = "confirm_merchant_input",
                 )
             }
             ExpandableDetail(
-                label = "Category",
+                label = stringResource(R.string.entry_category),
                 value = category,
                 icon = CategoryHelper.getCategoryIcon(category),
                 iconTint = CategoryHelper.getCategoryColor(category),
@@ -365,7 +371,7 @@ fun ConfirmSheetContent(
                 }
             }
             ExpandableDetail(
-                label = if (isIncome) "Received via" else "Paid with",
+                label = if (isIncome) stringResource(R.string.entry_received_via) else stringResource(R.string.entry_paid_with),
                 value = paymentMethod,
                 icon = KpIcons.Card,
                 expanded = open == Detail.Payment,
@@ -382,7 +388,7 @@ fun ConfirmSheetContent(
                 }
             }
             ExpandableDetail(
-                label = "When",
+                label = stringResource(R.string.entry_when),
                 value = dateText,
                 icon = KpIcons.Calendar,
                 expanded = open == Detail.When,
@@ -391,11 +397,11 @@ fun ConfirmSheetContent(
             ) {
                 val now = System.currentTimeMillis()
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                    ChoiceChip("Now", selected = false, onClick = { onDateChange(now); open = null })
-                    ChoiceChip("2 hours ago", selected = false, onClick = { onDateChange(now - 2 * HOUR); open = null })
-                    ChoiceChip("Yesterday", selected = false, onClick = { onDateChange(now - 24 * HOUR); open = null })
+                    ChoiceChip(stringResource(R.string.entry_now), selected = false, onClick = { onDateChange(now); open = null })
+                    ChoiceChip(stringResource(R.string.entry_two_hours), selected = false, onClick = { onDateChange(now - 2 * HOUR); open = null })
+                    ChoiceChip(stringResource(R.string.entry_yesterday), selected = false, onClick = { onDateChange(now - 24 * HOUR); open = null })
                     ChoiceChip(
-                        label = "Pick a date…",
+                        label = stringResource(R.string.entry_pick_date),
                         selected = false,
                         icon = KpIcons.Calendar,
                         onClick = { pickDateTime(context, date) { onDateChange(it); open = null } },
@@ -404,20 +410,20 @@ fun ConfirmSheetContent(
                 }
             }
             if (addedBy != null) {
-                SheetRow(label = "Group", position = RowPosition.Last, icon = KpIcons.Group) {
+                SheetRow(label = stringResource(R.string.entry_group), position = RowPosition.Last, icon = KpIcons.Group) {
                     Text(group?.let { "${it.emoji} ${it.name}" } ?: "", style = MaterialTheme.typography.bodyLarge, color = OffWhiteText)
                 }
             } else if (availableGroups.isNotEmpty()) {
                 ExpandableDetail(
-                    label = "Group",
-                    value = group?.let { "${it.emoji} ${it.name}" } ?: "None",
+                    label = stringResource(R.string.entry_group),
+                    value = group?.let { "${it.emoji} ${it.name}" } ?: stringResource(R.string.entry_none),
                     icon = KpIcons.Group,
                     expanded = open == Detail.Group,
                     onToggle = { toggle(Detail.Group) },
                     position = RowPosition.Last,
                 ) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                        ChoiceChip("None", selected = groupId == null, onClick = { onGroupIdChange(null); open = null })
+                        ChoiceChip(stringResource(R.string.entry_none), selected = groupId == null, onClick = { onGroupIdChange(null); open = null })
                         availableGroups.forEach { g ->
                             ChoiceChip("${g.emoji} ${g.name}", selected = g.id == groupId, onClick = { onGroupIdChange(g.id); open = null })
                         }
@@ -437,11 +443,11 @@ fun ConfirmSheetContent(
                 modifier = Modifier.padding(top = Spacing.xl),
             )
         } else if (!isIncome) {
-            Text("WHO'S IT FOR", style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s))
+            Text(stringResource(R.string.entry_whos_it_for), style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s))
             SegmentedControl(
                 options = listOf(false, true),
                 selected = isSplit,
-                label = { if (it) "Split it" else "Just me" },
+                label = { if (it) splitLabel else justMeLabel },
                 onSelect = onIsSplitChange,
                 testTagFor = { if (it) "split_with_friends_button" else "for_me_button" },
                 modifier = Modifier.fillMaxWidth(),
@@ -457,8 +463,8 @@ fun ConfirmSheetContent(
             }
         }
 
-        SheetRow(label = "Note", position = RowPosition.Single, modifier = Modifier.padding(top = Spacing.xl)) {
-            SheetTextInput(value = note, onValueChange = onNoteChange, placeholder = "Optional")
+        SheetRow(label = stringResource(R.string.entry_note), position = RowPosition.Single, modifier = Modifier.padding(top = Spacing.xl)) {
+            SheetTextInput(value = note, onValueChange = onNoteChange, placeholder = stringResource(R.string.entry_optional))
         }
 
         BillPhotoRow(photo = billPhoto, onAdd = onAddBillPhoto, onRemove = onRemoveBillPhoto, modifier = Modifier.padding(top = Spacing.s))
@@ -477,14 +483,15 @@ internal fun ExpandableDetail(
     iconTint: Color = MutedWarmGray,
     choices: @Composable () -> Unit,
 ) {
+    val choicesShown = stringResource(R.string.entry_choices_shown)
     Column(Modifier.fillMaxWidth().clip(position.shape).background(CharcoalCard)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 56.dp)
-                .clickable(role = Role.Button, onClickLabel = if (expanded) "Close choices" else "Change $label", onClick = onToggle)
-                .semantics { if (expanded) stateDescription = "Choices shown" }
+                .clickable(role = Role.Button, onClickLabel = if (expanded) stringResource(R.string.entry_close_choices) else stringResource(R.string.entry_change_label, label), onClick = onToggle)
+                .semantics { if (expanded) stateDescription = choicesShown }
                 .padding(horizontal = Spacing.l, vertical = Spacing.s),
         ) {
             Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(SheetLabelWidth))
@@ -526,24 +533,24 @@ private fun ParsingPlaceholder() {
             )
         }
         Text(
-            "Reading your entry…",
+            stringResource(R.string.entry_reading),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = Spacing.l).align(Alignment.CenterHorizontally),
         )
     }
 }
 
-private fun describeDate(millis: Long): String {
+private fun describeDate(context: android.content.Context, millis: Long): String {
     val now = Calendar.getInstance()
     val then = Calendar.getInstance().apply { timeInMillis = millis }
     val time = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(millis))
     val sameYear = now.get(Calendar.YEAR) == then.get(Calendar.YEAR)
     val dayDiff = now.get(Calendar.DAY_OF_YEAR) - then.get(Calendar.DAY_OF_YEAR)
     return when {
-        sameYear && dayDiff == 0 -> "Today, $time"
-        sameYear && dayDiff == 1 -> "Yesterday, $time"
-        sameYear -> SimpleDateFormat("EEE, d MMM", Locale.getDefault()).format(Date(millis)) + ", $time"
-        else -> SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(millis)) + ", $time"
+        sameYear && dayDiff == 0 -> context.getString(R.string.entry_today_time, time)
+        sameYear && dayDiff == 1 -> context.getString(R.string.entry_yesterday_time, time)
+        sameYear -> context.getString(R.string.entry_date_time, SimpleDateFormat("EEE, d MMM", Locale.getDefault()).format(Date(millis)), time)
+        else -> context.getString(R.string.entry_date_time, SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(millis)), time)
     }
 }
 
