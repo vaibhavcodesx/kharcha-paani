@@ -3,6 +3,9 @@ package com.vaibhav.kharchapaani.ui.viewmodel
 import android.app.Application
 import android.database.sqlite.SQLiteFullException
 import androidx.room.Room
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
 import androidx.work.testing.SynchronousExecutor
@@ -16,7 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
@@ -37,19 +40,27 @@ class SafetyNetTest {
 
     private val application = ApplicationProvider.getApplicationContext<Application>()
     private val userId = "11111111-2222-3333-4444-555555555555"
+    private val dispatcher = StandardTestDispatcher()
+    private val store = ViewModelStore()
     private lateinit var db: AppDatabase
     private lateinit var viewModel: MainViewModel
 
     @Before
     fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        Dispatchers.setMain(dispatcher)
         WorkManagerTestInitHelper.initializeTestWorkManager(application, Configuration.Builder().setExecutor(SynchronousExecutor()).build())
         db = Room.inMemoryDatabaseBuilder(application, AppDatabase::class.java).allowMainThreadQueries().build()
         viewModel = MainViewModel(application, db, userId)
+        store.put("main", viewModel)
     }
 
     @After
-    fun tearDown() {
+    fun tearDown(): Unit = runBlocking {
+        val job = viewModel.viewModelScope.coroutineContext[Job]!!
+        store.clear()
+        withTimeout(10_000) {
+            while (!job.isCompleted) { dispatcher.scheduler.runCurrent(); delay(20) }
+        }
         db.close()
         Dispatchers.resetMain()
     }
@@ -85,7 +96,9 @@ class SafetyNetTest {
         // onFailure publishes the message before finally releases the submission guard.
         // Await both outcomes instead of racing that final state update on the IO thread.
         withTimeout(10_000) {
-            while (viewModel.statusMessage.value == null || Submit.AddSubscription in viewModel.submitting.value) delay(20)
+            while (viewModel.statusMessage.value == null || Submit.AddSubscription in viewModel.submitting.value) {
+                dispatcher.scheduler.runCurrent(); delay(20)
+            }
         }
         assertEquals("Something went wrong and that wasn't saved. Try again.", viewModel.statusMessage.value)
         assertTrue("the action can be tried again", Submit.AddSubscription !in viewModel.submitting.value)
