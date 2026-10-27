@@ -59,8 +59,9 @@ class NotificationScreenStringResourcesTest {
     }
     @Test fun `notification offer keeps its time and not now clears the actual moment`(): Unit = runBlocking {
         vm.reachNotificationMoment(NotificationMoment.FirstOwnEntry)
+        val moment = checkNotNull(vm.notificationMoment.value)
         compose.setContent { SplitFlowTheme {
-            NotificationOfferContent(vm.notificationMoment.value!!, "9:00 PM", {}, vm::clearNotificationMoment)
+            NotificationOfferContent(moment, "9:00 PM", {}, vm::clearNotificationMoment)
         } }
         compose.onNodeWithText("A nudge at 9:00 PM?").assertExists()
         compose.onNodeWithText("If nothing's logged by then, you'll get one reminder. Change the time or turn it off whenever you like.").assertExists()
