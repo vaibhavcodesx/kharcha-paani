@@ -12,6 +12,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -50,16 +52,15 @@ fun SharerFaces(
     // Anyone the split names but this phone has no person row for (a groupmate mid-sync) still
     // counts toward the total, so the "+n" is off the split's own size, not the dots we resolved.
     val extra = count - shown.size
+    val description = if (shown.isEmpty()) stringResource(R.string.timeline_row_between, count)
+        else stringResource(R.string.timeline_row_with, shown.joinToString(stringResource(R.string.timeline_row_separator)) { it.name }) +
+            if (extra > 0) stringResource(R.string.timeline_row_more, extra) else ""
 
     Row(
         horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier.semantics {
-            contentDescription = if (shown.isEmpty()) {
-                "Split between $count"
-            } else {
-                "Split with " + shown.joinToString(", ") { it.name } + if (extra > 0) " and $extra more" else ""
-            }
+            contentDescription = description
         },
     ) {
         shown.forEach { person ->
@@ -96,6 +97,7 @@ private const val MAX_DOTS = 3
 @Composable
 fun VisitChip(visits: Int, modifier: Modifier = Modifier) {
     if (visits < 2) return
+    val description = stringResource(R.string.timeline_row_visits_description, visits)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -103,11 +105,11 @@ fun VisitChip(visits: Int, modifier: Modifier = Modifier) {
             .clip(KpShapes.small)
             .background(CharcoalElevated)
             .padding(horizontal = Spacing.xs, vertical = 1.dp)
-            .semantics { contentDescription = "$visits this month" },
+            .semantics { contentDescription = description },
     ) {
         Icon(KpIcons.Insights, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(10.dp))
         Text(
-            text = "${visits}×",
+            text = stringResource(R.string.timeline_row_visits, visits),
             style = MaterialTheme.typography.labelSmall,
             color = MutedWarmGray,
             modifier = Modifier.padding(start = 2.dp),

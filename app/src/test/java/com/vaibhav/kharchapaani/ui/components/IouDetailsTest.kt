@@ -59,7 +59,7 @@ class IouDetailsTest {
     private lateinit var db: AppDatabase
     private var answers = 0
     private var removals = 0
-    private val note = "Groceries for the flat, including rice, vegetables and the cleaning supplies. " +
+    private val note = "Asha's 50% groceries for the flat, including rice, vegetables and the cleaning supplies. " +
         "Rohan covered the extra snacks for the weekend too. Keep this entire note visible, " +
         "including this last sentence about the shared kitchen supplies."
 
