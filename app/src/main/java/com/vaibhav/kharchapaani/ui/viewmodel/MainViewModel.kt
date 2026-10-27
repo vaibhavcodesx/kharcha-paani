@@ -669,7 +669,7 @@ class MainViewModel(
     /** What the friend on the settle sheet owes you, line by line, for asking them to pay (ask-to-pay). */
     @OptIn(ExperimentalCoroutinesApi::class)
     val settleUpHisaab: StateFlow<HisaabItemiser.Hisaab?> = _settleUpPerson
-        .flatMapLatest { person -> person?.let { p -> ledgerRepo.getLedgerForPerson(p.id).map { HisaabItemiser.itemise(it) } } ?: flowOf(null) }
+        .flatMapLatest { person -> person?.let { p -> ledgerRepo.getLedgerForPerson(p.id, getApplication<Application>()).map { HisaabItemiser.itemise(it) } } ?: flowOf(null) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     /** Friends you've asked to pay you back and who still owe you: person id to when you last asked. */
@@ -2203,7 +2203,7 @@ class MainViewModel(
     }
 
     fun getPersonLedgerFlow(personId: Long): kotlinx.coroutines.flow.Flow<List<PersonLedgerItem>> {
-        return ledgerRepo.getLedgerForPerson(personId)
+        return ledgerRepo.getLedgerForPerson(personId, getApplication<Application>())
     }
 
     companion object {
