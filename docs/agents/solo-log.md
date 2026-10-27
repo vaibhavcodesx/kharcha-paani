@@ -109,4 +109,6 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #172 · X12 / T3.11 group descriptions · merged; generated payment/IOU credit and self/former/friend labels use resources; exact amounts and English defaults remain. Initial CI 40431999195 exposed the simplifier overriding a supplied self label; its display parameters now pass through, with custom-label/amount tests.
 
+- 2026-10-27 · #173 · X12 / T3.11 activity descriptions · merged; generated payment/IOU titles, age/status/note sentences and search/display fallback labels use resources; roles, filtering and amounts are unchanged. Keep existing resource-backed More options with the localized title when resolving timeline overlap.
+
 ## Questions

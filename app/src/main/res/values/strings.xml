@@ -799,4 +799,20 @@
     <string name="group_description_you_object">you</string>
     <string name="group_description_former">a former member</string>
     <string name="group_description_friend">Friend</string>
+    <!-- Additional screen strings. -->
+    <string name="activity_description_waited">\u0020· %1$d days. Withdraw it if it\'s stuck.</string>
+    <string name="activity_description_waiting_you">Waiting for you to confirm</string>
+    <string name="activity_description_waiting_named">Waiting for %1$s to confirm</string>
+    <string name="activity_description_waiting">Waiting to be confirmed</string>
+    <string name="activity_description_them">them</string>
+    <string name="activity_description_they">They</string>
+    <string name="activity_description_response">: “%1$s”</string>
+    <string name="activity_description_rejected_named">%1$s says this isn\'t right%2$s</string>
+    <string name="activity_description_rejected_you">You said this isn\'t right%1$s</string>
+    <string name="activity_description_you_object">you</string>
+    <string name="activity_description_you">You</string>
+    <string name="activity_description_lent">%1$s lent %2$s</string>
+    <string name="activity_description_paid">%1$s paid %2$s</string>
+    <string name="activity_description_friend">Friend</string>
+    <string name="activity_description_someone">Someone</string>
 </resources>

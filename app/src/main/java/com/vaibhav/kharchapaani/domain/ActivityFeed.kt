@@ -1,5 +1,8 @@
 package com.vaibhav.kharchapaani.domain
 
+import android.content.Context
+import com.vaibhav.kharchapaani.R
+
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
@@ -16,6 +19,7 @@ object ActivityFeed {
     const val SPLITS = "Splits"
 
     fun build(
+        context: Context,
         transactions: List<FullTransaction>,
         settlements: List<SettlementEntity>,
         people: List<PersonEntity>,
@@ -28,7 +32,7 @@ object ActivityFeed {
         val ownerNames = people.mapNotNull { person -> person.profileId?.let { it to person.name } }.toMap()
         val groupNames = groups.associate { it.id to it.name }
         val archivedSharedGroups = groups.filter { it.isShared && it.isArchived }.map { it.id }.toSet()
-        fun nameOf(id: Long) = if (id == ME) "You" else names[id] ?: "Friend"
+        fun nameOf(id: Long) = if (id == ME) context.getString(R.string.activity_description_you) else names[id] ?: context.getString(R.string.activity_description_friend)
 
         // Compare exact paisa, accepting the same grouping/rupee notation the app displays.
         // A sign describes direction on screen; searches find the magnitude in either direction.
@@ -70,12 +74,12 @@ object ActivityFeed {
                 .map {
                     ActivityItem.Settlement(
                         it, nameOf(it.fromPersonId), nameOf(it.toPersonId), it.groupId?.let(groupNames::get),
-                        recordedByName = it.recordedByPersonId?.let { id -> if (id == ME) "You" else names[id] },
+                        recordedByName = it.recordedByPersonId?.let { id -> if (id == ME) context.getString(R.string.activity_description_you) else names[id] },
                     )
                 }
                 .filter { item ->
                     term.isBlank() ||
-                        item.title.contains(term, ignoreCase = true) ||
+                        item.title(context).contains(term, ignoreCase = true) ||
                         item.settlement.note.contains(term, ignoreCase = true) ||
                         matchesAmount(item.settlement.amount) ||
                         item.groupName?.contains(term, ignoreCase = true) == true ||
