@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Friend-removal and simplified-debt views use string resources with unchanged English, amounts and confirmation behavior (X12 / T3.11).
+
 - Category/payment preference controls use string resources while names, defaults and saved values stay unchanged (X12 / T3.11).
 
 - Shared-group join, invite and recording controls use string resources and existing plural wording without behavior changes (X12 / T3.11).
