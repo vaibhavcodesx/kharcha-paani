@@ -390,4 +390,7 @@
     <string name="timeline_row_more">\u0020and %1$d more</string>
     <string name="timeline_row_visits_description">%1$d this month</string>
     <string name="timeline_row_visits">%1$d×</string>
+    <string name="ask_status_today">Asked today</string>
+    <string name="ask_status_yesterday">Asked yesterday</string>
+    <string name="ask_status_days">Asked %1$d days ago</string>
 </resources>
