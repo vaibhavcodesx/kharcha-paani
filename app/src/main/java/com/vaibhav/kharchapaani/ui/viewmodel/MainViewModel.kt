@@ -19,6 +19,7 @@ import com.vaibhav.kharchapaani.data.repository.ReceiptRepository
 import com.vaibhav.kharchapaani.data.receipts.BillPhoto
 import com.vaibhav.kharchapaani.data.receipts.ReceiptStore
 import android.app.Application
+import com.vaibhav.kharchapaani.R
 import android.content.ClipData
 import android.content.Context
 import com.vaibhav.kharchapaani.ask.AskShare
@@ -1808,7 +1809,9 @@ class MainViewModel(
     fun openSimplifyDebts() {
         val currentBalances = personBalances.value.associate { it.person.id to it.netBalance }
         val groupMembers = groups.value.map { details -> details.members.map { it.id }.toSet() }
-        val simplified = DebtSimplifier.simplify(people.value, currentBalances, groupMembers)
+        val simplified = DebtSimplifier.simplify(people.value, currentBalances, groupMembers,
+            myName = getApplication<Application>().getString(R.string.group_people_you),
+            friendName = getApplication<Application>().getString(R.string.group_description_friend))
         _simplifiedDebts.value = simplified
         _isSimplifyDebtsOpen.value = true
     }

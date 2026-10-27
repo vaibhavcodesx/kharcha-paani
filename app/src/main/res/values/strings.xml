@@ -381,4 +381,5 @@
     <string name="group_description_adder_payer">Added by %1$s · Paid by %2$s</string>
     <string name="group_description_you_object">you</string>
     <string name="group_description_former">a former member</string>
+    <string name="group_description_friend">Friend</string>
 </resources>
