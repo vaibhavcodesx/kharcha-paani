@@ -40,6 +40,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Statement review uses string resources for selection counts, existing plurals, actions and reading
   notices, keeping the same English wording and import behavior (X12 / T3.11; import).
 
+- Insights and spending charts use string resources for labels, plurals, money sentences and spoken
+  descriptions, retaining their English wording (X12 / T3.11; Insights).
+
 - Splits, group cards and friend rows use string resources for labels, formatted counts, menus and
   spoken actions, preserving their English wording (X12 / T3.11; Splits).
 
