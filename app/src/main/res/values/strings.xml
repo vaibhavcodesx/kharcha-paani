@@ -164,4 +164,14 @@
     <string name="controls_enter_amount">Enter an amount</string>
     <string name="controls_amount_rupees">Amount in rupees</string>
     <string name="controls_cancel">Cancel</string>
+    <string name="person_ledger_settle">Settle up</string>
+    <string name="person_ledger_payment">Record a payment</string>
+    <string name="person_ledger_settled">All settled</string>
+    <string name="person_ledger_owes">%1$s owes you</string>
+    <string name="person_ledger_owe">You owe %1$s</string>
+    <string name="person_ledger_owed_amount">Owes you %1$s</string>
+    <string name="person_ledger_owe_amount">You owe %1$s</string>
+    <string name="person_ledger_count">History · %1$d</string>
+    <string name="person_ledger_empty">No splits or settlements with %1$s yet.</string>
+    <string name="person_ledger_detail">%1$s · %2$s</string>
 </resources>
