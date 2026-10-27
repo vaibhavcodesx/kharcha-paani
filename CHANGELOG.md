@@ -13,12 +13,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
-### Fixed
-
-- Home waits for the first ledger result before showing balances or the first-entry invitation
-  on cold start (X10 / REL L1).
-
 ### Added
+
+- Regression coverage documents the cold-start Home loading flash; the production fix remains
+  parked after two failed CI runs (X10 / REL L1).
 
 - Play-installed builds can offer a flexible update, keep working during download, and show an
   explicit Restart action when it is ready; drafts and sheets defer the offer (X6 / T2.8).
