@@ -815,4 +815,16 @@
     <string name="activity_description_paid">%1$s paid %2$s</string>
     <string name="activity_description_friend">Friend</string>
     <string name="activity_description_someone">Someone</string>
+    <!-- Additional screen strings. -->
+    <string name="ledger_description_you_paid_total">You paid %1$s · their share %2$s</string>
+    <string name="ledger_description_they_paid_total">They paid %1$s · your share %2$s</string>
+    <string name="ledger_description_guest">Your guest in a group · their share %1$s</string>
+    <string name="ledger_description_you_lent">You lent them</string>
+    <string name="ledger_description_you_paid">You paid them</string>
+    <string name="ledger_description_they_lent">They lent you</string>
+    <string name="ledger_description_they_paid">They paid you</string>
+    <string name="ledger_description_iou">IOU</string>
+    <string name="ledger_description_settled">Settled up</string>
+    <string name="ledger_description_pending">%1$s · waiting to be confirmed</string>
+    <string name="ledger_description_rejected">%1$s · marked not right</string>
 </resources>
