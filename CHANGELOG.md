@@ -309,6 +309,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Changed
 
+- Split participant rows and spoken amount/percentage labels reuse the resource-backed self
+  name, preserving canonical participant data and English (X12 / T3.11; split editor).
+
 - PRD.md is now a short page on what the product is and which rules still hold. The September
   brief it replaced (cloud migration, robustness, premium UI pass), which shipped in v1.0–v1.4, is
   archived in `docs/history/prd-2026-09-cloud-migration.md`. CLAUDE.md now points agents at the
