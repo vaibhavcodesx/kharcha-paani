@@ -192,4 +192,29 @@
         <item quantity="one">%1$d entry found</item>
         <item quantity="other">%1$d entries found</item>
     </plurals>
+    <string name="settlement_row_iou">IOU</string>
+    <string name="settlement_row_settlement">Settlement</string>
+    <string name="settlement_row_withdraw">Withdraw</string>
+    <string name="settlement_row_clear">Clear it away</string>
+    <string name="settlement_row_delete">Delete IOU</string>
+    <string name="settlement_row_retract">Retract settlement</string>
+    <string name="settlement_row_groupmate">this groupmate</string>
+    <string name="settlement_row_local">This changes the record on this phone.</string>
+    <string name="settlement_row_devices">This change will sync to your other devices.</string>
+    <string name="settlement_row_close">Close IOU details</string>
+    <string name="settlement_row_show">Show IOU details</string>
+    <string name="settlement_row_answer">Confirm or say this isn\'t right</string>
+    <string name="settlement_row_you">you</string>
+    <string name="settlement_row_no_note">No note added.</string>
+    <string name="settlement_row_options">More options</string>
+    <string name="settlement_row_not_counted">This removes the %1$s record with %2$s. It hasn\'t counted in your balance.</string>
+    <string name="settlement_row_remove_iou">Removing this %1$s IOU takes it out of your balance with %2$s.</string>
+    <string name="settlement_row_remove_payment">Removing this %1$s payment recalculates your balance with %2$s as if it wasn\'t recorded. The actual payment isn\'t reversed.</string>
+    <string name="settlement_row_sync_group">This change will sync to %1$s.</string>
+    <string name="settlement_row_question">%1$s?</string>
+    <string name="settlement_row_consequence">%1$s %2$s</string>
+    <string name="settlement_row_more_for">More options for %1$s</string>
+    <string name="settlement_row_recorded">Recorded by %1$s</string>
+    <string name="settlement_row_expanded">Expanded</string>
+    <string name="settlement_row_collapsed">Collapsed</string>
 </resources>
