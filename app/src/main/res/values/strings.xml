@@ -542,4 +542,5 @@
     <string name="debt_management_pay">You pay %1$s</string>
     <string name="debt_management_receive">%1$s pays you</string>
     <string name="debt_management_between">%1$s pays %2$s</string>
+    <string name="payment_method_spoken">Paid by %1$s</string>
 </resources>
