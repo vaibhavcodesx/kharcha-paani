@@ -95,4 +95,6 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #165 · X12 / T3.11 AI presentation copy · merged; consent, labels, answer errors and parse notices use resources; parity tests preserve English, while protected prompt instructions and generated answers stay untouched. First integrated CI 40438740894 found a missing R import in the added local/bill display lookups; the explicit import fixes compilation.
 
+- 2026-10-27 · #166 · X12 / T3.11 notification-screen copy · merged; exact quiet-hour and nudge English preserved; actual notification-moment dismissal tested. Reminder controls in protected AccountSheet remain a Claude handoff.
+
 ## Questions
