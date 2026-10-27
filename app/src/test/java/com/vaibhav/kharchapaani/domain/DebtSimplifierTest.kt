@@ -9,6 +9,13 @@ class DebtSimplifierTest {
     private val bob = PersonEntity(id = 2, name = "Bob", avatarColor = "#fff")
     private val carol = PersonEntity(id = 3, name = "Carol", avatarColor = "#fff")
 
+    @Test fun `display labels can be supplied for self and a missing friend`() {
+        val debt = DebtSimplifier.simplify(emptyList(), mapOf(2L to 125.50), emptyList(), myName = "Self label", friendName = "Friend label").single()
+        assertEquals("Friend label", debt.fromPersonName)
+        assertEquals("Self label", debt.toPersonName)
+        assertEquals(125.50, debt.amount, 0.0)
+    }
+
     @Test
     fun `amounts round to the nearest paisa instead of losing one`() {
         // 33.33 * 100 is 3332.9999… in floating point, which truncation turned into 33.32.

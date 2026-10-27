@@ -9,6 +9,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
+import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -37,7 +40,8 @@ fun AccountAvatar(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val syncDescription = SyncBadge.describe(syncStatus)
+    val accountDescription = stringResource(R.string.shared_chrome_account)
+    val syncDescription = SyncBadge.describe(LocalContext.current, syncStatus)
     val mine = LocalMyColour.current.color
     // One clickable rather than IconButton + bounceClick, so TalkBack sees a single "Account"
     // button. Compose expands the touch target to 48dp.
@@ -50,7 +54,7 @@ fun AccountAvatar(
                 .background(mine.copy(alpha = 0.18f))
                 .bounceClick(onClick = onClick)
                 .semantics {
-                    contentDescription = "Account"
+                    contentDescription = accountDescription
                     role = Role.Button
                     if (syncDescription != null) stateDescription = syncDescription
                 }
