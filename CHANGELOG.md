@@ -39,6 +39,16 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - AI consent, parse-notice and answer-display copy use string resources with unchanged English; prompt instructions and generated text stay untouched (X12 / T3.11).
 
+- Bill-photo row, source-menu and viewer copy use string resources with unchanged English and photo handling (X12 / T3.11).
+
+- UPI setup and payment-code labels use string resources, preserving English, exact amounts and QR/link data (X12 / T3.11).
+
+- Friend-removal and simplified-debt views use string resources with unchanged English, amounts and confirmation behavior (X12 / T3.11).
+
+- Category/payment preference controls use string resources while names, defaults and saved values stay unchanged (X12 / T3.11).
+
+- Shared-group join, invite and recording controls use string resources and existing plural wording without behavior changes (X12 / T3.11).
+
 - Subscription form, schedule and confirmation copy use string resources with unchanged English (X12 / T3.11).
 
 - Settlement/IOU timeline labels, removal explanations and full-note controls use string resources with unchanged English (X12 / T3.11).

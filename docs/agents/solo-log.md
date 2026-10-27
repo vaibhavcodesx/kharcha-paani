@@ -83,4 +83,16 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #159 · X12 / T3.11 subscriptions · merged; resource-backed form/cycle/schedule/confirmation copy preserves English, dates and stored names; scheduling behavior stays unchanged.
 
+- 2026-10-27 · #160 · X12 / T3.11 shared-group controls · merged; join/invite/leave/recording prompts use resources with existing English plurals and unchanged eligibility, permissions and sync behavior.
+
+- 2026-10-27 · #161 · X12 / T3.11 category controls · merged; resource-backed preference labels keep English, canonical/default IDs and custom names; protected AppSettings stays unchanged.
+
+- 2026-10-27 · #162 · X12 / T3.11 debt management copy · merged; exact English, real-VM friend deletion and empty simplify-state coverage; no debt algorithm changes.
+
+- 2026-10-27 · #163 · X12 / T3.11 UPI card copy · merged; exact English, full amounts and user payee names preserved; QR/URI behavior unchanged.
+
+- 2026-10-27 · #164 · X12 / T3.11 bill-photo copy · merged; exact menu/viewer/spoken English and optional spacing preserved; capture/storage behavior unchanged. First integrated CI 40437543151 exposed SafetyNetTest resetting Dispatchers.Main while its uncancelled ViewModel was reading Room; the fixture now cancels and awaits the real ViewModel before resetting Main, with a StandardTestDispatcher.
+
+- 2026-10-27 · #165 · X12 / T3.11 AI presentation copy · merged; consent, labels, answer errors and parse notices use resources; parity tests preserve English, while protected prompt instructions and generated answers stay untouched.
+
 ## Questions
