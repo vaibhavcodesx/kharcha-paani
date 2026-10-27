@@ -154,4 +154,32 @@
     <string name="entry_still_to_assign">%1$s still to assign</string>
     <string name="entry_over_total">%1$s more than the total</string>
     <string name="entry_percent_problem">Percentages add up to %1$s%%, not 100%%</string>
+    <string name="backup_preview_title">Restore this backup?</string>
+    <string name="backup_preview_taken">Taken %1$s, from version %2$s.</string>
+    <string name="backup_preview_explanation">Only what isn\'t on this phone already is added. Nothing here is changed or removed.</string>
+    <string name="backup_preview_restore">Restore</string>
+    <string name="backup_preview_cancel">Cancel</string>
+    <string name="backup_preview_settings">Settings only.</string>
+    <string name="backup_preview_summary">%1$s.</string>
+    <string name="backup_preview_separator">,\u0020</string>
+    <plurals name="backup_preview_friends">
+        <item quantity="one">%1$d friend</item>
+        <item quantity="other">%1$d friends</item>
+    </plurals>
+    <plurals name="backup_preview_groups">
+        <item quantity="one">%1$d group</item>
+        <item quantity="other">%1$d groups</item>
+    </plurals>
+    <plurals name="backup_preview_expenses">
+        <item quantity="one">%1$d expense</item>
+        <item quantity="other">%1$d expenses</item>
+    </plurals>
+    <plurals name="backup_preview_settlements">
+        <item quantity="one">%1$d settlement</item>
+        <item quantity="other">%1$d settlements</item>
+    </plurals>
+    <plurals name="backup_preview_subscriptions">
+        <item quantity="one">%1$d subscription</item>
+        <item quantity="other">%1$d subscriptions</item>
+    </plurals>
 </resources>

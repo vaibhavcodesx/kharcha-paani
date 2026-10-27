@@ -37,6 +37,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Backup preview labels and record-count summaries use string resources with the same English (X12 / T3.11).
+
 - Entry review and split editing use Android resources for labels, date phrases, spoken actions
   and unchanged validation messages (X12 / T3.11; entry).
 
