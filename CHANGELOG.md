@@ -13,6 +13,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Changed
+
+- AI-report email draft labels and device details use string resources with unchanged English
+  and intact question/answer text (X12 / T3.11; support drafts).
+
 ### Fixed
 
 - Money confirmation action bars keep complete amounts and move the action below the summary
@@ -312,9 +317,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   existing app, cold launch, shared text, invite links, widgets in the background).
 
 ### Changed
-
-- AI-report email draft labels and device details use string resources with unchanged English
-  and intact question/answer text (X12 / T3.11; support drafts).
 
 - Payment-method spoken labels use a string resource, preserving custom names and English
   (X12 / T3.11; payment tags).
