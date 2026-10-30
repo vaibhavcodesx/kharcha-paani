@@ -900,4 +900,8 @@
     <string name="notification_groupmate">A groupmate</string>
     <!-- Additional screen strings. -->
     <string name="payment_method_spoken">Paid by %1$s</string>
+    <!-- Additional screen strings. -->
+    <string name="support_device_details">\n\n—\nKharcha Paani %1$s (%2$d) · %3$s %4$s · Android %5$s</string>
+    <string name="support_ai_report_subject">Reporting an AI answer</string>
+    <string name="support_ai_report_body">What was wrong with it:\n\n\nThe question: %1$s\nThe answer:\n%2$s</string>
 </resources>
