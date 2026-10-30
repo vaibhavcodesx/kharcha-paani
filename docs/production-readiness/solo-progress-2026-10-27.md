@@ -1,10 +1,10 @@
-# Solo progress — 27 October 2026
+# Solo progress — updated 30 October 2026
 
-**50 product PRs merged; 6 prepared text-cleanup PRs remain; 4 PRs are parked.** Work is paused at the owner's request to conserve the weekly limit. These are code/integration results, not a claim that the app is released or phone-tested.
+**56 product PRs merged; no prepared product PRs remain; 4 PRs are parked under the two-failure rule.** The saved active queue was completed on 30 October after the owner resumed work. These are code/integration results, not a claim that the app is released or phone-tested.
 
 This is an update alongside the [master readiness tracker](README.md), not a replacement for it. Its older status labels have not been edited because that file belongs to Claude. See the [solo log](../agents/solo-log.md) for decisions and the [restart guide](../agents/codex-resume-2026-10-27.md) for exact technical state.
 
-Saved in documentation-only draft [#185](https://github.com/vaibhavcodesx/kharcha-paani/pull/185); product work remains paused.
+This report and the restart guide are maintained in documentation [#185](https://github.com/vaibhavcodesx/kharcha-paani/pull/185). The 27 October pause snapshot is preserved in its Git history.
 
 ## Done in this batch
 
@@ -16,22 +16,22 @@ Saved in documentation-only draft [#185](https://github.com/vaibhavcodesx/kharch
 | Small fixes | Clearer offline sign-in wording, successful-money-action haptics, Bill photo naming, thread-safe statement date parsing | [133](https://github.com/vaibhavcodesx/kharcha-paani/pull/133)–[136](https://github.com/vaibhavcodesx/kharcha-paani/pull/136) |
 | Accessibility | Navigation dock, Splits/group cards, Insights and money-confirmation bars handle larger text better | [137](https://github.com/vaibhavcodesx/kharcha-paani/pull/137), [138](https://github.com/vaibhavcodesx/kharcha-paani/pull/138), [140](https://github.com/vaibhavcodesx/kharcha-paani/pull/140), [141](https://github.com/vaibhavcodesx/kharcha-paani/pull/141) |
 | Search | Friends/participants and exact amounts are searchable | [142](https://github.com/vaibhavcodesx/kharcha-paani/pull/142) |
-| Text resources | Navigation, Splits, Insights, entry/payment/group/friend forms, most sheets, timeline/history descriptions, backup/error notices, sign-in display, AI presentation, Ask status and widgets now resolve resources | [144](https://github.com/vaibhavcodesx/kharcha-paani/pull/144)–[178](https://github.com/vaibhavcodesx/kharcha-paani/pull/178); full register below |
+| Text resources | Navigation, Splits, Insights, entry/payment/group/friend forms, most sheets, timeline/history descriptions, backup/error notices, sign-in display, AI presentation, Ask status and widgets now resolve resources | [144](https://github.com/vaibhavcodesx/kharcha-paani/pull/144)–[184](https://github.com/vaibhavcodesx/kharcha-paani/pull/184); full register below |
 
 English wording and money/data behavior were preserved during the text work. **A Hindi build is not complete:** Home and protected account/auth text still need work, translations are not supplied, and stored category/payment identifiers must remain stable.
 
-## Next: finish these six PRs, in order
+## Finished from the saved queue (30 October)
 
-| PR | Remaining area | Resume action |
+| PR | Completed area | Verification |
 |---|---|---|
-| [179](https://github.com/vaibhavcodesx/kharcha-paani/pull/179) | Notification channels, daily/private/public payment-reminder text | Latest main is integrated. All three Android CI jobs passed on the saved head; refresh main and checks before any merge. |
-| [180](https://github.com/vaibhavcodesx/kharcha-paani/pull/180) | Payment tag spoken label | Integrate the then-latest main and run final CI. |
-| [181](https://github.com/vaibhavcodesx/kharcha-paani/pull/181) | AI-report email draft | Same; no email is sent by the tests. |
-| [182](https://github.com/vaibhavcodesx/kharcha-paani/pull/182) | Unknown/ambiguous split-name notices | Same; matching behavior stays unchanged. |
-| [183](https://github.com/vaibhavcodesx/kharcha-paani/pull/183) | Statement warning text | Same; does not resume the parked duplicate-import bug. |
-| [184](https://github.com/vaibhavcodesx/kharcha-paani/pull/184) | Resource-backed self labels in split rows | Same; canonical participant data stays unchanged. |
+| [#179](https://github.com/vaibhavcodesx/kharcha-paani/pull/179) | Notification channels and reminder text | Squash-merged after latest main integration and [three green Android CI jobs](https://github.com/vaibhavcodesx/kharcha-paani/actions/runs/40474338813) |
+| [#180](https://github.com/vaibhavcodesx/kharcha-paani/pull/180) | Payment tag spoken labels | Squash-merged after latest main integration and [three green Android CI jobs](https://github.com/vaibhavcodesx/kharcha-paani/actions/runs/41055037240) |
+| [#181](https://github.com/vaibhavcodesx/kharcha-paani/pull/181) | AI-report email drafts | Squash-merged after latest main integration and [three green Android CI jobs](https://github.com/vaibhavcodesx/kharcha-paani/actions/runs/41056022783) |
+| [#182](https://github.com/vaibhavcodesx/kharcha-paani/pull/182) | Unknown/ambiguous split-name notices | Squash-merged after latest main integration and [three green Android CI jobs](https://github.com/vaibhavcodesx/kharcha-paani/actions/runs/41056886734) |
+| [#183](https://github.com/vaibhavcodesx/kharcha-paani/pull/183) | Statement warning display text | Squash-merged after latest main integration and [three green Android CI jobs](https://github.com/vaibhavcodesx/kharcha-paani/actions/runs/41057669569) |
+| [#184](https://github.com/vaibhavcodesx/kharcha-paani/pull/184) | Self labels in editable/locked split rows | Squash-merged after latest main integration and [three green Android CI jobs](https://github.com/vaibhavcodesx/kharcha-paani/actions/runs/41058661109) |
 
-PRs 180–184 passed their initial Android CI, but that is **not** a merge gate after newer main changes. Each needs a fresh integrated head and its own green unit-tests, lint and release-bundle.
+PRs 180–184 received an independent code review with no findings. Every merge used its exact checked head; there were no new failed Android CI runs in this resumed queue. Phone acceptance is still outstanding.
 
 ## Parked: do not silently count these as done
 
@@ -53,11 +53,11 @@ The solo contract stops an item after two failed Android CI runs; all four remai
 
 ## Verification and release plan
 
-1. Finish 179–184 under the current lane rules, then audit scope, resources, PR states and the log once more.
+1. The active Codex queue is finished. The final audit checks PR states, allowed scope, resource keys, tests, changelog entries and log rows. The four parked items require follow-up under the lane contract; they are not silently retried.
 2. Run the [phone checklist format](../testing/1.5.0-device-checks.md): groups/splits/history, large text and TalkBack, notifications/lock-screen redaction, and Play-installed update/review behavior. Accessibility Scanner/pre-launch reports remain outstanding.
 3. Claude handles protected/owner-review work and the parked follow-ups. The owner handles Play Console/legal/consoles and the eventual release under the [master tracker](README.md#4-things-only-the-owner-can-do-consoles-money-legal).
 
-Every merged product PR passed the three required Android CI jobs on its integrated head. Local Gradle was skipped below the repository's 4 GB free-RAM floor. No emulator, phone acceptance, release workflow, repository-settings change or Supabase action was performed. Separate Claude-review automation has failed execution without posting findings on recent PRs; that limitation is recorded in the solo log and was not disguised as a passing review.
+Every merged product PR passed the three required Android CI jobs on its integrated head. Local Gradle was skipped below the repository's 4 GB free-RAM floor. No emulator, phone acceptance, release workflow, repository-settings change or Supabase action was performed. Separate Claude-review automation failed execution on earlier PRs, including 179; that limitation remains recorded. The resumed 180–184 jobs are checked independently; no earlier failed review is described as a pass.
 
 ## Source documents
 
@@ -132,11 +132,11 @@ One line per PR. This register excludes the documentation-only handoff PR. Snaps
 | [#176](https://github.com/vaibhavcodesx/kharcha-paani/pull/176) | Merged | X12: Move shared group notices into string resources |
 | [#177](https://github.com/vaibhavcodesx/kharcha-paani/pull/177) | Merged | X12: Move friend ask status copy into resources |
 | [#178](https://github.com/vaibhavcodesx/kharcha-paani/pull/178) | Merged | X12: Move widget copy into string resources |
-| [#179](https://github.com/vaibhavcodesx/kharcha-paani/pull/179) | Prepared; not merged | X12: Move notification content into string resources |
-| [#180](https://github.com/vaibhavcodesx/kharcha-paani/pull/180) | Prepared; not merged | X12: Move payment tag spoken labels into resources |
-| [#181](https://github.com/vaibhavcodesx/kharcha-paani/pull/181) | Prepared; not merged | X12: Move support draft copy into string resources |
-| [#182](https://github.com/vaibhavcodesx/kharcha-paani/pull/182) | Prepared; not merged | X12: Move split notice copy into presentation resources |
-| [#183](https://github.com/vaibhavcodesx/kharcha-paani/pull/183) | Prepared; not merged | X12: Move statement warning display copy into resources |
-| [#184](https://github.com/vaibhavcodesx/kharcha-paani/pull/184) | Prepared; not merged | X12: Resolve split self labels from resources |
+| [#179](https://github.com/vaibhavcodesx/kharcha-paani/pull/179) | Merged | X12: Move notification content into string resources |
+| [#180](https://github.com/vaibhavcodesx/kharcha-paani/pull/180) | Merged | X12: Move payment tag spoken labels into resources |
+| [#181](https://github.com/vaibhavcodesx/kharcha-paani/pull/181) | Merged | X12: Move support draft copy into string resources |
+| [#182](https://github.com/vaibhavcodesx/kharcha-paani/pull/182) | Merged | X12: Move split notice copy into presentation resources |
+| [#183](https://github.com/vaibhavcodesx/kharcha-paani/pull/183) | Merged | X12: Move statement warning display copy into resources |
+| [#184](https://github.com/vaibhavcodesx/kharcha-paani/pull/184) | Merged | X12: Resolve split self labels from resources |
 
 </details>

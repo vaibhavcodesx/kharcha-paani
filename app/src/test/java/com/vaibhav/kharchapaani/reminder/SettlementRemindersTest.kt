@@ -5,8 +5,16 @@ import com.vaibhav.kharchapaani.data.db.entity.SettlementStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36])
 class SettlementRemindersTest {
+    private val context = ApplicationProvider.getApplicationContext<Context>()
 
     private val day = 86_400_000L
     private val recorded = 1_800_000_000_000L
@@ -28,11 +36,11 @@ class SettlementRemindersTest {
             status = SettlementStatus.PENDING, recordedByPersonId = 2,
         )
 
-        val (firstTitle, firstBody) = SettlementReminders.textFor(settlement, "Priya", stage = 0, now = recorded)
+        val (firstTitle, firstBody) = SettlementReminders.textFor(context, settlement, "Priya", stage = 0, now = recorded)
         assertEquals("Priya says they paid you ₹500", firstTitle)
         assertTrue(firstBody.contains("doesn't count until you do"))
 
-        val (laterTitle, laterBody) = SettlementReminders.textFor(settlement, "Priya", stage = 3, now = recorded + 9 * day)
+        val (laterTitle, laterBody) = SettlementReminders.textFor(context, settlement, "Priya", stage = 3, now = recorded + 9 * day)
         assertEquals("Still waiting on you: ₹500 with Priya", laterTitle)
         assertTrue(laterBody.contains("9 days ago"))
     }

@@ -121,7 +121,19 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #178 · X12 / T3.11 widget copy · merged; widget labels, full-amount spoken summaries and signed-out guidance use resources; analytics, data sources and widget actions stay unchanged.
 
-- 2026-10-27 · [#185](https://github.com/vaibhavcodesx/kharcha-paani/pull/185) · documentation handoff · draft/open at the owner-requested pause; saved the progress report and exact restart guide. Product snapshot: 50 merged, 6 prepared, 4 parked after two failed Android CI runs. This docs PR is excluded from those product counts and is not a CI-failure park. #179 Android CI finished green; no further product merge was attempted.
+- 2026-10-30 · #185 · documentation handoff · merged; refreshed the owner progress report and technical checkpoint after the six-PR queue completed (56 product merged, 0 prepared, 4 parked). Validated links/register/log/resource/scope checks; relocated the misplaced 179/180 entries to Unreleased without changing release headings. Independent review found no issues in 180–184; their new automated review jobs also passed, without changing the historical failed-review record. Phone/protected handoffs remain. Docs PR excluded from product counts.
+
+- 2026-10-27 · #179 · X12 / T3.11 notification content · merged; channel, daily and payment-reminder text use resources with exact English; privacy redaction, stage accounting and quiet-hour/delivery gates stay unchanged.
+
+- 2026-10-30 · #180 · X12 / T3.11 payment tag spoken labels · merged; Paid by resolves through resources, preserving payment method names/keys and full amounts; real VM/Room save and TalkBack semantics tests.
+
+- 2026-10-30 · #181 · X12 / T3.11 support email drafts; resource templates preserve exact line breaks and user question/answer data; Robolectric captures the draft intent without sending mail · merged.
+
+- 2026-10-30 · #182 · X12 / T3.11 split-name notices; display resources preserve matching rules and exact English, with name/percent/apostrophe parity and real VM/Room coverage · merged.
+
+- 2026-10-30 · #183 · X12 / T3.11 statement warnings; display resources preserve canonical flags, unknown source notes and unticked selection; actual reviewed rows tested, without resuming parked X8 · merged.
+
+- 2026-10-30 · #184 · X12 / T3.11 split self labels; resolve self by ID through entry_you in editable/locked rows, preserving canonical participant data; actual VM/Room save test · merged.
 
 ## Questions
 

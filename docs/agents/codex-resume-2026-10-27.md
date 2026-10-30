@@ -1,96 +1,34 @@
-# Codex restart — solo batch paused 27 October 2026
+# Codex checkpoint — active queue finished 30 October 2026
 
-Start with the [short owner progress report](../production-readiness/solo-progress-2026-10-27.md). Product snapshot: **50 merged, 6 prepared, 4 parked**. The user explicitly requested this wrap/pause to conserve the weekly limit. No feature work should continue just because an old watcher was running.
+Read the [owner progress report](../production-readiness/solo-progress-2026-10-27.md) first. **56 product PRs merged, 0 prepared, 4 parked.** The owner resumed work on 30 October; PRs 179–184 are now merged. This replaces the earlier pause instructions; that snapshot remains in Git history.
 
-## Read and verify first
+## Start here next time
 
-1. Read root [AGENTS.md](../../AGENTS.md), then [work-split.md](work-split.md) **in full**, then its Read first documents and relevant audits. The work split wins; current saved file hash is `9e55b6168bbcdffb19b592ed204633496fe1a4d7`, but never assume it stayed unchanged.
-2. The solo self-merge exception is dated **2026-10-27 to 2026-10-30**. Recheck the current date and authorization before merging. Outside that window, follow the normal no-self-merge rule unless the owner changes it.
-3. Inspect actual GitHub PR states and latest main. Do not trust the static CI snapshot below as a current merge permission.
+1. Read [AGENTS.md](../../AGENTS.md), [work-split.md](work-split.md) in full, its Read first guides and the relevant audits. Refresh GitHub/main; static snapshots are not merge permission.
+2. The solo self-merge exception ends on **2026-10-30**. After that, normal no-self-merge rules apply unless the owner changes them. Never borrow Claude or owner-review work.
+3. There is no remaining prepared product queue. Do not recreate or remerge 179–184. Do not restart the parked work merely because this document is called a restart guide.
+4. Preserve the checkout and branches. No resets, force pushes, branch deletion or cleanup of user files.
 
-## Workspace and saved state
+## Verified saved state
 
-- Actual managed checkout used here: `C:\Users\VAIBHAV\.codex\worktrees\x1-store-listing\Kharcha Paani`.
-- The user-facing original `Z:\V\.The_Future\Vibeeee\Kharcha Paani` was unavailable/empty during this run. Do not overwrite it or reset/clean any checkout. Verify paths and preserve user changes.
-- Documentation branch at wrap: `codex/solo-handoff-2026-10-27`; docs are committed/pushed in draft [#185](https://github.com/vaibhavcodesx/kharcha-paani/pull/185). It is not a product merge and is intentionally left for resumption/review.
-- Last confirmed product main: `1b5e13a9cb02272bc3ca4f225528d56662c2ef27` ([178](https://github.com/vaibhavcodesx/kharcha-paani/pull/178), widgets).
-- No active local CI watcher or feature mutation remains. GitHub's normal CI for 179 can finish independently. No automation/goal/background agent was created.
-- Previous helpers in the model's tool store are **not durable**. Use this document and the repository/GitHub as truth.
+- Managed checkout: `C:/Users/VAIBHAV/.codex/worktrees/x1-store-listing/Kharcha Paani`.
+- Original `Z:/V/.The_Future/Vibeeee/Kharcha Paani` has untracked screenshots/research/handoffs; it was not changed. AGENTS/work-split were missing there, so the managed checkout was reused.
+- Product main after 184: `1323a6e2066d3c952401a246cde5a484d6118173`.
+- Documentation branch: `codex/solo-handoff-2026-10-27`, [#185](https://github.com/vaibhavcodesx/kharcha-paani/pull/185). This documentation PR is excluded from product counts. Verify its current merge state rather than assuming.
+- No goal, automation, background agent or feature watcher needs resuming. In-memory helper/tool state is not durable.
 
-## Resume queue: one PR at a time
+## Completed queue evidence
 
-All are X12 / T3.11. Do not combine them or recreate their branches. Final main integration and log row are already present for 179. Its branch has a planned merged log row that must land only when its merge succeeds. For 180–184, add their own merged/parked log row before the final checked commit.
-
-| PR | Branch | Head at pause | CI snapshot (not a future gate) |
+| PR | Final checked head | Android CI | Squash commit |
 |---|---|---|---|
-| [#179](https://github.com/vaibhavcodesx/kharcha-paani/pull/179) | `codex/x12-notification-content-strings` | `829cad41f89057bc40d0800f97346e816a73ee4f` | unit-tests: SUCCESS, lint: SUCCESS, release-bundle: SUCCESS |
-| [#180](https://github.com/vaibhavcodesx/kharcha-paani/pull/180) | `codex/x12-payment-pill-strings` | `56270274fa176d700f14f299018e53a59e7c0395` | unit-tests: SUCCESS, lint: SUCCESS, release-bundle: SUCCESS |
-| [#181](https://github.com/vaibhavcodesx/kharcha-paani/pull/181) | `codex/x12-support-draft-strings` | `ba7b234a291b69f9e637e6e4ae42ea564aa9e61c` | unit-tests: SUCCESS, lint: SUCCESS, release-bundle: SUCCESS |
-| [#182](https://github.com/vaibhavcodesx/kharcha-paani/pull/182) | `codex/x12-split-notice-strings` | `2316c66f079512ae7ff53de2bb21aa12f99b9e35` | unit-tests: SUCCESS, lint: SUCCESS, release-bundle: SUCCESS |
-| [#183](https://github.com/vaibhavcodesx/kharcha-paani/pull/183) | `codex/x12-statement-warning-strings` | `2078213052ed2014bc03e59161b3ebcbb4d7ae3f` | unit-tests: SUCCESS, lint: SUCCESS, release-bundle: SUCCESS |
-| [#184](https://github.com/vaibhavcodesx/kharcha-paani/pull/184) | `codex/x12-split-self-label` | `3b80236fa07982a3211017c6b838bca4e720c9cb` | unit-tests: SUCCESS, lint: SUCCESS, release-bundle: SUCCESS |
+| [#179](https://github.com/vaibhavcodesx/kharcha-paani/pull/179) | `829cad41f89057bc40d0800f97346e816a73ee4f` | [40474338813](https://github.com/vaibhavcodesx/kharcha-paani/actions/runs/40474338813) | `c087b7e4769d3f133d0ae2a62536d0d611cae4ba` |
+| [#180](https://github.com/vaibhavcodesx/kharcha-paani/pull/180) | `e69799663a2a04fb6f3a39d1e64358c2d8d284cc` | [41055037240](https://github.com/vaibhavcodesx/kharcha-paani/actions/runs/41055037240) | `9b896f1fe984ce7e6bd8973a512353eea1563b02` |
+| [#181](https://github.com/vaibhavcodesx/kharcha-paani/pull/181) | `f11a1f868770985f004dbd33093bbb7c055117fd` | [41056022783](https://github.com/vaibhavcodesx/kharcha-paani/actions/runs/41056022783) | `0a1fbb35619c612a3c1e0e81062256af886a73e6` |
+| [#182](https://github.com/vaibhavcodesx/kharcha-paani/pull/182) | `b22b6009178bf3784a1590bd0bb8bbe57560dc12` | [41056886734](https://github.com/vaibhavcodesx/kharcha-paani/actions/runs/41056886734) | `ca94ef2541f7150dae5c0206971c15db138bb841` |
+| [#183](https://github.com/vaibhavcodesx/kharcha-paani/pull/183) | `50b67fc04882d64ba129d606c7620d6369c4c0fd` | [41057669569](https://github.com/vaibhavcodesx/kharcha-paani/actions/runs/41057669569) | `003188ea2cfc76870b516264f16021d613984143` |
+| [#184](https://github.com/vaibhavcodesx/kharcha-paani/pull/184) | `b2bb42695195fd0967da570aa6ad31f6eb5a2e9a` | [41058661109](https://github.com/vaibhavcodesx/kharcha-paani/actions/runs/41058661109) | `1323a6e2066d3c952401a246cde5a484d6118173` |
 
-179 already contains the last main shown above. Android CI run 40474338813 finished green on the saved head; its separate Claude-review jobs failed execution. The PR remains open at this requested pause. PRs 180–184 have initial green CI on older bases and still need current main merged into them, conflict resolution, a log row, and **new** CI. No failed Android CI run was observed for these six at this snapshot; refresh run histories before counting any newer failure. Two failed Android CI runs on an item mean park it and move on; fixture failures count too.
-
-After these six, perform a final source/resource/scope/log audit. The last audit found only intended data/branding/animation labels and protected/parked Home/account text, plus the two follow-ups now covered by 183 and 184. Do not claim that Hindi translations or all accessibility acceptance are finished.
-
-## Mandatory merge sequence
-
-```powershell
-git status --short
-git fetch origin main
-git switch codex/<existing-item-branch>
-git merge origin/main --no-commit --no-ff
-# Resolve only allowed files; preserve incoming main plus this PR's changes.
-# Add/update this PR's solo-log line and retain exactly one Unreleased entry.
-git diff --check
-git commit --no-edit
-git push origin codex/<existing-item-branch>
-```
-
-If main is already included and there is no MERGE_HEAD, do not invent a merge commit; commit only actual authorized changes. Check the latest main again immediately before merging.
-
-- Wait for **unit-tests, lint, release-bundle** to succeed on the exact pushed head. Mark drafts ready only when concrete. An old-base green result is insufficient.
-- Review the PR's triple-dot file diff, tests, one Unreleased entry, solo-log row and Check on the phone list. Never touch protected files or owner-review work.
-- Fetch main; `git merge-base --is-ancestor origin/main origin/<branch>` must succeed. If main moved, merge it and repeat CI.
-- Announce the newly observed green result, then squash-merge with the PR title as the commit subject and the **full verified expected head SHA**. Do not guess a SHA or enable an indirect bypass.
-- **Verify the merge response actually says merged=true, or re-read GitHub state MERGED.** A tool being called is not proof of success. Never advance to the next merge on a rejected/error result.
-
-An automatic approval review once rejected 175 using stale pending-check context. Fresh GitHub checks proved all three jobs green; the same native merge tool then succeeded. 176 was re-integrated with the confirmed 175 merge and re-tested. Do not repeat the earlier orchestration mistake of treating an error response as a successful merge.
-
-## Expected conflicts and safe choices
-
-- `CHANGELOG.md` and `solo-log.md`: keep both branches' entries and the Questions/handoff section. Add one line per merged or parked PR; never duplicate an existing row.
-- `strings.xml`: merge **complete string/plurals blocks**, not line fragments. Shared closing plurals tags can otherwise corrupt XML. Assert common resources are unchanged and final keys are unique. The helper below is for an active merge only, after each side's own resources are committed.
-- 180: PaymentPill spoken label only. 181: Support draft text only. 182: UI split-notice formatter and one MainViewModel call; retain the matching algorithm and protected prompts. 183: known statement-warning display only; do not resume X8. 184: reuse entry_you for self by ID; preserve canonical participant names, guest/friend names and callbacks.
-- Avoid duplicate imports in shared MainViewModel merges; do not reformat or reorder the class. English, money calculations, field IDs, JSON/CSV schemas and user-entered text must remain unchanged.
-
-```python
-from pathlib import Path
-import subprocess,re,xml.etree.ElementTree as ET
-for f in ['CHANGELOG.md','docs/agents/solo-log.md']:
- p=Path(f);s=p.read_text();s='\n'.join('' if l=='=======' else l for l in s.split('\n') if not l.startswith(('<<<<<<<','>>>>>>>')));p.write_text(s)
-file='app/src/main/res/values/strings.xml'
-ours=subprocess.check_output(['git','show','HEAD:'+file]).decode('utf-8')
-theirs=subprocess.check_output(['git','show','MERGE_HEAD:'+file]).decode('utf-8')
-ourkeys={(e.tag,e.attrib.get('name')) for e in ET.fromstring(ours)}
-known={(e.tag,e.attrib.get('name')):e for e in ET.fromstring(theirs)}
-expected=ourkeys|set(known)
-add=[]
-for m in re.finditer(r'    <(?P<tag>string|plurals)\b[^>]*name="(?P<name>[^"]+)"[^>]*>.*?</(?P=tag)>',ours,re.S):
- key=(m['tag'],m['name']);e=ET.fromstring(m.group())
- if key in known:
-  assert ET.tostring(e,encoding='unicode').strip()==ET.tostring(known[key],encoding='unicode').strip(),key
- else:add.append(m.group());known[key]=e
-merged=theirs if not add else theirs.replace('</resources>','    <!-- Additional screen strings. -->\n'+'\n'.join(add)+'\n</resources>')
-r=ET.fromstring(merged);keys=[(e.tag,e.attrib.get('name')) for e in r]
-assert len(keys)==len(set(keys)) and set(keys)==expected
-Path(file).write_text(merged)
-print('Valid complete blocks: '+str(len(keys))+' unique resources')
-
-```
-
-Before staging, review any other unmerged source file manually; the helper deliberately handles only the two docs and XML. If there are no new resource blocks, keep incoming XML unchanged. Run XML parsing, unique-key checks and git diff --check before committing.
+Every product merge included then-latest main and green unit-tests, lint and release-bundle on the exact head. Verify merge success explicitly (merged=true or GitHub state MERGED), not merely that a merge tool was called.
 
 ## Do not resume the four parked items in this solo pass
 
@@ -101,20 +39,18 @@ Before staging, review any other unmerged source file manually; the helper delib
 
 Do not infer that an incidental later green run cancels the stop rule. Their PR bodies and the solo log record what happened.
 
-## Boundaries and verification
+## Remaining handoffs and limits
 
-- No Supabase/server/database operations, releases, repository settings, owner-review PRs, #71, #103 or Dependabot work. Never push to main.
-- Do not edit `supabase/**`, `data/db/**`, `app/schemas/**`, `data/sync/**`, GeminiRepository/AI prompts, AccountSheet, AppSettings, `.github/**`, PRD or the protected readiness README/release headings. Re-read the full lane contract for exact paths.
-- X11 search is merged in 142; Edited by identity still needs protected DB/sync/server work. Do not fake an editor from original owner plus updatedAt.
-- Outgoing AskMessage.build has an existing tone conflict and remains a Claude handoff; 177 extracts only status/shared-code labels. Account/auth/reminder copy and parked Home remain outside completed X12.
-- Recent separate Claude-review jobs fail execution with is_error:true and no posted findings. This was logged; the solo contract explicitly names the three Android CI gates. Do not call the review successful or change workflows/settings to repair it.
-- Local Gradle was not run below the repo's 4 GB free-RAM floor (last observed free RAM about 0.7 GB). Recheck available RAM and SDK before attempting it. If runnable: `./gradlew :app:testDebugUnitTest :app:lintDebug`. **Never run an emulator.**
-- UI/VM tests construct real MainViewModel/Room (or app shell), use StandardTestDispatcher and cancel/await VM jobs before resetting Main. Do not replace real flows with fake StateFlows. Explicit Unit-returning runBlocking tests avoid non-void JUnit failures.
-- Existing money/role/direction/privacy tests remain meaningful. Phone/Play-track delivery, real review display, TalkBack/large text and Scanner/pre-launch reports remain owner checks; no live acceptance was claimed.
+- X11 Edited by identity needs protected DB/sync/server work. Original adder plus updatedAt is not evidence of last editor. Search itself is merged in 142.
+- X12 is not a complete Hindi build. Home is parked; protected account/auth/reminder copy and AI prompts stay with Claude. Existing outgoing Ask body needs friendly wording/localization in the Claude lane (177 only extracted status/shared-code display).
+- Keep category/payment IDs, participant data, JSON/CSV schemas, URLs, brand names and date patterns stable. Do not translate stored identifiers.
+- Never touch Supabase/database operations, releases, settings, owner-review PRs, #71, #103 or Dependabot. Protected paths include data/db, data/sync, schemas, GeminiRepository/prompts, AccountSheet, AppSettings, .github, PRD and the master readiness README. Re-read the exact contract.
+- Local free RAM was approximately 2.2 GB on resumption, below the 4 GB floor; no Gradle or emulator was run locally. CI ran the real VM/Room tests. No phone, Play delivery, TalkBack/large-text, Scanner/pre-launch or signed-release acceptance is claimed.
+- Separate automated Claude reviews failed execution earlier; the fresh five-PR independent review found no issues. Do not describe historical failed automation as passing.
+- Changelog audit caught 179/180 entries under old 1.5.0 instead of Unreleased. Documentation 185 relocates only those two entries, preserving every release heading and original release text. Queued entries 181–184 are scoped to Unreleased.
 
-## Finish after resumption
+## Next actions outside this completed queue
 
-1. Process 179–184 in order under freshly read rules.
-2. Verify every merged product PR has its own test change, one Unreleased entry and log row, with no forbidden-file diff. Check that parked entries are still open/unmerged and resources have unique keys.
-3. Update the [owner progress report](../production-readiness/solo-progress-2026-10-27.md) and this handoff with actual results. Keep the master readiness README unchanged unless the owner reallocates it.
-4. Give the owner a concise outcome and links. Leave all protected/phone/release handoffs visible; do not equate CI with production activation.
+1. Claude/owner resolves the four parked items and protected handoffs under refreshed lane rules.
+2. Owner performs the phone checklists linked from each PR, particularly Play-installed flexible updates/reviews, notification redaction, large text/TalkBack and unchanged saved money/data.
+3. Claude/owner updates the protected master tracker and handles release/console steps. CI and merged code are not production activation.

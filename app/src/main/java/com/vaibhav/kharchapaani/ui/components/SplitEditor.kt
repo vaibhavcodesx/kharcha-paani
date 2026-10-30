@@ -114,7 +114,7 @@ fun SplitEditor(
             )
             shares.filter { it.isSelected }.forEach { share ->
                 Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(share.personName, style = MaterialTheme.typography.bodyLarge, color = OffWhiteText, modifier = Modifier.weight(1f))
+                    Text(if (share.personId == ME) stringResource(R.string.entry_you) else share.personName, style = MaterialTheme.typography.bodyLarge, color = OffWhiteText, modifier = Modifier.weight(1f))
                     Text(Money.format(share.amount), style = MoneyText.row, color = OffWhiteText)
                 }
             }
@@ -172,6 +172,7 @@ private fun ShareRow(
     onExactAmountChange: (Double) -> Unit,
     onPercentageChange: (Double) -> Unit,
 ) {
+    val personLabel = if (share.personId == ME) stringResource(R.string.entry_you) else share.personName
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -193,7 +194,7 @@ private fun ShareRow(
             }
             Column(Modifier.padding(start = Spacing.m)) {
                 Text(
-                    text = share.personName,
+                    text = personLabel,
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (share.isSelected) OffWhiteText else SubMutedWarmGray,
                 )
@@ -211,14 +212,14 @@ private fun ShareRow(
                     prefix = "₹",
                     suffix = "",
                     onValueChange = { onExactAmountChange(Money.parseInput(it) ?: 0.0) },
-                    description = stringResource(R.string.entry_person_amount, share.personName),
+                    description = stringResource(R.string.entry_person_amount, personLabel),
                 )
                 SplitMode.PERCENTAGE -> NumberBox(
                     value = if (share.percentage > 0) Money.input(share.percentage) else "",
                     prefix = "",
                     suffix = "%",
                     onValueChange = { onPercentageChange(Money.parseInput(it) ?: 0.0) },
-                    description = stringResource(R.string.entry_person_percentage, share.personName),
+                    description = stringResource(R.string.entry_person_percentage, personLabel),
                 )
             }
         }
