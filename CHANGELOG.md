@@ -15,6 +15,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Changed
 
+- Split-name notices use presentation resources with unchanged English and name matching
+  (X12 / T3.11; parsed split notices).
+
 - AI-report email draft labels and device details use string resources with unchanged English
   and intact question/answer text (X12 / T3.11; support drafts).
 
