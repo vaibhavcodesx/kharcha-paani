@@ -882,4 +882,20 @@
     <string name="widget_copy_today">Today</string>
     <string name="widget_copy_log">Log expense</string>
     <string name="widget_copy_splits_description">Open splits</string>
+    <!-- Additional screen strings. -->
+    <string name="notification_daily_channel">Daily reminder</string>
+    <string name="notification_daily_description">A nudge in the evening if nothing\'s been logged that day</string>
+    <string name="notification_payment_channel">Payments to confirm</string>
+    <string name="notification_payment_description">When a groupmate says money changed hands with you, until you confirm it or say it isn\'t right</string>
+    <string name="notification_payment_public">A payment is waiting for your answer</string>
+    <string name="notification_daily_title">Nothing logged today</string>
+    <string name="notification_daily_body">Add today\'s spending before it slips your mind.</string>
+    <string name="notification_lent_to_you">%1$s says they lent you %2$s</string>
+    <string name="notification_you_lent">%1$s says you lent them %2$s</string>
+    <string name="notification_paid_to_you">%1$s says they paid you %2$s</string>
+    <string name="notification_you_paid">%1$s says you paid them %2$s</string>
+    <string name="notification_payment_first_body">Confirm it, or say it isn\'t right. It doesn\'t count until you do.</string>
+    <string name="notification_payment_later_title">Still waiting on you: %1$s with %2$s</string>
+    <string name="notification_payment_later_body">%1$s, %2$d days ago. It won\'t count until you answer.</string>
+    <string name="notification_groupmate">A groupmate</string>
 </resources>
