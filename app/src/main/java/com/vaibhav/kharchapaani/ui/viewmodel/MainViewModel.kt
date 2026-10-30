@@ -101,6 +101,7 @@ import com.vaibhav.kharchapaani.domain.MonthAnalytics
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.domain.SplitTargets
+import com.vaibhav.kharchapaani.ui.format.displayNotice
 import com.vaibhav.kharchapaani.domain.recentSplitGroup
 import com.vaibhav.kharchapaani.ui.components.NewSubscription
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
@@ -1238,7 +1239,7 @@ class MainViewModel(
         val leftOut = target.personIds.filter { id -> _shares.value.none { it.personId == id } }
             .mapNotNull { id -> people.value.firstOrNull { it.id == id }?.name }
         val groupName = groupId?.let { id -> rawGroups.value.firstOrNull { it.id == id }?.name }
-        return SplitTargets.notice(target, leftOut, groupName)
+        return target.displayNotice(getApplication(), leftOut, groupName)
     }
 
     private fun initSharesForCurrentPeople() {
@@ -1741,7 +1742,7 @@ class MainViewModel(
                 }
             }
             val firstName = person.name.trim().substringBefore(' ').ifEmpty { person.name }
-            val chooser = AskShare.chooser(app, AskShare.sendIntent(message, qr), person.id, amount, userId, uiText(R.string.action_notice_ask_chooser, firstName))
+            val chooser = AskShare.chooser(app, AskShare.sendIntent(app, message, qr), person.id, amount, userId, uiText(R.string.action_notice_ask_chooser, firstName))
             context.startActivity(chooser)
         }
     }

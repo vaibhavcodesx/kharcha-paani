@@ -117,6 +117,22 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #175 · X12 / T3.11 backup descriptions · merged; summaries, validation reasons and restore reports use resources; backup JSON fields/version and additive restore behavior unchanged. Consolidate the parked/protected/phone handoffs below.
 
+- 2026-10-27 · #177 · X12 / T3.11 ask display · merged; asked-status and shared-code labels use resources, preserving calendar-day/share behavior. Outgoing message body is untouched; its existing tone conflict and localization remain the Claude handoff below.
+
+- 2026-10-27 · #178 · X12 / T3.11 widget copy · merged; widget labels, full-amount spoken summaries and signed-out guidance use resources; analytics, data sources and widget actions stay unchanged.
+
+- 2026-10-27 · #179 · X12 / T3.11 notification content · merged; channel, daily and payment-reminder text use resources with exact English; privacy redaction, stage accounting and quiet-hour/delivery gates stay unchanged.
+
+- 2026-10-30 · #180 · X12 / T3.11 payment tag spoken labels · merged; Paid by resolves through resources, preserving payment method names/keys and full amounts; real VM/Room save and TalkBack semantics tests.
+
+- 2026-10-30 · #181 · X12 / T3.11 support email drafts; resource templates preserve exact line breaks and user question/answer data; Robolectric captures the draft intent without sending mail · merged.
+
+- 2026-10-30 · #182 · X12 / T3.11 split-name notices; display resources preserve matching rules and exact English, with name/percent/apostrophe parity and real VM/Room coverage · merged.
+
+- 2026-10-30 · #183 · X12 / T3.11 statement warnings; display resources preserve canonical flags, unknown source notes and unticked selection; actual reviewed rows tested, without resuming parked X8 · merged.
+
+- 2026-10-30 · #184 · X12 / T3.11 split self labels; resolve self by ID through entry_you in editable/locked rows, preserving canonical participant data; actual VM/Room save test · merged.
+
 ## Questions
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
 - Parked after two failed Android CI runs: #130 statement re-import (reserve all exact matches before near-date matching); #132 cold-start empty flash (derive readiness from a complete repository snapshot); #139 Home large text (fit the whole balance when animated digits cannot fit); #143 Home strings (await the activity feed as well as analytics in the regression fixture). Leave these PRs open for follow-up.

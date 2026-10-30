@@ -13,6 +13,20 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Changed
+
+- Split participant rows and spoken amount/percentage labels reuse the resource-backed self
+  name, preserving canonical participant data and English (X12 / T3.11; split editor).
+
+- Known statement-review warnings use display resources with unchanged English, flags and
+  selections; unknown source text stays intact (X12 / T3.11; statement warnings).
+
+- Split-name notices use presentation resources with unchanged English and name matching
+  (X12 / T3.11; parsed split notices).
+
+- AI-report email draft labels and device details use string resources with unchanged English
+  and intact question/answer text (X12 / T3.11; support drafts).
+
 ### Fixed
 
 - Money confirmation action bars keep complete amounts and move the action below the summary
@@ -36,6 +50,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   (X10 / REL L5).
 
 ### Added
+
+- Home-screen widget labels, prompts and spoken amounts use string resources while preserving English, complete amounts and signed-out privacy (X12 / T3.11).
+
+- Friend-row Asked today/yesterday/day-count and shared payment-code labels use string resources with unchanged calendar-day/share behavior; outgoing messages remain untouched (X12 / T3.11).
 
 - Shared-group action and recovery notices use string resources with unchanged English and remote/status handling (X12 / T3.11).
 
@@ -309,8 +327,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Changed
 
-- Split participant rows and spoken amount/percentage labels reuse the resource-backed self
-  name, preserving canonical participant data and English (X12 / T3.11; split editor).
+- Payment-method spoken labels use a string resource, preserving custom names and English
+  (X12 / T3.11; payment tags).
+
+- Notification channels, private payment reminders and daily reminder copy use string resources
+  without changing English or redaction (X12 / T3.11).
 
 - PRD.md is now a short page on what the product is and which rules still hold. The September
   brief it replaced (cloud migration, robustness, premium UI pass), which shipped in v1.0–v1.4, is

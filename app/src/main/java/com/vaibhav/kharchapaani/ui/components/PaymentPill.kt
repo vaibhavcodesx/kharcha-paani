@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.vaibhav.kharchapaani.R
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,13 +44,14 @@ fun PaymentPill(method: String, modifier: Modifier = Modifier) {
     val kind = remember(method) { PaymentMethods.kindOf(method) }
     val label = remember(method) { PaymentMethods.shortLabel(method) }
 
+    val spokenLabel = stringResource(R.string.payment_method_spoken, method)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .clip(KpShapes.small)
             .border(1.dp, SubMutedWarmGray.copy(alpha = 0.35f), KpShapes.small)
             .padding(horizontal = 5.dp, vertical = 1.dp)
-            .semantics { contentDescription = "Paid by $method" },
+            .semantics { contentDescription = spokenLabel },
     ) {
         kind.icon?.let {
             Icon(it, contentDescription = null, tint = SubMutedWarmGray, modifier = Modifier.size(11.dp))
