@@ -313,6 +313,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Changed
 
+- Payment-method spoken labels use a string resource, preserving custom names and English
+  (X12 / T3.11; payment tags).
+
 - Notification channels, private payment reminders and daily reminder copy use string resources
   without changing English or redaction (X12 / T3.11).
 

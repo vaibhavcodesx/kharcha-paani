@@ -898,4 +898,6 @@
     <string name="notification_payment_later_title">Still waiting on you: %1$s with %2$s</string>
     <string name="notification_payment_later_body">%1$s, %2$d days ago. It won\'t count until you answer.</string>
     <string name="notification_groupmate">A groupmate</string>
+    <!-- Additional screen strings. -->
+    <string name="payment_method_spoken">Paid by %1$s</string>
 </resources>
