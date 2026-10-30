@@ -1,6 +1,8 @@
 package com.vaibhav.kharchapaani.ui.viewmodel
 
 import android.database.sqlite.SQLiteFullException
+import android.content.Context
+import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.diagnostics.CrashReporting
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -25,6 +27,7 @@ enum class Submit { SaveEntry, ImportStatement, RecordSettlement, RecordIou, Cre
  */
 class Submissions(
     private val scope: CoroutineScope,
+    private val context: Context,
     private val onFailure: (message: String) -> Unit = {},
 ) {
 
@@ -46,7 +49,7 @@ class Submissions(
                 throw e
             } catch (e: Exception) {
                 CrashReporting.recordProblem("$action failed", e)
-                onFailure(failureMessage(e))
+                onFailure(failureMessage(e, context))
             } finally {
                 running.update { it - action }
             }
@@ -55,11 +58,11 @@ class Submissions(
 
     companion object {
         /** What the person is told when a save fails in a way the action itself didn't expect. */
-        fun failureMessage(e: Exception): String = when (e) {
-            is SQLiteFullException -> "Couldn't save. Your phone may be out of space."
+        fun failureMessage(e: Exception, context: Context): String = context.getString(when (e) {
+            is SQLiteFullException -> R.string.action_notice_space
             // The ledger closed under the save: signing out, or switching accounts, mid-save.
-            is IllegalStateException -> "Couldn't save just now. Try again."
-            else -> "Something went wrong and that wasn't saved. Try again."
-        }
+            is IllegalStateException -> R.string.action_notice_closed
+            else -> R.string.action_notice_unexpected
+        })
     }
 }

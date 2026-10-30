@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import com.vaibhav.kharchapaani.BuildConfig
+import com.vaibhav.kharchapaani.R
 
 /** Writing to the person who makes the app: feedback, and reporting an AI answer. */
 object Support {
@@ -19,8 +20,8 @@ object Support {
      * has no mail app.
      */
     fun email(context: Context, subject: String, body: String): Boolean {
-        val details = "\n\n—\nKharcha Paani ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · " +
-            "${Build.MANUFACTURER} ${Build.MODEL} · Android ${Build.VERSION.RELEASE}"
+        val details = context.getString(R.string.support_device_details, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE,
+            Build.MANUFACTURER, Build.MODEL, Build.VERSION.RELEASE)
         val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:"))
             .putExtra(Intent.EXTRA_EMAIL, arrayOf(EMAIL))
             .putExtra(Intent.EXTRA_SUBJECT, subject)
@@ -36,7 +37,7 @@ object Support {
     /** Play's AI-generated content policy: an AI answer someone finds wrong or offensive can be reported. */
     fun reportAiAnswer(context: Context, question: String, answer: String): Boolean = email(
         context,
-        subject = "Reporting an AI answer",
-        body = "What was wrong with it:\n\n\nThe question: $question\nThe answer:\n$answer",
+        subject = context.getString(R.string.support_ai_report_subject),
+        body = context.getString(R.string.support_ai_report_body, question, answer),
     )
 }

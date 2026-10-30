@@ -56,6 +56,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -318,7 +319,7 @@ class MainActivity : ComponentActivity() {
             null -> {
                 if (intent.action == Intent.ACTION_SEND &&
                     (intent.type?.startsWith("image/") == true || intent.type == "application/pdf")) {
-                    viewModel.showMessage("Couldn't open that file.")
+                    viewModel.showMessage(getString(R.string.shell_copy_file_failed))
                 }
             }
         }
@@ -337,7 +338,7 @@ private const val SPLASH_MAX_MILLIS = 1_500L
 @Composable
 private fun LoadingBrandMark() {
     Box(Modifier.fillMaxSize().background(CharcoalBg).testTag("loading_brand_mark"), contentAlignment = Alignment.Center) {
-        Image(painterResource(R.drawable.ic_launcher_foreground), contentDescription = "Kharcha Paani", modifier = Modifier.size(288.dp))
+        Image(painterResource(R.drawable.ic_launcher_foreground), contentDescription = stringResource(R.string.app_name), modifier = Modifier.size(288.dp))
     }
 }
 
@@ -511,7 +512,7 @@ fun SplitFlowApp(
             try {
                 context.startActivity(intent)
             } catch (e: ActivityNotFoundException) {
-                viewModel.showMessage("Open your phone's settings and turn on notifications for Kharcha Paani.")
+                viewModel.showMessage(context.getString(R.string.shell_copy_notifications))
             }
         }
     }
@@ -537,7 +538,7 @@ fun SplitFlowApp(
             try {
                 undone = snackbarHostState.showSnackbar(
                     message = prompt.message,
-                    actionLabel = "Undo",
+                    actionLabel = context.getString(R.string.shell_copy_undo),
                     duration = SnackbarDuration.Long,
                 ) == SnackbarResult.ActionPerformed
             } finally {
@@ -823,7 +824,7 @@ fun SplitFlowApp(
                     takeBillPhoto.launch(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
                 } catch (e: ActivityNotFoundException) {
                     cameraFile = null
-                    viewModel.showMessage("No camera app on this phone. Choose a photo from the gallery instead.")
+                    viewModel.showMessage(context.getString(R.string.shell_copy_camera_missing))
                 }
             }
             BillPhotoSource.Gallery -> pickBillPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
@@ -1073,14 +1074,14 @@ fun SplitFlowApp(
     }
 }
 
-private fun shareInviteLink(context: Context, groupName: String, link: String) {
+internal fun shareInviteLink(context: Context, groupName: String, link: String) {
     val send = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, "Join \"$groupName\" on Kharcha Paani to split expenses together: $link")
+        putExtra(Intent.EXTRA_TEXT, context.getString(R.string.shell_copy_invite, groupName, link))
     }
     // The system chooser is nearly always there, but not on every stripped-down ROM.
     try {
-        context.startActivity(Intent.createChooser(send, "Share invite"))
+        context.startActivity(Intent.createChooser(send, context.getString(R.string.shell_copy_share_invite)))
     } catch (e: ActivityNotFoundException) {
         Log.w("MainActivity", "No app to share the invite with", e)
     }

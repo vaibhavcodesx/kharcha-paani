@@ -34,7 +34,7 @@ object GroupInsights {
      * Each member's share of the group's spending, largest first. A member's share is what the
      * splits say is theirs; an expense with no split is all the payer's, as the balances treat it.
      */
-    fun memberShares(expenses: List<FullTransaction>, members: List<PersonEntity>, myName: String = "You", myColor: String = MY_COLOR): List<MemberShare> {
+    fun memberShares(expenses: List<FullTransaction>, members: List<PersonEntity>, myName: String = "You", myColor: String = MY_COLOR, formerName: String = "Former member"): List<MemberShare> {
         val paisa = mutableMapOf<Long, Long>()
         for (expense in expenses) {
             if (expense.transaction.type.equals("income", ignoreCase = true)) continue
@@ -55,7 +55,7 @@ object GroupInsights {
             .map { (personId, amount) ->
                 MemberShare(
                     personId = personId,
-                    name = if (personId == ME) myName else names[personId]?.name ?: "Former member",
+                    name = if (personId == ME) myName else names[personId]?.name ?: formerName,
                     // A person whose row has gone still needs a colour, and it must not be MY_COLOR.
                     colorHex = if (personId == ME) myColor else names[personId]?.avatarColor ?: FORMER_MEMBER_COLOR,
                     amount = amount / 100.0,
@@ -66,10 +66,10 @@ object GroupInsights {
     }
 
     /** Who owes whom inside this group, after settlements, in as few payments as the greedy pass finds. */
-    fun owesWhom(expenses: List<FullTransaction>, settlements: List<SettlementEntity>, members: List<PersonEntity>): List<SimplifiedDebt> {
+    fun owesWhom(expenses: List<FullTransaction>, settlements: List<SettlementEntity>, members: List<PersonEntity>, myName: String = "You", formerName: String = "Former member"): List<SimplifiedDebt> {
         val names = members.associateBy { it.id }
-        return DebtSimplifier.simplifyPositions(GroupBalances.netPositions(expenses, settlements)) { personId ->
-            if (personId == ME) "You" else names[personId]?.name ?: "Former member"
+        return DebtSimplifier.simplifyPositions(GroupBalances.netPositions(expenses, settlements), myName = myName) { personId ->
+            if (personId == ME) myName else names[personId]?.name ?: formerName
         }
     }
 

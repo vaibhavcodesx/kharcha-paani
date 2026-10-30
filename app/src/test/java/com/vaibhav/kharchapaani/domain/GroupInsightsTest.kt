@@ -89,4 +89,15 @@ class GroupInsightsTest {
         assertEquals(60f, totals.first().percentage, 0.01f)
         assertEquals(100f, totals.map { it.percentage }.sum(), 0.01f)
     }
+    @Test
+    fun `display labels can be supplied without changing positions or amounts`() {
+        val shares = GroupInsights.memberShares(expenses, listOf(priya), myName = "Self label", formerName = "Former label")
+        assertEquals("Self label", shares.single { it.personId == -1L }.name)
+        assertEquals("Former label", shares.single { it.personId == 3L }.name)
+        assertEquals(1500.0, shares.sumOf { it.amount }, 0.0)
+        val debt = GroupInsights.owesWhom(expenses, emptyList(), listOf(priya), myName = "Self label", formerName = "Former label").single()
+        assertEquals("Former label" to "Self label", debt.fromPersonName to debt.toPersonName)
+        assertEquals(300.0, debt.amount, 0.0)
+    }
+
 }

@@ -150,6 +150,7 @@ class GroupSettlementsViewTest {
         compose.onNode(hasTestTag("group_settlement_11") and hasText("Waiting for confirmation", substring = true)).assertExists()
         compose.onNode(hasTestTag("group_settlement_12") and hasText("Not confirmed", substring = true)).assertExists()
         compose.onNode(hasTestTag("group_settlement_10") and hasText("Rohan paid Priya")).assertExists()
+        compose.onNode(hasTestTag("group_settlement_13") and hasText("You lent Rohan")).assertExists()
         compose.onNodeWithTag("group_history_all").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         compose.onNodeWithTag("group_expense_1").performScrollTo().assertIsDisplayed()
     }

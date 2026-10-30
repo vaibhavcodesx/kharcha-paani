@@ -61,6 +61,7 @@ import androidx.compose.ui.res.stringResource
 import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -159,8 +160,10 @@ fun GroupDetailContent(
     val accent = remember(group.colorHex) { parseColor(group.colorHex) }
     val net = groupDetails.netBalanceForMe
     val myColour = LocalMyColour.current.hex
-    val shares = remember(groupDetails, myColour) { GroupInsights.memberShares(groupDetails.transactions, groupDetails.members, myColor = myColour) }
-    val debts = remember(groupDetails) { GroupInsights.owesWhom(groupDetails.transactions, groupDetails.settlements, groupDetails.members) }
+    val myName = stringResource(R.string.group_people_you)
+    val formerName = stringResource(R.string.group_people_former)
+    val shares = remember(groupDetails, myColour, myName, formerName) { GroupInsights.memberShares(groupDetails.transactions, groupDetails.members, myName = myName, myColor = myColour, formerName = formerName) }
+    val debts = remember(groupDetails, myName, formerName) { GroupInsights.owesWhom(groupDetails.transactions, groupDetails.settlements, groupDetails.members, myName = myName, formerName = formerName) }
     val categories = remember(groupDetails) { GroupInsights.categoryTotals(groupDetails.transactions) }
 
     SheetScaffold(
@@ -325,7 +328,7 @@ fun GroupDetailContent(
                                 GroupExpenseRow(
                                     expense = expense,
                                     people = people,
-                                    detail = stringResource(R.string.group_detail_date_credit, dateFormat.format(Date(expense.transaction.date)), GroupExpenseCredit.line(expense, groupDetails.members)),
+                                    detail = stringResource(R.string.group_detail_date_credit, dateFormat.format(Date(expense.transaction.date)), GroupExpenseCredit.line(LocalContext.current, expense, groupDetails.members)),
                                     position = RowPosition.of(index, entries.size),
                                     onClick = if (!group.isArchived && expense.canEdit) ({ onEditTransaction(expense) }) else null,
                                 )
@@ -377,7 +380,7 @@ fun GroupDetailContent(
                     is GroupFeedEntry.Expense -> GroupExpenseRow(
                         expense = entry.transaction,
                         people = people,
-                        detail = stringResource(R.string.group_detail_date_credit, dateFormat.format(Date(entry.date)), GroupExpenseCredit.line(entry.transaction, groupDetails.members)),
+                        detail = stringResource(R.string.group_detail_date_credit, dateFormat.format(Date(entry.date)), GroupExpenseCredit.line(LocalContext.current, entry.transaction, groupDetails.members)),
                         position = position,
                         // Whoever added it or paid for it can edit it (item 11).
                         onClick = if (entry.transaction.canEdit) ({ onEditTransaction(entry.transaction) }) else null,
@@ -404,7 +407,7 @@ private fun GroupMovementRow(
 ) {
     val incoming = GroupFeed.isIncoming(settlement)
     val accent = if (incoming) ChartreuseSecondary else WarmAmberLight
-    val title = remember(settlement, members) { GroupFeed.describe(settlement, members) }
+    val title = GroupFeed.describe(LocalContext.current, settlement, members)
     val status = when (settlement.pendingResponse ?: settlement.status) {
         SettlementStatus.CONFIRMED -> stringResource(R.string.group_detail_confirmed)
         SettlementStatus.PENDING -> stringResource(R.string.group_detail_pending)

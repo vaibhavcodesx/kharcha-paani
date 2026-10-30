@@ -21,6 +21,7 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class PersonLedgerTest {
+    private val context = ApplicationProvider.getApplicationContext<android.content.Context>()
 
     private val db: AppDatabase = Room
         .inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), AppDatabase::class.java)
@@ -51,7 +52,7 @@ class PersonLedgerTest {
         repository.recordSettlement(fromPersonId = rohan, toPersonId = -1L, amount = 20.0, isIou = false)
         repository.recordSettlement(fromPersonId = -1L, toPersonId = rohan, amount = 500.0, isIou = true)
 
-        val rows = repository.getLedgerForPerson(rohan).first()
+        val rows = repository.getLedgerForPerson(rohan, context).first()
 
         assertEquals("You paid ₹150.50 · their share ₹75.25", rows.single { it.title == "Dinner" }.subtitle)
         assertEquals("They paid ₹90 · your share ₹45", rows.single { it.title == "Auto" }.subtitle)
@@ -90,7 +91,7 @@ class PersonLedgerTest {
             splitType = "equal",
         )
 
-        val rows = repository.getLedgerForPerson(rohan).first()
+        val rows = repository.getLedgerForPerson(rohan, context).first()
         val balance = repository.personBalances.first().single { it.person.id == rohan }.netBalance
 
         assertEquals(800.0, balance, 0.001)
@@ -112,7 +113,7 @@ class PersonLedgerTest {
             splitType = "equal",
         )
 
-        val rows = repository.getLedgerForPerson(rohan).first()
+        val rows = repository.getLedgerForPerson(rohan, context).first()
         val balance = repository.personBalances.first().single { it.person.id == rohan }.netBalance
         val hisaab = com.vaibhav.kharchapaani.domain.HisaabItemiser.itemise(rows)!!
 

@@ -40,6 +40,7 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class LocalBackupRoundTripTest {
+    private val copyContext = ApplicationProvider.getApplicationContext<android.content.Context>()
 
     private lateinit var source: AppDatabase
     private lateinit var target: AppDatabase
@@ -335,7 +336,7 @@ class LocalBackupRoundTripTest {
     fun `the exported file is readable back`() = runTest {
         seed()
 
-        val decoded = LocalBackup.decode(LocalBackup.encode(exported()))
+        val decoded = LocalBackup.decode(copyContext, LocalBackup.encode(exported()))
 
         assertNotNull(decoded)
         assertTrue(decoded is com.vaibhav.kharchapaani.domain.BackupReadResult.Ok)

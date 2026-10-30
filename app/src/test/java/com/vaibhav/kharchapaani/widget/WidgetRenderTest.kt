@@ -32,7 +32,7 @@ class WidgetRenderTest {
 
     @Test
     fun `the card shows the month, today and the balance, with every button`() {
-        val card = applied(SplitFlowWidgetProvider.render(context, WidgetSummary.of(18420.25, 0.0, -415.5, todaySpent = 120.0)))
+        val card = applied(SplitFlowWidgetProvider.render(context, WidgetSummary.of(context, 18420.25, 0.0, -415.5, todaySpent = 120.0)))
 
         assertEquals("You owe ₹415.50", card.text(R.id.widget_net_owed_badge))
         assertEquals(WidgetSummary.MONEY_OUT, card.findViewById<TextView>(R.id.widget_net_owed_badge).currentTextColor)
@@ -47,7 +47,7 @@ class WidgetRenderTest {
 
     @Test
     fun `signed out, the card shows no figures and no splits to open`() {
-        val card = applied(SplitFlowWidgetProvider.render(context, WidgetSummary.signedOut()))
+        val card = applied(SplitFlowWidgetProvider.render(context, WidgetSummary.signedOut(context)))
 
         assertEquals("Sign in", card.text(R.id.widget_net_owed_badge))
         assertEquals("—", card.text(R.id.widget_today))
@@ -57,16 +57,16 @@ class WidgetRenderTest {
 
     @Test
     fun `the bar asks what you spent on and shows today`() {
-        val bar = applied(QuickAddWidgetProvider.render(context, WidgetSummary.of(0.0, 0.0, 0.0, todaySpent = 89.0)))
+        val bar = applied(QuickAddWidgetProvider.render(context, WidgetSummary.of(context, 0.0, 0.0, 0.0, todaySpent = 89.0)))
 
-        assertEquals(WidgetSummary.PROMPT, bar.text(R.id.quick_hint))
+        assertEquals("What did you spend on?", bar.text(R.id.quick_hint))
         assertEquals("₹89", bar.text(R.id.quick_today))
         assertEquals(View.VISIBLE, bar.findViewById<View>(R.id.quick_today_block).visibility)
     }
 
     @Test
     fun `signed out, the bar says to sign in and hides today`() {
-        val bar = applied(QuickAddWidgetProvider.render(context, WidgetSummary.signedOut()))
+        val bar = applied(QuickAddWidgetProvider.render(context, WidgetSummary.signedOut(context)))
 
         assertEquals("Sign in to start logging", bar.text(R.id.quick_hint))
         assertEquals(View.GONE, bar.findViewById<View>(R.id.quick_today_block).visibility)
