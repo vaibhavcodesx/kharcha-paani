@@ -15,6 +15,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Changed
 
+- Split participant rows and spoken amount/percentage labels reuse the resource-backed self
+  name, preserving canonical participant data and English (X12 / T3.11; split editor).
+
 - Known statement-review warnings use display resources with unchanged English, flags and
   selections; unknown source text stays intact (X12 / T3.11; statement warnings).
 
