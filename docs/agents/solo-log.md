@@ -129,6 +129,8 @@ owner or Claude go at the bottom.
 
 - 2026-10-30 · #182 · X12 / T3.11 split-name notices; display resources preserve matching rules and exact English, with name/percent/apostrophe parity and real VM/Room coverage · merged.
 
+- 2026-10-30 · #183 · X12 / T3.11 statement warnings; display resources preserve canonical flags, unknown source notes and unticked selection; actual reviewed rows tested, without resuming parked X8 · merged.
+
 ## Questions
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
 - Parked after two failed Android CI runs: #130 statement re-import (reserve all exact matches before near-date matching); #132 cold-start empty flash (derive readiness from a complete repository snapshot); #139 Home large text (fit the whole balance when animated digits cannot fit); #143 Home strings (await the activity feed as well as analytics in the regression fixture). Leave these PRs open for follow-up.

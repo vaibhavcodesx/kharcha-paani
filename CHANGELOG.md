@@ -15,6 +15,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Changed
 
+- Known statement-review warnings use display resources with unchanged English, flags and
+  selections; unknown source text stays intact (X12 / T3.11; statement warnings).
+
 - Split-name notices use presentation resources with unchanged English and name matching
   (X12 / T3.11; parsed split notices).
 

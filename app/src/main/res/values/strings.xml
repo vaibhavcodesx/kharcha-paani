@@ -913,4 +913,9 @@
         <item quantity="one">%1$s isn\'t in %2$s, so they\'re not in its split.</item>
         <item quantity="other">%1$s aren\'t in %2$s, so they\'re not in its split.</item>
     </plurals>
+    <!-- Additional screen strings. -->
+    <string name="statement_warning_no_date">Couldn\'t read its date: it would be added as today</string>
+    <string name="statement_warning_future">Dated after today</string>
+    <string name="statement_warning_large">Much bigger than the rest of this statement</string>
+    <string name="statement_warning_outside">Outside the statement\'s dates (%1$s)</string>
 </resources>
