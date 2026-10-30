@@ -121,6 +121,8 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #178 · X12 / T3.11 widget copy · merged; widget labels, full-amount spoken summaries and signed-out guidance use resources; analytics, data sources and widget actions stay unchanged.
 
+- 2026-10-30 · #185 · documentation handoff · merged; refreshed the owner progress report and technical checkpoint after the six-PR queue completed (56 product merged, 0 prepared, 4 parked). Validated links/register/log/resource/scope checks; relocated the misplaced 179/180 entries to Unreleased without changing release headings. Independent review found no issues in 180–184; their new automated review jobs also passed, without changing the historical failed-review record. Phone/protected handoffs remain. Docs PR excluded from product counts.
+
 - 2026-10-27 · #179 · X12 / T3.11 notification content · merged; channel, daily and payment-reminder text use resources with exact English; privacy redaction, stage accounting and quiet-hour/delivery gates stay unchanged.
 
 - 2026-10-30 · #180 · X12 / T3.11 payment tag spoken labels · merged; Paid by resolves through resources, preserving payment method names/keys and full amounts; real VM/Room save and TalkBack semantics tests.
@@ -134,6 +136,7 @@ owner or Claude go at the bottom.
 - 2026-10-30 · #184 · X12 / T3.11 split self labels; resolve self by ID through entry_you in editable/locked rows, preserving canonical participant data; actual VM/Room save test · merged.
 
 ## Questions
+
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
 - Parked after two failed Android CI runs: #130 statement re-import (reserve all exact matches before near-date matching); #132 cold-start empty flash (derive readiness from a complete repository snapshot); #139 Home large text (fit the whole balance when animated digits cannot fit); #143 Home strings (await the activity feed as well as analytics in the regression fixture). Leave these PRs open for follow-up.
 - X12 handoff: Home copy remains in parked #143. Account/reminder rows in protected AccountSheet, auth/profile/deletion behavior copy and #103 remain untouched. Protected AI prompt instructions and generated/source text are not UI resources. This is not a complete Hindi build.

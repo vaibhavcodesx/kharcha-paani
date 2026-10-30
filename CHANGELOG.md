@@ -15,6 +15,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Changed
 
+- Notification channels, private payment reminders and daily reminder copy use string resources
+  without changing English or redaction (X12 / T3.11).
+
+- Payment-method spoken labels use a string resource, preserving custom names and English
+  (X12 / T3.11; payment tags).
+
 - Split participant rows and spoken amount/percentage labels reuse the resource-backed self
   name, preserving canonical participant data and English (X12 / T3.11; split editor).
 
@@ -50,6 +56,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   (X10 / REL L5).
 
 ### Added
+
+- A dated solo-progress report and Codex restart guide preserve the verified PR queue, parked
+  work and remaining phone/protected-file checks (documentation handoff).
 
 - Home-screen widget labels, prompts and spoken amounts use string resources while preserving English, complete amounts and signed-out privacy (X12 / T3.11).
 
@@ -326,12 +335,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   existing app, cold launch, shared text, invite links, widgets in the background).
 
 ### Changed
-
-- Payment-method spoken labels use a string resource, preserving custom names and English
-  (X12 / T3.11; payment tags).
-
-- Notification channels, private payment reminders and daily reminder copy use string resources
-  without changing English or redaction (X12 / T3.11).
 
 - PRD.md is now a short page on what the product is and which rules still hold. The September
   brief it replaced (cloud migration, robustness, premium UI pass), which shipped in v1.0–v1.4, is
