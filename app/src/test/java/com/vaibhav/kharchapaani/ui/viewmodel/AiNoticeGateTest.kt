@@ -2,6 +2,10 @@ package com.vaibhav.kharchapaani.ui.viewmodel
 
 import android.app.Application
 import androidx.room.Room
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.first
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
 import androidx.work.testing.SynchronousExecutor
@@ -13,7 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
@@ -45,6 +49,8 @@ class AiNoticeGateTest {
     private val application = ApplicationProvider.getApplicationContext<Application>()
     private val userId = "11111111-2222-3333-4444-555555555555"
     private val calls = AtomicInteger()
+    private val dispatcher = StandardTestDispatcher()
+    private val store = ViewModelStore()
     private lateinit var db: AppDatabase
     private lateinit var viewModel: MainViewModel
 
@@ -68,21 +74,25 @@ class AiNoticeGateTest {
 
     @Before
     fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        Dispatchers.setMain(dispatcher)
         WorkManagerTestInitHelper.initializeTestWorkManager(application, Configuration.Builder().setExecutor(SynchronousExecutor()).build())
         // App settings outlive a test under Robolectric; every test starts before the notice.
         runBlocking { AppSettings(application).setAiNoticeAccepted(false) }
         db = Room.inMemoryDatabaseBuilder(application, AppDatabase::class.java).allowMainThreadQueries().build()
         viewModel = MainViewModel(application, db, userId, geminiRepo = gemini)
+        store.put("main", viewModel)
     }
 
     @After
-    fun tearDown() {
+    fun tearDown(): Unit = runBlocking {
+        val job = viewModel.viewModelScope.coroutineContext[Job]!!
+        store.clear()
+        until { job.isCompleted }
         db.close()
         Dispatchers.resetMain()
     }
 
-    private suspend fun until(condition: () -> Boolean) = withTimeout(10_000) { while (!condition()) delay(20) }
+    private suspend fun until(condition: () -> Boolean) = withTimeout(10_000) { while (!condition()) { dispatcher.scheduler.runCurrent(); delay(20) } }
 
     @Test
     fun `a quick add waits for the notice, and Type it myself fills it in on the phone`() = runBlocking {
@@ -107,8 +117,9 @@ class AiNoticeGateTest {
         until { calls.get() == 1 && viewModel.isConfirmSheetOpen.value }
         viewModel.dismissConfirmSheet()
 
-        // The acceptance is stored; give it a moment to land, as it would between two entries.
-        delay(300)
+        // Await the actual persisted acceptance, then deliver queued ViewModel flow updates.
+        AppSettings(application).aiNoticeAccepted.first { it }
+        dispatcher.scheduler.runCurrent()
         viewModel.parseInputText("auto 120")
 
         assertFalse(viewModel.isAiNoticeOpen.value)

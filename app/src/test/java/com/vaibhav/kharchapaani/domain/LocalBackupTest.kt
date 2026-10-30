@@ -4,6 +4,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import androidx.test.core.app.ApplicationProvider
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * The backup file's shape and the promises made about it.
@@ -14,7 +18,10 @@ import org.junit.Test
  * mistake: a doc once claimed local friends were backed up to the server. They are not, and there
  * is no `people` table for them to live in, which is the whole reason this file format exists.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36])
 class LocalBackupTest {
+    private val copyContext = ApplicationProvider.getApplicationContext<android.content.Context>()
 
     private val person = BackupPerson(name = "Offline_Friend", avatarColor = "#F2D06B", createdAt = 1_000L)
 
@@ -61,7 +68,7 @@ class LocalBackupTest {
             settings = BackupSettings(customCategories = listOf("Sample_Category"), askBeforeDiscarding = true),
         )
 
-        val decoded = LocalBackup.decode(LocalBackup.encode(original))
+        val decoded = LocalBackup.decode(copyContext, LocalBackup.encode(original))
 
         assertTrue(decoded is BackupReadResult.Ok)
         assertEquals(original, (decoded as BackupReadResult.Ok).backup)
@@ -73,7 +80,7 @@ class LocalBackupTest {
         // Writing it as null rather than as "You" keeps it from colliding with a friend called You.
         val settlement = BackupSettlement(fromName = "Offline_Friend", toName = null, amount = 25.0, date = 1L, createdAt = 1L)
 
-        val decoded = LocalBackup.decode(LocalBackup.encode(backup(settlements = listOf(settlement))))
+        val decoded = LocalBackup.decode(copyContext, LocalBackup.encode(backup(settlements = listOf(settlement))))
 
         assertEquals(null, ((decoded as BackupReadResult.Ok).backup).settlements.single().toName)
     }
@@ -83,9 +90,9 @@ class LocalBackupTest {
     @Test
     fun `something that isn't a backup is reported, not thrown`() {
         // The one input here chosen entirely by hand from a file picker.
-        assertEquals(BackupReadResult.Unreadable, LocalBackup.decode("not json at all"))
-        assertEquals(BackupReadResult.Unreadable, LocalBackup.decode(""))
-        assertEquals(BackupReadResult.Unreadable, LocalBackup.decode("""{"unrelated":"object"}"""))
+        assertEquals(BackupReadResult.Unreadable, LocalBackup.decode(copyContext, "not json at all"))
+        assertEquals(BackupReadResult.Unreadable, LocalBackup.decode(copyContext, ""))
+        assertEquals(BackupReadResult.Unreadable, LocalBackup.decode(copyContext, """{"unrelated":"object"}"""))
     }
 
     @Test
@@ -95,7 +102,7 @@ class LocalBackupTest {
             "\"version\": ${LocalBackup.FORMAT_VERSION + 1}",
         )
 
-        val result = LocalBackup.decode(future)
+        val result = LocalBackup.decode(copyContext, future)
 
         assertTrue(result is BackupReadResult.TooNew)
         assertEquals(LocalBackup.FORMAT_VERSION + 1, (result as BackupReadResult.TooNew).version)
@@ -105,7 +112,7 @@ class LocalBackupTest {
     fun `a field added by a later version doesn't make an older app reject the file`() {
         val extended = LocalBackup.encode(backup()).replaceFirst("{", """{"something_new": 5,""")
 
-        assertTrue(LocalBackup.decode(extended) is BackupReadResult.Ok)
+        assertTrue(LocalBackup.decode(copyContext, extended) is BackupReadResult.Ok)
     }
 
     // --- Emptiness
@@ -129,7 +136,7 @@ class LocalBackupTest {
             subscriptions = listOf(
                 BackupSubscription(name = "S", amount = 1.0, category = "Bills", paymentMethod = "Cash", cycle = "MONTHLY", startDate = 1L, createdAt = 1L)
             ),
-        ).summary()
+        ).summary(copyContext)
 
         assertEquals("1 friend, 1 subscription", summary)
     }
@@ -140,7 +147,7 @@ class LocalBackupTest {
         // people of the friends and subscriptions v1 *did* capture.
         val v1 = """{"version":1,"exported_at":1,"app_version":"1.0.0","people":[],"splits":[]}"""
 
-        assertTrue(LocalBackup.decode(v1) is BackupReadResult.Ok)
+        assertTrue(LocalBackup.decode(copyContext, v1) is BackupReadResult.Ok)
     }
 
     @Test
@@ -149,14 +156,14 @@ class LocalBackupTest {
         // not report a success that leaves you wondering whether it duplicated the lot.
         val report = RestoreReport(peopleSkipped = 2, subscriptionsSkipped = 1)
 
-        assertEquals("Everything in that backup was already here. Nothing changed.", report.message())
+        assertEquals("Everything in that backup was already here. Nothing changed.", report.message(copyContext))
     }
 
     @Test
     fun `a partial restore reports both halves`() {
         val report = RestoreReport(peopleAdded = 1, subscriptionsSkipped = 2)
 
-        assertEquals("Restored 1 item; 2 were already here.", report.message())
+        assertEquals("Restored 1 item; 2 were already here.", report.message(copyContext))
     }
 
     @Test

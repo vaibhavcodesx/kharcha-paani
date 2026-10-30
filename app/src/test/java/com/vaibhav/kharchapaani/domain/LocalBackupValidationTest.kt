@@ -3,9 +3,16 @@ package com.vaibhav.kharchapaani.domain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import androidx.test.core.app.ApplicationProvider
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /** A backup that parses still has to hold numbers a ledger can take. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36])
 class LocalBackupValidationTest {
+    private val copyContext = ApplicationProvider.getApplicationContext<android.content.Context>()
 
     private fun tx(amount: Double = 300.0, split: BackupSplit? = null, type: String = "expense") = BackupTransaction(
         type = type, amount = amount, category = "Food", merchant = "Dinner", paymentMethod = "UPI", date = 1L, createdAt = 1L, split = split,
@@ -15,7 +22,7 @@ class LocalBackupValidationTest {
         BackupSplit(totalAmount = total, splitType = type, shares = shares.mapIndexed { i, a -> BackupShare(name = if (i == 0) null else "Rohan", amount = a) })
 
     private fun read(vararg transactions: BackupTransaction, settlements: List<BackupSettlement> = emptyList(), subscriptions: List<BackupSubscription> = emptyList()) =
-        LocalBackup.decode(LocalBackup.encode(LocalBackup(exportedAt = 1L, appVersion = "test", transactions = transactions.toList(), settlements = settlements, subscriptions = subscriptions)))
+        LocalBackup.decode(copyContext, LocalBackup.encode(LocalBackup(exportedAt = 1L, appVersion = "test", transactions = transactions.toList(), settlements = settlements, subscriptions = subscriptions)))
 
     private fun problem(result: BackupReadResult) = (result as BackupReadResult.Invalid).problem
 

@@ -33,6 +33,7 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class PersonBalanceOneSourceTest {
+    private val context = ApplicationProvider.getApplicationContext<android.content.Context>()
 
     private val db: AppDatabase = Room
         .inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), AppDatabase::class.java)
@@ -136,7 +137,7 @@ class PersonBalanceOneSourceTest {
         seed()
 
         for (person in listOf(rohan, bob, ravi, meera)) {
-            val rows = repository.getLedgerForPerson(person).first()
+            val rows = repository.getLedgerForPerson(person, context).first()
             assertEquals("person $person", balance(person).netBalance, rows.sumOf { it.netChange }, 0.001)
         }
     }
@@ -148,7 +149,7 @@ class PersonBalanceOneSourceTest {
         fun s(name: String) = "split_${splitIds.getValue(name)}"
         fun g(name: String) = "guest_${splitIds.getValue(name)}"
         fun p(key: String) = "settlement_${settlementIds.getValue(key)}"
-        suspend fun history(personId: Long) = repository.getLedgerForPerson(personId).first().map { it.id to it.netChange }
+        suspend fun history(personId: Long) = repository.getLedgerForPerson(personId, context).first().map { it.id to it.netChange }
 
         assertEquals(
             listOf(p("iLentRohan") to 500.0, s("Lunch") to -40.0, s("Cafe") to 33.33, s("Auto") to -45.0, s("Dinner") to 75.25, p("rohanPaid") to -20.0),
