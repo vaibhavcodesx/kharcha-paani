@@ -37,6 +37,7 @@ import java.io.File
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class RestorePreviewTest {
+    private val copyContext = ApplicationProvider.getApplicationContext<android.content.Context>()
 
     private val application = ApplicationProvider.getApplicationContext<Application>()
     private lateinit var db: AppDatabase
@@ -71,7 +72,7 @@ class RestorePreviewTest {
         viewModel.importLocalBackup(application, file(LocalBackup.encode(backup)))
 
         val shown = withTimeout(10_000) { viewModel.restorePreview.first { it != null } }
-        assertEquals("1 expense", shown!!.summary())
+        assertEquals("1 expense", shown!!.summary(copyContext))
         assertTrue("nothing restored before it's confirmed", db.transactionDao().getAllTransactionsDirect().isEmpty())
 
         viewModel.confirmRestore()

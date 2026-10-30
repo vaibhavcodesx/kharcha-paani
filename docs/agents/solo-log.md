@@ -89,4 +89,47 @@ owner or Claude go at the bottom.
 
 - 2026-10-27 · #162 · X12 / T3.11 debt management copy · merged; exact English, real-VM friend deletion and empty simplify-state coverage; no debt algorithm changes.
 
+- 2026-10-27 · #163 · X12 / T3.11 UPI card copy · merged; exact English, full amounts and user payee names preserved; QR/URI behavior unchanged.
+
+- 2026-10-27 · #164 · X12 / T3.11 bill-photo copy · merged; exact menu/viewer/spoken English and optional spacing preserved; capture/storage behavior unchanged. First integrated CI 40437543151 exposed SafetyNetTest resetting Dispatchers.Main while its uncancelled ViewModel was reading Room; the fixture now cancels and awaits the real ViewModel before resetting Main, with a StandardTestDispatcher.
+
+- 2026-10-27 · #165 · X12 / T3.11 AI presentation copy · merged; consent, labels, answer errors and parse notices use resources; parity tests preserve English, while protected prompt instructions and generated answers stay untouched. First integrated CI 40438740894 found a missing R import in the added local/bill display lookups; the explicit import fixes compilation.
+
+- 2026-10-27 · #166 · X12 / T3.11 notification-screen copy · merged; exact quiet-hour and nudge English preserved; actual notification-moment dismissal tested. Reminder controls in protected AccountSheet remain a Claude handoff.
+
+- 2026-10-27 · #167 · X12 / T3.11 licence-screen copy · merged; legal names/URLs unchanged. Initial CI 40429560045 failed the AI-notice fixture after a fixed consent delay; it now awaits persistence, drives StandardTestDispatcher and cancels/awaits its ViewModel before closing Room/resetting Main.
+
+- 2026-10-27 · #168 · X12 / T3.11 shared chrome copy · merged; account avatar, month navigation and sync spoken labels use resources; navigation boundaries and sync state logic are unchanged. Android CI 40440799515 passed all three specified gates; both separate Claude-review jobs failed execution with is_error:true and posted no findings. No workflow or settings change.
+
+- 2026-10-27 · #169 · X12 / T3.11 action notices · merged; save/error, deletion, sharing/import/export and backup notices use resources; submission guards and operation order stay unchanged. Preserve #165 parse-display lookups when resolving the shared ViewModel merge.
+
+- 2026-10-27 · #170 · X12 / T3.11 app-shell and update notices · merged; copy/resources only for import/share/Undo/permission/settings/ledger-open errors and downloaded-update restart prompt; release policy and foreground guards unchanged.
+
+- 2026-10-27 · #171 · X12 / T3.11 sign-in presentation copy · merged; labels, agreement/link spacing, backdrop captions and failure explanations use resources; auth requests, permissions and session behavior are untouched.
+
+- 2026-10-27 · #172 · X12 / T3.11 group descriptions · merged; generated payment/IOU credit and self/former/friend labels use resources; exact amounts and English defaults remain. Initial CI 40431999195 exposed the simplifier overriding a supplied self label; its display parameters now pass through, with custom-label/amount tests.
+
+- 2026-10-27 · #173 · X12 / T3.11 activity descriptions · merged; generated payment/IOU titles, age/status/note sentences and search/display fallback labels use resources; roles, filtering and amounts are unchanged. Keep existing resource-backed More options with the localized title when resolving timeline overlap.
+
+- 2026-10-27 · #174 · X12 / T3.11 friend-ledger descriptions · merged; generated history titles/statuses use display resources while numeric balance/current-ask calculations keep the same shared computation; notes and full amounts preserved.
+
+- 2026-10-27 · #176 · X12 / T3.11 shared-group notices · merged; join/invite/leave/error notices resolve resources through an injected display-text function; membership, auth and sync rules unchanged. Re-integrated #175 after its squash merge was confirmed; its first approval attempt was rejected on stale pending-check context, then fresh exact-head green checks authorized the successful retry.
+
+- 2026-10-27 · #175 · X12 / T3.11 backup descriptions · merged; summaries, validation reasons and restore reports use resources; backup JSON fields/version and additive restore behavior unchanged. Consolidate the parked/protected/phone handoffs below.
+
+- 2026-10-27 · #177 · X12 / T3.11 ask display · merged; asked-status and shared-code labels use resources, preserving calendar-day/share behavior. Outgoing message body is untouched; its existing tone conflict and localization remain the Claude handoff below.
+
+- 2026-10-27 · #178 · X12 / T3.11 widget copy · merged; widget labels, full-amount spoken summaries and signed-out guidance use resources; analytics, data sources and widget actions stay unchanged.
+
+- 2026-10-27 · #179 · X12 / T3.11 notification content · merged; channel, daily and payment-reminder text use resources with exact English; privacy redaction, stage accounting and quiet-hour/delivery gates stay unchanged.
+
+- 2026-10-30 · #180 · X12 / T3.11 payment tag spoken labels · merged; Paid by resolves through resources, preserving payment method names/keys and full amounts; real VM/Room save and TalkBack semantics tests.
+
 ## Questions
+- Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
+- Parked after two failed Android CI runs: #130 statement re-import (reserve all exact matches before near-date matching); #132 cold-start empty flash (derive readiness from a complete repository snapshot); #139 Home large text (fit the whole balance when animated digits cannot fit); #143 Home strings (await the activity feed as well as analytics in the regression fixture). Leave these PRs open for follow-up.
+- X12 handoff: Home copy remains in parked #143. Account/reminder rows in protected AccountSheet, auth/profile/deletion behavior copy and #103 remain untouched. Protected AI prompt instructions and generated/source text are not UI resources. This is not a complete Hindi build.
+- Ask-to-pay handoff, #177: the existing partial-ask body says "you owe". The no-wording-change X12 lane cannot resolve that conflict with the outgoing tone rule; Claude should choose friendly wording and localize the body. Status/shared-code labels are handled separately; no question was sent to the owner.
+- Keep canonical category/payment/type IDs, user names/notes, machine-readable CSV/backup fields, URLs/licence metadata and date/format patterns as data. Translation of their display equivalents must preserve stable stored values.
+- Phone verification remains outstanding: each PR has its checklist. Test flexible updates and rare review prompts through a Play-installed build, plus TalkBack/large text and Accessibility Scanner/pre-launch reports. No emulator or phone acceptance is claimed; no release or Supabase work was run.
+- Local Gradle was skipped below the repository's 4 GB free-RAM floor; the three specified Android CI jobs decide each merge. From #168 onward the separate Claude-review automation has failed execution with is_error:true and posted no code findings; Android unit-tests, lint and release-bundle still must pass on each exact head. Safe choice: follow the solo section's explicit three gates; leave workflow/provider repair to Claude and change no repository settings.

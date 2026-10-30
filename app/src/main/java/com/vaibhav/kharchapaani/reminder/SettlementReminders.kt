@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.reminder
 
 import android.content.Context
+import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.domain.NotificationPrefs
@@ -26,18 +27,18 @@ object SettlementReminders {
     /** 0 when it arrives, then 1 on day 3, 2 on day 6… */
     fun stageFor(createdAt: Long, now: Long): Int = (((now - createdAt).coerceAtLeast(0) / DAY_MILLIS) / EVERY_DAYS).toInt()
 
-    fun textFor(settlement: SettlementEntity, otherName: String, stage: Int, now: Long): Pair<String, String> {
+    fun textFor(context: Context, settlement: SettlementEntity, otherName: String, stage: Int, now: Long): Pair<String, String> {
         val amount = Money.format(settlement.amount)
         val theyPaidMe = settlement.toPersonId == -1L
         val what = when {
-            settlement.isIou && theyPaidMe -> "$otherName says they lent you $amount"
-            settlement.isIou -> "$otherName says you lent them $amount"
-            theyPaidMe -> "$otherName says they paid you $amount"
-            else -> "$otherName says you paid them $amount"
+            settlement.isIou && theyPaidMe -> context.getString(R.string.notification_lent_to_you, otherName, amount)
+            settlement.isIou -> context.getString(R.string.notification_you_lent, otherName, amount)
+            theyPaidMe -> context.getString(R.string.notification_paid_to_you, otherName, amount)
+            else -> context.getString(R.string.notification_you_paid, otherName, amount)
         }
-        if (stage == 0) return what to "Confirm it, or say it isn't right. It doesn't count until you do."
+        if (stage == 0) return what to context.getString(R.string.notification_payment_first_body)
         val days = ((now - settlement.createdAt) / DAY_MILLIS).toInt()
-        return "Still waiting on you: $amount with $otherName" to "$what, $days days ago. It won't count until you answer."
+        return context.getString(R.string.notification_payment_later_title, amount, otherName) to context.getString(R.string.notification_payment_later_body, what, days)
     }
 
     /**
@@ -66,8 +67,8 @@ object SettlementReminders {
             val stage = stageFor(settlement.createdAt, now)
             if (stage <= settlement.remindedStage) continue
             val otherId = if (settlement.fromPersonId == -1L) settlement.toPersonId else settlement.fromPersonId
-            val name = db.personDao().getPersonById(otherId)?.name ?: "A groupmate"
-            val (title, body) = textFor(settlement, name, stage, now)
+            val name = db.personDao().getPersonById(otherId)?.name ?: context.getString(R.string.notification_groupmate)
+            val (title, body) = textFor(context, settlement, name, stage, now)
             if (NotificationHelper.showSettlementReminder(context, userId, settlement.id, title, body)) {
                 db.groupSyncDao().setRemindedStage(settlement.id, stage)
                 shown++

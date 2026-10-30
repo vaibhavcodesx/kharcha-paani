@@ -37,6 +37,38 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Home-screen widget labels, prompts and spoken amounts use string resources while preserving English, complete amounts and signed-out privacy (X12 / T3.11).
+
+- Friend-row Asked today/yesterday/day-count and shared payment-code labels use string resources with unchanged calendar-day/share behavior; outgoing messages remain untouched (X12 / T3.11).
+
+- Shared-group action and recovery notices use string resources with unchanged English and remote/status handling (X12 / T3.11).
+
+- Backup summaries, validation reasons and restore reports use string resources with unchanged English, JSON format and additive restore behavior (X12 / T3.11).
+
+- Generated friend-history titles and share/payment descriptions use string resources while retaining the single balance computation and exact amounts (X12 / T3.11).
+
+- Activity movement titles and pending/rejected descriptions use resources with unchanged English, age threshold and response-note quoting (X12 / T3.11).
+
+- Group movement and expense-credit descriptions resolve from string resources with unchanged people, ownership and English wording (X12 / T3.11).
+
+- Sign-in display labels, failure guidance, agreement fragments and decorative preview captions use string resources with unchanged English (X12 / T3.11).
+
+- App-shell/update notices, invite sharing and ledger-open guidance use string resources with unchanged English and callbacks (X12 / T3.11).
+
+- Action/save/import/export notices use string resources with unchanged English and plural choices; ledger behavior stays unchanged (X12 / T3.11).
+
+- Shared account/month controls and spoken sync summaries use string resources with unchanged English and navigation (X12 / T3.11).
+
+- Open-source licence screen labels use string resources; dependency names, licence names and URLs remain unchanged (X12 / T3.11).
+
+- Notification offers and screen labels use string resources with unchanged English and permission behavior (X12 / T3.11).
+
+- AI consent, parse-notice and answer-display copy use string resources with unchanged English; prompt instructions and generated text stay untouched (X12 / T3.11).
+
+- Bill-photo row, source-menu and viewer copy use string resources with unchanged English and photo handling (X12 / T3.11).
+
+- UPI setup and payment-code labels use string resources, preserving English, exact amounts and QR/link data (X12 / T3.11).
+
 - Friend-removal and simplified-debt views use string resources with unchanged English, amounts and confirmation behavior (X12 / T3.11).
 
 - Category/payment preference controls use string resources while names, defaults and saved values stay unchanged (X12 / T3.11).
@@ -283,6 +315,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - Payment-method spoken labels use a string resource, preserving custom names and English
   (X12 / T3.11; payment tags).
+
+- Notification channels, private payment reminders and daily reminder copy use string resources
+  without changing English or redaction (X12 / T3.11).
 
 - PRD.md is now a short page on what the product is and which rules still hold. The September
   brief it replaced (cloud migration, robustness, premium UI pass), which shipped in v1.0–v1.4, is

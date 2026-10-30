@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.groups
 
+import com.vaibhav.kharchapaani.R
+
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
@@ -61,7 +63,10 @@ class SharedGroupsController(
     private val remote: GroupMembershipRemote,
     private val selfProfileId: String,
     private val requestSync: () -> Unit,
+    private val resolveText: (Int, Array<out Any>) -> String,
 ) {
+    private fun copyText(@androidx.annotation.StringRes id: Int, vararg args: Any): String = resolveText(id, args)
+
     private val _state = MutableStateFlow(SharedGroupsUiState())
     val state: StateFlow<SharedGroupsUiState> = _state.asStateFlow()
     private var previewJob: Job? = null
@@ -95,7 +100,7 @@ class SharedGroupsController(
                             join.copy(
                                 preview = preview,
                                 isLoadingPreview = false,
-                                error = if (preview == null) INVALID_CODE else null,
+                                error = if (preview == null) copyText(INVALID_CODE) else null,
                             )
                         },
                         onFailure = { join.copy(isLoadingPreview = false, error = it.message) },
@@ -114,8 +119,8 @@ class SharedGroupsController(
             runRemote { remote.joinGroup(code) }.fold(
                 onSuccess = {
                     requestSync()
-                    val name = join.preview?.groupName ?: "the group"
-                    _state.update { it.copy(join = null, message = "Joined $name. It appears once sync finishes.", justJoined = true) }
+                    val name = join.preview?.groupName ?: copyText(R.string.shared_group_notice_default_name)
+                    _state.update { it.copy(join = null, message = copyText(R.string.shared_group_notice_joined, name), justJoined = true) }
                 },
                 onFailure = { error ->
                     _state.update { it.copy(join = it.join?.copy(isJoining = false, error = error.message)) }
@@ -130,7 +135,7 @@ class SharedGroupsController(
         if (group.syncState != SyncState.SYNCED) {
             requestSync()
             _state.update {
-                it.copy(invite = GroupInviteState(group.id, error = "This group hasn't synced yet. Try again in a moment."))
+                it.copy(invite = GroupInviteState(group.id, error = copyText(R.string.shared_group_notice_not_synced)))
             }
             return
         }
@@ -158,7 +163,7 @@ class SharedGroupsController(
         val code = invite.code ?: return
         scope.launch {
             runRemote { remote.revokeInvite(code) }.fold(
-                onSuccess = { _state.update { it.copy(invite = null, message = "Invite link turned off.") } },
+                onSuccess = { _state.update { it.copy(invite = null, message = copyText(R.string.shared_group_notice_revoked)) } },
                 onFailure = { error -> _state.update { it.copy(invite = invite.copy(error = error.message)) } },
             )
         }
@@ -183,7 +188,7 @@ class SharedGroupsController(
                     repository.removeSharedGroupLocally(group.id)
                     // Callback first: anything observing the "left" state can rely on it having run.
                     onLeft()
-                    _state.update { it.copy(leavingGroupId = null, invite = null, message = "You left ${group.name}.") }
+                    _state.update { it.copy(leavingGroupId = null, invite = null, message = copyText(R.string.shared_group_notice_left, group.name)) }
                 },
                 onFailure = { error -> _state.update { it.copy(leavingGroupId = null, message = error.message) } },
             )
@@ -210,20 +215,20 @@ class SharedGroupsController(
     } catch (e: CancellationException) {
         throw e
     } catch (e: IOException) {
-        Result.failure(Exception(OFFLINE))
+        Result.failure(Exception(copyText(OFFLINE)))
     } catch (e: RestException) {
         Result.failure(Exception(messageFor(e)))
     }
 
     private fun messageFor(e: RestException): String = when {
-        e.error.contains("invalid or expired", ignoreCase = true) -> INVALID_CODE
-        e.statusCode == 401 -> "Your session expired. Sign in again."
-        e.statusCode == 403 || e.error.contains("not a member", ignoreCase = true) -> "You're no longer an active member of this group."
-        else -> "Something went wrong (${e.statusCode}). Try again."
+        e.error.contains("invalid or expired", ignoreCase = true) -> copyText(INVALID_CODE)
+        e.statusCode == 401 -> copyText(R.string.shared_group_notice_session)
+        e.statusCode == 403 || e.error.contains("not a member", ignoreCase = true) -> copyText(R.string.shared_group_notice_membership)
+        else -> copyText(R.string.shared_group_notice_problem, e.statusCode)
     }
 
     companion object {
-        const val INVALID_CODE = "That invite code is invalid or has expired."
-        const val OFFLINE = "You're offline. Connect and try again."
+        @androidx.annotation.StringRes val INVALID_CODE = R.string.shared_group_notice_invalid
+        @androidx.annotation.StringRes val OFFLINE = R.string.shared_group_notice_offline
     }
 }
