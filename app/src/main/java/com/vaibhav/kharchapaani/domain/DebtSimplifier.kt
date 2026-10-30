@@ -31,9 +31,11 @@ object DebtSimplifier {
         people: List<PersonEntity>,
         netBalances: Map<Long, Double>,
         groups: List<Set<Long>>,
+        myName: String = "You",
+        friendName: String = "Friend",
     ): List<SimplifiedDebt> {
         val names = people.associate { it.id to it.name }
-        fun nameOf(id: Long) = if (id == ME) "You" else names[id] ?: "Friend"
+        fun nameOf(id: Long) = if (id == ME) myName else names[id] ?: friendName
         fun shareAGroup(a: Long, b: Long) = groups.any { a in it && b in it }
 
         // Both lists hold what's still unpaid, as positive amounts.
@@ -73,9 +75,9 @@ object DebtSimplifier {
      *
      * @param netPositions personId -> net position (positive = owed money, negative = owes money)
      */
-    fun simplifyPositions(netPositions: Map<Long, Double>, nameOf: (Long) -> String): List<SimplifiedDebt> {
+    fun simplifyPositions(netPositions: Map<Long, Double>, myName: String = "You", nameOf: (Long) -> String): List<SimplifiedDebt> {
         val meId = -1L
-        val meName = "You"
+        val meName = myName
 
         val creditors = mutableListOf<PersonNet>()
         val debtors = mutableListOf<PersonNet>()

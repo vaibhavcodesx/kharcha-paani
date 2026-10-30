@@ -19,7 +19,7 @@ internal object WidgetData {
 
     suspend fun load(context: Context): WidgetSummary {
         // Not auth.awaitInitialization(): in the background that waits until the app is next opened.
-        val userId = BackgroundAuth.signedInUserId(context) ?: return WidgetSummary.signedOut()
+        val userId = BackgroundAuth.signedInUserId(context) ?: return WidgetSummary.signedOut(context)
 
         val repository = LedgerRepository(LedgerDatabases.open(context, userId))
         val analytics = repository.monthlyAnalytics.first()
@@ -30,6 +30,6 @@ internal object WidgetData {
         val todaySpent = DailySpend.of(repository.fullTransactions.first(), YearMonth.from(today), today, zone)
             .firstOrNull { it.date == today }?.amount ?: 0.0
 
-        return WidgetSummary.of(analytics.totalExpense, analytics.totalIncome, netOwedToMe, todaySpent)
+        return WidgetSummary.of(context, analytics.totalExpense, analytics.totalIncome, netOwedToMe, todaySpent)
     }
 }

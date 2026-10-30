@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.widget
 
+import android.content.Context
+import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.ui.format.Money
 import kotlin.math.abs
 
@@ -22,16 +24,14 @@ data class WidgetSummary(
         const val MONEY_OUT = 0xFFFF6F61.toInt()
         const val MUTED = 0xFFA09A8F.toInt()
 
-        const val PROMPT = "What did you spend on?"
-
-        fun of(monthSpent: Double, monthIncome: Double, netOwedToMe: Double, todaySpent: Double = 0.0) = WidgetSummary(
+        fun of(context: Context, monthSpent: Double, monthIncome: Double, netOwedToMe: Double, todaySpent: Double = 0.0) = WidgetSummary(
             spent = Money.format(monthSpent),
             income = Money.format(monthIncome),
             today = Money.format(todaySpent),
             balance = when {
-                netOwedToMe >= 0.005 -> "Owed ${Money.format(netOwedToMe)}"
-                netOwedToMe <= -0.005 -> "You owe ${Money.format(abs(netOwedToMe))}"
-                else -> "All square"
+                netOwedToMe >= 0.005 -> context.getString(R.string.widget_copy_owed, Money.format(netOwedToMe))
+                netOwedToMe <= -0.005 -> context.getString(R.string.widget_copy_owe, Money.format(abs(netOwedToMe)))
+                else -> context.getString(R.string.widget_copy_square)
             },
             // Coral for "you owe", as Home and Splits colour it; off-white read as neutral here.
             balanceColor = when {
@@ -39,18 +39,18 @@ data class WidgetSummary(
                 netOwedToMe <= -0.005 -> MONEY_OUT
                 else -> MUTED
             },
-            hint = PROMPT,
+            hint = context.getString(R.string.widget_copy_prompt),
             signedIn = true,
         )
 
         // Signed out: never show a previous account's numbers on the home screen.
-        fun signedOut() = WidgetSummary(
+        fun signedOut(context: Context) = WidgetSummary(
             spent = "—",
             income = "—",
             today = "—",
-            balance = "Sign in",
+            balance = context.getString(R.string.widget_copy_signin),
             balanceColor = MUTED,
-            hint = "Sign in to start logging",
+            hint = context.getString(R.string.widget_copy_signin_hint),
             signedIn = false,
         )
     }

@@ -101,6 +101,7 @@ import com.vaibhav.kharchapaani.domain.MonthAnalytics
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.domain.SplitTargets
+import com.vaibhav.kharchapaani.ui.format.displayNotice
 import com.vaibhav.kharchapaani.domain.recentSplitGroup
 import com.vaibhav.kharchapaani.ui.components.NewSubscription
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
@@ -502,7 +503,7 @@ class MainViewModel(
         searchQuery,
         selectedFilter
     ) { transactions, settlements, (people, groups), query, filter ->
-        ActivityFeed.build(transactions, settlements, people, groups, query, filter)
+        ActivityFeed.build(getApplication<Application>(), transactions, settlements, people, groups, query, filter)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun retractSettlement(settlementId: Long) {
@@ -538,10 +539,10 @@ class MainViewModel(
         settlements.filter { it.groupId != null }.map { settlement ->
             ActivityItem.Settlement(
                 settlement,
-                fromName = if (settlement.fromPersonId == -1L) "You" else names[settlement.fromPersonId] ?: "Someone",
-                toName = if (settlement.toPersonId == -1L) "You" else names[settlement.toPersonId] ?: "Someone",
+                fromName = if (settlement.fromPersonId == -1L) getApplication<Application>().getString(R.string.activity_description_you) else names[settlement.fromPersonId] ?: getApplication<Application>().getString(R.string.activity_description_someone),
+                toName = if (settlement.toPersonId == -1L) getApplication<Application>().getString(R.string.activity_description_you) else names[settlement.toPersonId] ?: getApplication<Application>().getString(R.string.activity_description_someone),
                 groupName = settlement.groupId?.let(groupNames::get),
-                recordedByName = settlement.recordedByPersonId?.let { id -> if (id == -1L) "You" else names[id] },
+                recordedByName = settlement.recordedByPersonId?.let { id -> if (id == -1L) getApplication<Application>().getString(R.string.activity_description_you) else names[id] },
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -669,7 +670,7 @@ class MainViewModel(
     /** What the friend on the settle sheet owes you, line by line, for asking them to pay (ask-to-pay). */
     @OptIn(ExperimentalCoroutinesApi::class)
     val settleUpHisaab: StateFlow<HisaabItemiser.Hisaab?> = _settleUpPerson
-        .flatMapLatest { person -> person?.let { p -> ledgerRepo.getLedgerForPerson(p.id).map { HisaabItemiser.itemise(it) } } ?: flowOf(null) }
+        .flatMapLatest { person -> person?.let { p -> ledgerRepo.getLedgerForPerson(p.id, getApplication<Application>()).map { HisaabItemiser.itemise(it) } } ?: flowOf(null) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     /** Friends you've asked to pay you back and who still owe you: person id to when you last asked. */
@@ -1238,7 +1239,7 @@ class MainViewModel(
         val leftOut = target.personIds.filter { id -> _shares.value.none { it.personId == id } }
             .mapNotNull { id -> people.value.firstOrNull { it.id == id }?.name }
         val groupName = groupId?.let { id -> rawGroups.value.firstOrNull { it.id == id }?.name }
-        return SplitTargets.notice(target, leftOut, groupName)
+        return target.displayNotice(getApplication(), leftOut, groupName)
     }
 
     private fun initSharesForCurrentPeople() {
@@ -1741,7 +1742,7 @@ class MainViewModel(
                 }
             }
             val firstName = person.name.trim().substringBefore(' ').ifEmpty { person.name }
-            val chooser = AskShare.chooser(app, AskShare.sendIntent(message, qr), person.id, amount, userId, uiText(R.string.action_notice_ask_chooser, firstName))
+            val chooser = AskShare.chooser(app, AskShare.sendIntent(app, message, qr), person.id, amount, userId, uiText(R.string.action_notice_ask_chooser, firstName))
             context.startActivity(chooser)
         }
     }
@@ -1808,7 +1809,9 @@ class MainViewModel(
     fun openSimplifyDebts() {
         val currentBalances = personBalances.value.associate { it.person.id to it.netBalance }
         val groupMembers = groups.value.map { details -> details.members.map { it.id }.toSet() }
-        val simplified = DebtSimplifier.simplify(people.value, currentBalances, groupMembers)
+        val simplified = DebtSimplifier.simplify(people.value, currentBalances, groupMembers,
+            myName = getApplication<Application>().getString(R.string.group_people_you),
+            friendName = getApplication<Application>().getString(R.string.group_description_friend))
         _simplifiedDebts.value = simplified
         _isSimplifyDebtsOpen.value = true
     }
@@ -2114,7 +2117,7 @@ class MainViewModel(
                 clipData = ClipData.newRawUri(fileName, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(Intent.createChooser(send, uiText(R.string.action_notice_backup_chooser, backup.summary())))
+            context.startActivity(Intent.createChooser(send, uiText(R.string.action_notice_backup_chooser, backup.summary(getApplication<Application>()))))
         }
     }
 
@@ -2142,7 +2145,7 @@ class MainViewModel(
                     return@launchAction
                 }
             }
-            when (val result = withContext(Dispatchers.Default) { LocalBackup.decode(text) }) {
+            when (val result = withContext(Dispatchers.Default) { LocalBackup.decode(getApplication<Application>(), text) }) {
                 is BackupReadResult.Unreadable ->
                     _statusMessage.value = uiText(R.string.action_notice_backup_invalid)
                 is BackupReadResult.TooNew ->
@@ -2161,7 +2164,7 @@ class MainViewModel(
         launchAction {
             val report = backupRepo.restore(backup)
             restoreSettings(backup.settings)
-            _statusMessage.value = report.copy(settingsRestored = !backup.settings.isEmpty).message()
+            _statusMessage.value = report.copy(settingsRestored = !backup.settings.isEmpty).message(getApplication<Application>())
         }
     }
 
@@ -2203,7 +2206,7 @@ class MainViewModel(
     }
 
     fun getPersonLedgerFlow(personId: Long): kotlinx.coroutines.flow.Flow<List<PersonLedgerItem>> {
-        return ledgerRepo.getLedgerForPerson(personId)
+        return ledgerRepo.getLedgerForPerson(personId, getApplication<Application>())
     }
 
     private fun uiText(@androidx.annotation.StringRes id: Int, vararg args: Any): String =

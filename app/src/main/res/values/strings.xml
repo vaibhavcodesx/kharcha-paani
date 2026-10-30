@@ -784,6 +784,136 @@
     <string name="signin_copy_demo_of">of ₹1,920</string>
     <string name="signin_copy_demo_payment">Rohan paid you</string>
     <string name="signin_copy_demo_settled">UPI · settled up</string>
+    <!-- Additional screen strings. -->
+    <string name="group_description_you">You</string>
+    <string name="group_description_someone">Someone</string>
+    <string name="group_description_lent_you">%1$s lent you</string>
+    <string name="group_description_you_lent">You lent %1$s</string>
+    <string name="group_description_lent">%1$s lent %2$s</string>
+    <string name="group_description_paid_you">%1$s paid you</string>
+    <string name="group_description_you_paid">You paid %1$s</string>
+    <string name="group_description_paid">%1$s paid %2$s</string>
+    <string name="group_description_self_paid">You paid</string>
+    <string name="group_description_payer">Paid by %1$s</string>
+    <string name="group_description_adder_payer">Added by %1$s · Paid by %2$s</string>
+    <string name="group_description_you_object">you</string>
+    <string name="group_description_former">a former member</string>
+    <string name="group_description_friend">Friend</string>
+    <!-- Additional screen strings. -->
+    <string name="activity_description_waited">\u0020· %1$d days. Withdraw it if it\'s stuck.</string>
+    <string name="activity_description_waiting_you">Waiting for you to confirm</string>
+    <string name="activity_description_waiting_named">Waiting for %1$s to confirm</string>
+    <string name="activity_description_waiting">Waiting to be confirmed</string>
+    <string name="activity_description_them">them</string>
+    <string name="activity_description_they">They</string>
+    <string name="activity_description_response">: “%1$s”</string>
+    <string name="activity_description_rejected_named">%1$s says this isn\'t right%2$s</string>
+    <string name="activity_description_rejected_you">You said this isn\'t right%1$s</string>
+    <string name="activity_description_you_object">you</string>
+    <string name="activity_description_you">You</string>
+    <string name="activity_description_lent">%1$s lent %2$s</string>
+    <string name="activity_description_paid">%1$s paid %2$s</string>
+    <string name="activity_description_friend">Friend</string>
+    <string name="activity_description_someone">Someone</string>
+    <!-- Additional screen strings. -->
+    <string name="ledger_description_you_paid_total">You paid %1$s · their share %2$s</string>
+    <string name="ledger_description_they_paid_total">They paid %1$s · your share %2$s</string>
+    <string name="ledger_description_guest">Your guest in a group · their share %1$s</string>
+    <string name="ledger_description_you_lent">You lent them</string>
+    <string name="ledger_description_you_paid">You paid them</string>
+    <string name="ledger_description_they_lent">They lent you</string>
+    <string name="ledger_description_they_paid">They paid you</string>
+    <string name="ledger_description_iou">IOU</string>
+    <string name="ledger_description_settled">Settled up</string>
+    <string name="ledger_description_pending">%1$s · waiting to be confirmed</string>
+    <string name="ledger_description_rejected">%1$s · marked not right</string>
+    <!-- Additional screen strings. -->
+    <string name="backup_description_settings_only">settings only</string>
+    <string name="backup_description_amount">an expense (%1$s) has no proper amount</string>
+    <string name="backup_description_type">an entry (%1$s) is neither an expense nor income</string>
+    <string name="backup_description_total">the split of %1$s has no proper total</string>
+    <string name="backup_description_kind">the split of %1$s is of an unknown kind (%2$s)</string>
+    <string name="backup_description_nobody">the split of %1$s has nobody in it</string>
+    <string name="backup_description_share">a share of %1$s isn\'t a proper amount</string>
+    <string name="backup_description_shares_total">the shares of %1$s add up to more than its total</string>
+    <string name="backup_description_payment">a payment has no proper amount</string>
+    <string name="backup_description_subscription">the subscription %1$s has no proper amount</string>
+    <string name="backup_description_cycle">the subscription %1$s has an unknown cycle (%2$s)</string>
+    <string name="backup_description_settings_restored">Settings restored. Nothing else in that backup was missing.</string>
+    <string name="backup_description_already">Everything in that backup was already here. Nothing changed.</string>
+    <string name="backup_description_empty">Nothing to restore from that backup.</string>
+    <plurals name="backup_description_restored">
+        <item quantity="one">Restored %1$d item.</item>
+        <item quantity="other">Restored %1$d items.</item>
+    </plurals>
+    <plurals name="backup_description_restored_skipped">
+        <item quantity="one">Restored %1$d item; %2$d were already here.</item>
+        <item quantity="other">Restored %1$d items; %2$d were already here.</item>
+    </plurals>
+    <!-- Additional screen strings. -->
+    <string name="shared_group_notice_default_name">the group</string>
+    <string name="shared_group_notice_joined">Joined %1$s. It appears once sync finishes.</string>
+    <string name="shared_group_notice_not_synced">This group hasn\'t synced yet. Try again in a moment.</string>
+    <string name="shared_group_notice_revoked">Invite link turned off.</string>
+    <string name="shared_group_notice_left">You left %1$s.</string>
+    <string name="shared_group_notice_session">Your session expired. Sign in again.</string>
+    <string name="shared_group_notice_membership">You\'re no longer an active member of this group.</string>
+    <string name="shared_group_notice_problem">Something went wrong (%1$d). Try again.</string>
+    <string name="shared_group_notice_invalid">That invite code is invalid or has expired.</string>
+    <string name="shared_group_notice_offline">You\'re offline. Connect and try again.</string>
+    <!-- Additional screen strings. -->
+    <string name="ask_status_today">Asked today</string>
+    <string name="ask_status_yesterday">Asked yesterday</string>
+    <string name="ask_status_days">Asked %1$d days ago</string>
+    <string name="ask_payment_code_label">Payment code</string>
+    <!-- Additional screen strings. -->
+    <string name="widget_copy_owed">Owed %1$s</string>
+    <string name="widget_copy_owe">You owe %1$s</string>
+    <string name="widget_copy_square">All square</string>
+    <string name="widget_copy_signin">Sign in</string>
+    <string name="widget_copy_signin_hint">Sign in to start logging</string>
+    <string name="widget_copy_prompt">What did you spend on?</string>
+    <string name="widget_copy_spent_description">Spent this month: %1$s</string>
+    <string name="widget_copy_today_description">Spent today: %1$s</string>
+    <string name="widget_copy_log_description">Log an expense</string>
+    <string name="widget_copy_say_description">Say an expense</string>
+    <string name="widget_copy_open_app">Open Kharcha Paani</string>
+    <string name="widget_copy_spent_month">Spent this month</string>
+    <string name="widget_copy_today">Today</string>
+    <string name="widget_copy_log">Log expense</string>
+    <string name="widget_copy_splits_description">Open splits</string>
+    <!-- Additional screen strings. -->
+    <string name="notification_daily_channel">Daily reminder</string>
+    <string name="notification_daily_description">A nudge in the evening if nothing\'s been logged that day</string>
+    <string name="notification_payment_channel">Payments to confirm</string>
+    <string name="notification_payment_description">When a groupmate says money changed hands with you, until you confirm it or say it isn\'t right</string>
+    <string name="notification_payment_public">A payment is waiting for your answer</string>
+    <string name="notification_daily_title">Nothing logged today</string>
+    <string name="notification_daily_body">Add today\'s spending before it slips your mind.</string>
+    <string name="notification_lent_to_you">%1$s says they lent you %2$s</string>
+    <string name="notification_you_lent">%1$s says you lent them %2$s</string>
+    <string name="notification_paid_to_you">%1$s says they paid you %2$s</string>
+    <string name="notification_you_paid">%1$s says you paid them %2$s</string>
+    <string name="notification_payment_first_body">Confirm it, or say it isn\'t right. It doesn\'t count until you do.</string>
+    <string name="notification_payment_later_title">Still waiting on you: %1$s with %2$s</string>
+    <string name="notification_payment_later_body">%1$s, %2$d days ago. It won\'t count until you answer.</string>
+    <string name="notification_groupmate">A groupmate</string>
+    <!-- Additional screen strings. -->
+    <string name="payment_method_spoken">Paid by %1$s</string>
+    <!-- Additional screen strings. -->
+    <string name="support_device_details">\n\n—\nKharcha Paani %1$s (%2$d) · %3$s %4$s · Android %5$s</string>
+    <string name="support_ai_report_subject">Reporting an AI answer</string>
+    <string name="support_ai_report_body">What was wrong with it:\n\n\nThe question: %1$s\nThe answer:\n%2$s</string>
+    <!-- Additional screen strings. -->
+    <string name="split_notice_join">%1$s and %2$s</string>
+    <string name="split_notice_separator">,\u0020</string>
+    <string name="split_notice_ambiguous">More than one %1$s in your friends, so pick the right one in the split.</string>
+    <string name="split_notice_unknown">Couldn\'t find %1$s in your friends, so they\'re not in the split.</string>
+    <plurals name="split_notice_left_out">
+        <item quantity="one">%1$s isn\'t in %2$s, so they\'re not in its split.</item>
+        <item quantity="other">%1$s aren\'t in %2$s, so they\'re not in its split.</item>
+    </plurals>
+    <!-- Additional screen strings. -->
     <string name="statement_warning_no_date">Couldn\'t read its date: it would be added as today</string>
     <string name="statement_warning_future">Dated after today</string>
     <string name="statement_warning_large">Much bigger than the rest of this statement</string>

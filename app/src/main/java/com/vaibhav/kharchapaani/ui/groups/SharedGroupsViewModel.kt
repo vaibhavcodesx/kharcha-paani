@@ -27,6 +27,7 @@ class SharedGroupsViewModel(
         remote = SupabaseGroupMembershipRemote(SupabaseClientProvider.get(application)),
         selfProfileId = userId,
         requestSync = requestSync,
+        resolveText = { id, args -> application.getString(id, *args) },
     )
 
     companion object {
