@@ -13,6 +13,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- SplitRounding invariant tests verifying equal, exact, and share modes sum to the paisa across exhaustive amounts and group sizes up to 50 (T3).
+
 ## [1.6.0] - 2026-11-03
 
 ### Added
