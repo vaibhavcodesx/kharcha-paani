@@ -78,6 +78,7 @@ class StoreListingCapture {
     private val application = ApplicationProvider.getApplicationContext<Application>()
     private lateinit var db: AppDatabase
     private lateinit var viewModel: MainViewModel
+    private val store = androidx.lifecycle.ViewModelStore()
 
     @Before
     fun setUp() {
@@ -85,11 +86,13 @@ class StoreListingCapture {
         db = Room.inMemoryDatabaseBuilder(application, AppDatabase::class.java).allowMainThreadQueries().build()
         runBlocking { StoreFixture.seed(db) }
         viewModel = MainViewModel(application, db, StoreFixture.USER_ID)
+        store.put("main", viewModel)
     }
 
     @After
     fun tearDown() {
-        db.close()
+        StoreFixture.stopViewModels(store, if (::viewModel.isInitialized) viewModel else null)
+        if (::db.isInitialized) db.close()
     }
 
     private fun waitForText(text: String) =
@@ -108,6 +111,7 @@ class StoreListingCapture {
     private fun app(tab: Int, over: @Composable BoxScope.() -> Unit = {}) {
         viewModel.setTab(tab)
         val sharedGroups = SharedGroupsViewModel(application, db, StoreFixture.USER_ID)
+        store.put("shared", sharedGroups)
         compose.setContent {
             SplitFlowTheme {
                 Box(Modifier.fillMaxSize()) {

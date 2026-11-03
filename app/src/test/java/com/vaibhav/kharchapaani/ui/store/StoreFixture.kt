@@ -2,6 +2,8 @@ package com.vaibhav.kharchapaani.ui.store
 
 import android.graphics.Bitmap
 import android.view.View
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
 import com.vaibhav.kharchapaani.data.auth.AuthState
 import com.vaibhav.kharchapaani.data.auth.Profile
 import com.vaibhav.kharchapaani.data.db.AppDatabase
@@ -46,17 +48,21 @@ object StoreFixture {
     private const val HOUR = 60 * 60 * 1000L
 
     /**
-     * When things happened: this month, the most recent first, never in the future. Early in a
-     * month the days are pulled forward to its first rather than spilling into the last month,
-     * so Home and Insights always show the same month.
+     * When things happened: always in [now]'s month, the most recent first. Early in a month the days
+     * are pulled forward to its first; within a day, an entry is kept before now where the month
+     * allows. Just after midnight on the 1st that would have meant last month (#210 review), so the
+     * month's start wins: an entry may then sit a few seconds after now, never in the month before,
+     * and Home and Insights always show the same month.
      */
-    private fun stamp(daysAgo: Long, hour: Int, minute: Int = 0): Long {
-        val zone = ZoneId.systemDefault()
-        val today = LocalDate.now(zone)
-        val day = today.minusDays(daysAgo).coerceAtLeast(today.withDayOfMonth(1))
+    internal fun stamp(daysAgo: Long, hour: Int, minute: Int = 0, now: Long = System.currentTimeMillis(), zone: ZoneId = ZoneId.systemDefault()): Long {
+        val today = java.time.Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+        val firstOfMonth = today.withDayOfMonth(1)
+        val day = today.minusDays(daysAgo).coerceAtLeast(firstOfMonth)
         val at = day.atTime(hour, minute).atZone(zone).toInstant().toEpochMilli()
-        // Ordered as listed even when two land on the same day, and never ahead of now.
-        return at.coerceAtMost(System.currentTimeMillis() - (daysAgo + 1) * 5 * 60_000L)
+        val beforeNow = at.coerceAtMost(now - (daysAgo + 1) * 5 * 60_000L)
+        // Seconds after the month starts, the most recent latest, so the order holds there too.
+        val monthStart = firstOfMonth.atStartOfDay(zone).toInstant().toEpochMilli() + (10 - daysAgo).coerceAtLeast(0) * 1_000L
+        return beforeNow.coerceAtLeast(monthStart)
     }
 
     suspend fun seed(db: AppDatabase) {
@@ -89,6 +95,20 @@ object StoreFixture {
                 groupId = TRIP, syncState = SyncState.SYNCED, status = SettlementStatus.PENDING, recordedByPersonId = ROHAN,
             ),
         )
+    }
+
+    /**
+     * Stops the ViewModels a capture created (held in [store]) before its Room database closes: their
+     * flows otherwise keep querying a closed database. Their jobs finish on Robolectric's real main
+     * looper, so it's kept turning rather than blocked. Safe after a partial setup.
+     */
+    fun stopViewModels(store: androidx.lifecycle.ViewModelStore, main: com.vaibhav.kharchapaani.ui.viewmodel.MainViewModel?) {
+        val job = main?.viewModelScope?.coroutineContext?.get(Job)
+        store.clear()
+        if (job == null) return
+        val deadline = System.currentTimeMillis() + 10_000
+        while (!job.isCompleted && System.currentTimeMillis() < deadline) org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        check(job.isCompleted) { "the capture's ViewModel didn't stop" }
     }
 
     /**
