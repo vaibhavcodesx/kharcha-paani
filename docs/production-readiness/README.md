@@ -410,7 +410,7 @@ phase where "everyone in the split gets told Priya added an expense" first works
 | T3.3 | Verified App Links for invites (`https://<domain>/join/CODE`) instead of the hijackable `kharchapaani://` scheme **[owner review]** | M | SEC M-1 |
 | T3.4 | The half-filled entry, statement result and pending undo-deletes survive process death | M | REL M2, L11 |
 | T3.5 | Quick-add: open the sheet immediately with the on-phone guess, cancel the AI job when the user moves on, never overwrite what they typed | M | REL M5 |
-| T3.6 | Statement re-import marks "Already in your ledger" rows unticked | S | REL M6 |
+| T3.6 | Statement re-import marks "Already in your ledger" rows unticked — done in #201, exact dates reserved before neighbours; phone check pending | S | REL M6 |
 | T3.7 | Performance: share the base Room flows, move the feed build off Main, stop per-friend ledger queries, lazy lists in sheets, a Baseline Profile | L | REL M8, L12 |
 | T3.8 | Search by friend name and amount; "Edited by X · time" on shared expenses | M | REL M11 |
 | T3.9 | In-app review prompt after a happy moment (a confirmed settlement), never after an error | S | REL L13, PLAY §10 |
