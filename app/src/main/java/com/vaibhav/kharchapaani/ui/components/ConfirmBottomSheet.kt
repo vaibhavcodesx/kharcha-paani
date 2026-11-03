@@ -4,11 +4,13 @@ import androidx.compose.ui.res.stringResource
 import com.vaibhav.kharchapaani.R
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +34,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -92,6 +96,7 @@ import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -144,6 +149,12 @@ fun ConfirmBottomSheet(
     onRemoveBillPhoto: () -> Unit = {},
     // True while the save is still writing: Save shows a spinner and takes no second tap.
     isSaving: Boolean = false,
+    // True while the sheet shows the phone's guess and the AI's reading is on its way.
+    isImprovingWithAi: Boolean = false,
+    // The AI's reading landed and changed something: said briefly where "Improving…" was.
+    updatedByAi: Boolean = false,
+    // Save was tapped, before any large-amount check: the draft shown is the one to keep.
+    onSaveIntent: () -> Unit = {},
 ) {
     if (!isOpen) return
     val focusManager = LocalFocusManager.current
@@ -167,6 +178,9 @@ fun ConfirmBottomSheet(
             splitLocked = splitLocked, categories = categories, paymentMethods = paymentMethods,
             billPhoto = billPhoto, onAddBillPhoto = onAddBillPhoto, onRemoveBillPhoto = onRemoveBillPhoto,
             isSaving = isSaving,
+            isImprovingWithAi = isImprovingWithAi,
+            updatedByAi = updatedByAi,
+            onSaveIntent = onSaveIntent,
             onSave = {
                 focusManager.clearFocus()
                 onSave()
@@ -233,6 +247,11 @@ fun ConfirmSheetContent(
     onRemoveBillPhoto: () -> Unit = {},
     // True while the save is still writing: Save shows a spinner and takes no second tap.
     isSaving: Boolean = false,
+    // The sheet opened on the phone's guess and the AI's reading is on its way: said quietly beside
+    // the eyebrow, so nothing on the sheet moves while they're already typing.
+    isImprovingWithAi: Boolean = false,
+    updatedByAi: Boolean = false,
+    onSaveIntent: () -> Unit = {},
 ) {
     // An entry keeps its own category or method even when it isn't a choice here (hidden since, or a
     // groupmate's own category), so it's shown and stays selected.
@@ -273,7 +292,11 @@ fun ConfirmSheetContent(
                     label = if (isEditing) stringResource(R.string.entry_update) else stringResource(R.string.entry_save),
                     disabledLabel = splitIssue ?: stringResource(R.string.entry_add_amount),
                     enabled = value > 0 && splitIssue == null,
-                    onClick = { if (value > Money.LARGE_AMOUNT) checkLargeAmount = value else onSave() },
+                    onClick = {
+                        // First, so a late AI reading can't change the draft behind the large-amount check.
+                        onSaveIntent()
+                        if (value > Money.LARGE_AMOUNT) checkLargeAmount = value else onSave()
+                    },
                     summary = if (value > 0) Money.format(value) else "₹0",
                     detail = listOfNotNull(merchant.ifBlank { null } ?: category, paymentMethod.ifBlank { null }).joinToString(" · "),
                     buttonTestTag = "confirm_save_button",
@@ -284,15 +307,18 @@ fun ConfirmSheetContent(
     ) {
         // The Expense / Income control names the sheet; a "New expense" title beside it said the
         // same thing twice.
-        Text(
-            text = when {
-                addedBy != null -> stringResource(R.string.entry_editing_added_by, addedBy.uppercase())
-                isEditing -> stringResource(R.string.entry_editing)
-                else -> stringResource(R.string.entry_new)
-            },
-            style = EyebrowText,
-            modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() },
-        )
+        Row(Modifier.fillMaxWidth().padding(bottom = Spacing.s), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = when {
+                    addedBy != null -> stringResource(R.string.entry_editing_added_by, addedBy.uppercase())
+                    isEditing -> stringResource(R.string.entry_editing)
+                    else -> stringResource(R.string.entry_new)
+                },
+                style = EyebrowText,
+                modifier = Modifier.weight(1f).semantics { heading() },
+            )
+            AiReadingStatus(isImprovingWithAi = isImprovingWithAi, updatedByAi = updatedByAi)
+        }
         // A groupmate's expense stays an expense: only its adder could make it something else.
         if (addedBy == null) {
             SegmentedControl(
@@ -506,6 +532,56 @@ internal fun ExpandableDetail(
         }
         AnimatedVisibility(visible = expanded, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
             Box(Modifier.padding(start = Spacing.l, end = Spacing.l, bottom = Spacing.m)) { choices() }
+        }
+    }
+}
+
+private enum class AiReading { Improving, Updated, Quiet }
+
+/** How long "Updated by AI" stays: long enough to glance at, short enough not to linger as noise. */
+private const val UPDATED_BY_AI_MS = 3_500L
+
+/**
+ * Beside the eyebrow: a small working mark and "Improving with AI…" while the AI reads the line,
+ * then a tick and "Updated by AI" for a moment if its reading changed anything, cross-faded in one
+ * slot so nothing else on the sheet moves. Each is read out once.
+ */
+@Composable
+private fun AiReadingStatus(isImprovingWithAi: Boolean, updatedByAi: Boolean) {
+    var showUpdated by remember { mutableStateOf(false) }
+    LaunchedEffect(updatedByAi) {
+        showUpdated = updatedByAi
+        if (updatedByAi) {
+            delay(UPDATED_BY_AI_MS)
+            showUpdated = false
+        }
+    }
+    val state = when {
+        isImprovingWithAi -> AiReading.Improving
+        showUpdated -> AiReading.Updated
+        else -> AiReading.Quiet
+    }
+    AnimatedContent(targetState = state, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "ai_reading") { reading ->
+        if (reading == AiReading.Quiet) return@AnimatedContent
+        val improving = reading == AiReading.Improving
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .padding(start = Spacing.m)
+                .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
+                .testTag(if (improving) "confirm_improving" else "confirm_updated_by_ai"),
+        ) {
+            if (improving) {
+                CircularProgressIndicator(color = WarmAmberPrimary, strokeWidth = 1.5.dp, modifier = Modifier.size(12.dp))
+            } else {
+                Icon(KpIcons.Check, contentDescription = null, tint = WarmAmberPrimary, modifier = Modifier.size(14.dp))
+            }
+            Text(
+                text = stringResource(if (improving) R.string.entry_improving_ai else R.string.entry_updated_by_ai),
+                style = MaterialTheme.typography.labelMedium,
+                color = MutedWarmGray,
+                modifier = Modifier.padding(start = Spacing.xs),
+            )
         }
     }
 }

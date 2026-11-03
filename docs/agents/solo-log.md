@@ -153,6 +153,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-04 · #218 · F1 review timing · prepared for merge; after 750 ms, wait up to six seconds for the UI to permit a review request, retaining lifecycle cancellation and claiming cooldown only through the requester. Real-Room/actual-composable red CI 41694356770 ran 980 tests with exactly the intended four-second snackbar failure; timeout/fresh-moment control passed. Earlier wrong-clock control failure and paused-clock stall/cancellation are documented in the PR; production changed only after isolated red. Local Gradle skipped below 4 GB free RAM; final exact-head CI and independent review gate merge. No review-asking copy, balance, server or phone acceptance changes.
 
+- 2026-11-03 · #195 · T3.5 / REL M5 sheet-first quick add (Claude) · prepared for merge; the sheet opens on the phone's guess and the AI fills only untouched fields, then says "Updated by AI" briefly. Review blockers fixed: the draft is held at the first Save tap (large-amount dialog) and a friend added from the sheet counts as a split change. Red proof: LateAiAnswerTest, written only against pre-fix APIs, fails both cases on pre-fix main f128a87 locally ("turned the edit into a new entry", "reopened a closed sheet"); LargeAmountWhileReadingTest and the add-friend case fail with their fixes removed (Rs 20,00,000 saved for a confirmed Rs 15,00,000; the new friend dropped). Tests clear and await their ViewModel before Room closes. Exact-head CI gates merge; no phone verification claimed (not in the 1.6.0 APK).
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
