@@ -135,9 +135,9 @@ owner or Claude go at the bottom.
 
 - 2026-10-30 · #184 · X12 / T3.11 split self labels; resolve self by ID through entry_you in editable/locked rows, preserving canonical participant data; actual VM/Room save test · merged.
 
-## Questions
-
 - 2026-11-03 · #190 · R1 friendly partial asks · merged; the outgoing partial-request sentence uses the decided friendly wording. Android CI 41661445167 proved both pinned and real-Room regressions fail on the old wording (968 tests, exactly 2 predicted failures); totals, ledger rows and sharing behavior remain unchanged. Local Gradle skipped below the 4 GB RAM floor; phone sharing still needs owner verification.
+
+## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
 - Parked after two failed Android CI runs: #130 statement re-import (reserve all exact matches before near-date matching); #132 cold-start empty flash (derive readiness from a complete repository snapshot); #139 Home large text (fit the whole balance when animated digits cannot fit); #143 Home strings (await the activity feed as well as analytics in the regression fixture). Leave these PRs open for follow-up.
