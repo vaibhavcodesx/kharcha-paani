@@ -68,7 +68,8 @@ class InsightsAccessibilityTest {
         val amount = 9999999.99
         db.transactionDao().insertTransaction(TransactionEntity(type = "expense", amount = amount,
             category = "Food", merchant = "A large month", paymentMethod = "Cash"))
-        val today = LocalDate.now()
+        // The first day makes the daily average equal the total: keep that collision covered.
+        val today = LocalDate.now().withDayOfMonth(1)
         compose.setContent {
             root = LocalView.current.rootView
             val density = LocalDensity.current
