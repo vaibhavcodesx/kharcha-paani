@@ -35,6 +35,18 @@ Release source: `5fb95e8b308b7b352d5139dd806c7afbfb002720`.
 | Split-rounding representative invariants and whole-paisa checks | [#203](https://github.com/vaibhavcodesx/kharcha-paani/pull/203) |
 | Large-amount test holds friends live with original wait bounds and unchanged amount assertions | [#223](https://github.com/vaibhavcodesx/kharcha-paani/pull/223) |
 | Backup coverage now encodes/decodes the file before checking the restored Room data | [#207](https://github.com/vaibhavcodesx/kharcha-paani/pull/207) |
+| Real ViewModel fixtures stop and await their original scopes before Room closes, with six lifecycle regressions | [#224](https://github.com/vaibhavcodesx/kharcha-paani/pull/224) |
+| Cloud handoff and working lead report | [#222](https://github.com/vaibhavcodesx/kharcha-paani/pull/222) |
+| Source-corrected onboarding map with portable immutable links | [#196](https://github.com/vaibhavcodesx/kharcha-paani/pull/196) |
+| Source-corrected architecture, diagrams and release boundaries | [#197](https://github.com/vaibhavcodesx/kharcha-paani/pull/197) |
+| Money formatting, input limits and representative round trips | [#204](https://github.com/vaibhavcodesx/kharcha-paani/pull/204) |
+| Thirty deterministic English/Hinglish local-parser cases | [#205](https://github.com/vaibhavcodesx/kharcha-paani/pull/205) |
+| Legacy v2-to-v10 migration preservation, UUID uniqueness and reliable cleanup | [#208](https://github.com/vaibhavcodesx/kharcha-paani/pull/208) |
+| UPI-link encoding and amount cases | [#209](https://github.com/vaibhavcodesx/kharcha-paani/pull/209) |
+| Invite-link malformed-input and alphabet boundaries | [#211](https://github.com/vaibhavcodesx/kharcha-paani/pull/211) |
+| Ask-message line/total reconciliation across five history kinds | [#217](https://github.com/vaibhavcodesx/kharcha-paani/pull/217) |
+| Outgoing-message and notification wording safety checks | [#219](https://github.com/vaibhavcodesx/kharcha-paani/pull/219) |
+| Resource-format checker corrected through two isolated red runs | [#221](https://github.com/vaibhavcodesx/kharcha-paani/pull/221) |
 
 Each merged head had latest main, independent review and green unit-tests, lint and release-bundle.
 **#201, #213, #216, #195 and #218 are next-build changes; they are not in the published v1.6 APK.**
@@ -42,17 +54,19 @@ Their superseded drafts #130, #132 and #143 are closed. No history was deleted.
 
 ## Open and held
 
-- [#212](https://github.com/vaibhavcodesx/kharcha-paani/pull/212): UI audit needs capture lifecycle,
-  readiness/date and report corrections. Store assets are merged; owner approval still precedes any Play upload.
-- [#214](https://github.com/vaibhavcodesx/kharcha-paani/pull/214): compact day amounts still exceed
-  their short-label bound at larger values. Its dependent [#215](https://github.com/vaibhavcodesx/kharcha-paani/pull/215)
-  has no new production blocker found, but regression/log/merge gates remain.
-- Antigravity reviews are posted on #196, #197, #199, #200 and #202–#211, #217, #219 and #221.
-  Some need factual/test corrections; even otherwise clean PRs need their log, latest main and final CI.
-  Lead is resolving safe main/log/changelog integration while preserving author changes. #206 and #207 are merged;
-  #221 has two formatter-oracle defects.
-- [#139](https://github.com/vaibhavcodesx/kharcha-paani/pull/139): 200% font work remains parked under
-  the owner deferral reported on #188. Normal-size clipped money is still in scope.
+- [#212](https://github.com/vaibhavcodesx/kharcha-paani/pull/212): audit captures need managed ViewModel teardown, actual readiness/date guards and evidence-scoped report corrections.
+- [#214](https://github.com/vaibhavcodesx/kharcha-paani/pull/214): larger compact amounts still exceed the clipped day-cell bound; real-Room regression and integration gates remain.
+- [#215](https://github.com/vaibhavcodesx/kharcha-paani/pull/215): no additional production defect found, but regression/log gates and its blocked #214 base remain. Specific reviews are posted on all three.
+- [#139](https://github.com/vaibhavcodesx/kharcha-paani/pull/139): parked under the owner's 200% font deferral. Normal-size clipped money is still in scope.
+- [#71](https://github.com/vaibhavcodesx/kharcha-paani/pull/71) and Dependabot [#86](https://github.com/vaibhavcodesx/kharcha-paani/pull/86), [#97](https://github.com/vaibhavcodesx/kharcha-paani/pull/97), [#186](https://github.com/vaibhavcodesx/kharcha-paani/pull/186): held until the owner's required signed-release acceptance. No server/owner-review work was merged.
+
+The first #211 integration run 41712418103 stopped emitting test progress for 10m27s and was cancelled during the mandatory main refresh. Lint/release passed; partial artifact 13268468371 contains no XML/HTML result or confirmed cause. It was never counted as passing. Only the later green exact-head run is merge evidence.
+
+#210's missing PR-body phone heading was added after merge; that metadata oversight is disclosed on the PR. Source, latest-main and exact-head build checks had passed. No Play upload occurred.
+
+The shared pre-test Room failure on #197/#219 is addressed by [#224](https://github.com/vaibhavcodesx/kharcha-paani/pull/224): six new lifecycle assertions failed first in 1065 tests, then the existing fixtures gained ownership and bounded cancellation completion. All original business test bodies remain unchanged. No production revert was justified by the old-fixture evidence; the decision is recorded on #188.
+
+This report is updated alongside the corrected source review notes in [#199](https://github.com/vaibhavcodesx/kharcha-paani/pull/199); its merge state is on GitHub.
 
 ## Resume and remaining work
 
@@ -66,7 +80,8 @@ leave the owner's Z: checkout alone. Read the [lead instructions](codex-lead-202
    Coordinate the receipt cancellation job with #195; do not create competing AI-job ownership.
 4. Prepare sign-out data removal, abuse limits, authoritative last editor and notifications for owner review.
    Auth/security, Supabase files and non-additive migrations remain unmerged. Never apply server changes.
-5. Keep this report and the solo log current. Merge rights end November 6 unless the owner extends them on #188.
+5. Coordinate Cloud’s approved whole-rupee Home hero and shorter Home top section; those decisions are approved, not built.
+6. Keep this report and the solo log current. Merge rights end November 6 unless the owner extends them on #188.
 
 ## Still not verified
 
