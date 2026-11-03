@@ -36,4 +36,4 @@ product is, or a rule, changes.
 
 ## Claude Code cloud sessions
 
-If you were started in the cloud or from a fresh clone, read `docs/antigravity/HANDBOOK.md` section 8 and `docs/antigravity/PROGRESS.md` (on branch `antigravity/integration`) first.
+If you were started in the cloud or from a fresh clone, read `docs/claude-cloud/HANDOFF.md` first. It records standing permissions from the owner.

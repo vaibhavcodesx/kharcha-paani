@@ -1,20 +1,20 @@
 # Kharcha Paani: handbook for long-running agents
 
-Written 2026-11-03 by Claude for **Antigravity (Gemini 3.8 Flash)** and **Claude Code cloud sessions**. You
-start each session knowing nothing, so this page plus `PROGRESS.md` are your memory. The owner is Vaibhav,
+Written 2026-11-03 by Claude for **Antigravity (Gemini 3.8 Flash)**. You
+start each session knowing nothing, so this page, your PR list and issue #188 are your memory. The owner is Vaibhav,
 and they test on their phone. Claims here about the code were true on 2026-11-03: check them before relying
 on them.
 
 ## 0. Start every session here
 
-1. `git fetch origin`, `git switch antigravity/integration`, `git pull --ff-only`.
-2. Read `docs/antigravity/PROGRESS.md`. Its session log says what happened last.
+You work in the owner's folder, `Z:\V\.The_Future\Vibeeee\Kharcha Paani`. **You never merge anything.** Your PRs collect against `main`, and Claude or the owner reviews and merges them.
+
+1. `git status`. Leave uncommitted owner work alone: if tracked files are modified and aren't yours, stop and comment on issue #188. Then `git fetch origin`, `git switch main`, `git pull --ff-only`.
+2. Read the latest comment on [issue #188](https://github.com/vaibhavcodesx/kharcha-paani/issues/188) and run `gh pr list --state all --search "[antigravity] in:title" --limit 100`. **PR titles are your progress:** an item with an open or merged PR is done or in review, so skip it.
 3. **First session only:** do item O1. If the guard doesn't block its test command, stop and tell the owner.
 4. Skim sections 1–5 so you know the product. Read the design section before any UI change.
-5. Take the first `todo` item you're allowed (section 7). Run the loop in section 6. Then the next one.
-6. Before stopping: update `PROGRESS.md`, push, and report what was done, what's parked and any questions.
-
-Cloud sessions: read section 8 first; your role differs.
+5. Take the first item with no PR (section 7). Run the loop in section 6. Then the next one.
+6. Before stopping: `git switch main`, then add one comment on #188 with the date, items finished with PR numbers, parked items and why, and questions. Report the same to the owner.
 
 ## 1. What this app is, and why
 
@@ -46,11 +46,11 @@ AI pipeline or the groups model. Improve them in place.
 
 ## 2. Hard limits
 
-`.agents/hooks/guard.py` enforces most of these for Antigravity. **A denied command is a limit, not an
+`.agents/hooks/guard.py` enforces most of these. **A denied command is a limit, not an
 obstacle.** Don't rephrase it, split it, script around it or edit the guard. Skip the item and note it.
 
-- **Never merge to `main` or push to it.** You merge only into `antigravity/integration`, by squash, after CI
-  is green on that PR, and only for GREEN and YELLOW items.
+- **Never merge anything, and never push to `main`.** Open the PR and move on.
+- **This folder holds the owner's untracked files** (`Screenshots/`, `docs/handoffs/`, `docs/research/`) and secrets. Stage files by exact name. Never `git add -A` or `git add .`.
 - **Never touch Supabase:** nothing under `supabase/`, no SQL against any server, no MCP connection to it.
 - **Never run** releases, workflows, repo settings, secrets, an emulator, `adb`, or release builds.
 - **Never read, print or commit** `.env`, `*.jks`, `*.keystore`, `keystore.properties`. Never put a key,
@@ -60,10 +60,9 @@ obstacle.** Don't rephrase it, split it, script around it or edit the guard. Ski
 - **RLS, auth, security or a non-additive migration:** owner review. Open it, title it `[owner review]`, leave it.
 - **Never weaken a test to pass:** no removed assertions, `@Ignore`, longer sleeps or narrower checks. If you can't
   fix it honestly, leave it red and park the item.
-- **Two failed CI runs on one item: park it.** Three items parked in a row, or integration broken and you can't
-  fix it in one PR: stop and report. Something is wrong that more attempts won't fix.
+- **Two failed CI runs on one item: park it.** Three items parked in a row, or the same failure across several PRs: stop and report. Something is wrong that more attempts won't fix.
 - **Stay in scope.** No reformatting, renaming, reordering imports or "while I'm here" cleanups. Each diff should be
-  explainable by its item. If you find something else wrong, add it to Questions in `PROGRESS.md`.
+  explainable by its item. If you find something else wrong, add it to Questions on issue #188.
 - **Don't invent.** If a file, API or behaviour isn't where this page says, read the code and report the difference.
   Never guess a balance, an editor's name or a server rule.
 
@@ -140,33 +139,29 @@ Before opening a PR, read your whole diff and answer in the PR body:
 
 ## 6. The loop for each item
 
-1. **Read the code and the cited audit first.** The audits are in `docs/production-readiness/audits/`. If the item is already
-   done, mark it `done (already)` with the evidence and move on.
-2. Branch `antigravity/<id>-<short-name>` from the latest integration (R items: from `main`, named `antigravity/r1-…`).
+1. **Read the code and the cited audit first.** The audits are in `docs/production-readiness/audits/`. If the item is already done, say so on #188 with the evidence and move on.
+2. `git switch main`, `git pull --ff-only`, then branch `antigravity/<id>-<short-name>`. If the item needs one of your open PRs (F7 needs F5 and F6), branch from that PR's branch and use it as `--base`, and say "Merge after #N".
 3. Bug: commit the failing test, push, let CI go red for the predicted reason, then push the fix.
-4. Add one `CHANGELOG.md` line under `## [Unreleased]` and update the item in `PROGRESS.md`.
-5. `gh pr create --base antigravity/integration --title "[antigravity] <id>: <what changed>" --body-file <file>`. Body: what and why,
-   audit id, tests, the section 5 answers, "Check on the phone". Tag RED items `[needs claude]`.
-6. Wait for `unit-tests`, `lint`, `release-bundle`: `gh pr checks <n> --watch`. Read failures with `gh run view <id> --log-failed`.
-7. GREEN or YELLOW and all green: `gh pr merge <n> --squash`. RED: leave it open, branch the next item from integration.
-8. If `main` moved, merge it into integration through a PR `antigravity/sync-main`. Keep both sides in `CHANGELOG.md`.
-Commit subjects are plain English about what changed for a user. No Co-Authored-By lines are required from you.
+4. Add one `CHANGELOG.md` line under `## [Unreleased]`. Those conflicts are expected; whoever merges resolves them.
+5. `gh pr create --base main --title "[antigravity] <id>: <what changed>" --body-file <file>`. Body: what and why, audit id, tests, the section 5 answers, "Check on the phone".
+6. Wait for `unit-tests`, `lint`, `release-bundle`: `gh pr checks <n> --watch`. Read failures with `gh run view <id> --log-failed`. Green, or parked after two failures with a note in the PR: next item.
 
-**Tiers:** GREEN tests, docs and mechanical work. YELLOW product code with no schema or sync change. RED risky: open, tested and
-left for Claude; never merged by you. **Effort:** use High for ⚠ items.
+**Avoid pile-ups.** Nothing merges until someone reviews it, so keep PRs small and don't open two that change the same lines of a hot file: stack them instead. **At 20 open PRs of yours, stop and comment on #188 asking for a merge pass.** Tests and docs may still continue.
+
+Commit subjects are plain English about what changed for a user. **Tags:** GREEN is tests, docs and mechanical work. YELLOW is product code with no schema or sync change. ⚠ needs the most care: use High effort.
 
 ## 7. The queue
 
 Work in order. Say so and skip if something is blocked; don't stop the run.
 
 ### Onboarding
-- **O1** GREEN. Prove the guard works: run `git push origin main --dry-run`. It must be **denied**. Note the result in `PROGRESS.md`.
+- **O1** GREEN. Prove the guard works: run `git push origin main --dry-run`. It must be **denied**. Note the result on issue #188.
 - **O2** GREEN. Write `docs/antigravity/UNDERSTANDING.md`, from the code with `file:line`: how a typed "chai 40 with Rohan" becomes rows; how one
   friend's balance is computed; what happens to a row from local save to server; which settlement states move a balance; how a shared group
   differs from a local one; what happens at sign-out; what must never happen to stored ids. Anything that contradicts this page goes in Questions.
 - **O3** GREEN. `docs/architecture.md`: the current map, since `docs/original-architecture-dossier.md` is out of date. Link it, don't edit the old one.
 
-### Release lane: base `main`, the owner merges these
+### Release lane: do these right after onboarding
 - **R1** YELLOW. `ui/format/AskMessage.kt:37` sends the friend "Asking ₹X of the ₹Y you owe." Change it to exactly `Asking ₹X of the ₹Y for now.` Update pinned tests;
   add one asserting "you owe" is absent from a partial ask.
 - **R2** GREEN. `docs/testing/1.6.0-device-checks.md`, formatted like 1.5.0's, from "Check on the phone" in every PR in `git log v1.5.0..main`, de-duplicated and grouped. First:
@@ -182,7 +177,7 @@ Work in order. Say so and skip if something is blocked; don't stop the run.
 - **F3** GREEN. Read #133, #135, #136, #138, #140, #141, which Claude didn't review. Write findings to `docs/antigravity/review-notes.md`. Code changes only as new items.
 
 ### Codex's parked work
-Start from integration, take the commits you need from the old branch and say "Supersedes #N" in the body. Don't close #N. **#132 and #139 hold only failing tests: the fix isn't written.**
+Start from `main`, take the commits you need from the old branch and say "Supersedes #N" in the body. Don't close #N. **#132 and #139 hold only failing tests: the fix isn't written.**
 - **F4** ⚠ YELLOW #130 statement re-import. Reserve **every** exact-date match first, then near-date, so a new neighbouring purchase can't use up a match. Wrong here means duplicate money or a dropped row.
 - **F5** ⚠ YELLOW #132 cold-start flash. A nullable Home snapshot from direct Room flows; show the brand mark until feed, people, balance and analytics have all emitted. Don't infer loaded from default-empty StateFlows.
 - **F6** YELLOW #139 Home large text. When animated digits can't fit, one auto-sized whole figure; keep the animation when they fit.
@@ -211,28 +206,11 @@ Check each against current code first; some may be partly done. One PR each. `Ap
 ### Reports only, no code
 - **D1** SDKs in the build versus `docs/legal/play-console-answers.md` and the privacy policy: anything undeclared? **D2** `docs/store-listing/` against section 4's banned words. **D3** Draft `docs/incident-plan.md` (T3.13): who to tell, 72 hours for the DPDP Board. Not legal advice. **D4** What #71 R8 would need in keep rules for serialization and the new Play libraries.
 
-### RED: open, tested and left unmerged, in order
-Only after every item above has a result. One at a time, each from integration.
-- **N1** ⚠ T2.4: Room v11 nullable error column, `lastSyncError`, stop retrying on 401/403, "Couldn't sync since…". Needs Migration, schema JSON and migration test. **N2** ⚠ T2.6 part 3: sign-out offers to remove this account's data when nothing is unsynced. Deletes data. **N3** ⚠ T3.2 app lock, opt-in `[owner review]`. **N4** ⚠ REL M2: cached statement result, cleared at sign-out. **N5** ⚠ T3.7: repository flow sharing.
-
 ### Not yours
-- **Design or product calls:** light theme, first-run walkthrough, budgets and section 1's future list, sheet-first quick add, compact friend rows, Say-the-split follow-ups, Hindi.
-- **Server:** T2.2 limits, N2+ notifications, "Edited by X", App Links, minimum app version. **Needs a phone:** Baseline Profile, Accessibility Scanner. **Needs a decision:** TODOS 3b saved cards.
-- Already done, don't redo: "one source for per-friend balance" (`balanceEntries`), account deletion, Gemini proxy.
 
-## 8. Claude Code cloud sessions: your role
+Everything else belongs to Claude cloud sessions (`docs/claude-cloud/HANDOFF.md`): design and product calls, anything in `data/db`, `data/sync` or on the server, sync visibility, notifications, "Edited by X", app lock, merging. If the queue runs out, comment on #188 and stop. Don't borrow work. Already done, don't redo: "one source for per-friend balance" (`balanceEntries`), account deletion, Gemini proxy.
 
-The owner may start you from a fresh clone. You have **no `.env`, no signing keys and possibly no Supabase access**, so you can't release or apply migrations. The guard doesn't run for you; section 2's limits still do. Follow `CLAUDE.md` and `docs/agents/work-split.md`.
-
-You're the reviewer and senior engineer. Quota is scarce, so do the highest-value thing and stop:
-1. **Read `PROGRESS.md`, then review** `antigravity/integration` against `main`, especially ⚠ items, money logic and test changes. Look for weakened tests, scope creep and design drift. Fix or list problems.
-2. **Land good work on `main`:** one PR from integration or small batches, green CI on the exact head. Low-risk merges are allowed; RLS, auth, security and non-additive migrations stay for the owner.
-3. **Finish RED PRs** left as `[needs claude]`.
-4. **Your own lane, if there's quota left:** "Edited by X" (T3.8) with its server column and Room migration, as owner review; T2.2; T2.7 notifications phase 2. Write migrations; the owner applies them.
-
-Also true: `claude-code-review.yml` skips `antigravity/` branches to save quota, and `.agents/hooks/` is Antigravity's guard: leave it working. Record what you decide in `PROGRESS.md`.
-
-## 9. What Claude's review found (2026-11-03, `main` at `a73fe8f`)
+## 8. What Claude's review found (2026-11-03, `main` at `a73fe8f`)
 
 All 62 `[codex]` PRs since 2026-10-26: no protected files touched, three CI jobs green on each recorded head. #185's head has the same tree as `main`, so its green run covers `main` (CI doesn't run on `main` pushes). No lint baseline change, no `@Ignore` added. Script check of 801 string call sites: no format mismatch or missing key. Read closely with nothing further to report: #112, #115, #120, #122, #123, #125, #127, #128, #129, #134, #137, #142. **Not reviewed:** F3's list, X12 logic beyond the script, why #97 fails. **Nothing since 1.5.0 has been on a phone.**
 

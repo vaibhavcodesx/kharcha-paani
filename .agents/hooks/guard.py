@@ -17,10 +17,7 @@ import re
 import subprocess
 import sys
 
-INTEGRATION = "antigravity/integration"
-REQUIRED_JOBS = {"unit-tests", "lint", "release-bundle"}
 MIN_FREE_GB_FOR_GRADLE = 4.0
-OWNER_CHECKOUT = "kharcha paani"  # The owner's own folder holds .env and the signing keys.
 
 SECRET_FILE = re.compile(
     r"(^|[\\/\s\"'=])\.env(?!\.example)(\b|$)|\.jks\b|\.keystore\b|keystore\.properties|keystore-base64"
@@ -39,7 +36,10 @@ NO_WRITE = re.compile(
 DENY_COMMANDS = [
     (r"\bsupabase\b|\bpsql\b|\bpg_dump\b", "Nothing touches Supabase or any database server. Claude and the owner do that."),
     (r"\bgh\s+(release|workflow|secret|variable|repo|auth|ssh-key|gpg-key|cache|ruleset|extension|gist)\b", "Releases, workflows, secrets and repository settings belong to the owner."),
-    (r"\bgh\s+pr\s+(close|reopen|lock)\b", "Don't close or reopen PRs. Say what you'd do in docs/antigravity/PROGRESS.md."),
+    (r"\bgh\s+pr\s+merge\b|\bgh\s+api\b.*merge", "You never merge. Your PRs collect against main; Claude or the owner merges them."),
+    (r"\bgit\s+add\s+(-A|--all|-u|\.)(\s|$)", "Stage files by exact name: this folder holds the owner's untracked files."),
+    (r"\bgh\s+issue\s+(close|delete|edit|lock|transfer|create|reopen)\b", "Only comment on issues."),
+    (r"\bgh\s+pr\s+(close|reopen|lock)\b", "Don't close or reopen PRs. Say what you'd do on issue #188."),
     (r"\bgh\s+pr\s+edit\b.*--base\b", "Don't change a PR's base."),
     (r"\bgh\s+run\s+(cancel|delete)\b", "Don't cancel or delete CI runs."),
     (r"\bgh\s+api\b.*(\s-X\s*(?!GET)|--method\s+(?!GET)|\s-f\s|\s-F\s|--field|--raw-field|--input)", "gh api is read-only here."),
@@ -59,7 +59,7 @@ DENY_COMMANDS = [
 SAFE_PREFIXES = re.compile(
     r"^\s*("
     r"git\s+(status|log|diff|show|fetch|branch(\s+-a|\s+-r|\s+--show-current|\s+--list)?\s*$|switch|checkout|add|commit|merge|pull\s+--ff-only|push|rev-parse|ls-files|grep|merge-base|cherry-pick|remote\s+-v|blame|restore\s+--staged|rm\s+(?!-r))"
-    r"|gh\s+(pr\s+(view|list|checks|diff|create|merge|comment)|run\s+(list|view|download|watch|rerun)|api\b)"
+    r"|gh\s+(issue\s+(view|list|comment)|pr\s+(view|list|checks|diff|create|comment)|run\s+(list|view|download|watch|rerun)|api\b)"
     r"|(\./|\.\\)?gradlew(\.bat)?\s"
     r"|ls\b|dir\b|cat\b|type\b|head\b|tail\b|grep\b|rg\b|findstr\b|find\b|wc\b|sort\b|uniq\b|select-string\b|get-content\b|get-childitem\b|select-object\b|where-object\b|measure-object\b|test-path\b|pwd\b"
     r")",
@@ -111,49 +111,19 @@ def check_push(segment, cwd):
 
 
 def check_commit(cwd):
-    if current_branch(cwd) in ("main", "master", INTEGRATION):
-        finish("deny", "Don't commit directly to main or the integration branch. Create antigravity/<item>-<name>.")
+    if current_branch(cwd) in ("main", "master"):
+        finish("deny", "Don't commit to main. Create antigravity/<item>-<name>.")
 
 
-def check_pr_create(command, segment, cwd):
+def check_pr_create(command):
     match = re.search(r"--base[=\s]+\"?([\w./-]+)", command)
     if not match:
-        finish("deny", f"Pass --base explicitly: {INTEGRATION}, or main only for release-lane items R1 to R3.")
-    base = match.group(1)
-    branch = current_branch(cwd)
-    if base == "main" and re.match(r"antigravity/r[123]-", branch):
-        return
-    if base != INTEGRATION:
-        finish("deny", f"PRs go to {INTEGRATION}. Only branches named antigravity/r1-, r2- or r3- may target main.")
-
-
-def check_pr_merge(segment):
-    if re.search(r"--admin|--auto|--delete-branch=false", segment):
-        finish("deny", "No --admin or --auto merges.")
-    number = re.search(r"\bmerge\s+#?(\d+)", segment)
-    if not number:
-        finish("deny", "Name the PR number: gh pr merge <n> --squash.")
-    view = subprocess.run(
-        ["gh", "pr", "view", number.group(1), "--json", "baseRefName,title,statusCheckRollup"],
-        capture_output=True, text=True, timeout=25,
-    )
-    if view.returncode != 0:
-        finish("deny", "Couldn't read that PR, so it can't be merged.")
-    pr = json.loads(view.stdout)
-    if pr["baseRefName"] != INTEGRATION:
-        finish("deny", f"You only merge into {INTEGRATION}. The owner or Claude merges into main.")
-    if re.search(r"\[(owner review|needs claude)\]", pr["title"], re.I):
-        finish("deny", "This PR is marked for human or Claude review. Leave it open.")
-    results = {c.get("name"): c.get("conclusion") for c in pr["statusCheckRollup"]}
-    missing = [job for job in REQUIRED_JOBS if results.get(job) != "SUCCESS"]
-    if missing:
-        finish("deny", f"CI isn't green on this PR yet: {', '.join(sorted(missing))}.")
+        finish("deny", "Pass --base main, or --base antigravity/<branch> if this builds on your own open PR.")
+    if match.group(1) != "main" and not match.group(1).startswith("antigravity/"):
+        finish("deny", "PRs go to main, or to your own antigravity/ branch when stacked.")
 
 
 def check_command(command, cwd):
-    lowered = command.lower()
-    if OWNER_CHECKOUT in lowered:
-        finish("deny", "Work only in your own clone. The owner's folder holds secrets.")
     if SECRET_FILE.search(command):
         finish("deny", "Never read, print, copy or commit secret files.")
     bare = strip_quoted(command)
@@ -166,9 +136,7 @@ def check_command(command, cwd):
         elif re.match(r"git\s+commit\b", segment, re.I):
             check_commit(cwd)
         elif re.match(r"gh\s+pr\s+create\b", segment, re.I):
-            check_pr_create(command, segment, cwd)
-        elif re.match(r"gh\s+pr\s+merge\b", segment, re.I):
-            check_pr_merge(segment)
+            check_pr_create(command)
         elif re.search(r"gradlew", segment, re.I) and free_gb() < MIN_FREE_GB_FOR_GRADLE:
             finish("deny", "Under 4 GB of RAM free: a local build has crashed this laptop before. Push and let CI run it.")
     unsafe_syntax = re.search(r"[;&<>`]|\$\(", bare)
@@ -186,8 +154,6 @@ def check_file(tool, args, payload):
     path = args.get("TargetFile") or args.get("AbsolutePath") or args.get("SearchPath") or ""
     if not path:
         finish("allow")
-    if OWNER_CHECKOUT in path.lower():
-        finish("deny", "Work only in your own clone. The owner's folder holds secrets.")
     if SECRET_FILE.search(path) and not path.lower().endswith(".env.example"):
         finish("deny", "Never read or write secret files.")
     if tool in ("write_to_file", "replace_file_content", "multi_replace_file_content"):
@@ -207,10 +173,9 @@ def check_file(tool, args, payload):
 
 def session_start():
     message = (
-        "Kharcha Paani. Before anything else, read docs/antigravity/HANDBOOK.md section 0, then "
-        "docs/antigravity/PROGRESS.md on the antigravity/integration branch, and continue from the first item "
-        "marked todo. A guard script blocks merges to main, Supabase, secrets and destructive commands. A denied "
-        "command is a limit, not a bug: never work around it. Skip the item and note it in PROGRESS.md."
+        "Kharcha Paani. Before anything else, read docs/antigravity/HANDBOOK.md section 0 and the latest comment on issue #188, "
+        "then continue the queue. You never merge. A guard script blocks merges, Supabase, secrets and destructive commands. "
+        "A denied command is a limit, not a bug: never work around it. Skip the item and note it on #188."
     )
     print(json.dumps({"injectSteps": [{"systemMessage": {"systemMessage": message}}]}))
 
@@ -230,7 +195,7 @@ def main():
     except SystemExit:
         raise
     except Exception as error:  # Fail closed.
-        finish("deny", f"Guard error, so this was blocked: {type(error).__name__}. Note it in PROGRESS.md.")
+        finish("deny", f"Guard error, so this was blocked: {type(error).__name__}. Note it on issue #188.")
 
 
 if __name__ == "__main__":
