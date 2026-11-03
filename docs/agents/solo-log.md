@@ -163,6 +163,10 @@ owner or Claude go at the bottom.
 - 2026-11-03 · #200 · T1 / Group balances zero-sum · prepared for merge; property tests assert group balances sum to zero, shares sum to total amount, and member balances are conserved across random add, edit, delete, and settle sequences. Independent source review completed; no production code changes; exact-head CI gates merge.
 
 
+- 2026-11-03 · #202 · T2 / DebtSimplifier net preservation · prepared for merge; generative property tests verify net preservation, <= n-1 transfers, and non-negative transfers with independent whole-paisa validation. Independent source review completed; no production code changes; exact-head CI gates merge.
+
+
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
