@@ -13,6 +13,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- A UI audit of every screen at four device sizes, rendered from the real app shell and database,
+  with 28 findings and a fix plan (`docs/production-readiness/audits/ui-audit-2026-11.md`;
+  test-only harness in `ui/audit/`).
+
 ### Fixed
 
 - Screens read consistently (UI audit batch B): Insights shows no empty "Spent most on" and "Per
@@ -26,11 +32,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   friend's history instead of "₹0"; small non-zero categories say "<1%"; "You're owed" wraps rather
   than clipping on 360 dp phones; the "+N" people count no longer breaks over two lines.
 
-### Added
-
-- A UI audit of every screen at four device sizes, rendered from the real app shell and database,
-  with 28 findings and a fix plan (`docs/production-readiness/audits/ui-audit-2026-11.md`;
-  test-only harness in `ui/audit/`).
+- Home waits for the complete ledger before showing money or its first-entry invitation, preventing a false empty state on cold launch.
+- Statement re-import leaves saved payments unticked with “Already in your ledger”, reserving exact dates before nearby matches so a genuine extra purchase stays importable.
 
 ## [1.6.0] - 2026-11-03
 
