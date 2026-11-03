@@ -5,8 +5,8 @@ Written at the end of the session for the next Claude Code cloud session. Read
 
 ## The situation when this session ended
 
-- **1.6.0 is released** (signed build ran; the owner is going through it on the phone). The product
-  freeze that held product PRs is over. Codex leads until 2026-11-06 and **does all merging**;
+- **1.6.0 is a GitHub phone-test prerelease**; the signed build succeeded. This is not a Play
+  rollout or passed phone acceptance. The product freeze that held product PRs is over. Codex leads until 2026-11-06 and **does all merging**;
   Claude opens PRs, answers reviews and keeps them green.
 - Antigravity (Gemini Flash) works a routine queue from `docs/antigravity/HANDBOOK.md`; Codex merges it.
 - Progress log for every agent: [issue #188](https://github.com/vaibhavcodesx/kharcha-paani/issues/188).
@@ -20,9 +20,12 @@ Written at the end of the session for the next Claude Code cloud session. Read
 | #212 | UI audit of every screen at four device sizes, 28 findings, report `docs/production-readiness/audits/ui-audit-2026-11.md` | Green; **Codex asked for changes** (checklist below) |
 | #214 | Audit batch A: money never cut or misread ("1.27L" in the day strip, "₹300" not "₹0" for a pending payment, "<1%", "You're owed" wraps) | Green, stacked on #212; **Codex asked for changes** (below) |
 | #215 | Audit batch B: consistency (no empty Insights tiles, disabled chips look disabled, "5 Nov 2026" and ₹ in Subscriptions, "What Rohan will see", sort aligned, "Spent most on") | Green, stacked on #214; no production blocker, **more tests asked** (below) |
-| #220 | CI fixture: `BackToHomeTest` stops its ViewModels before closing Room (the random "connection pool has been closed" failure) | **Merged** |
+| #220 | CI fixture: `BackToHomeTest` stops its ViewModels before closing Room (the random "connection pool has been closed" failure) | **Merged** at `7f3ef32`; test-only |
 
-Merge order for what's left: #212, #214, #215, then this handoff (#222). Every PR adds a `CHANGELOG.md` line under
+Verified merge commits: #195 `0337c5c`, #210 `bb954ba`, #220 `7f3ef32`.
+
+Merge order for what's left: #212, #214, #215, then this handoff (#222). #212/#214/#215 remain
+held for the review findings below, not the former release freeze. Every PR adds a `CHANGELOG.md` line under
 Unreleased, so each merge conflicts the next there: keep both sides.
 
 ### Codex's open review asks: the next session's first checklist
@@ -64,7 +67,7 @@ Reviews arrived at the very end of the session (18:14–18:22 UTC). Read each PR
 - [ ] Solo-log row, latest `main`, three green jobs.
 
 **#195 and #210 merged.** The listing assets are in `docs/store-listing/assets/` for the owner to approve and upload.
-**#220 merged.**
+**#220 is merged** at `7f3ef32`.
 
 ## Owner decisions this session (also on #188)
 
@@ -82,7 +85,8 @@ The render harness is the closest thing: real composables, real `MainViewModel`,
 
 - **Every screen:** `./gradlew :app:testDebugUnitTest --tests "*.ui.audit.*"` writes
   `app/build/test-results/testDebugUnitTest/ui-audit/{pixel,small,font-2x,new-user}/*.png`
-  (27 screens each). Sheets and dialogs are opened the way a tap opens them and every window is
+  (27 scenarios: 27 images in each of the three seeded variants and 21 in `new-user`, **102 images**
+  total). Sheets and dialogs are opened the way a tap opens them and every window is
   drawn in order, so a sheet appears over the app. Add a screen: one `@Test` in `UiAuditCapture`.
 - **Store art:** `--tests "*.ui.store.*"` writes `store-listing/*.png`.
 - Look at the PNGs with the Read tool; downscale with PIL before committing evidence.
@@ -107,8 +111,10 @@ Maven Central rate-limits this container (HTTP 429). What worked:
 - **ViewModel teardown in tests:** never close Room while a real `MainViewModel` is alive. Put it
   (and `SharedGroupsViewModel`) in a `ViewModelStore`; in `@After` release any held fake network,
   `store.clear()`, wait for `viewModelScope`'s job, then `db.close()` and `Dispatchers.resetMain()`.
-  With a compose rule the job finishes on Robolectric's real main looper: loop
-  `ShadowLooper.idleMainLooper()` until done; `runBlocking { join() }` deadlocks.
+  Use a bounded completion wait (for example, 10 seconds), driving the fixture's test dispatcher
+  and Robolectric main looper as applicable. A blocking `join()` can stall if its child jobs need
+  the same blocked dispatcher/looper; advance that work while waiting. Keep Room open until the
+  jobs complete, and report a timeout as a test failure.
 - **Red proof means a run:** for a bug, show the new test failing on pre-fix code. Here: a
   `git worktree` of `origin/main`, copy the test in, run it, record head and failure.
 - **No fixed sleeps:** wait for an explicit completion (e.g. `client.dispatcher.runningCallsCount()`)

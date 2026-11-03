@@ -13,10 +13,36 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- Agent handoff records reviewed PR states, owner decisions and restart instructions, with a working Codex lead progress report (#222).
+
+
+
+- DebtSimplifier invariant tests verifying every net position is preserved down to the paisa and transfers are bounded by at most n - 1 (T2).
+
+- The Play listing's six screenshots and its 1024×500 feature graphic, in
+  `docs/store-listing/assets/`, rendered from the shipped screens with the listing's fictional
+  fixture in a real database, so every figure is the app's own (test-only; Stream C item 3).
+
+
+- Group balances sum to zero, shares sum to total amount, and member balances are conserved across random add, edit, delete, and settle sequences (T1).
+
+
 ### Changed
+
+- Quick add opens the sheet instantly, on the phone's own reading of the line, with a quiet
+  "Improving with AI…" while the AI reads it. The AI's answer fills in only what you haven't
+  changed, and the sheet says "Updated by AI" for a moment when it did. Closing, saving or
+  opening another entry stops it, so a slow answer can no longer overwrite what you're typing
+  or turn an edit into a new entry (T3.5, REL M5; `docs/designs/sheet-first-quick-add.md`).
+
 - Home headings, capture notices, filters and day totals use Android string resources, preserving their English wording and full rupee figures.
 
+
 ### Fixed
+- The Back-on-Home test stops its real ViewModels before closing Room, so a late app-shell query no
+  longer fails it at random (CI fixture, as #194 did for backup preview).
 - Home waits for the complete ledger before showing money or its first-entry invitation, preventing a false empty state on cold launch.
 - Statement re-import leaves saved payments unticked with “Already in your ledger”, reserving exact dates before nearby matches so a genuine extra purchase stays importable.
 
