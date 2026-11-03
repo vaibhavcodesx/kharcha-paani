@@ -151,6 +151,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-03 · #216 · F7 / X12 Home strings · prepared for merge; original Home/capture/filter/day-total wording moves to resources with canonical IDs and Money.format retained. Downloaded historical run 40418934304 XML: missing Today node, not a wording or precision failure; the fixture had waited only for the streak. It now also waits for both real activity rows, with every original assertion intact and complete Home readiness from #213. Local Gradle skipped below the 4 GB floor; final exact-head CI and independent review gate merge. Supersedes parked #143. F6/#139 stays parked under the 200% font deferral reported on #188 (comment 6611367782); no phone acceptance claimed.
 
+- 2026-11-03 · (handoff) · Claude cloud session log and next-session prompt · prepared for merge; docs only. `docs/claude-cloud/session-log-2026-11-03.md` records #195, #210, #212, #214, #215 and #220 with their states, the owner's decisions (200% deferred; whole-rupee hero and compact Home top on short phones approved), the no-phone render harness and the creative stream's next items; `NEXT-SESSION-PROMPT.md` is the owner's template, with a placeholder for their 1.6 improvements and screenshots.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
