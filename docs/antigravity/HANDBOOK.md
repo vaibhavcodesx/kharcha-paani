@@ -152,6 +152,8 @@ Commit subjects are plain English about what changed for a user. **Tags:** GREEN
 
 ## 7. The queue
 
+**From 2026-11-03 Codex leads, and it reviews and merges your PRs. Skip these, Codex owns them: R1–R3, F1, F2, F4–F7, Y5–Y7, Y13.** Start after O1–O3 at F3, then the T items. If Codex has already opened a PR for an item, skip it.
+
 Work in order. Say so and skip if something is blocked; don't stop the run.
 
 ### Onboarding

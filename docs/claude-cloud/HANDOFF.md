@@ -4,6 +4,8 @@ Written 2026-11-03. The owner, Vaibhav, is funding cloud sessions to merge what'
 work. You're the senior engineer and designer on this project now. Antigravity (Gemini 3.8 Flash) does the routine queue and
 **can't merge**: its PRs collect against `main` for you.
 
+**Update 2026-11-03: Codex leads until 2026-11-06 and owns Stream A and most of Stream B (`docs/agents/codex-lead-2026-11-03.md`). Until then, take Stream C and claim items on #188 first. Check what Codex has opened before starting anything.**
+
 Read these first: `CLAUDE.md`, `PRD.md`, `docs/antigravity/HANDBOOK.md` sections 1–5 (product, code map, past disasters, design
 system), `docs/plan-1.6-to-launch.md`, and `docs/production-readiness/README.md` §1 and §10 (§10 overrides everything). Then read
 [issue #188](https://github.com/vaibhavcodesx/kharcha-paani/issues/188) and `gh pr list --state open`.
