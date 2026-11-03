@@ -4,6 +4,8 @@ import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
@@ -12,6 +14,7 @@ import androidx.work.testing.WorkManagerTestInitHelper
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.receipts.BillPhoto
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -47,20 +50,40 @@ class BillPhotoFlowTest {
     private val userId = "11111111-2222-3333-4444-555555555555"
     private lateinit var db: AppDatabase
     private lateinit var viewModel: MainViewModel
+    private val main = UnconfinedTestDispatcher()
+    private val store = ViewModelStore()
+    private var mainDispatcherInstalled = false
 
     @Before
     fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        Dispatchers.setMain(main)
+        mainDispatcherInstalled = true
         WorkManagerTestInitHelper.initializeTestWorkManager(application, Configuration.Builder().setExecutor(SynchronousExecutor()).build())
         db = Room.inMemoryDatabaseBuilder(application, AppDatabase::class.java).allowMainThreadQueries().build()
         viewModel = MainViewModel(application, db, userId)
+        store.put("main", viewModel)
     }
 
     @After
-    fun tearDown() {
-        db.close()
-        Dispatchers.resetMain()
-        File(application.filesDir, "receipts").deleteRecursively()
+    fun tearDown(): Unit = runBlocking {
+        try {
+            if (::viewModel.isInitialized) {
+                val job = viewModel.viewModelScope.coroutineContext[Job]!!
+                store.clear()
+                withTimeout(10_000) {
+                    while (!job.isCompleted) {
+                        main.scheduler.runCurrent()
+                        if (!job.isCompleted) delay(20)
+                    }
+                }
+                assertTrue("Fixture must stop MainViewModel before Room closes",
+                    job.isCompleted)
+            }
+        } finally {
+            if (::db.isInitialized) db.close()
+            if (mainDispatcherInstalled) Dispatchers.resetMain()
+            File(application.filesDir, "receipts").deleteRecursively()
+        }
     }
 
     /** What the gallery hands back: a picture file. */

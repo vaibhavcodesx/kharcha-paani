@@ -32,6 +32,8 @@ Release source: `5fb95e8b308b7b352d5139dd806c7afbfb002720`.
 | Back-to-Home test clears and awaits both ViewModels before closing Room | [#220](https://github.com/vaibhavcodesx/kharcha-paani/pull/220) |
 | Statement-row golden tests consistently use the parser timezone, with an India-zone regression | [#206](https://github.com/vaibhavcodesx/kharcha-paani/pull/206) |
 | Review requests wait through the confirmation snackbar, with a bounded timeout and untouched cooldown rules | [#218](https://github.com/vaibhavcodesx/kharcha-paani/pull/218) |
+| Split-rounding representative invariants and whole-paisa checks | [#203](https://github.com/vaibhavcodesx/kharcha-paani/pull/203) |
+| Large-amount test holds friends live with original wait bounds and unchanged amount assertions | [#223](https://github.com/vaibhavcodesx/kharcha-paani/pull/223) |
 | Backup coverage now encodes/decodes the file before checking the restored Room data | [#207](https://github.com/vaibhavcodesx/kharcha-paani/pull/207) |
 
 Each merged head had latest main, independent review and green unit-tests, lint and release-bundle.

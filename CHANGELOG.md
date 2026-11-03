@@ -17,6 +17,24 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - Evidence-scoped source review notes for six merged reliability/accessibility changes (F3).
 
+- Outgoing-message and notification tests guard friendly wording while distinguishing in-app self views (T12).
+
+- Source-pinned architecture and domain understanding for agent onboarding, with explicit verification limits (O2).
+
+- Invite-link tests cover malformed inputs and valid normalized alphabet boundaries (T10).
+
+- Ask-message tests reconcile displayed lines and totals across all five history kinds (T11).
+
+- String-resource checker covers placeholders and format execution with positive self-tests (T13).
+
+- UPI-link tests check encoded parameters, exact supported amounts and omitted invalid amounts (T9).
+
+- Migration-chain regression checks legacy v2 rows through v10, UUID uniqueness and post-migration DAO writes (T8).
+
+- Deterministic local-parser golden cases cover 30 representative English/Hinglish inputs (T5).
+
+- Money formatting and input tests cover Indian grouping, invalid numbers, limits, intermediate keystrokes and representative round trips (T4).
+
 - Agent handoff records reviewed PR states, owner decisions and restart instructions, with a working Codex lead progress report (#222).
 
 
@@ -56,6 +74,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 
 ### Fixed
+
+- ViewModel fixtures verify that their scopes stop before Room closes, protecting later money tests from background database errors.
+- The large-amount quick-add test keeps the friends list subscribed the way the app shell does,
+  and reports flow/database contents on timeout, while retaining the original wait limit.
 
 - A confirmed settlement can wait briefly for its confirmation snackbar before requesting a rare Play review; an expired or cancelled opportunity does not consume the cooldown.
 
