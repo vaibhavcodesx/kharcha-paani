@@ -13,6 +13,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- Comprehensive unit tests for UpiLink verifying RFC 3986 percent-encoding across unreserved/reserved characters, Devanagari Unicode, currency symbols, emojis, space encoding, note truncation, and two-decimal amount formatting (T9).
+
 ## [1.6.0] - 2026-11-03
 
 ### Added
