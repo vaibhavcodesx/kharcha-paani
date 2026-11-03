@@ -180,7 +180,8 @@ class StatementReimportTest {
 
     @Test fun `a groupmate's matching entry does not untick my statement row`(): Unit = runBlocking {
         db.transactionDao().insertTransaction(TransactionEntity(type = "expense", amount = 250.0,
-            category = "Food", merchant = "Swiggy", paymentMethod = "UPI", isOwnedByMe = false,
+            category = "Food", merchant = "Swiggy", paymentMethod = "UPI",
+            ownerProfileId = "22222222-3333-4444-5555-666666666666",
             date = LocalDate.of(2026, 10, 1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()))
         read()
         assertTrue(vm.statementParseResult.value!!.allItems.all { it.isSelected })
