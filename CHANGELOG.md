@@ -15,6 +15,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Agent handoff records reviewed PR states, owner decisions and restart instructions, with a working Codex lead progress report (#222).
+
 
 - SplitRounding invariant tests verifying equal, exact, and share modes sum to the paisa across representative amounts and group sizes up to 50 (T3).
 
