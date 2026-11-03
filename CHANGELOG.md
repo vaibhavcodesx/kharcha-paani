@@ -13,6 +13,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- Money formatting and parseInput test suite covering Indian grouping, NaN/infinity rejection, overflow limits, keystrokes, and round trips (T4).
+
 ## [1.6.0] - 2026-11-03
 
 ### Added
