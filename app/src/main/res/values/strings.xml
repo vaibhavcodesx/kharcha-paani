@@ -917,6 +917,7 @@
     <!-- Additional screen strings. -->
     <string name="statement_warning_no_date">Couldn\'t read its date: it would be added as today</string>
     <string name="statement_warning_future">Dated after today</string>
+    <string name="statement_warning_already_in_ledger">Already in your ledger</string>
     <string name="statement_warning_large">Much bigger than the rest of this statement</string>
     <string name="statement_warning_outside">Outside the statement\'s dates (%1$s)</string>
 </resources>
