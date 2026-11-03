@@ -20,9 +20,9 @@ Written at the end of the session for the next Claude Code cloud session. Read
 | #212 | UI audit of every screen at four device sizes, 28 findings, report `docs/production-readiness/audits/ui-audit-2026-11.md` | Green; **Codex asked for changes** (checklist below) |
 | #214 | Audit batch A: money never cut or misread ("1.27L" in the day strip, "₹300" not "₹0" for a pending payment, "<1%", "You're owed" wraps) | Green, stacked on #212; **Codex asked for changes** (below) |
 | #215 | Audit batch B: consistency (no empty Insights tiles, disabled chips look disabled, "5 Nov 2026" and ₹ in Subscriptions, "What Rohan will see", sort aligned, "Spent most on") | Green, stacked on #214; no production blocker, **more tests asked** (below) |
-| #220 | CI fixture: `BackToHomeTest` stops its ViewModels before closing Room (the random "connection pool has been closed" failure) | Test-only, just opened |
+| #220 | CI fixture: `BackToHomeTest` stops its ViewModels before closing Room (the random "connection pool has been closed" failure) | **Merged** |
 
-Merge order for what's left: #220, #212, #214, #215, then this handoff (#222). Every PR adds a `CHANGELOG.md` line under
+Merge order for what's left: #212, #214, #215, then this handoff (#222). Every PR adds a `CHANGELOG.md` line under
 Unreleased, so each merge conflicts the next there: keep both sides.
 
 ### Codex's open review asks: the next session's first checklist
@@ -64,7 +64,7 @@ Reviews arrived at the very end of the session (18:14–18:22 UTC). Read each PR
 - [ ] Solo-log row, latest `main`, three green jobs.
 
 **#195 and #210 merged.** The listing assets are in `docs/store-listing/assets/` for the owner to approve and upload.
-**#220** was green.
+**#220 merged.**
 
 ## Owner decisions this session (also on #188)
 
