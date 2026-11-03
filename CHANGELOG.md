@@ -54,6 +54,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 
 ### Fixed
+- The large-amount quick-add test keeps the friends list subscribed the way the app shell does,
+  and reports flow/database contents on timeout, while retaining the original wait limit.
 
 - A confirmed settlement can wait briefly for its confirmation snackbar before requesting a rare Play review; an expired or cancelled opportunity does not consume the cooldown.
 
