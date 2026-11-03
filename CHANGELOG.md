@@ -17,6 +17,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - DebtSimplifier invariant tests verifying every net position is preserved down to the paisa and transfers are bounded by at most n - 1 (T2).
 
+### Fixed
+- Statement re-import leaves saved payments unticked with “Already in your ledger”, reserving exact dates before nearby matches so a genuine extra purchase stays importable.
+
 ## [1.6.0] - 2026-11-03
 
 ### Added

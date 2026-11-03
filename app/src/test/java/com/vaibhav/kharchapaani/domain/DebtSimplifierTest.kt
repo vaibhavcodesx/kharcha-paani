@@ -140,6 +140,13 @@ class DebtSimplifierTest {
                 for (debt in debts) {
                     assertTrue("Transfer amount must be >= 0.01", debt.amount >= 0.01)
                     assertTrue("No self-transfer", debt.fromPersonId != debt.toPersonId)
+                    val cents = debt.amount * 100.0
+                    assertEquals(
+                        "Transfer amount ${debt.amount} must be an exact whole paisa",
+                        Math.round(cents).toDouble(),
+                        cents,
+                        1e-9
+                    )
                 }
 
                 // INVARIANT 3: Every participant's net position is preserved to the exact paisa
@@ -196,6 +203,13 @@ class DebtSimplifierTest {
 
                 // INVARIANT 1: Friend-to-friend payments occur only if they share a group
                 for (debt in debts) {
+                    val cents = debt.amount * 100.0
+                    assertEquals(
+                        "Transfer amount ${debt.amount} must be an exact whole paisa",
+                        Math.round(cents).toDouble(),
+                        cents,
+                        1e-9
+                    )
                     if (debt.fromPersonId != -1L && debt.toPersonId != -1L) {
                         val shareGroup = groups.any { debt.fromPersonId in it && debt.toPersonId in it }
                         assertTrue(
@@ -252,6 +266,8 @@ class DebtSimplifierTest {
 
         val netReceived = mutableMapOf<Long, Double>()
         for (debt in debts) {
+            val cents = debt.amount * 100.0
+            assertEquals("Large group transfer amount must be exact whole paisa", Math.round(cents).toDouble(), cents, 1e-9)
             netReceived[debt.toPersonId] = (netReceived[debt.toPersonId] ?: 0.0) + debt.amount
             netReceived[debt.fromPersonId] = (netReceived[debt.fromPersonId] ?: 0.0) - debt.amount
         }
