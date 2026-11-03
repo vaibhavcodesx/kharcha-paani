@@ -13,13 +13,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
-### Fixed
-
-- Money is never cut or misread (UI audit batch A): the Insights day strip writes ₹1,27,366 as
-  "1.27L" instead of clipping it to "1,27,36"; a payment waiting for an answer shows its amount in a
-  friend's history instead of "₹0"; small non-zero categories say "<1%"; "You're owed" wraps rather
-  than clipping on 360 dp phones; the "+N" people count no longer breaks over two lines.
-
 ### Added
 
 - A UI audit of every screen at four device sizes, rendered from the real app shell and database,
@@ -27,6 +20,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   test-only harness in `ui/audit/`).
 
 ### Fixed
+
+- Money is never cut or misread (UI audit batch A): the Insights day strip writes ₹1,27,366 as
+  "1.27L" instead of clipping it to "1,27,36"; a payment waiting for an answer shows its amount in a
+  friend's history instead of "₹0"; small non-zero categories say "<1%"; "You're owed" wraps rather
+  than clipping on 360 dp phones; the "+N" people count no longer breaks over two lines.
+
 - Home waits for the complete ledger before showing money or its first-entry invitation, preventing a false empty state on cold launch.
 - Statement re-import leaves saved payments unticked with “Already in your ledger”, reserving exact dates before nearby matches so a genuine extra purchase stays importable.
 
