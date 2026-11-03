@@ -13,6 +13,7 @@ import com.vaibhav.kharchapaani.data.db.entity.SubscriptionEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.domain.BackupSettings
+import com.vaibhav.kharchapaani.domain.BackupReadResult
 import com.vaibhav.kharchapaani.domain.LocalBackup
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -348,7 +349,7 @@ class LocalBackupRoundTripTest {
      */
 
     @Test
-    fun `backup round trip preserves every column of every entity`() = runTest {
+    fun `backup file round trip preserves every supported backup field`() = runTest {
         val personId = source.personDao().insertPerson(
             PersonEntity(
                 name = "Aarav",
@@ -502,8 +503,14 @@ class LocalBackupRoundTripTest {
         // --- Verify Settings round trip ---
         assertEquals(fullSettings, backup.settings)
 
-        // --- Restore into target ---
-        val report = LocalBackupRepository(target).restore(backup)
+        val decoded = LocalBackup.decode(copyContext, LocalBackup.encode(backup))
+        assertTrue("The exported backup file must decode successfully", decoded is BackupReadResult.Ok)
+        val decodedBackup = (decoded as BackupReadResult.Ok).backup
+        assertEquals(fullSettings, decodedBackup.settings)
+        assertEquals("Serialization must preserve every supported backup field", backup, decodedBackup)
+
+        // --- Restore the file's decoded contents into target ---
+        val report = LocalBackupRepository(target).restore(decodedBackup)
         assertEquals(0, report.skipped)
         assertTrue(report.added > 0)
 

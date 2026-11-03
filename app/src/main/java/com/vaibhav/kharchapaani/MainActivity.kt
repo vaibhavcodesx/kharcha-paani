@@ -371,9 +371,7 @@ fun SplitFlowApp(
     BackHandler(enabled = currentTab != AppTab.Activity.ordinal) { viewModel.setTab(AppTab.Activity.ordinal) }
     val billPhotoIds by viewModel.billPhotoIds.collectAsStateWithLifecycle()
     val rawTransactions by viewModel.rawTransactions.collectAsState()
-    val activityFeed by viewModel.activityFeed.collectAsState()
-    val totalNetOwed by viewModel.totalNetOwed.collectAsState()
-    val monthlyAnalytics by viewModel.monthlyAnalytics.collectAsState()
+    val homeSnapshot by viewModel.homeSnapshot.collectAsStateWithLifecycle()
     val insightsAnalytics by viewModel.insightsAnalytics.collectAsState()
     val insightsMonth by viewModel.insightsMonth.collectAsState()
     val earliestInsightsMonth by viewModel.earliestInsightsMonth.collectAsState()
@@ -397,6 +395,8 @@ fun SplitFlowApp(
     val groups by viewModel.groups.collectAsState()
     val rawGroups by viewModel.rawGroups.collectAsState()
     val isParsing by viewModel.isParsing.collectAsState()
+    val isImprovingWithAi by viewModel.isImprovingWithAi.collectAsState()
+    val updatedByAi by viewModel.updatedByAi.collectAsState()
     val voiceCaptureRequested by viewModel.voiceCaptureRequested.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedFilter by viewModel.selectedFilter.collectAsState()
@@ -578,33 +578,36 @@ fun SplitFlowApp(
                 label = "MainTabs"
             ) { targetTab ->
                 when (targetTab) {
-                    0 -> HomeScreen(
-                        activity = activityFeed,
-                        billPhotoIds = billPhotoIds,
-                        people = people,
-                        totalNetOwed = totalNetOwed,
-                        monthlyAnalytics = monthlyAnalytics,
-                        isParsing = isParsing,
-                        searchQuery = searchQuery,
-                        selectedFilter = selectedFilter,
-                        onSearchChange = { viewModel.setSearchQuery(it) },
-                        onFilterChange = { viewModel.setSelectedFilter(it) },
-                        onParseText = { viewModel.parseInputText(it) },
-                        onParseImage = { viewModel.parseReceiptImage(it) },
-                        onParsePdf = { bytes, name -> viewModel.parseBankOrUpiStatement(bytes, name) },
-                        onEditTransaction = { viewModel.openEditTransaction(it) },
-                        onDeleteTransaction = { viewModel.deleteTransaction(it) },
-                        onRetractSettlement = { viewModel.retractSettlement(it) },
-                        onAnswerSettlement = { viewModel.openSettlementAnswer(it) },
-                        onOpenIouDialog = { viewModel.openIouDialog() },
-                        onOpenSimplifyDebts = { viewModel.openSimplifyDebts() },
-                        accountAvatar = authUiState.accountAvatar,
-                        startVoiceCapture = voiceCaptureRequested,
-                        syncStatus = syncStatus,
-                        onShowMessage = viewModel::showMessage,
-                        onVoiceCaptureStarted = viewModel::onVoiceCaptureStarted,
-                        onOpenAccount = { isAccountSheetOpen = true }
-                    )
+                    0 -> {
+                        val home = homeSnapshot
+                        if (home == null) LoadingBrandMark() else HomeScreen(
+                            activity = home.activity,
+                            billPhotoIds = billPhotoIds,
+                            people = home.people,
+                            totalNetOwed = home.totalNetOwed,
+                            monthlyAnalytics = home.monthlyAnalytics,
+                            isParsing = isParsing,
+                            searchQuery = searchQuery,
+                            selectedFilter = selectedFilter,
+                            onSearchChange = { viewModel.setSearchQuery(it) },
+                            onFilterChange = { viewModel.setSelectedFilter(it) },
+                            onParseText = { viewModel.parseInputText(it) },
+                            onParseImage = { viewModel.parseReceiptImage(it) },
+                            onParsePdf = { bytes, name -> viewModel.parseBankOrUpiStatement(bytes, name) },
+                            onEditTransaction = { viewModel.openEditTransaction(it) },
+                            onDeleteTransaction = { viewModel.deleteTransaction(it) },
+                            onRetractSettlement = { viewModel.retractSettlement(it) },
+                            onAnswerSettlement = { viewModel.openSettlementAnswer(it) },
+                            onOpenIouDialog = { viewModel.openIouDialog() },
+                            onOpenSimplifyDebts = { viewModel.openSimplifyDebts() },
+                            accountAvatar = authUiState.accountAvatar,
+                            startVoiceCapture = voiceCaptureRequested,
+                            syncStatus = syncStatus,
+                            onShowMessage = viewModel::showMessage,
+                            onVoiceCaptureStarted = viewModel::onVoiceCaptureStarted,
+                            onOpenAccount = { isAccountSheetOpen = true }
+                        )
+                    }
 
                     1 -> SplitsScreen(
                         accountAvatar = authUiState.accountAvatar,
@@ -876,6 +879,9 @@ fun SplitFlowApp(
         onAddBillPhoto = addBillPhoto,
         onRemoveBillPhoto = viewModel::removeBillPhoto,
         isSaving = Submit.SaveEntry in submitting,
+        isImprovingWithAi = isImprovingWithAi,
+        updatedByAi = updatedByAi,
+        onSaveIntent = viewModel::holdDraftForSave,
     )
 
     val isExportOpen by viewModel.isExportOpen.collectAsState()
