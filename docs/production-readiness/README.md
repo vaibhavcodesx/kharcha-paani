@@ -36,7 +36,7 @@ records the retained-data, release sign-in, proxy and widget checks; none is pho
 Release preparation (2026-11-03): **R1 friendly partial payment asks — done in #190**.
 **F2 first-day Insights test selector — done in #192**; all money sizing assertions remain.
 Backup-preview fixture lifecycle is corrected in **#194**, without changing backup assertions.
-R3 prepares **1.6.0 (7)** and the consolidated changelog; signed-build and phone results are tracked on #188.
+**R3 done in #198:** prepares **1.6.0 (7)** and the consolidated changelog; signed-build and phone results are tracked on #188.
 The 1.6.0 signed build and phone acceptance remain separate owner checks; progress is on issue #188.
 
 0. **Ask everything up front, then run on autopilot** (the owner's rule, also in CLAUDE.md). Before

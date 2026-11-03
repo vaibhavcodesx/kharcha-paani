@@ -143,7 +143,7 @@ owner or Claude go at the bottom.
 
 - 2026-11-03 · #194 · backup-preview CI fixture · merged; clear the real ViewModel and await its existing scope job before Room close/Main reset, with partial-setup guards. Run 41662753973 exposed concurrent resetMain cancellation and secondary setup failures; every test body/assertion is unchanged, no sleeps or production changes. This corrects the fixture lifecycle rather than ignoring the race.
 
-- 2026-11-03 · R3 version 1.6.0 (7) · merged; promote the reviewed Unreleased entries without rewording, consolidate duplicate headings/markers and retain a fresh Unreleased section. The owner requested a quick release in chat, authorizing one GitHub phone-test prerelease after exact-head CI; no Play rollout or phone acceptance is claimed. Product merges freeze until #188 records the signed build result; the owner tests with docs/testing/1.6.0-device-checks.md.
+- 2026-11-03 · #198 · R3 version 1.6.0 (7) · merged; promote the reviewed Unreleased entries without rewording, consolidate duplicate headings/markers and retain a fresh Unreleased section. The owner requested a quick release in chat, authorizing one GitHub phone-test prerelease after exact-head CI; no Play rollout or phone acceptance is claimed. Product merges freeze until #188 records the signed build result; the owner tests with docs/testing/1.6.0-device-checks.md.
 
 ## Questions
 
