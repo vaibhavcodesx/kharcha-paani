@@ -8,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -15,6 +16,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.play.core.review.ReviewManagerFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** No UI of our own, no history replay, and no candidate retained across backgrounding. */
 @Composable
@@ -33,7 +36,10 @@ internal fun ReviewAfterSettlement(moments: Flow<Unit>, enabled: Boolean) {
             moments.collect {
                 // Let dismissal and any error/snackbar settle before checking the current UI.
                 delay(750)
-                requester.request()
+                val ready = withTimeoutOrNull(6_000) {
+                    snapshotFlow { canPrompt }.first { it }
+                }
+                if (ready == true) requester.request()
             }
         }
     }
