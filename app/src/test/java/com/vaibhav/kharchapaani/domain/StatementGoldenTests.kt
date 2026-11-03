@@ -63,7 +63,7 @@ class StatementGoldenTests {
             makeItem("15 Aug 2026", "Sun City PG Rent", 12000.0, category = "Rent", paymentMethod = "Bank Transfer"),
             makeItem("20-Aug-2026", "Zeta Broadband Fiber", 999.0, category = "Bills", paymentMethod = "UPI"),
             makeItem("2026/08/25", "City Dental Care", 800.0, category = "Health", paymentMethod = "UPI"),
-            makeItem("30 Aug 2026", "Client Project Stipend", 15000.0, type = "income", category = "Income (Client)", paymentMethod = "Bank Transfer"),
+            makeItem("30 Aug 2026", "Client Project Stipend", 8000.0, type = "income", category = "Income (Client)", paymentMethod = "Bank Transfer"),
 
             // Special rows triggering safety checks:
             // 1. Outside period (July date in an August statement)
@@ -145,7 +145,7 @@ class StatementGoldenTests {
         val items = listOf(
             makeItem("2026-07-05", "Cafe Deccan", 150.0, category = "Food"),
             makeItem("2026-07-20", "Stationery Hub", 220.0, category = "Shopping"),
-            makeItem("2026-08-01", "July Salary Credited", 40000.0, type = "income", category = "Income (Client)"),
+            makeItem("2026-08-01", "July Freelance Stipend", 8000.0, type = "income", category = "Income (Client)"),
             makeItem("2026-08-10", "QuickBite Meals", 340.0, category = "Food"),
             makeItem("2026-08-28", "Fuel Station", 1200.0, category = "Transport"),
         )
@@ -163,7 +163,7 @@ class StatementGoldenTests {
         assertEquals("202608", augGroup.monthSortKey)
         assertEquals(3, augGroup.transactionCount)
         assertEquals(1540.0, augGroup.totalExpense, 0.0)
-        assertEquals(40000.0, augGroup.totalIncome, 0.0)
+        assertEquals(8000.0, augGroup.totalIncome, 0.0)
 
         // Second group should be July 2026
         val julGroup = parseResult.monthGroups[1]
