@@ -4,6 +4,11 @@ Written 2026-11-03. The owner, Vaibhav, is funding cloud sessions to merge what'
 work. You're the senior engineer and designer on this project now. Antigravity (Gemini 3.8 Flash) does the routine queue and
 **can't merge**: its PRs collect against `main` for you.
 
+**Latest session (2026-11-03, evening): read [session-log-2026-11-03.md](session-log-2026-11-03.md) next.** It has every
+open Claude PR and its state, the owner's newest decisions (200% font deferred; whole-rupee Home hero and a compact Home top on
+short phones approved, not built), how to render every screen without a phone, and the creative stream's next steps. The owner
+starts the next session from [NEXT-SESSION-PROMPT.md](NEXT-SESSION-PROMPT.md).
+
 **Update 2026-11-03: Codex leads until 2026-11-06 and owns Stream A and most of Stream B (`docs/agents/codex-lead-2026-11-03.md`). Until then, take Stream C and claim items on #188 first. Check what Codex has opened before starting anything.**
 
 Read these first: `CLAUDE.md`, `PRD.md`, `docs/antigravity/HANDBOOK.md` sections 1–5 (product, code map, past disasters, design
