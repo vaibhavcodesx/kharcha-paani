@@ -426,7 +426,10 @@ fun RowScope.SheetTextInput(
     modifier: Modifier = Modifier,
     keyboardType: KeyboardType = KeyboardType.Text,
     fieldTestTag: String? = null,
+    // Shown before the text and the placeholder alike, e.g. "₹" on an amount.
+    prefix: String? = null,
 ) {
+    if (prefix != null) Text(prefix, style = MaterialTheme.typography.bodyLarge, color = MutedWarmGray, modifier = Modifier.padding(end = Spacing.xs))
     Box(modifier.weight(1f)) {
         if (value.isEmpty()) Text(placeholder, style = MaterialTheme.typography.bodyLarge, color = SubMutedWarmGray, maxLines = 1)
         BasicTextField(

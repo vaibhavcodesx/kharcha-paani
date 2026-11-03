@@ -41,6 +41,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.size
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.model.GroupWithDetails
 import com.vaibhav.kharchapaani.data.model.PersonBalance
@@ -349,8 +351,14 @@ private fun SectionActions(actions: @Composable () -> Unit) {
 private fun GroupSortPicker(sort: GroupSort, onSelect: (GroupSort) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Box {
-        TextButton(onClick = { expanded = true }, modifier = Modifier.testTag("group_sort_button")) {
+        // No inner padding, so it starts where the cards start; a chevron so it reads as a menu.
+        TextButton(
+            onClick = { expanded = true },
+            contentPadding = PaddingValues(horizontal = 0.dp),
+            modifier = Modifier.testTag("group_sort_button"),
+        ) {
             Text(stringResource(R.string.splits_sort_caption, sort.localizedLabel()))
+            Icon(KpIcons.ChevronDown, contentDescription = null, modifier = Modifier.padding(start = Spacing.xs).size(16.dp))
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             GroupSort.entries.forEach { option ->

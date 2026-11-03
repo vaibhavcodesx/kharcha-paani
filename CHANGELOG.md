@@ -15,6 +15,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- Screens read consistently (UI audit batch B): Insights shows no empty "Spent most on" and "Per
+  day" tiles before anything is logged, and its unavailable Ask chips look unavailable; Subscriptions
+  writes dates as "5 Nov 2026" and puts ₹ before the amount; the settle-up preview is titled "What
+  Rohan will see" instead of repeating its button; the group sort control lines up with the cards
+  and shows it's a menu; "Spent most at" is "Spent most on".
+
 - Money is never cut or misread (UI audit batch A): the Insights day strip writes ₹1,27,366 as
   "1.27L" instead of clipping it to "1,27,36"; a payment waiting for an answer shows its amount in a
   friend's history instead of "₹0"; small non-zero categories say "<1%"; "You're owed" wraps rather

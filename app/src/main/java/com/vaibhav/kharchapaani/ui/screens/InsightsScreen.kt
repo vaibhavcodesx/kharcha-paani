@@ -223,7 +223,8 @@ fun InsightsScreen(
                 modifier = Modifier.padding(top = Spacing.xxl),
             )
         }
-        item(key = "highlights") {
+        // "Spent most at —" and "Per day so far ₹0" said nothing on a month with nothing in it.
+        if (analytics.totalExpense > 0) item(key = "highlights") {
             Highlights(
                 analytics = analytics,
                 perDay = MonthInsights.dailyAverage(analytics.totalExpense, month, today),

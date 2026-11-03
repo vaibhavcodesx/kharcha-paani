@@ -170,7 +170,8 @@ private const val ME = -1L
 @Composable
 private fun AskToPaySection(firstName: String, message: String, onAsk: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth()) {
-        Text(stringResource(R.string.payment_ask_name, firstName), style = MaterialTheme.typography.titleSmall)
+        // The button below already says "Ask Rohan to pay"; this names what the preview is.
+        Text(stringResource(R.string.payment_ask_preview_title, firstName), style = MaterialTheme.typography.titleSmall)
         Text(
             message,
             style = MaterialTheme.typography.bodySmall,

@@ -104,7 +104,8 @@ for the 1.6 freeze; shared files are listed on #188 before editing.
 | Batch | Findings | PR |
 |---|---|---|
 | A. Money is never cut or misread | U1, U2, U6, U7 (and U9, a one-line guard) | the PR after #212; after: [Insights](ui-audit-2026-11/after-A--pixel--insights-1-top.png), [history](ui-audit-2026-11/after-A--pixel--sheet-person-ledger.png), [group on 360 dp](ui-audit-2026-11/after-A--small--sheet-group-detail.png) |
-| B. Consistency and empty states, at normal size | U8, U14, U15, U16, U18, U21, U24 | next; U13, U17, U19, U27 need a design call first |
+| B. Consistency and empty states, at normal size | U14, U15, U16, U18, U24 | the PR after A; after: [Groups](ui-audit-2026-11/after-B--pixel--splits-3-groups.png), [settle up](ui-audit-2026-11/after-B--pixel--sheet-settle-up.png), [subscriptions](ui-audit-2026-11/after-B--pixel--sheet-subscriptions.png), [empty Insights](ui-audit-2026-11/after-B--new-user--insights-1-top.png) |
+| Not yet | U8 (live grouping in a money field changes cursor behaviour: needs a phone), U13, U17, U19, U27 (a design call first), U20–U23, U25, U26, U28 (polish), U4 at normal size | open |
 
 **Deferred by the owner (2026-11-03): the largest system font.** "Focus on the normal user for
 launch; deal with 200% later." U3, U4, U5, U10, U11 and U12 stay recorded here with their evidence
