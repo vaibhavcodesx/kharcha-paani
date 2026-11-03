@@ -187,6 +187,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-04 · #208 · T8 migration-chain coverage · prepared for merge; real legacy v2 database runs the actual chain to v10. Retained all 108 original assertion lines and added 26 assertions for second-row legacy values/defaults, membership pairings and remote UUID uniqueness. Room closes in finally. New-table writes are smoke checks, not historical rows. No production/schema migration change. Independent source review completed; current-main exact-head CI gates merge; local Gradle skipped below 4 GB free RAM.
 
+- 2026-11-04 · #209 · T9 UPI-link coverage · prepared for merge; independent full source review found no blocker; original assertions retained, no production behavior change. Lead integrated current main with one Unreleased entry. Exact-head unit-tests, lint and release-bundle gate merge; local Gradle skipped below 4 GB free RAM. No phone acceptance claimed.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
