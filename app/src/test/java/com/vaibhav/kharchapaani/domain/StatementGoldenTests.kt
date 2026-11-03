@@ -11,7 +11,7 @@ import org.junit.Before
 import org.junit.Test
 import java.text.SimpleDateFormat
 import java.time.LocalDate
-import java.time.ZoneOffset
+import java.time.ZoneId
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
@@ -35,7 +35,7 @@ class StatementGoldenTests {
         if (::originalTimeZone.isInitialized) TimeZone.setDefault(originalTimeZone)
     }
 
-    private val utc = ZoneOffset.UTC
+    private val reviewZone get() = ZoneId.systemDefault()
     private val testToday = LocalDate.of(2026, 9, 15)
 
     private fun makeItem(
@@ -91,7 +91,7 @@ class StatementGoldenTests {
         )
 
         // Run safety review
-        val reviewed = StatementChecks.review(rawItems, period, testToday, utc)
+        val reviewed = StatementChecks.review(rawItems, period, testToday, reviewZone)
         val reviewedByMerchant = reviewed.associateBy { it.merchant }
 
         // Valid rows within period stay ticked and unflagged
@@ -164,7 +164,7 @@ class StatementGoldenTests {
             makeItem("2026-08-28", "Fuel Station", 1200.0, category = "Transport"),
         )
 
-        val reviewed = StatementChecks.review(items, period, testToday, utc)
+        val reviewed = StatementChecks.review(items, period, testToday, reviewZone)
         // All items within Jul-Aug 2026 are valid and within period
         assertTrue("All items must be selected", reviewed.all { it.isSelected && it.flag == null })
 
@@ -198,7 +198,7 @@ class StatementGoldenTests {
             makeItem("2026-09-02", "Two Days After Period", 100.0),         // 2 days after: flagged outside
         )
 
-        val reviewed = StatementChecks.review(items, period, testToday, utc).associateBy { it.merchant }
+        val reviewed = StatementChecks.review(items, period, testToday, reviewZone).associateBy { it.merchant }
 
         assertTrue("One day before period must be granted grace", reviewed.getValue("Timezone Boundary Left Grace").isSelected)
         assertTrue("One day after period must be granted grace", reviewed.getValue("Timezone Boundary Right Grace").isSelected)
