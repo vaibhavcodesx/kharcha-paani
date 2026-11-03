@@ -63,10 +63,12 @@ class SheetFirstQuickAddTest {
     /** What the fake Gemini answers with, as the model's JSON, once [aiMayAnswer] opens. */
     @Volatile private var answer = ""
     private val aiMayAnswer = CountDownLatch(1)
+    private val asked = AtomicInteger()
     private val answered = AtomicInteger()
 
     private val gemini = GeminiRepository(
         client = OkHttpClient.Builder().addInterceptor { chain ->
+            asked.incrementAndGet()
             // A slow network: the reading only comes back when the test says so.
             aiMayAnswer.await(10, TimeUnit.SECONDS)
             val text = org.json.JSONObject.quote(answer)
@@ -112,6 +114,12 @@ class SheetFirstQuickAddTest {
     }
 
     private suspend fun until(condition: () -> Boolean) = withTimeout(10_000) { while (!condition()) delay(20) }
+
+    /**
+     * Waits until the request is on the (held-back) network. Cancelled any earlier, it would never
+     * be sent at all, which is right but isn't the late answer these tests are about.
+     */
+    private suspend fun aiIsReading() = until { asked.get() == 1 }
 
     /** Lets the held-back reading through, and waits until the fake network has sent it. */
     private suspend fun aiAnswers() {
@@ -180,6 +188,7 @@ class SheetFirstQuickAddTest {
 
         viewModel.parseInputText("dinner at toit 2400 with rohan")
         viewModel.acceptAiNotice()
+        aiIsReading()
         viewModel.dismissConfirmSheet()
         assertFalse(viewModel.isImprovingWithAi.value)
 
@@ -199,6 +208,7 @@ class SheetFirstQuickAddTest {
 
         viewModel.parseInputText("dinner at toit 2400 with rohan")
         viewModel.acceptAiNotice()
+        aiIsReading()
         // From the activity list, before the reading is back (REL M5: this used to become a new entry).
         viewModel.openEditTransaction(FullTransaction(chai.copy(id = chaiId)))
 
@@ -218,6 +228,7 @@ class SheetFirstQuickAddTest {
         viewModel.parseInputText("chai 40 cash")
         viewModel.acceptAiNotice()
         assertTrue(viewModel.isImprovingWithAi.value)
+        aiIsReading()
         viewModel.saveCurrentTransaction()
         until { !viewModel.isConfirmSheetOpen.value }
 
