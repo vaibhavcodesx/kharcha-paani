@@ -45,6 +45,7 @@ import com.vaibhav.kharchapaani.data.db.entity.SubscriptionEntity
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.data.model.ActivityItem
 import com.vaibhav.kharchapaani.data.model.FullTransaction
+import com.vaibhav.kharchapaani.data.model.HomeSnapshot
 import com.vaibhav.kharchapaani.data.model.GroupWithDetails
 import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
 import com.vaibhav.kharchapaani.data.model.ParsedTransactionResult
@@ -494,18 +495,30 @@ class MainViewModel(
         _askBoard.value = _askBoard.value.cleared()
     }
 
-    /** Recent Activity: transactions plus settlements and IOUs, filtered and searched together. */
-    val activityFeed: StateFlow<List<ActivityItem>> = combine(
-        combine(rawTransactions, pendingDeletes.ids) { transactions, hidden ->
+    /** Cold sources retain the difference between an empty ledger and one not read yet. */
+    private val activityFeedSource = combine(
+        combine(ledgerRepo.fullTransactions, pendingDeletes.ids) { transactions, hidden ->
             if (hidden.isEmpty()) transactions else transactions.filterNot { it.transaction.id in hidden }
         },
         ledgerRepo.allSettlements,
-        combine(people, rawGroups) { people, groups -> people to groups },
+        combine(ledgerRepo.allPeople, ledgerRepo.allGroups) { people, groups -> people to groups },
         searchQuery,
         selectedFilter
     ) { transactions, settlements, (people, groups), query, filter ->
         ActivityFeed.build(getApplication<Application>(), transactions, settlements, people, groups, query, filter)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }
+
+    /** Recent Activity: transactions plus settlements and IOUs, filtered and searched together. */
+    val activityFeed: StateFlow<List<ActivityItem>> = activityFeedSource
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Do not combine the public StateFlows here: their initial empty/zero values are placeholders.
+    // Even a genuine empty Home waits for every actual Room-backed source's first emission.
+    val homeSnapshot: StateFlow<HomeSnapshot?> = combine(
+        activityFeedSource, ledgerRepo.allPeople, ledgerRepo.personBalances, ledgerRepo.monthlyAnalytics,
+    ) { activity, people, balances, analytics ->
+        HomeSnapshot(activity, people, balances.sumOf { it.netBalance }, analytics)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     fun retractSettlement(settlementId: Long) {
         launchAction {

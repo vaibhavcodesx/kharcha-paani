@@ -13,6 +13,8 @@ import androidx.work.testing.WorkManagerTestInitHelper
 import com.vaibhav.kharchapaani.data.auth.AuthState
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
+import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
+import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.ui.auth.AuthUiState
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupsViewModel
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
@@ -20,6 +22,7 @@ import com.vaibhav.kharchapaani.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.*
 import org.junit.*
+import org.junit.Assert.assertEquals
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -82,6 +85,9 @@ class HomeLoadingTest {
     @Test fun `returning ledger waits for Room instead of showing a false empty state`() = runBlocking {
         db.transactionDao().insertTransaction(TransactionEntity(type = "expense", amount = 432.0,
             category = "Food", merchant = "Breakfast saved yesterday", paymentMethod = "Cash"))
+        val rohan = db.personDao().insertPerson(PersonEntity(name = "Rohan", avatarColor = "#70C1FF"))
+        db.settlementDao().insertSettlement(SettlementEntity(fromPersonId = -1L, toPersonId = rohan,
+            amount = 25.0, note = "Test advance", isIou = true))
         open()
         compose.onNodeWithTag("hero_month_spend_card").assertDoesNotExist()
         compose.onNodeWithText("Your first entry goes here").assertDoesNotExist()
@@ -93,6 +99,11 @@ class HomeLoadingTest {
         }
         compose.onNodeWithText("Your first entry goes here").assertDoesNotExist()
         compose.onNodeWithTag("loading_brand_mark").assertDoesNotExist()
+        val snapshot = requireNotNull(vm.homeSnapshot.value)
+        assertEquals(listOf("Rohan"), snapshot.people.map { it.name })
+        assertEquals(432.0, snapshot.monthlyAnalytics.totalExpense, 0.0)
+        assertEquals(25.0, snapshot.totalNetOwed, 0.0)
+        assertEquals(2, snapshot.activity.size)
     }
 
     @Test fun `a genuinely empty ledger shows its first entry invitation only after Room answers`() {
