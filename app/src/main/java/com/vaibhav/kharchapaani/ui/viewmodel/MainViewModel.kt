@@ -5,6 +5,7 @@ import com.vaibhav.kharchapaani.diagnostics.CrashReporting
 import com.vaibhav.kharchapaani.ui.format.receiptNoticeResource
 import com.vaibhav.kharchapaani.ui.format.quickAddNoticeResource
 import com.vaibhav.kharchapaani.domain.isSavableAmount
+import com.vaibhav.kharchapaani.domain.StatementReimports
 import com.vaibhav.kharchapaani.domain.NotificationAccess
 import com.vaibhav.kharchapaani.domain.NotificationMoment
 import com.vaibhav.kharchapaani.domain.NotificationOffer
@@ -1110,7 +1111,13 @@ class MainViewModel(
                 _isParsingStatement.value = false
             }
             when (result) {
-                is StatementReadResult.Success -> _statementParseResult.value = result.statement
+                is StatementReadResult.Success -> {
+                    val ledger = db.transactionDao().getAllTransactionsDirect()
+                    val alreadyLabel = uiText(R.string.statement_warning_already_in_ledger)
+                    _statementParseResult.value = withContext(Dispatchers.Default) {
+                        StatementReimports.review(result.statement, ledger, alreadyLabel)
+                    }
+                }
                 is StatementReadResult.Failed -> {
                     _isImportStatementOpen.value = false
                     _statusMessage.value = statementFailureMessage(result.reason)
