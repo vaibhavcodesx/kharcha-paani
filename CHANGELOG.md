@@ -35,6 +35,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- Partial payment asks say “Asking ₹X of the ₹Y for now.”, keeping the full balance and history
+  without putting pressure on a friend (R1).
+
 - Money confirmation action bars keep complete amounts and move the action below the summary
   at large font sizes (X7 / T2.10, REL M7; sheets).
 
