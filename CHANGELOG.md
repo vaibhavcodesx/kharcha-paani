@@ -17,7 +17,18 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - Source-pinned architecture and domain understanding for agent onboarding, with explicit verification limits (O2).
 
+- UPI-link tests check encoded parameters, exact supported amounts and omitted invalid amounts (T9).
+
+- Migration-chain regression checks legacy v2 rows through v10, UUID uniqueness and post-migration DAO writes (T8).
+
+- Deterministic local-parser golden cases cover 30 representative English/Hinglish inputs (T5).
+
+- Money formatting and input tests cover Indian grouping, invalid numbers, limits, intermediate keystrokes and representative round trips (T4).
+
 - Agent handoff records reviewed PR states, owner decisions and restart instructions, with a working Codex lead progress report (#222).
+
+
+- SplitRounding invariant tests verifying equal, exact, and share modes sum to the paisa across representative amounts and group sizes up to 50 (T3).
 
 
 
@@ -51,7 +62,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Home headings, capture notices, filters and day totals use Android string resources, preserving their English wording and full rupee figures.
 
 
+
 ### Fixed
+- The large-amount quick-add test keeps the friends list subscribed the way the app shell does,
+  and reports flow/database contents on timeout, while retaining the original wait limit.
 
 - A confirmed settlement can wait briefly for its confirmation snackbar before requesting a rare Play review; an expired or cancelled opportunity does not consume the cooldown.
 
