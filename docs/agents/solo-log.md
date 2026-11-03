@@ -193,6 +193,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-04 · #217 · T11 Ask-message totals · prepared for merge; independent full source review found no blocker; original assertions retained, no production behavior change. Lead integrated current main with one Unreleased entry. Exact-head unit-tests, lint and release-bundle gate merge; local Gradle skipped below 4 GB free RAM. No phone acceptance claimed.
 
+- 2026-11-04 · #211 · T10 invite-link coverage · prepared for merge; independent full source review found no blocker; original assertions retained, no production behavior change. Lead integrated current main with one Unreleased entry. Exact-head unit-tests, lint and release-bundle gate merge; local Gradle skipped below 4 GB free RAM. No phone acceptance claimed.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
