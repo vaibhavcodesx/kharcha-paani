@@ -13,6 +13,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- Invariant tests verifying AskMessage lines add up to total across all five kinds, carriedOver, and earlier (T11).
+
 ### Fixed
 - Home waits for the complete ledger before showing money or its first-entry invitation, preventing a false empty state on cold launch.
 - Statement re-import leaves saved payments unticked with “Already in your ledger”, reserving exact dates before nearby matches so a genuine extra purchase stays importable.
