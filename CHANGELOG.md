@@ -13,6 +13,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- Invariant test asserting local backup export and restore preserves every column of every entity including people, groups, members, subscriptions, direct and split transactions, split shares, settlements, and settings (T7).
+
 ## [1.6.0] - 2026-11-03
 
 ### Added
