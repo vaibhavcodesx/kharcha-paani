@@ -334,7 +334,7 @@ class AskMessageTest {
         assertTrue(message.contains("• Earlier: ₹1,00,000.25"))
         assertTrue(message.contains("• Deposit for flat, 1 Oct: your share ₹5,00,000"))
         assertTrue(message.contains("• Advance rent share, 2 Oct: my share of what you paid -₹1,25,000.50"))
-        assertTrue(message.contains("• Broker fee, 3 Oct: ₹2,50,000.25"))
+        assertTrue(message.contains("• I sent you, 3 Oct: ₹2,50,000.25"))
 
         assertLinesAddUpToTotal(hisaab, friendName = "Vikram")
     }
@@ -478,15 +478,17 @@ class AskMessageTest {
         // 3. All 5 kinds in the recent history
         val rows = listOf(
             row(-50.0, 1, "Friend paid lunch"), // carried over
-            row(30.0, 2, "Chai 1"),             // folded into earlier
+            row(30.0, 2, "Chai 1"),             // folded into carried over (net -20)
             row(40.0, 3, "Chai 2"),             // folded into earlier
             row(50.0, 4, "Chai 3"),             // folded into earlier
             row(60.0, 5, "Chai 4"),             // folded into earlier
-            row(100.0, 6, "Dinner", "split", false),                // THEIR_SHARE
-            row(-35.0, 7, "Auto", "split", false),                  // MY_SHARE
-            row(80.0, 8, "Concert ticket", "guest", false),         // AS_GUEST
-            row(200.0, 9, "Loan back", "settlement", true),         // I_SENT
-            row(-50.0, 10, "Friend UPI transfer", "settlement", true) // THEY_SENT
+            row(20.0, 6, "Snack 1"),            // recent line
+            row(25.0, 7, "Snack 2"),            // recent line
+            row(100.0, 8, "Dinner", "split", false),                // THEIR_SHARE
+            row(-35.0, 9, "Auto", "split", false),                  // MY_SHARE
+            row(80.0, 10, "Concert ticket", "guest", false),        // AS_GUEST
+            row(200.0, 11, "Loan back", "settlement", true),        // I_SENT
+            row(-50.0, 12, "Friend UPI transfer", "settlement", true) // THEY_SENT
         )
 
         val hisaab = requireNotNull(HisaabItemiser.itemise(rows))
