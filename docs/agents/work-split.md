@@ -21,13 +21,9 @@ habit. The owner is Vaibhav Chauhan.
 
 ## Who is working now
 
-**Antigravity, from 2026-11-03,** does the routine queue in [`../antigravity/HANDBOOK.md`](../antigravity/HANDBOOK.md). It follows Codex's rules on this page, **never merges**, and its PRs collect against `main`.
+**Codex leads from 2026-11-03 to 2026-11-06, with merge rights:** [`codex-lead-2026-11-03.md`](codex-lead-2026-11-03.md). That page overrides this one for the period, including the file limits and "Don't merge" below. Hard stops still hold: RLS, auth, security, `supabase/` and non-additive migrations stay unmerged for the owner. After 2026-11-06 Codex doesn't merge unless the owner extends it.
 
-**Claude cloud sessions** review and merge those PRs and do the hard and creative work: [`../claude-cloud/HANDOFF.md`](../claude-cloud/HANDOFF.md). Progress log: issue #188.
-
-**The Codex solo period (2026-10-27 to 2026-10-30) is over.** Its self-merge exception ended with it:
-Codex doesn't merge. What it did is in [`solo-log.md`](solo-log.md) and
-[`../production-readiness/solo-progress-2026-10-27.md`](../production-readiness/solo-progress-2026-10-27.md).
+**Antigravity** does the routine queue in [`../antigravity/HANDBOOK.md`](../antigravity/HANDBOOK.md) and never merges. **Claude cloud sessions**, if started, take the creative stream in [`../claude-cloud/HANDOFF.md`](../claude-cloud/HANDOFF.md). Progress log: issue #188.
 
 ## The lanes
 

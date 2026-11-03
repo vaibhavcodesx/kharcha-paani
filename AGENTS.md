@@ -11,8 +11,8 @@ disagrees with it, that page wins. Antigravity: stop and read this first, your l
 
 Quick reference (details in the page above):
 
-- One item, one branch (`codex/<item>-<short-name>`), one PR titled `[codex] <item id>: …`. Never
-  merge, never push to `main`.
+- **Codex: you lead until 2026-11-06, with merge rights. Read `docs/agents/codex-lead-2026-11-03.md` first.**
+- One item, one branch (`codex/<item>-<short-name>`), one PR titled `[codex] <item id>: …`. Never push to `main`.
 - No Room schema changes, nothing under `supabase/`, `data/db/`, `data/sync/`, `.github/`.
 - Tests with every change. For a bug, the failing test comes first. CI on the PR is the authority.
 - Add one entry to `CHANGELOG.md` under `## [Unreleased]`.
