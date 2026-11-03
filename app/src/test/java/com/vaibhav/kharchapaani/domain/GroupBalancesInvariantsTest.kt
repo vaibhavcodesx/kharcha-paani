@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.domain
 
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
+import com.vaibhav.kharchapaani.data.db.entity.SettlementStatus
 import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
@@ -56,14 +57,14 @@ class GroupBalancesInvariantsTest {
         from: Long,
         to: Long,
         amount: Double,
-        isConfirmed: Boolean = true,
+        status: SettlementStatus = SettlementStatus.CONFIRMED,
     ): SettlementEntity {
         return SettlementEntity(
             id = id,
             fromPersonId = from,
             toPersonId = to,
             amount = amount,
-            isConfirmed = isConfirmed,
+            status = status,
             groupId = 1L,
         )
     }
@@ -142,8 +143,8 @@ class GroupBalancesInvariantsTest {
             expense(3L, 20.0, p2, SplitRounding.equal(20.0, listOf(p1, p2), p2), type = "income"), // Income ignored
         )
         val settlements = listOf(
-            settlement(1L, from = p2, to = p1, amount = 25.0, isConfirmed = true),
-            settlement(2L, from = p2, to = p1, amount = 25.0, isConfirmed = false), // Pending: must not move balance
+            settlement(1L, from = p2, to = p1, amount = 25.0, status = SettlementStatus.CONFIRMED),
+            settlement(2L, from = p2, to = p1, amount = 25.0, status = SettlementStatus.PENDING), // Pending: must not move balance
         )
 
         val positions = GroupBalances.netPositions(expenses, settlements)
@@ -227,8 +228,8 @@ class GroupBalancesInvariantsTest {
                         val to = (members - from).random(rng)
                         val amountPaisa = rng.nextLong(100L, 200000L) // ₹1.00 to ₹2000.00
                         val amount = toRupees(amountPaisa)
-                        val isConfirmed = rng.nextDouble() < 0.85
-                        settlements[id] = settlement(id, from, to, amount, isConfirmed)
+                        val status = if (rng.nextDouble() < 0.85) SettlementStatus.CONFIRMED else SettlementStatus.PENDING
+                        settlements[id] = settlement(id, from, to, amount, status)
                     }
                     4 -> {
                         // Edit settlement
@@ -236,8 +237,10 @@ class GroupBalancesInvariantsTest {
                             val id = settlements.keys.random(rng)
                             val old = settlements.getValue(id)
                             val newAmount = if (rng.nextBoolean()) toRupees(rng.nextLong(100L, 200000L)) else old.amount
-                            val newConfirmed = if (rng.nextBoolean()) !old.isConfirmed else old.isConfirmed
-                            settlements[id] = old.copy(amount = newAmount, isConfirmed = newConfirmed)
+                            val newStatus = if (rng.nextBoolean()) {
+                                if (old.status == SettlementStatus.CONFIRMED) SettlementStatus.PENDING else SettlementStatus.CONFIRMED
+                            } else old.status
+                            settlements[id] = old.copy(amount = newAmount, status = newStatus)
                         }
                     }
                     5 -> {
