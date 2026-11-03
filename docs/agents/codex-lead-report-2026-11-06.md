@@ -30,6 +30,7 @@ Release source: `5fb95e8b308b7b352d5139dd806c7afbfb002720`.
 | Group-balance and debt-simplification invariants, with independent whole-paisa checks | [#200](https://github.com/vaibhavcodesx/kharcha-paani/pull/200), [#202](https://github.com/vaibhavcodesx/kharcha-paani/pull/202) |
 | Reviewed fictional Play screenshots and feature graphic; owner approval/upload still separate | [#210](https://github.com/vaibhavcodesx/kharcha-paani/pull/210) |
 | Back-to-Home test clears and awaits both ViewModels before closing Room | [#220](https://github.com/vaibhavcodesx/kharcha-paani/pull/220) |
+| Statement-row golden tests consistently use the parser timezone, with an India-zone regression | [#206](https://github.com/vaibhavcodesx/kharcha-paani/pull/206) |
 
 Each merged head had latest main, independent review and green unit-tests, lint and release-bundle.
 **#201, #213, #216 and #195 are next-build changes; they are not in the published v1.6 APK.**
@@ -48,7 +49,7 @@ Their superseded drafts #130, #132 and #143 are closed. No history was deleted.
 - Antigravity reviews are posted on #196, #197, #199, #200 and #202–#211, #217, #219 and #221.
   Some need factual/test corrections; even otherwise clean PRs need their log, latest main and final CI.
   Lead is resolving safe main/log/changelog integration while preserving author changes. #207 now tests actual
-  backup serialization. #206 has an isolated India-timezone red and a prepared fix. #221 has two formatter-oracle defects.
+  backup serialization. #206 is merged after an isolated India-timezone red and green fix. #221 has two formatter-oracle defects.
 - [#139](https://github.com/vaibhavcodesx/kharcha-paani/pull/139): 200% font work remains parked under
   the owner deferral reported on #188. Normal-size clipped money is still in scope.
 
