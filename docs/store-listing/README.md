@@ -1,8 +1,9 @@
 # Play Store listing draft (X1 / T2.9)
 
 English (India) copy for adults tracking spending and splitting with friends. This is a
-reviewable text and art handoff; screenshots and the feature graphic still need producing
-and owner approval before upload. No Play Console settings are changed by this item.
+reviewable text and art handoff. The six screenshots and the feature graphic are produced in
+[`assets/`](assets/) (Stream C item 3) and need the owner's approval before upload. No Play
+Console settings are changed by this item.
 
 ## Copy to paste
 
@@ -36,6 +37,29 @@ Source checks: `ui/home/CaptureCard.kt` has quick add, voice and bill entry;
 No future budget limits, automatic bank connections, instant sync or automatic payments
 are promised. The product is initially without charges per D5; promotional pricing language
 is deliberately absent from the public copy per X1.
+
+## Assets and provenance
+
+[`assets/`](assets/) holds the six screenshots and the feature graphic, produced by
+`app/src/test/java/com/vaibhav/kharchapaani/ui/store/` (test-only).
+
+- **Source:** the 1.6.0 (7) production code: release base `main` 5fb95e8 (R3), plus Home's
+  later string-resource and loading changes (F5, F7) up to `main` f128a87, all unchanged in what
+  they show. Rendered 2026-11-03 at branch head of #210; regenerate after any UI change.
+- **Actual sizes:** portraits **1081×1921** px (412×732 dp at 420 dpi: Play's "1080×1920 or larger",
+  long side under 2× the short), feature graphic **1024×500**. All opaque 24-bit PNG, checked by the
+  capture tests.
+- **Dates:** the fixture's entries fall in the month the capture runs (Home, Insights and the
+  screenshots' dates follow it), never in the month before (`StoreFixtureDatesTest`).
+
+## Check on the phone (before upload)
+
+- Install 1.6.0, open Home, Splits → Weekend trip, a split's edit sheet, a payment to confirm and
+  Insights, and compare each with its screenshot: same labels, same layout, nothing the phone shows
+  differently (fonts, insets, the dock).
+- Look at each PNG on the phone at full size and in the Play preview: amounts whole, nothing cut,
+  no personal data.
+- The listing is uploaded by the owner only; nothing here changes the Play Console.
 
 ## Validate and hand off
 

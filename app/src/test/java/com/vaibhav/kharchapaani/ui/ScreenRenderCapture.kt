@@ -321,6 +321,39 @@ class ScreenRenderCapture {
         }
     }
 
+    /** Sheet-first quick add: the phone's guess, open at once, while the AI's reading is on its way. */
+    @Composable
+    private fun ImprovingSheet() {
+        Column(Modifier.fillMaxSize().background(CharcoalSurface), horizontalAlignment = Alignment.CenterHorizontally) {
+            SheetHandle()
+            ConfirmSheetContent(
+                isParsing = false, isEditing = false, isImprovingWithAi = true,
+                type = "expense", amount = "1299", merchant = "Dinner Toit Rohan",
+                category = "Food", paymentMethod = "GPay", note = "dinner at toit 1,299 with rohan gpay", date = at(today, 21, 40), groupId = null,
+                availableGroups = listOf(GroupEntity(id = 7, name = "Goa trip", emoji = "🏖️")), isSplit = true,
+                splitMode = SplitMode.EQUAL, paidByPersonId = -1L,
+                shares = listOf(ShareInput(-1, "You", 649.50), ShareInput(2, "Rohan", 649.50), ShareInput(3, "Meera", isSelected = false)),
+                onTypeChange = {}, onAmountChange = {}, onMerchantChange = {}, onCategoryChange = {}, onPaymentMethodChange = {},
+                onNoteChange = {}, onDateChange = {}, onGroupIdChange = {}, onIsSplitChange = {}, onSplitModeChange = {},
+                onPaidByPersonIdChange = {}, onTogglePersonShare = {}, onExactAmountChange = { _, _ -> },
+                onPercentageChange = { _, _ -> }, onOpenAddFriend = {}, onSave = {},
+            )
+        }
+    }
+
+    @Test
+    fun `quick add, open on the phone's guess while the AI improves it`() = capture("confirm_sheet_improving") {
+        ImprovingSheet()
+    }
+
+    @Test
+    fun `quick add improving, at the largest font`() = capture("confirm_sheet_improving_font_2x") {
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density, fontScale = 2f)) {
+            ImprovingSheet()
+        }
+    }
+
     @Test
     fun `a scanned bill, with its photo kept`() = capture("confirm_sheet_bill_photo") {
         // A stand-in for the bill: a light page with a few dark lines, written as the store writes one.
