@@ -26,9 +26,10 @@ Release source: `5fb95e8b308b7b352d5139dd806c7afbfb002720`.
 | Statement re-import unticks saved payments, reserving exact dates before neighbours | [#201](https://github.com/vaibhavcodesx/kharcha-paani/pull/201) |
 | Home waits for actual activity, people, balances and analytics before showing money | [#213](https://github.com/vaibhavcodesx/kharcha-paani/pull/213) |
 | Home labels move to resources with unchanged English; the old test waits for its real feed | [#216](https://github.com/vaibhavcodesx/kharcha-paani/pull/216) |
+| Quick add opens immediately; late AI preserves typing, confirmed amounts and newly added split friends | [#195](https://github.com/vaibhavcodesx/kharcha-paani/pull/195) |
 
 Each merged head had latest main, independent review and green unit-tests, lint and release-bundle.
-**#201, #213 and #216 are next-build changes; they are not in the published v1.6 APK.**
+**#201, #213, #216 and #195 are next-build changes; they are not in the published v1.6 APK.**
 Their superseded drafts #130, #132 and #143 are closed. No history was deleted.
 
 ## Open and held
@@ -36,9 +37,6 @@ Their superseded drafts #130, #132 and #143 are closed. No history was deleted.
 - [#218](https://github.com/vaibhavcodesx/kharcha-paani/pull/218): review-prompt timing fix awaiting final CI/review.
   Real-Room/composable red run 41694356770 ran 980 tests with only the intended snackbar failure;
   its timeout/fresh-moment control passed. Earlier fixture attempts are documented honestly in the PR.
-- [#195](https://github.com/vaibhavcodesx/kharcha-paani/pull/195): instant quick add has review blockers:
-  AI can change a draft behind a large-amount confirmation or remove a newly added split friend.
-  Needs regression evidence, fixes, lifecycle cleanup and final checks.
 - [#210](https://github.com/vaibhavcodesx/kharcha-paani/pull/210),
   [#212](https://github.com/vaibhavcodesx/kharcha-paani/pull/212): store assets/UI audit need capture
   lifecycle and readiness/date corrections; owner approval still precedes any Play upload.

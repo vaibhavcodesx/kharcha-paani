@@ -140,6 +140,8 @@ class ReviewAfterSettlementTimingTest {
 
         compose.runOnUiThread { allowed = true }
         compose.mainClock.advanceTimeByFrame()
+        // Readiness recomposes first; its snapshotFlow notification can need a later frame.
+        compose.mainClock.advanceTimeUntil(timeoutMillis = 500) { manager.requests == 1 }
         pump()
 
         assertEquals("the success must survive its confirmation snackbar", 1, manager.requests)
