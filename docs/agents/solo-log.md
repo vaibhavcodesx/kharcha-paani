@@ -197,6 +197,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-04 · #196 · O2 onboarding source map · prepared for merge; corrected API/entity/mode names, parse/save/sync ordering and session cleanup against pinned main ebfc2b6. Portable source links replace local paths; source-traced behavior is explicitly separate from phone/live deployment acceptance. Independent source review and exact-head current-main CI gate merge; docs only.
 
+- 2026-11-04 · CI fixture ownership · regression-only stage; source and CI XML identify old unowned MainViewModels before Room close in EqualSplitPaisa, DoubleSubmit and BillPhotoFlow. Added explicit scope-completion checks before close, leaving cleanup behavior otherwise unchanged. Predict six lifecycle-check failures (one equal-split, two double-submit, three bill-photo cases), with the already-observed LargeAmount background exception possible until scopes are owned. All existing assertions retained; no production edits. Local Gradle skipped below 4 GB free RAM.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.

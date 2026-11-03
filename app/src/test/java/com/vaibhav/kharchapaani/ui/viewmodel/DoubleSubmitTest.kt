@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.ui.viewmodel
 
 import android.app.Application
+import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
@@ -8,6 +9,7 @@ import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -17,6 +19,7 @@ import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -52,8 +55,13 @@ class DoubleSubmitTest {
 
     @After
     fun tearDown() {
-        db.close()
-        Dispatchers.resetMain()
+        try {
+            assertTrue("Fixture must stop MainViewModel before Room closes",
+                viewModel.viewModelScope.coroutineContext[Job]!!.isCompleted)
+        } finally {
+            db.close()
+            Dispatchers.resetMain()
+        }
     }
 
     private suspend fun until(condition: suspend () -> Boolean) = withTimeout(10_000) {

@@ -4,6 +4,7 @@ import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
+import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
@@ -12,6 +13,7 @@ import androidx.work.testing.WorkManagerTestInitHelper
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.receipts.BillPhoto
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -58,9 +60,14 @@ class BillPhotoFlowTest {
 
     @After
     fun tearDown() {
-        db.close()
-        Dispatchers.resetMain()
-        File(application.filesDir, "receipts").deleteRecursively()
+        try {
+            assertTrue("Fixture must stop MainViewModel before Room closes",
+                viewModel.viewModelScope.coroutineContext[Job]!!.isCompleted)
+        } finally {
+            db.close()
+            Dispatchers.resetMain()
+            File(application.filesDir, "receipts").deleteRecursively()
+        }
     }
 
     /** What the gallery hands back: a picture file. */
