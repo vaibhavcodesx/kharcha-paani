@@ -13,6 +13,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- Test verifying Room migration chain from oldest supported version 2 through version 10 preserves all entity rows, generates expected column defaults, and validates against target schema (T8).
+
 ## [1.6.0] - 2026-11-03
 
 ### Added
