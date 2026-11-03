@@ -636,6 +636,13 @@ class MainViewModel(
         _updatedByAi.value = false
     }
 
+    /**
+     * Save was tapped: the draft on the sheet is the one to keep, even when a "That's ₹15,00,000.
+     * Right?" check comes before the save itself. Called at the tap, so a reading that lands behind
+     * that dialog can't change what it asked about.
+     */
+    fun holdDraftForSave() = stopImprovingWithAi()
+
     /** The person changed [field] themselves, so the AI's reading leaves it alone. */
     private fun touched(field: EntryField) {
         if (_isImprovingWithAi.value) touchedWhileImproving += field
@@ -1976,6 +1983,8 @@ class MainViewModel(
                 return@launch
             }
             if (_isConfirmSheetOpen.value) {
+                // Their own change to the split, so the AI's reading of the line leaves it alone.
+                touched(EntryField.Split)
                 val current = _shares.value.toMutableList()
                 current.add(ShareInput(personId = newId, personName = name.trim(), isSelected = true))
                 _shares.value = current

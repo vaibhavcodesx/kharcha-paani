@@ -1,6 +1,8 @@
 package com.vaibhav.kharchapaani.ui.viewmodel
 
 import android.app.Application
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
@@ -58,7 +60,9 @@ class SheetFirstQuickAddTest {
     private val userId = "11111111-2222-3333-4444-555555555555"
     private lateinit var db: AppDatabase
     private lateinit var viewModel: MainViewModel
+    private val store = ViewModelStore()
     private val screen = CoroutineScope(Dispatchers.Unconfined + Job())
+    private var mainInstalled = false
 
     /** What the fake Gemini answers with, as the model's JSON, once [aiMayAnswer] opens. */
     @Volatile private var answer = ""
@@ -66,8 +70,7 @@ class SheetFirstQuickAddTest {
     private val asked = AtomicInteger()
     private val answered = AtomicInteger()
 
-    private val gemini = GeminiRepository(
-        client = OkHttpClient.Builder().addInterceptor { chain ->
+    private val client = OkHttpClient.Builder().addInterceptor { chain ->
             asked.incrementAndGet()
             // A slow network: the reading only comes back when the test says so.
             aiMayAnswer.await(10, TimeUnit.SECONDS)
@@ -80,7 +83,10 @@ class SheetFirstQuickAddTest {
                 .body("""{"candidates":[{"finishReason":"STOP","content":{"parts":[{"text":$text}]}}]}""".toResponseBody("application/json".toMediaType()))
                 .build()
                 .also { answered.incrementAndGet() }
-        }.build(),
+        }.build()
+
+    private val gemini = GeminiRepository(
+        client = client,
         endpoint = { model -> "https://example.invalid/v1beta/models/$model:generateContent" },
         accessToken = { "test-token" },
         configured = true,
@@ -89,6 +95,7 @@ class SheetFirstQuickAddTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
+        mainInstalled = true
         WorkManagerTestInitHelper.initializeTestWorkManager(application, Configuration.Builder().setExecutor(SynchronousExecutor()).build())
         runBlocking { AppSettings(application).setAiNoticeAccepted(false) }
         db = Room.inMemoryDatabaseBuilder(application, AppDatabase::class.java).allowMainThreadQueries().build()
@@ -97,6 +104,7 @@ class SheetFirstQuickAddTest {
             db.personDao().insertPerson(PersonEntity(id = 2, name = "Neha", avatarColor = "#70C1FF"))
         }
         viewModel = MainViewModel(application, db, userId, geminiRepo = gemini)
+        store.put("main", viewModel)
         // The app shell collects these while it's open; quick add reads them.
         screen.launch { viewModel.people.collect {} }
         screen.launch { viewModel.groups.collect {} }
@@ -105,12 +113,19 @@ class SheetFirstQuickAddTest {
     }
 
     @After
-    fun tearDown() {
-        // Nothing left blocked on the fake network.
+    fun tearDown(): Unit = runBlocking {
+        // Nothing left blocked on the fake network; then the ViewModel's own jobs stopped and
+        // finished before Room closes and Main is reset (#194's lifecycle; the screen scope alone
+        // doesn't own them).
         aiMayAnswer.countDown()
         screen.cancel()
-        db.close()
-        Dispatchers.resetMain()
+        if (::viewModel.isInitialized) {
+            val job = viewModel.viewModelScope.coroutineContext[Job]!!
+            store.clear()
+            withTimeout(10_000) { job.join() }
+        }
+        if (::db.isInitialized) db.close()
+        if (mainInstalled) Dispatchers.resetMain()
     }
 
     private suspend fun until(condition: () -> Boolean) = withTimeout(10_000) { while (!condition()) delay(20) }
@@ -125,6 +140,25 @@ class SheetFirstQuickAddTest {
     private suspend fun aiAnswers() {
         aiMayAnswer.countDown()
         until { answered.get() == 1 }
+    }
+
+    /**
+     * Lets the reading through after the person moved on, and waits until the call has fully
+     * finished. Cancelled work leaves no event to wait for, and a late answer would be applied on
+     * the call's own thread right after it returns, so [neverSees] then polls briefly for the wrong
+     * state instead of sleeping a fixed time.
+     */
+    private suspend fun lateAnswerFinishes() {
+        aiAnswers()
+        until { client.dispatcher.runningCallsCount() == 0 }
+    }
+
+    private suspend fun neverSees(message: String, windowMs: Long = 250, wrong: () -> Boolean) {
+        val end = System.currentTimeMillis() + windowMs
+        while (System.currentTimeMillis() < end) {
+            assertFalse(message, wrong())
+            delay(10)
+        }
     }
 
     private fun ticked(): Set<Long> = viewModel.shares.value.filter { it.isSelected }.map { it.personId }.toSet()
@@ -211,11 +245,9 @@ class SheetFirstQuickAddTest {
         viewModel.dismissConfirmSheet()
         assertFalse(viewModel.isImprovingWithAi.value)
 
-        aiAnswers()
-        // The reading has reached the phone; give it every chance to land.
-        delay(300)
+        lateAnswerFinishes()
 
-        assertFalse("a late reading reopened the sheet", viewModel.isConfirmSheetOpen.value)
+        neverSees("a late reading reopened the sheet") { viewModel.isConfirmSheetOpen.value }
         assertEquals("Dinner Toit Rohan", viewModel.merchant.value)
     }
 
@@ -231,10 +263,9 @@ class SheetFirstQuickAddTest {
         // From the activity list, before the reading is back (REL M5: this used to become a new entry).
         viewModel.openEditTransaction(FullTransaction(chai.copy(id = chaiId)))
 
-        aiAnswers()
-        delay(300)
+        lateAnswerFinishes()
 
-        assertEquals(chaiId, viewModel.editingTransactionId.value)
+        neverSees("a late reading turned the edit into a new entry") { viewModel.editingTransactionId.value != chaiId }
         assertEquals("40", viewModel.amount.value)
         assertEquals("Chai", viewModel.merchant.value)
         assertFalse(viewModel.isImprovingWithAi.value)
@@ -251,14 +282,36 @@ class SheetFirstQuickAddTest {
         viewModel.saveCurrentTransaction()
         until { !viewModel.isConfirmSheetOpen.value }
 
-        aiAnswers()
-        delay(300)
+        lateAnswerFinishes()
 
+        neverSees("a late reading reopened the sheet") { viewModel.isConfirmSheetOpen.value }
         val saved = db.transactionDao().getAllTransactionsDirect().single()
         assertEquals(40.0, saved.amount, 0.001)
         assertEquals("Chai", saved.merchant)
         assertEquals("Cash", saved.paymentMethod)
-        assertFalse("a late reading reopened the sheet", viewModel.isConfirmSheetOpen.value)
         assertEquals("the sheet's state wasn't rewritten after the save", "40", viewModel.amount.value)
+    }
+
+    @Test
+    fun `a friend added from the sheet while it reads stays in the split, and is saved there`() = runBlocking {
+        // #195 review P2: adding a friend selects them in the open entry, but that wasn't counted
+        // as changing the split, so the AI's reading put back its own (Rohan-only) split.
+        answer = toit
+
+        viewModel.parseInputText("dinner at toit 2400 with rohan")
+        viewModel.acceptAiNotice()
+        aiIsReading()
+        viewModel.addNewFriend("Kabir", "#D7BDE2")
+        until { viewModel.shares.value.any { it.personName == "Kabir" && it.isSelected } }
+        val kabir = viewModel.shares.value.single { it.personName == "Kabir" }.personId
+
+        aiAnswers()
+        until { !viewModel.isImprovingWithAi.value }
+
+        assertEquals(setOf(-1L, 1L, kabir), ticked())
+        viewModel.saveCurrentTransaction()
+        until { !viewModel.isConfirmSheetOpen.value }
+        val shares = db.splitDao().getAllSplitSharesDirect().map { it.personId }.toSet()
+        assertEquals("Kabir's share was saved with the entry", setOf(-1L, 1L, kabir), shares)
     }
 }

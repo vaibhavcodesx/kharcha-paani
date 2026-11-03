@@ -881,6 +881,7 @@ fun SplitFlowApp(
         isSaving = Submit.SaveEntry in submitting,
         isImprovingWithAi = isImprovingWithAi,
         updatedByAi = updatedByAi,
+        onSaveIntent = viewModel::holdDraftForSave,
     )
 
     val isExportOpen by viewModel.isExportOpen.collectAsState()

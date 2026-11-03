@@ -153,6 +153,8 @@ fun ConfirmBottomSheet(
     isImprovingWithAi: Boolean = false,
     // The AI's reading landed and changed something: said briefly where "Improving…" was.
     updatedByAi: Boolean = false,
+    // Save was tapped, before any large-amount check: the draft shown is the one to keep.
+    onSaveIntent: () -> Unit = {},
 ) {
     if (!isOpen) return
     val focusManager = LocalFocusManager.current
@@ -178,6 +180,7 @@ fun ConfirmBottomSheet(
             isSaving = isSaving,
             isImprovingWithAi = isImprovingWithAi,
             updatedByAi = updatedByAi,
+            onSaveIntent = onSaveIntent,
             onSave = {
                 focusManager.clearFocus()
                 onSave()
@@ -248,6 +251,7 @@ fun ConfirmSheetContent(
     // the eyebrow, so nothing on the sheet moves while they're already typing.
     isImprovingWithAi: Boolean = false,
     updatedByAi: Boolean = false,
+    onSaveIntent: () -> Unit = {},
 ) {
     // An entry keeps its own category or method even when it isn't a choice here (hidden since, or a
     // groupmate's own category), so it's shown and stays selected.
@@ -288,7 +292,11 @@ fun ConfirmSheetContent(
                     label = if (isEditing) stringResource(R.string.entry_update) else stringResource(R.string.entry_save),
                     disabledLabel = splitIssue ?: stringResource(R.string.entry_add_amount),
                     enabled = value > 0 && splitIssue == null,
-                    onClick = { if (value > Money.LARGE_AMOUNT) checkLargeAmount = value else onSave() },
+                    onClick = {
+                        // First, so a late AI reading can't change the draft behind the large-amount check.
+                        onSaveIntent()
+                        if (value > Money.LARGE_AMOUNT) checkLargeAmount = value else onSave()
+                    },
                     summary = if (value > 0) Money.format(value) else "₹0",
                     detail = listOfNotNull(merchant.ifBlank { null } ?: category, paymentMethod.ifBlank { null }).joinToString(" · "),
                     buttonTestTag = "confirm_save_button",
