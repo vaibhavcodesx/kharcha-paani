@@ -13,6 +13,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- Architecture map documenting current system components, session flow, and sync architecture (O3).
+
 ### Changed
 
 - Notification channels, private payment reminders and daily reminder copy use string resources
