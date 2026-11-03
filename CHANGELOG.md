@@ -66,6 +66,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Review findings and verification notes for unreviewed PRs #133, #135, #136, #138, #140 and #141 (F3).
+
 - A dated solo-progress report and Codex restart guide preserve the verified PR queue, parked
   work and remaining phone/protected-file checks (documentation handoff).
 
