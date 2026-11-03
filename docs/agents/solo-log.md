@@ -166,6 +166,9 @@ owner or Claude go at the bottom.
 - 2026-11-03 · #200 · T1 / Group balances zero-sum · prepared for merge; property tests assert group balances sum to zero, shares sum to total amount, and member balances are conserved across random add, edit, delete, and settle sequences. Independent source review completed; no production code changes; exact-head CI gates merge.
 
 
+
+- 2026-11-04 · #206 · T6 parsed statement-row golden tests · prepared for merge; pinned and restored Asia/Kolkata so the existing one-day boundary assertions expose the fixture mixing local parsed timestamps with UTC review. Red CI 41699431887 ran 1010 tests with exactly the predicted left-grace boundary failure before the fix. Review now uses the current parser-local zone through a getter after setup; all assertions remain. No production change or PDF/offline extraction claim. Current main integrated; final fix/review/exact-head CI gate merge.
+
 - 2026-11-03 · #202 · T2 / DebtSimplifier net preservation · prepared for merge; generative property tests verify net preservation, <= n-1 transfers, and non-negative transfers with independent whole-paisa validation. Independent source review completed; no production code changes; exact-head CI gates merge.
 
 
