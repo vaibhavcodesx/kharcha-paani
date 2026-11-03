@@ -15,6 +15,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Agent handoff records reviewed PR states, owner decisions and restart instructions, with a working Codex lead progress report (#222).
+
 
 
 - Invariant test asserting the local backup file round trip preserves supported fields for people, groups, members, subscriptions, direct and split transactions, split shares, settlements, and settings (T7).
