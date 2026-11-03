@@ -19,6 +19,7 @@ flowchart TD
         Repo["LedgerRepository / AuthRepository / GeminiRepository"]
         Room["Local Room Database (v10)\n(databases/ledger-uid.db)"]
         SyncEngines["Sync Engines\n(Transaction, Group, LocalLedger)"]
+        Scheduler["SyncScheduler"]
         Worker["WorkManager SyncWorker"]
         Widgets["App Widgets & Notification Helpers"]
     end
@@ -35,15 +36,18 @@ flowchart TD
     end
 
     UI --> VM
+    UI -->|account changes from MainActivity| Session
     Session -->|owns account ViewModelStore| VM
     Session --> Room
     VM --> Repo
     Repo --> Room
-    Repo -->|eligible local changes schedule work| Worker
+    Repo -->|eligible local changes| Scheduler
+    Scheduler -->|enqueue constrained work| Worker
     Worker --> SyncEngines
+    SyncEngines <--> Room
     SyncEngines <-->|PostgREST TLS| Postgres
-    Realtime -.->|Doorbell Ring| SyncEngines
-    Repo -->|Credential Manager| Auth
+    Realtime -.->|doorbell schedules sync| Scheduler
+    Repo -->|Google ID-token exchange| Auth
     Repo -->|Authenticated Request| Proxy
     Proxy -->|API Secret| Gemini
     Widgets --> Room
@@ -73,7 +77,7 @@ A floating glass dock (`KpDock`) coordinates top-level destinations:
 
 ## 3. Account Session & State Architecture (`ui/session/`)
 
-Kharcha Paani scopes all user data strictly per Google account to prevent data cross-contamination:
+Ledger data is scoped by Supabase user ID; the current sign-in flow uses Google. Account-independent preferences are not a separate ledger:
 
 ```mermaid
 sequenceDiagram
@@ -116,14 +120,11 @@ The persistence layer runs SQLite via Room (schema version 10) through the share
 
 ```mermaid
 erDiagram
-    GroupEntity ||--o{ GroupMemberEntity : "has members"
-    GroupEntity ||--o{ TransactionEntity : "contains"
-    PersonEntity ||--o{ GroupMemberEntity : "joined as"
-    TransactionEntity ||--o| SplitEntity : "split details"
-    SplitEntity ||--o{ SplitShareEntity : "has shares"
-    PersonEntity ||--o{ SplitShareEntity : "owes / owed"
-    PersonEntity ||--o{ SettlementEntity : "from / to"
-    TransactionEntity ||--o{ ReceiptEntity : "bill photo"
+    GroupEntity ||--o{ GroupMemberEntity : "groupId FK"
+    TransactionEntity ||--o{ SplitEntity : "transactionId FK"
+    SplitEntity ||--o{ SplitShareEntity : "splitId FK"
+    PersonEntity ||--o{ PaymentAskEntity : "personId FK"
+    TransactionEntity ||--o{ ReceiptEntity : "transactionId FK"
 
     TransactionEntity {
         Long id PK
@@ -189,7 +190,7 @@ erDiagram
 
 ### 4.1 Schema Entities Overview
 1. **`TransactionEntity`:** Primary ledger entries (incomes and expenses), carrying categorical metadata, merchant names, local timestamps, `groupId`, `syncState`, and `remoteId`.
-2. **`SplitEntity`:** 1:1 split header associated with a transaction, designating `paidByPersonId` (`-1L` = "You", $>0$ = friend) and split calculation mode (`equal`, `exact`, `percentage`). Weighted allocation is implemented by `SplitRounding.byWeights`; `share` is not the persisted split-type name.
+2. **`SplitEntity`:** Split header associated with a transaction (normally one per transaction in app logic), designating `paidByPersonId` (`-1L` = "You", $>0$ = friend) and split calculation mode (`equal`, `exact`, `percentage`). Weighted allocation is implemented by `SplitRounding.byWeights`; `share` is not the persisted split-type name.
 3. **`SplitShareEntity`:** 1:N breakdown of participant shares. Supports guests via nullable `guestName` and `guestPersonId`; `isGuest` is a computed property, not a database column.
 4. **`PersonEntity`:** Local contacts and groupmates (name, avatar URI, assigned color hex).
 5. **`GroupEntity`:** Local and shared expense groups (name, emoji, color hex, archival timestamp, sync status).
@@ -201,7 +202,7 @@ erDiagram
 11. **`PendingRemoteDeleteEntity`:** Existing queue of remote deletions/retractions, distinguished by `entityType`.
 12. **`SyncMetaEntity`:** Key/value sync cursors and bookkeeping.
 
-The diagram mixes logical references with enforced foreign keys. Actual Room FKs are group-members→groups, splits→transactions, split-shares→splits, payment-asks→people and receipts→transactions (all CASCADE on delete). The transaction/group and person references drawn above are not additional SQL FKs. Split/transaction one-to-one is an application convention; its transaction index is not unique.
+The ER edges show only enforced Room foreign keys, all CASCADE on delete; attribute lists are abbreviated. Other group/person IDs are logical references, not additional SQL FKs, and the self sentinel `-1L` does not require a person row. The application normally maintains one split per transaction, but the schema permits more than one: its transaction index is not unique.
 
 ---
 
@@ -267,7 +268,7 @@ sequenceDiagram
 
 - **Google Credential Manager:** Replaces legacy Google Sign-In with modern `CredentialManager` API, protected by cryptographic nonces.
 - **Supabase Authentication:** The Google ID token is exchanged for a Supabase session. The app can retain account identity and open its local ledger using a stored session during refresh/network disruption. Network authorization can still fail; cached identity is not proof of a valid refreshed token.
-- **Headless Background Authentication (`BackgroundAuth`):** Provides authenticated access to workers, widgets, and broadcast receivers without risking main-thread or UI deadlocks.
+- **Headless Background Authentication (`BackgroundAuth`):** Reads identity from memory/stored session and uses bounded initialization/storage-reload waits before background network work; it avoids waiting indefinitely for foreground initialization. This is not a guarantee that refresh/network authorization always succeeds.
 
 ---
 
@@ -281,13 +282,16 @@ flowchart LR
     LocalFallback["On-device Text Guess\n(LocalHeuristicParser)"]
     EdgeFunction["Supabase Edge Function\n(gemini-proxy)"]
     GeminiModel["Google Gemini API\n(gemini-3.6-flash / gemini-3.5-flash-lite)"]
+    ClientParse["GeminiRepository\nEnvelope parsing and failure classification"]
     Result["ParsedTransactionResult / StatementParseResult"]
 
     Input -->|text: local parse before cloud call| LocalFallback
-    Input -->|Authenticated TLS| EdgeFunction
+    LocalFallback -->|text cloud request, when configured| EdgeFunction
+    Input -->|receipt or PDF, authenticated TLS| EdgeFunction
     EdgeFunction -->|Secret Key & Daily Quota Check| GeminiModel
     GeminiModel -->|JSON Response| EdgeFunction
-    EdgeFunction -->|Validated Data| Result
+    EdgeFunction -->|generateContent envelope; statement rows cleaned| ClientParse
+    ClientParse -->|client parsed result| Result
     LocalFallback -->|text guess| Result
     Result --> BottomSheet["Reactive Confirmation Sheet\n(MainViewModel)"]
 ```
