@@ -13,6 +13,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- Unit test scanning outgoing and notification strings for banned debt-collector words ("you owe", "overdue", "pay now") (T12).
+
 ### Changed
 - Home headings, capture notices, filters and day totals use Android string resources, preserving their English wording and full rupee figures.
 
