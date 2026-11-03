@@ -24,8 +24,9 @@ Written at the end of the session for the next Claude Code cloud session. Read
 
 Verified merge commits: #195 `0337c5c`, #210 `bb954ba`, #220 `7f3ef32`.
 
-Merge order for what's left: #212, #214, #215, then this handoff (#222). #212/#214/#215 remain
-held for the review findings below, not the former release freeze. Every PR adds a `CHANGELOG.md` line under
+This documentation handoff (#222) can land independently. For the remaining UI work, review
+#212, then #214, then #215; they remain held for the findings below, not the former release freeze.
+Every PR adds a `CHANGELOG.md` line under
 Unreleased, so each merge conflicts the next there: keep both sides.
 
 ### Codex's open review asks: the next session's first checklist
