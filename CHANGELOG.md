@@ -15,6 +15,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Source-pinned architecture map distinguishes checked-in configuration from release and live-service acceptance (O3).
+
 - Outgoing-message and notification tests guard friendly wording while distinguishing in-app self views (T12).
 
 - Source-pinned architecture and domain understanding for agent onboarding, with explicit verification limits (O2).
