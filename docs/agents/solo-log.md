@@ -174,6 +174,8 @@ owner or Claude go at the bottom.
 
 
 
+- 2026-11-04 · #207 · T7 backup file coverage · merged; the full supported-field fixture now encodes and decodes the actual backup file, asserts decoded settings/object equality, and restores that decoded payload into real Room. Every prior restored-row assertion remains. Coverage claim narrowed to supported backup fields; stored IDs/sync metadata are not falsely promised. Lead integrated current main and preserved all log/changelog entries; exact-head CI passed before merge. No production or phone behavior changes.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
