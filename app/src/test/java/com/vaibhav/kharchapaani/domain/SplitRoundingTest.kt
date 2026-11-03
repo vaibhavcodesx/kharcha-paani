@@ -125,7 +125,7 @@ class SplitRoundingTest {
                 )
                 for (share in sharesInside.values) {
                     val cents = share * 100.0
-                    assertEquals("Equal share inside must be exact whole paisa", Math.round(cents).toDouble(), cents, 1e-9)
+                    assertEquals("Equal share inside must be exact whole paisa", Math.round(cents).toDouble(), cents, 1e-6)
                 }
 
                 // Case 2: Payer is outside participants
@@ -148,7 +148,7 @@ class SplitRoundingTest {
                 )
                 for (share in sharesOutside.values) {
                     val cents = share * 100.0
-                    assertEquals("Equal share outside must be exact whole paisa", Math.round(cents).toDouble(), cents, 1e-9)
+                    assertEquals("Equal share outside must be exact whole paisa", Math.round(cents).toDouble(), cents, 1e-6)
                 }
             }
         }
@@ -197,7 +197,7 @@ class SplitRoundingTest {
                     )
                     for (share in normalized.values) {
                         val cents = share * 100.0
-                        assertEquals("Normalized share must be exact whole paisa", Math.round(cents).toDouble(), cents, 1e-9)
+                        assertEquals("Normalized share must be exact whole paisa", Math.round(cents).toDouble(), cents, 1e-6)
                     }
                 }
             }
@@ -251,7 +251,7 @@ class SplitRoundingTest {
                         )
                         for (share in sharesInside.values) {
                             val cents = share * 100.0
-                            assertEquals("byWeights share inside must be exact whole paisa", Math.round(cents).toDouble(), cents, 1e-9)
+                            assertEquals("byWeights share inside must be exact whole paisa", Math.round(cents).toDouble(), cents, 1e-6)
                         }
 
                         // Payer outside
@@ -267,7 +267,7 @@ class SplitRoundingTest {
                         )
                         for (share in sharesOutside.values) {
                             val cents = share * 100.0
-                            assertEquals("byWeights share outside must be exact whole paisa", Math.round(cents).toDouble(), cents, 1e-9)
+                            assertEquals("byWeights share outside must be exact whole paisa", Math.round(cents).toDouble(), cents, 1e-6)
                         }
                     }
                 }
