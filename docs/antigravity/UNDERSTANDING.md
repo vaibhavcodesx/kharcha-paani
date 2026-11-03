@@ -1,179 +1,165 @@
-# Kharcha Paani: Architecture & Domain Understanding
+# Kharcha Paani: architecture and domain understanding
 
-Written 2026-11-03 for Antigravity onboarding (Item O2). Citations link directly to current source code at `file:line`.
+Source review updated 2026-11-04 for onboarding item O2. Links below are pinned to
+`ebfc2b66110d0897685369f2c124fac2dec68862` (including sheet-first quick add, #195).
+These are code-traced behaviors, not phone acceptance or proof that server migrations, quotas
+or Edge Functions are deployed. Read the current lane contract and issue #188 before acting.
 
----
+## 1. From “chai 40 with Rohan” to Room rows
 
-## 1. How a Typed "chai 40 with Rohan" Becomes Rows
+The entry point is [MainViewModel.parseInputText](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/ui/viewmodel/MainViewModel.kt#L1059).
+It first uses the AI-notice gate. Choosing local entry calls `fillInOnPhone`; accepting AI calls
+`readTextWithAi`. Both use `openOnPhoneGuess` to open the confirmation sheet immediately with
+a local reading. No database row is saved merely by parsing.
 
-### 1.1 Input Capture
-A typed or spoken quick-add string enters the app via `MainViewModel.parseQuickAdd(rawText)` in [MainViewModel.kt:1010-1035](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/ui/viewmodel/MainViewModel.kt#L1010-L1035).
+[LocalHeuristicParser.parse](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/domain/LocalHeuristicParser.kt#L50) takes the text and known
+friend names. For this example, assuming a unique known friend named Rohan, the local result is:
+- type `expense`, amount `40.0`, category `Food`;
+- blank payment method (the ViewModel then supplies the account's default);
+- split name `Rohan`, merchant `Chai Rohan`, and the original line as the note.
 
-### 1.2 On-Phone Heuristic Parsing
-Before or alongside any network request, `LocalHeuristicParser.parse(rawText, knownFriends)` runs locally in [LocalHeuristicParser.kt:50-138](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/domain/LocalHeuristicParser.kt#L50-L138):
-1. **Type Detection** (`:54-61`): Checks against `incomeKeywords`. No match defaults to `"expense"`.
-2. **Amount Detection** (`:64`): `AiParse.amountIn(text)` in [LocalHeuristicParser.kt:154-185](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/domain/LocalHeuristicParser.kt#L154-L185) matches numeric tokens, currency prefixes, and shorthand (`k`/`lakh`), extracting `40.0`.
-3. **Payment Method** (`:68-74`): Scans `paymentMethods` with whole-word regex `containsWord`. For `"chai 40 with Rohan"`, none matches, returning `""` (the confirmation sheet subsequently applies the user's default payment method).
-4. **Category Detection** (`:77-85`): Evaluates word lists in `categories`. `"chai"` matches the Food list (`:27`), assigning category `"Food"`.
-5. **Split Friends** (`:87-107`): Checks `knownFriends` using whole-word boundaries. `"Rohan"` matches, producing `splitWithPersonNames = ["Rohan"]`.
-6. **Merchant / Title** (`:110-125`): Drops common stop words (`"with"`, `"for"`, etc.) and returns capitalized title `"Chai"`.
-7. **Result**: Emits `ParsedTransactionResult` (`:127-137`).
+The amount comes from [AiParse.amountIn](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/domain/LocalHeuristicParser.kt), not a separate
+parser in the ViewModel. The title filter removes “with” and the amount but retains the name.
+An AI result can differ from this local example.
 
-If online, `GeminiRepository.parseText` ([GeminiRepository.kt:92-120](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/data/repository/GeminiRepository.kt#L92-L120)) queries the `gemini-proxy` Edge Function; if offline, rate-limited, or on failure, the `LocalHeuristicParser` result is used seamlessly.
+`applyParsedResult` fills draft StateFlows and uses
+[SplitTargets.resolve](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/domain/SplitTargets.kt#L35) to match names/groups. Unknown or
+ambiguous names produce a notice rather than a guessed friend. With no selected/inferred group
+and just You plus Rohan selected, [recalculateShares](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/ui/viewmodel/MainViewModel.kt#L1551)
+uses [SplitRounding.equal](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/domain/SplitRounding.kt#L13): ₹20 each, with any rounding
+remainder handled by the rounding helper.
 
-### 1.3 State Preparation
-In `MainViewModel.applyParsedResult` ([MainViewModel.kt:1207-1243](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/ui/viewmodel/MainViewModel.kt#L1207-L1243)):
-- Maps fields into reactive StateFlows: `_type`, `_amount` (via `Money.input`), `_merchant`, `_category`, `_paymentMethod`, `_note`, `_date`.
-- Resolves participant names to existing person IDs using `SplitTargets.resolve(rawText, parsed.splitWithPersonNames, people.value, rawGroups.value)` (`:1223`).
-- Constructs `_shares` list: `-1L` ("You") and Rohan's `PersonEntity.id`, both with `isSelected = true`.
-- Calculates equal shares using `recalculateShares()` (`:1236`), which invokes `SplitRounding.splitPaisa` to divide ₹40.00 into ₹20.00 for "You" and ₹20.00 for Rohan.
+If AI is available, the sheet stays usable while `improveJob` calls
+[GeminiRepository.parseText](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/repository/GeminiRepository.kt).
+[improveWith](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/ui/viewmodel/MainViewModel.kt#L1128) updates only fields not touched
+during improvement; type/category and split relationships have their own coordinated rules.
+Dismissal, a new draft/edit and saving stop improvement. The first Save tap calls
+[holdDraftForSave](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/ui/viewmodel/MainViewModel.kt#L644), so a late result cannot change
+an amount already shown in the large-amount confirmation. Failure keeps the local draft and
+shows the appropriate notice; it is not proof that a remote AI request succeeded.
 
-### 1.4 Database Persistence
-When the user taps Save in the confirmation sheet, `MainViewModel.saveTransaction()` ([MainViewModel.kt:1582](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/ui/viewmodel/MainViewModel.kt#L1582)) delegates to `LedgerRepository.saveTransactionWithSplits(...)` ([LedgerRepository.kt:390-414](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/data/repository/LedgerRepository.kt#L390-L414)):
-- Executes inside a Room transaction `db.withTransaction`:
-  1. Validates amount with `requireSavable(tx.amount)`.
-  2. Verifies group writability via `requireWritableGroup(tx.groupId)`.
-  3. Computes initial sync state via `syncStateFor(...)` (`SyncState.PENDING` for personal splits).
-  4. Inserts into the `transactions` table via `db.transactionDao().insertTransaction(...)`, returning auto-generated `txId`.
-  5. Inserts into the `splits` table via `insertSplit(...)` ([LedgerRepository.kt:522-538](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/data/repository/LedgerRepository.kt#L522-L538)) with `totalAmount = 40.0`, `paidByPersonId = -1L`, `splitType = "equal"`, returning `splitId`.
-  6. Inserts two rows into `split_shares`:
-     - `SplitShareEntity(splitId = splitId, personId = -1L, shareAmount = 20.0, isGuest = false)`
-     - `SplitShareEntity(splitId = splitId, personId = <rohanId>, shareAmount = 20.0, isGuest = false)`
-- Calls `onLocalTransactionChange()` (`:412`), triggering `SyncScheduler.requestSync` and updating home-screen widgets.
+Save calls [saveCurrentTransaction](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/ui/viewmodel/MainViewModel.kt#L1637).
+It validates the draft/split and may first ask for a shared group when registered participants
+would otherwise not receive the split. The new-entry path then calls
+[LedgerRepository.saveTransactionWithSplits](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/repository/LedgerRepository.kt#L390).
+The repository validates the amount before `db.withTransaction`; inside that transaction it
+checks group writability, computes sync eligibility, inserts the transaction and, when shares
+exist, inserts its split header and share rows. After commit, `onLocalTransactionChange`
+requests sync and refreshes widgets through the ViewModel's `requestSync` callback.
 
----
+For the two-person example the split header names payer `-1L` and mode `equal`; the two
+[SplitShareEntity](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/db/entity/Entities.kt#L197) rows have participant IDs `-1L`
+and Rohan's local ID, each with `shareAmount = 20.0`. There is no `isGuest` constructor
+argument: it is a computed property, `guestName != null`.
 
-## 2. How One Friend's Balance is Computed
+## 2. One friend's balance and history
 
-### 2.1 Single Source of Truth: `balanceEntries()`
-Per-friend balances and friend history share a single derivation path in `LedgerRepository.balanceEntries(personId, splits, sharesBySplit, settlements)` ([LedgerRepository.kt:315-342](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/data/repository/LedgerRepository.kt#L315-L342)).
+[LedgerRepository.balanceEntries](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/repository/LedgerRepository.kt#L315) is the
+shared derivation for friend balances and friend history. Its
+[BalanceEntry](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/repository/LedgerRepository.kt#L285) variants contribute:
+- `Share`: their covered share when I paid is positive; my covered share when they paid is negative.
+- `Guest`: a local friend who joined a shared-group expense as my guest owes me that guest share,
+  regardless of which group member paid.
+- `Payment`: a confirmed record from me to them increases their net debt to me; the reverse
+  decreases it. Pending/rejected records contribute zero.
 
-### 2.2 Balance Contributions (`BalanceEntry`)
-Defined in [LedgerRepository.kt:285-312](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/data/repository/LedgerRepository.kt#L285-L312):
-1. **Expense Shares (`BalanceEntry.Share`, `:290-292`)**:
-   - If I paid (`split.paidByPersonId == -1L`): They owe me their share plus any guests they covered. `owedToMe = true`, `netChange = +amount`.
-   - If they paid (`split.paidByPersonId == personId`): I owe them my share plus any guests I covered. `owedToMe = false`, `netChange = -amount`.
-2. **Guests on Group Splits (`BalanceEntry.Guest`, `:295-298`)**:
-   - If a friend participated as my guest on a group expense, they owe me their portion regardless of who paid the group bill. `owedToMe = true`, `netChange = +amount`.
-3. **Settlements & IOUs (`BalanceEntry.Payment`, `:305-311`)**:
-   - **Crucial Rule:** Unconfirmed settlements do not move the balance:
-     ```kotlin
-     override val netChange: Double get() = when {
-         !settlement.isConfirmed -> 0.0
-         owedToMe -> settlement.amount
-         else -> -settlement.amount
-     }
-     ```
-   - From me to them (`fromPersonId == -1L`, `toPersonId == personId`): `owedToMe = true`, `netChange = +settlement.amount`.
-   - From them to me (`fromPersonId == personId`, `toPersonId == -1L`): `owedToMe = false`, `netChange = -settlement.amount`.
+[personBalances](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/repository/LedgerRepository.kt#L99) sums these signed
+contributions into its two directional totals and rounds the resulting net to paisa.
+Positive `netBalance` means they owe me; negative means I owe them. Group-wide positions use
+[GroupBalances.netPositions](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/domain/GroupBalances.kt), which also accounts for
+expenses and confirmed payments between other groupmates; that is distinct from a friend's
+balance with me.
 
-### 2.3 Aggregation in `personBalances` Flow
-In [LedgerRepository.kt:99-123](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/data/repository/LedgerRepository.kt#L99-L123):
-- `theyOweMe` sums all `entry.netChange` where `entry.owedToMe == true`.
-- `iOweThem` sums `-entry.netChange` where `entry.owedToMe == false`.
-- `net = theyOweMe - iOweThem`.
-- Emits `PersonBalance(person, netBalance = roundPaisa(net), totalTheyOweMe = roundPaisa(theyOweMe), totalIOweThem = roundPaisa(iOweThem))`.
-- **Convention:** A positive `netBalance` means they owe me; a negative `netBalance` means I owe them.
+## 3. From local save to server
 
----
+[syncStateFor](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/repository/LedgerRepository.kt#L877) makes shared-group writes and
+personal unsplit entries `PENDING`. A personal split can also be `PENDING` for private sync
+when local-friend sync is enabled and all participants are this user or local friends without
+profiles. Local-only group entries and other ineligible cases remain `LOCAL_ONLY`.
+Do not assume every personal split is eligible or that every local row leaves the device.
 
-## 3. What Happens to a Row from Local Save to Server
+[SyncScheduler](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/sync/SyncScheduler.kt) requests WorkManager work.
+[SyncWorker.syncIfSignedIn](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/sync/SyncWorker.kt#L84) checks that the requested
+account matches the available network session and serializes passes with its mutex.
+[Its engine sequence](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/sync/SyncWorker.kt#L54) is personal transactions, shared
+groups, then private local-friend splits/settlements when enabled. “Last synced” is stamped only
+after the configured sequence succeeds.
 
-### 3.1 Initial Tagging & Queueing
-1. When saved locally in `LedgerRepository.saveTransactionWithSplits`, `syncStateFor(...)` ([LedgerRepository.kt:400](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/data/repository/LedgerRepository.kt#L400)) marks eligible transactions as `SyncState.PENDING`. Transactions in local-only groups are marked `SyncState.LOCAL_ONLY` and never leave the device.
-2. `onLocalTransactionChange()` calls `SyncScheduler.requestSync(context, userId)` in [SyncScheduler.kt:18-25](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/data/sync/SyncScheduler.kt#L18-L25), which enqueues a `SyncWorker` task via Android WorkManager.
+[TransactionSyncEngine](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/sync/TransactionSyncEngine.kt) pushes personal upserts
+and deletes before pulling:
+- Push acknowledgement marks a row synced only if its local `updatedAt` is unchanged.
+  Conversion failures and isolated permanent row rejections become `FAILED`.
+- Pull matches `remoteId`, uses a saved cursor with overlap and updates only eligible synced
+  rows. Pending/failed/local-only changes are preserved; a queued delete prevents resurrection.
+- Local deletion queues a tombstone in `pending_remote_deletes`. Successful soft-deletes clear
+  it. A permanently refused individual delete is also dropped and resets the shared-expense
+  cursor for reconciliation; it is not guaranteed server deletion.
+- The worker retries IO/network and REST failures; its expected database-closure failure path
+  returns failure. These are specific catches, not a guarantee that every exception retries.
 
-### 3.2 Sync Execution Loop
-`SyncWorker.doWork()` ([SyncWorker.kt:35-85](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/data/sync/SyncWorker.kt#L35-L85)) runs background sync passes via `TransactionSyncEngine.sync()` ([TransactionSyncEngine.kt:27-33](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/data/sync/TransactionSyncEngine.kt#L27-L33)):
+[GroupSyncEngine](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/sync/GroupSyncEngine.kt) handles shared group membership,
+expenses/splits and settlements.
+[LocalLedgerSyncEngine](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/sync/LocalLedgerSyncEngine.kt) handles private
+`local_splits` and `local_settlements`, not a cloud copy of local-only groups.
+These source paths describe request behavior and conflict guards, not live server acceptance.
 
-#### Push Pass (`pushUpserts()`, lines 39-64):
-- Reads batches of `PENDING` rows via `TransactionSyncStore.pendingUpserts(PUSH_BATCH_SIZE)` (`:41`).
-- Converts `TransactionEntity` into `RemoteTransaction` DTOs with `ownerId`.
-- Calls `TransactionRemote.upsert(batch)` (`:55`), issuing PostgREST calls to Supabase.
-- **Success:** Calls `store.markSyncedIfUnchanged(id, updatedAt)` (`:56`), advancing status from `PENDING` to `SYNCED`.
-- **Permanent Rejection (`RowsRejectedException`):** If a batch fails (e.g., share totals do not equal transaction amount to the paisa), rows are isolated one-by-one via `pushSingle` (`:66-74`). Offending rows are marked `SyncState.FAILED` so they do not block the rest of the queue.
-- **Network / Transient Error:** Propagates upward, triggering WorkManager retry with exponential backoff.
+## 4. Settlement states that move money
 
-#### Pull Pass (`pull()`, lines 105-155):
-- Pulls records from Supabase modified since `lastPulledAt`.
-- Matches incoming rows by `remoteId`.
-- **Conflict Rule:** Client edits take precedence. Pulled rows never overwrite a local row that is currently `PENDING` or `FAILED`, nor do they resurrect rows with pending remote deletes. Otherwise, local Room rows are updated to match server state and marked `SYNCED`.
+[SettlementEntity.isConfirmed and SettlementStatus](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/db/entity/Entities.kt#L257)
+define `PENDING`, `REJECTED` and `CONFIRMED`. Only `CONFIRMED` contributes to friend or
+group balance. IOUs use `isIou = true` on a settlement and follow the same confirmation rule.
+Pending/rejected records remain visible as history without counting as acknowledged money.
 
-#### Deletes (`pushDeletes()`, lines 76-89):
-- Local deletes stage rows in `pending_remote_deletes` (`Entities.kt:139`).
-- Pushes soft-deletes (`deleted_at = now()`) to Supabase. On server confirmation, clears local delete markers.
+## 5. Shared versus local groups
 
----
+[GroupEntity](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/db/entity/Entities.kt#L52) defines `isShared` as
+`syncState != LOCAL_ONLY`.
 
-## 4. Which Settlement States Move a Balance
-
-Defined in [Entities.kt:257-260](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/data/db/entity/Entities.kt#L257-L260) and [LedgerRepository.kt:305-311](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/data/repository/LedgerRepository.kt#L305-L311):
-
-| Settlement Status | `isConfirmed` | Impact on Friend / Group Balance | Meaning |
-|---|---|---|---|
-| `SettlementStatus.PENDING` | `false` | **0.0 (None)** | Payment recorded by one party, awaiting review/acceptance by the recipient. |
-| `SettlementStatus.REJECTED` | `false` | **0.0 (None)** | Payment declined by the recipient. |
-| `SettlementStatus.CONFIRMED` | `true` | **Moves balance by full amount** | Acknowledged payment that changes balance. |
-
-IOUs are stored as settlements with `isIou = true` (`Entities.kt:254`) and adhere to the exact same rule: only confirmed IOUs adjust the balance.
-
----
-
-## 5. How a Shared Group Differs from a Local One
-
-Defined by `GroupEntity.syncState` in [Entities.kt:61-68](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/data/db/entity/Entities.kt#L61-L68):
-`val isShared: Boolean get() = syncState != SyncState.LOCAL_ONLY`
-
-| Aspect | Local Group (`syncState == LOCAL_ONLY`) | Shared Group (`syncState != LOCAL_ONLY`) |
+| Aspect | Local group | Shared group |
 |---|---|---|
-| **Storage & Sync** | Strictly private to this device; `syncState = LOCAL_ONLY`. Never pushed to Supabase (`LedgerRepository.kt:400`). | Synchronized with Supabase (`groups`, `group_members`, `transactions`, `splits`, `settlements`) via `GroupSyncEngine.kt`. |
-| **Membership** | Members are local `PersonEntity` records linked via `GroupMemberEntity` (`personId`). | Members are linked to remote user profiles (`createdByProfileId`, `GroupMembershipRemote.kt`). |
-| **Joining & Invites** | No invite capability. Created and managed solely on one phone. | Sharable invite links (`InviteLink.kt`). Members can join, leave, or be removed via `SharedGroupsController.kt`. |
-| **Visibility** | Only visible to the local device user. | All active group members see group expenses, splits, and who paid. |
-| **Guests** | N/A (all participants are local person records). | Supports non-member participants via guest records (`isGuest`, `guestPersonId`, `guestName` in `Entities.kt:182-185`). |
-| **Archival Rules** | Deleted or edited at will locally. | When archived (`isArchived == true`), the group becomes read-only app-wide; mutations throw `ArchivedGroupException` ([LedgerRepository.kt:399](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/data/repository/LedgerRepository.kt#L399)). |
+| Visibility/sync | Device-local group and entries; no shared invite | Shared records sync for group members |
+| Membership | Local person IDs in `GroupMemberEntity` | Registered profile identities mapped to local people; nonmembers can be guests |
+| Invites | No shared invite flow | [SharedGroupsController](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/ui/groups/SharedGroupsController.kt) uses remote membership/invite operations |
+| Guests | Ordinary local participants | Guest shares store the host as `personId`, with `guestName`; the host's device can also retain `guestPersonId` |
+| Archived writes | Do not infer the shared-only restriction | [requireWritableGroup](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/repository/LedgerRepository.kt#L909) rejects archived shared-group mutations |
 
----
+## 6. Sign-out and account isolation
 
-## 6. What Happens at Sign-Out
+[AuthRepository.signOut](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/auth/AuthRepository.kt#L195) attempts Supabase sign-out,
+clears the local session on its handled failures, and clears Credential Manager state.
+[MainActivity](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/MainActivity.kt) observes authentication and supplies the account ID
+to [AccountSessionHolder.onAccountChanged](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/ui/session/AccountSessionHolder.kt#L49).
 
-### 6.1 Authentication & Credential Cleanup
-In `AuthRepository.signOut(context)` ([AuthRepository.kt:195-209](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/data/auth/AuthRepository.kt#L195-L209)):
-1. Calls `supabase.auth.signOut()` (or `clearSession()` on network/auth errors) to invalidate local Supabase JWT session tokens.
-2. Invokes Google `CredentialManager.create(context).clearCredentialState(ClearCredentialStateRequest())` (`:205`) to prevent Credential Manager from silently re-selecting the previous Google account upon the next login attempt.
+When leaving an active account, the holder cancels its scheduled sync and calls
+[AccountLeftovers.clear](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/ui/session/AccountLeftovers.kt): cancel notifications and
+remove cached exports/Ask images. It cancels the opening job and clears the account's
+ViewModelStore before invoking database close/open. Store clearing cancels ViewModels; this
+method does not explicitly await all their jobs.
 
-### 6.2 Session Holder & Storage Teardown
-In `AccountSessionHolder.onAccountChanged(null)` ([AccountSessionHolder.kt:49-65](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/ui/session/AccountSessionHolder.kt#L49-L65)):
-1. **Cancels Background Work:** `SyncScheduler.cancelFor(application, activeUserId)` cancels queued periodic WorkManager sync tasks for the account.
-2. **Purges External Account Artifacts:** `AccountLeftovers.clear(application)` ([AccountLeftovers.kt:24-30](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/app/src/main/java/com/vaibhav/kharchapaani/ui/session/AccountLeftovers.kt#L24-L30)):
-   - Cancels all active Android notifications via `NotificationManagerCompat.cancelAll()`.
-   - Recursively deletes temporary shared file caches: `cache/exports` (CSV exports) and `cache/asks` (Ask-to-pay QR codes).
-3. **Clears Scoped ViewModels:** `endSession()` destroys the user's `ViewModelStore`, tearing down `MainViewModel` and releasing collectors before the database closes.
-4. **Closes SQLite Database:** `LedgerDatabases.close()` (`:63`) safely closes the active Room database connection.
-5. **Preserves Ledger File:** The database file (`ledger-<uid>.db`) remains on local storage so offline access or subsequent re-login retains existing local ledger state (only an explicit Account Deletion wipes the database file).
-6. **Emits UI State:** Updates `_state.value = AccountSessionState.None`, switching the root UI to the sign-in screen.
+[LedgerDatabases](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/db/LedgerDatabases.kt) scopes storage to
+`ledger-<userId>.db`, closes the previous account's connection when switching, and retains the
+file on ordinary sign-out. Sign-out returns to sign-in; it does not delete the ledger or itself
+grant access to it while signed out. Account deletion has a separate
+[AccountDeletion](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/ui/session/AccountDeletion.kt) workflow. No deletion or server
+operation was exercised for this document.
 
----
+## 7. Stored identities must stay stable
 
-## 7. What Must Never Happen to Stored IDs
+Keep display translation separate from stored values. Examples are category `Food`, payment
+method `GPay`, transaction types `income`/`expense`, and split modes
+`equal`/`exact`/`percentage`; the modes follow
+[SplitMode](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/model/Models.kt#L118) and
+[SplitEntity](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/db/entity/Entities.kt#L175). Custom names remain user data.
 
-### 7.1 Canonical Stored String IDs
-Category names, payment method tags, and transaction types are stored as canonical raw string tokens in SQLite and Supabase:
-- **Categories:** `"Food"`, `"Beverages"`, `"Packaged goods"`, `"Self-care"`, `"Transport"`, `"Shopping"`, `"Bills"`, `"Entertainment"`, `"Health"`, `"Rent"`, `"Income (Client)"`, `"Team Payment"`, `"Other"`.
-- **Payment Methods:** `"GPay"`, `"Credit Card"`, `"Debit Card"`, `"Bank Transfer"`, `"PhonePe"`, `"Paytm"`, `"Cash"`, `"Card"`.
-- **Transaction Types:** `"income"`, `"expense"`.
-- **Split Modes:** `"equal"`, `"exact"`, `"share"`.
+Preserve existing local primary keys, parent-child relationships and remote UUIDs across edits.
+`remoteId` binds a local record to its remote identity. The sentinel `-1L` means this user,
+not a generated friend/guest ID. Bill photos use
+[ReceiptEntity and the receipts table](https://github.com/vaibhavcodesx/kharcha-paani/blob/ebfc2b66110d0897685369f2c124fac2dec68862/app/src/main/java/com/vaibhav/kharchapaani/data/db/entity/Entities.kt#L316), not an
+invented `receipt_photos` table.
 
-### 7.2 Strict Rules on Stored IDs
-Per [HANDBOOK.md:92-94](file:///z:/V/.The_Future/Vibeeee/Kharcha%20Paani/docs/antigravity/HANDBOOK.md#L92-L94) and database constraints:
-1. **Never Translate or Localize Stored Strings:** Stored IDs must never be translated into Hindi or other languages in database rows. Changing `"Food"` to `"खाना"` or `"Transport"` to `"यात्रा"` in a database column breaks SQLite aggregation queries (`MonthAnalytics`), violates Supabase check constraints, breaks cross-device sync with friends whose apps run in different locales, and breaks historical reporting.
-2. **Presentation-Layer Only Localization:** Display string resolution must occur strictly in UI composables and display formatting helpers using `res/values/strings.xml` (as established by the X12 string resource refactor).
-3. **Never Mutate or Regenerate Entity Primary Keys:** `TransactionEntity.id`, `SplitEntity.id`, etc., are local SQLite autoincrement keys; regenerating them orphans child records (`split_shares`, `receipt_photos`).
-4. **Preserve `remoteId` Across Edits:** `remoteId` (UUID) uniquely binds the local row to its Supabase row. Overwriting `remoteId` severs server sync identity, resulting in duplicate records or sync rejection.
-5. **Preserve Sentinel IDs:** `-1L` is reserved app-wide for `"Me"` (the current user). It must never be assigned to a contact, friend, or guest.
+## 8. Evidence limits
 
----
-
-## 8. Observations & Questions
-
-No architectural contradictions found between `docs/antigravity/HANDBOOK.md` and the codebase. All domain rules, balance calculations, sync states, and session lifecycles in current code match the contract.
+This document traces the cited revision. No phone, release sign-in, proxy, group sync, account
+deletion, quota enforcement or live database acceptance was tested here. The proxy/client and
+SQL/migration files are implementation evidence, not proof of deployment. Refresh source links
+and lane instructions when using this document to plan later work.
