@@ -17,6 +17,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - Comprehensive unit tests for InviteLink covering malformed schemes, hosts, paths, disallowed/ambiguous characters, symbols, unicode, length boundaries, and injection attempts (T10).
 
+### Fixed
+- Statement re-import leaves saved payments unticked with “Already in your ledger”, reserving exact dates before nearby matches so a genuine extra purchase stays importable.
+
 ## [1.6.0] - 2026-11-03
 
 ### Added
