@@ -15,7 +15,13 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+
+- The Play listing's six screenshots and its 1024×500 feature graphic, in
+  `docs/store-listing/assets/`, rendered from the shipped screens with the listing's fictional
+  fixture in a real database, so every figure is the app's own (test-only; Stream C item 3).
+
 - Group balances sum to zero, shares sum to total amount, and member balances are conserved across random add, edit, delete, and settle sequences (T1).
+
 
 ### Changed
 
