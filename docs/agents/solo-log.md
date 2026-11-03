@@ -183,6 +183,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-03 · #204 · T4 / Money parsing and formatting · prepared for merge; invariant tests verify parse-format round-trip across representative samples of the numeric domain, symbol resilience, and formatting invariants. Independent source review completed; no production code changes; exact-head CI gates merge.
 
+- 2026-11-04 · #205 · T5 local-parser golden table · prepared for merge; 30 deterministic cases pin current heuristic output, including English/Hinglish and known split names. Existing tests/assertions preserved; no claim of ideal natural-language understanding, no production changes. Independent source review completed; exact-head current-main three-job CI gates merge; local Gradle skipped below 4 GB free RAM.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
