@@ -17,8 +17,9 @@ attached screenshot is named or numbered to match:
 what's wrong / what you want instead>>
 
 How to work:
-1. First, finish anything the last session left open that blocks these (session log, "Open item on
-   #212"), and check what Codex and Antigravity have open so you don't overlap.
+1. First, work the review checklist in the session log ("Codex's open review asks") so the last
+   session's PRs (#212, #214, #215) can merge, and check what Codex and Antigravity have open so you
+   don't overlap.
 2. For each improvement: look at my screenshot, find the screen in code, render it with the audit
    harness (./gradlew :app:testDebugUnitTest --tests "*.ui.audit.*") so you see what I see, then
    fix it. Before/after renders go in the PR. Anything new gets a short docs/designs/<name>.md

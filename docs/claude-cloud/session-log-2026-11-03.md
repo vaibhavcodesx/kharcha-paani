@@ -17,24 +17,54 @@ Written at the end of the session for the next Claude Code cloud session. Read
 |---|---|---|
 | #195 | T3.5 sheet-first quick add: the sheet opens at once on the phone's guess, "Improving with AI…", the AI fills only untouched fields, "✓ Updated by AI" for a moment when it changed something | Codex reviewed and asked for changes; **all fixed at 61dacfe** (draft held at the first Save tap; a friend added counts as a split change; red proof on pre-fix main; ViewModel teardown). Waiting on Codex's re-review and exact-head CI |
 | #210 | Play store listing: 6 screenshots (1081×1921) and the 1024×500 feature graphic, rendered by test-only `ui/store/` | Codex reviewed; **all fixed at 15390c2** (capture lifecycle, month-start dates, provenance, phone checks). Owner approves and uploads |
-| #212 | UI audit of every screen at four device sizes, 28 findings, report `docs/production-readiness/audits/ui-audit-2026-11.md` | Green, not yet reviewed. **Needs the same two fixes #210 got** (below) before Codex will pass it |
-| #214 | Audit batch A: money never cut or misread ("1.27L" in the day strip, "₹300" not "₹0" for a pending payment, "<1%", "You're owed" wraps) | Green, stacked on #212 |
-| #215 | Audit batch B: consistency (no empty Insights tiles, disabled chips look disabled, "5 Nov 2026" and ₹ in Subscriptions, "What Rohan will see", sort aligned, "Spent most on") | Green, stacked on #214 |
+| #212 | UI audit of every screen at four device sizes, 28 findings, report `docs/production-readiness/audits/ui-audit-2026-11.md` | Green; **Codex asked for changes** (checklist below) |
+| #214 | Audit batch A: money never cut or misread ("1.27L" in the day strip, "₹300" not "₹0" for a pending payment, "<1%", "You're owed" wraps) | Green, stacked on #212; **Codex asked for changes** (below) |
+| #215 | Audit batch B: consistency (no empty Insights tiles, disabled chips look disabled, "5 Nov 2026" and ₹ in Subscriptions, "What Rohan will see", sort aligned, "Spent most on") | Green, stacked on #214; no production blocker, **more tests asked** (below) |
 | #220 | CI fixture: `BackToHomeTest` stops its ViewModels before closing Room (the random "connection pool has been closed" failure) | Test-only, just opened |
 
-Merge order: #220, #210, #212, #195, #214, #215. Every PR adds a `CHANGELOG.md` line under
+Merge order: #220, #210, #212, #195, #214, #215, then this handoff (#222). Every PR adds a `CHANGELOG.md` line under
 Unreleased, so each merge conflicts the next there: keep both sides.
 
-### Open item on #212 (do this first if Codex hasn't)
+### Codex's open review asks: the next session's first checklist
 
-The audit harness has the two problems Codex found in #210's captures:
-1. `ui/audit/AuditFixture.kt` `stamp()` caps "before now" and can land in the previous month just
-   after midnight on the 1st. Copy #210's fix (`StoreFixture.stamp`: injectable clock, never before
-   the month starts) and its boundary test.
-2. `ui/audit/UiAuditCapture.kt` closes Room without clearing its `MainViewModel` /
-   `SharedGroupsViewModel`. Copy `StoreFixture.stopViewModels` (ViewModelStore, idle the main looper
-   until the scope job finishes, then close).
-Then merge `ui-audit` up into `ui-fix-money` (#214) and `ui-fix-consistency` (#215).
+Reviews arrived at the very end of the session (18:14–18:22 UTC). Read each PR's latest comment first.
+
+**#212 (audit harness and report):**
+- [ ] `UiAuditCapture`: keep `MainViewModel` *and* `SharedGroupsViewModel` in a `ViewModelStore`; at
+      teardown dispose the composition, clear and await jobs (idle the main looper), then close Room;
+      safe after a partial setup. Copy `StoreFixture.stopViewModels` from #210.
+- [ ] Each screen waits for its *real* content (people, balances, groups, analytics, the sheet's
+      async content) before the shot, not just a non-empty transaction list or Compose idle, so a
+      loading frame can't pass as a finding.
+- [ ] `AuditFixture.stamp`: the month-start bug #210 fixed. Copy its injectable clock and boundary test;
+      record the fixture's date, time and zone in the report.
+- [ ] Report accuracy: **102** images, not 105; say which dialogs, error and signed-out states aren't
+      covered; add an image link for every finding U7–U28; narrow "every figure was right" (the
+      harness only asserts a PNG exists; figures were checked by eye).
+- [ ] Put the owner's 200% deferral into the report itself, here as well as in #214. (#214's commit
+      already edits it; make sure the #212 baseline says so.)
+- [ ] Solo-log row, latest `main`, three green jobs at the exact head. Then merge `ui-audit` into
+      `ui-fix-money` (#214) and that into `ui-fix-consistency` (#215).
+
+**#214 (money never cut):**
+- [ ] `Money.compactDigits` caps decimals but not width: ₹10,01,00,000 becomes "10.01Cr" (7 chars),
+      ₹999.99 crore "999.99Cr" (8), and a day's sum can be larger. Use magnitude-dependent precision
+      (e.g. "10Cr", "999Cr") or measured fitting so it always fits the 52 dp cell; keep the exact amount
+      in the spoken label and the tap. Add boundary tests at the supported maximum and summed days.
+- [ ] Real-Room regression for the pending-payment row: insert a PENDING settlement in Room, read the
+      friend history through `getLedgerForPerson` and the real sheet, show it failing on pre-fix code
+      ("₹0") and passing after. (The current test builds `PersonLedgerItem`s by hand.)
+- [ ] Solo-log row; after #212 lands, latest `main`, three green jobs.
+
+**#215 (consistency):** Codex found no production blocker.
+- [ ] Real ViewModel and Room test typing and pasting through the ₹-prefixed subscription amount
+      (the saved value is unchanged by the prefix).
+- [ ] Tests: a disabled chip doesn't respond to a click, and an income-only month hides the
+      spend highlights.
+- [ ] Solo-log row, latest `main`, three green jobs.
+
+**#195 and #210:** review fixes pushed. #195 was green at 61dacfe and #210's CI was running at
+hand-off. Wait for Codex's re-review and answer anything new. **#220** was green.
 
 ## Owner decisions this session (also on #188)
 
