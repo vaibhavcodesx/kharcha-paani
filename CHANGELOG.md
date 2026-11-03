@@ -15,7 +15,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
-- Deterministic local-parser golden cases cover 30 representative English/Hinglish inputs, amounts, categories, methods and split names (T5).
+- Deterministic local-parser golden cases cover 30 representative English/Hinglish inputs (T5).
+
+- Money formatting and input tests cover Indian grouping, invalid numbers, limits, intermediate keystrokes and representative round trips (T4).
 
 - Agent handoff records reviewed PR states, owner decisions and restart instructions, with a working Codex lead progress report (#222).
 
@@ -56,6 +58,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 
 ### Fixed
+- The large-amount quick-add test keeps the friends list subscribed the way the app shell does,
+  and reports flow/database contents on timeout, while retaining the original wait limit.
 
 - A confirmed settlement can wait briefly for its confirmation snackbar before requesting a rare Play review; an expired or cancelled opportunity does not consume the cooldown.
 
