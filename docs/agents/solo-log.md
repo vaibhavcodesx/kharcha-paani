@@ -199,6 +199,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-04 · #224 · CI fixture ownership · correction prepared; red CI 41720442433 ran 1065 tests with exactly six predicted pre-close lifecycle failures and no unrelated failures. Only afterward, EqualSplitPaisa, DoubleSubmit and BillPhotoFlow own their real VMs in ViewModelStore and clear/await the original jobs under a 10-second bound before Room close/Main reset. All test bodies and business assertions are unchanged; lifecycle assertions retained. Partial-setup cleanup guarded. Evidence for old leaks on #197/#219 and the safe no-production-revert decision are on #188. No runtime/schema edits; local Gradle skipped at 3.18 GB free RAM. Final exact-head CI and independent review gate merge.
 
+- 2026-11-04 · #219 · T12 outgoing-copy safety net · prepared for merge; independent full source review found no blocker; original assertions retained, no production behavior change. Lead integrated current main with one Unreleased entry. Exact-head unit-tests, lint and release-bundle gate merge; local Gradle skipped below 4 GB free RAM. No phone acceptance claimed.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
