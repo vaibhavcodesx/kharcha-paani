@@ -129,7 +129,9 @@ class SettleUpUpiTest {
         composeTestRule.onNodeWithTag("ask_to_pay_button").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
 
         assertEquals(200.0, shared!!.first, 0.0)
-        assertTrue(shared!!.second.contains("Asking ₹200 of the ₹340 you owe."))
+        assertTrue(shared!!.second.contains("Asking ₹200 of the ₹340 for now."))
+        assertTrue(!shared!!.second.contains("you owe", ignoreCase = true))
+        composeTestRule.onNodeWithTag("ask_preview").assertTextContains(shared!!.second)
     }
 
     @Test
