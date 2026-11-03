@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.performClick
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -78,6 +79,10 @@ class AppShellLaunchTest {
             }
         }
 
+        // Home intentionally waits for its complete Room snapshot before displaying capture.
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithTag("scan_receipt_button").fetchSemanticsNodes().isNotEmpty()
+        }
         compose.onNodeWithTag("scan_receipt_button").assertTextEquals("Bill photo")
         compose.onNodeWithTag("dock_add").assertExists()
         for (tab in listOf("tab_splits", "tab_insights", "tab_activity")) {
