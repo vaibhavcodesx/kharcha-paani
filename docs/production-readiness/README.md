@@ -217,7 +217,7 @@ Effort is a rough guide: S ≈ under a day, M ≈ 1–2 days, L ≈ 3+ days of a
 Nothing in this tier is optional: each one is a Play rejection, a data-loss bug, or something every
 user sees in the first minute.
 
-**T1.1 Delete my account** · L · **[owner review]** (auth, RLS, service role) · **PR #103, awaiting owner review**
+**T1.1 Delete my account** · L · **[owner review]** (auth, RLS, service role) · **done in #103** (migration applied by the owner 2026-10-27)
 - Edge Function `delete-account` (service role): delete the caller's private rows (`local_splits`,
   `local_settlements`, personal `transactions`), replace their profile on shared records with a
   tombstone ("Former member"), remove their group memberships, delete the `auth.users` row. Several
@@ -351,7 +351,7 @@ are never asked for permission and never see "payment to confirm" (NOTIF G1).
 - Per-user write rate limits on `transactions`/`settlements`/`local_settlements` inserts; a member cap
   per group (SEC M-5).
 
-**T2.3 Database hygiene** · S · **[owner review]** · **PR #107, awaiting owner review**
+**T2.3 Database hygiene** · S · **[owner review]** · **done in #107** (applied to live)
 - Revoke default privileges from `anon` + a test that `anon` has none (SEC M-4). Fix the hue trigger's
   null-name hole (SEC L-9). Optional `avatar_url` check (SEC L-8).
 
@@ -363,11 +363,11 @@ are never asked for permission and never see "payment to confirm" (NOTIF G1).
   (REL M9).
 - A "Sync now" pull-to-refresh on Home and Splits (REL M11).
 
-**T2.5 Confirm or undo before anything that changes both phones** · S
+**T2.5 Confirm or undo before anything that changes both phones** · S · **done in #120**
 - Retract settlement, delete IOU, delete group: the existing undo-snackbar pattern (`PendingDeletes`)
   or a dialog that states the consequence: "Rohan will owe you ₹5,000 again, on both phones." (REL M4)
 
-**T2.6 Privacy on the device** · S
+**T2.6 Privacy on the device** · S · **parts 1–2 done in #115; sign-out data removal not started**
 - `setRecentsScreenshotEnabled(false)` on API 33+ (don't force `FLAG_SECURE`; people screenshot splits
   on purpose). Notifications with amounts get `VISIBILITY_PRIVATE` + a public version (SEC M-3, L-5).
 - Shared files: accept only `content://` URIs that aren't the app's own FileProvider (SEC L-3, the gap
@@ -377,7 +377,7 @@ are never asked for permission and never see "payment to confirm" (NOTIF G1).
 **T2.7 Notifications phase 2**: the server `activity` table and the in-app Updates inbox. This is the
 phase where "everyone in the split gets told Priya added an expense" first works (§6).
 
-**T2.8 In-app updates** · S
+**T2.8 In-app updates** · S · **flexible updates done in #129; the server-side minimum version isn't built**
 - Play Core `AppUpdateManager`: flexible updates normally, immediate when a server-side minimum version
   says so (REL M11, PLAY §10).
 
@@ -386,7 +386,7 @@ phase where "everyone in the split gets told Priya added an expense" first works
   them), a 1024×500 feature graphic, an 80-character short description, a full description. No
   "best/#1/free", no GPay/PhonePe/Paytm logos, no "loan/lend/borrow/credit" wording (PLAY §4, §9).
 
-**T2.10 Accessibility pass** · M
+**T2.10 Accessibility pass** · M · **partly done (#137, #138, #140, #141); Home is parked in #139; Scanner run outstanding**
 - Fixed heights → `heightIn(min=…)`; money text auto-sizes instead of ellipsizing ("₹1,23,4…" is wrong
   information); the dock grows or drops labels above 1.5× font; Roborazzi captures at `fontScale = 2f`
   (REL M7). Label every interactive icon (39 `contentDescription = null` to review, PLAY §10). Run
