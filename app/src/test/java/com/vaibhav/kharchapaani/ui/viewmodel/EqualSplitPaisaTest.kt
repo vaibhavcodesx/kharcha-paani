@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.ui.viewmodel
 
 import android.app.Application
+import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -44,11 +45,15 @@ class EqualSplitPaisaTest {
     private val application = ApplicationProvider.getApplicationContext<Application>()
     private lateinit var db: AppDatabase
     private lateinit var viewModel: MainViewModel
+    private val main = UnconfinedTestDispatcher()
+    private val store = ViewModelStore()
+    private var mainDispatcherInstalled = false
     private val screen = CoroutineScope(Dispatchers.Unconfined + Job())
 
     @Before
     fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        Dispatchers.setMain(main)
+        mainDispatcherInstalled = true
         WorkManagerTestInitHelper.initializeTestWorkManager(application, Configuration.Builder().setExecutor(SynchronousExecutor()).build())
         runBlocking { AppSettings(application).setAiNoticeAccepted(false) }
         db = Room.inMemoryDatabaseBuilder(application, AppDatabase::class.java).allowMainThreadQueries().build()
@@ -57,6 +62,7 @@ class EqualSplitPaisaTest {
             db.personDao().insertPerson(PersonEntity(id = 2, name = "Neha", avatarColor = "#70C1FF"))
         }
         viewModel = MainViewModel(application, db, "11111111-2222-3333-4444-555555555555")
+        store.put("main", viewModel)
         // The app shell collects these while it's open; the sheet reads them.
         screen.launch { viewModel.people.collect {} }
         screen.launch { viewModel.groups.collect {} }
@@ -65,14 +71,24 @@ class EqualSplitPaisaTest {
     }
 
     @After
-    fun tearDown() {
+    fun tearDown(): Unit = runBlocking {
         screen.cancel()
         try {
-            assertTrue("Fixture must stop MainViewModel before Room closes",
-                viewModel.viewModelScope.coroutineContext[Job]!!.isCompleted)
+            if (::viewModel.isInitialized) {
+                val job = viewModel.viewModelScope.coroutineContext[Job]!!
+                store.clear()
+                withTimeout(10_000) {
+                    while (!job.isCompleted) {
+                        main.scheduler.runCurrent()
+                        if (!job.isCompleted) delay(20)
+                    }
+                }
+                assertTrue("Fixture must stop MainViewModel before Room closes",
+                    job.isCompleted)
+            }
         } finally {
-            db.close()
-            Dispatchers.resetMain()
+            if (::db.isInitialized) db.close()
+            if (mainDispatcherInstalled) Dispatchers.resetMain()
         }
     }
 

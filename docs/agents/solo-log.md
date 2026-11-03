@@ -197,7 +197,7 @@ owner or Claude go at the bottom.
 
 - 2026-11-04 · #196 · O2 onboarding source map · prepared for merge; corrected API/entity/mode names, parse/save/sync ordering and session cleanup against pinned main ebfc2b6. Portable source links replace local paths; source-traced behavior is explicitly separate from phone/live deployment acceptance. Independent source review and exact-head current-main CI gate merge; docs only.
 
-- 2026-11-04 · CI fixture ownership · regression-only stage; source and CI XML identify old unowned MainViewModels before Room close in EqualSplitPaisa, DoubleSubmit and BillPhotoFlow. Added explicit scope-completion checks before close, leaving cleanup behavior otherwise unchanged. Predict six lifecycle-check failures (one equal-split, two double-submit, three bill-photo cases), with the already-observed LargeAmount background exception possible until scopes are owned. All existing assertions retained; no production edits. Local Gradle skipped below 4 GB free RAM.
+- 2026-11-04 · #224 · CI fixture ownership · correction prepared; red CI 41720442433 ran 1065 tests with exactly six predicted pre-close lifecycle failures and no unrelated failures. Only afterward, EqualSplitPaisa, DoubleSubmit and BillPhotoFlow own their real VMs in ViewModelStore and clear/await the original jobs under a 10-second bound before Room close/Main reset. All test bodies and business assertions are unchanged; lifecycle assertions retained. Partial-setup cleanup guarded. Evidence for old leaks on #197/#219 and the safe no-production-revert decision are on #188. No runtime/schema edits; local Gradle skipped at 3.18 GB free RAM. Final exact-head CI and independent review gate merge.
 
 ## Questions
 
