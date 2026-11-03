@@ -201,6 +201,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-04 · #219 · T12 outgoing-copy safety net · prepared for merge; independent full source review found no blocker; original assertions retained, no production behavior change. Lead integrated current main with one Unreleased entry. Exact-head unit-tests, lint and release-bundle gate merge; local Gradle skipped below 4 GB free RAM. No phone acceptance claimed.
 
+- 2026-11-04 · #197 · O3 architecture map · prepared for merge; corrected configured models, receipt/mode identifiers, account lifecycle, actual widget/navigation/sync mechanisms and source/release boundaries against pinned ebfc2b6. Documents checked-in configuration only; no phone or live service acceptance claimed, no server operations performed. Independent review and exact-head current-main CI gate merge; docs only.
+
 - 2026-11-04 · #199 · F3 source review notes · prepared for merge; corrected first-day selector cause, actual minimum text/layout behavior and component/parser/Room evidence boundaries for six merged PRs. PNG generation is not claimed as visual or phone acceptance. Independent review and exact-head current-main CI gate merge; docs only.
 
 ## Questions
