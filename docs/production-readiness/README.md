@@ -30,6 +30,9 @@ In this file the audit IDs carry a prefix so they don't collide: **SEC-** (secur
 **Where things stand and what's next (2026-10-27): [`docs/plan-1.6-to-launch.md`](../plan-1.6-to-launch.md).**
 Read it before this page's tiers; who builds what is in `docs/agents/work-split.md`.
 
+Release preparation (2026-11-03): **R2 done in #193**. Its [1.6.0 phone checklist](../testing/1.6.0-device-checks.md)
+records the retained-data, release sign-in, proxy and widget checks; none is phone acceptance yet.
+
 Release preparation (2026-11-03): **R1 friendly partial payment asks — done in #190**.
 **F2 first-day Insights test selector — done in #192**; all money sizing assertions remain.
 Backup-preview fixture lifecycle is corrected in **#194**, without changing backup assertions.
