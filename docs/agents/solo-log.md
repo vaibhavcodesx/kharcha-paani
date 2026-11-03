@@ -145,6 +145,10 @@ owner or Claude go at the bottom.
 
 - 2026-11-03 · #198 · R3 version 1.6.0 (7) · merged; promote the reviewed Unreleased entries without rewording, consolidate duplicate headings/markers and retain a fresh Unreleased section. The owner requested a quick release in chat, authorizing one GitHub phone-test prerelease after exact-head CI; no Play rollout or phone acceptance is claimed. Product merges freeze until #188 records the signed build result; the owner tests with docs/testing/1.6.0-device-checks.md.
 
+- 2026-11-03 · #201 · F4 / T3.6 statement re-import · prepared for merge; exact local dates are reserved before ±1-day matches, with one saved row consumed per match. Real-Room CI 41672138721 ran 975 tests with exactly the five predicted re-import failures before production changed; the new/extra rows remain importable, original IDs/totals survive, groupmate rows are ignored and hints can be reticked. Local Gradle skipped below 4 GB free RAM; final exact-head CI and review gate the merge. Supersedes parked #130; no schema/server changes or phone verification claimed.
+
+- 2026-11-03 · #200 · T1 / Group balances zero-sum · prepared for merge; property tests assert group balances sum to zero, shares sum to total amount, and member balances are conserved across random add, edit, delete, and settle sequences. Independent source review completed; no production code changes; exact-head CI gates merge.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
