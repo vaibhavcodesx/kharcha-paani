@@ -2,6 +2,13 @@ package com.vaibhav.kharchapaani.ui.format
 
 import com.vaibhav.kharchapaani.domain.HisaabItemiser
 import com.vaibhav.kharchapaani.domain.HisaabItemiser.Kind
+import androidx.room.Room
+import com.vaibhav.kharchapaani.data.db.AppDatabase
+import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
+import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
+import com.vaibhav.kharchapaani.data.repository.LedgerRepository
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -57,8 +64,36 @@ class AskMessageTest {
     fun `asking for part of it says how much of the total`() {
         val message = AskMessage.build("Aaru", hisaab, asked = 200.0, upiId = null, zone = zone)
 
-        assertTrue(message.contains("Total: ₹275\nAsking ₹200 of the ₹275 you owe.\n"))
+        assertTrue(message.contains("Total: ₹275\nAsking ₹200 of the ₹275 for now.\n"))
         assertFalse("no UPI ID, no UPI line", message.contains("UPI:"))
+    }
+
+    @Test
+    fun `a partial ask from the real ledger stays friendly and keeps the full balance`() = runTest {
+        val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+            .allowMainThreadQueries().build()
+        try {
+            val repository = LedgerRepository(db, selfProfileId = "me")
+            val friend = repository.addPerson("Rohan", "#70C1FF")
+            repository.saveTransactionWithSplits(
+                TransactionEntity(type = "expense", amount = 551.0, category = "Food",
+                    merchant = "Dinner", paymentMethod = "UPI", date = on(4)),
+                paidByPersonId = -1L,
+                shares = listOf(
+                    SplitShareEntity(splitId = 0, personId = -1L, shareAmount = 275.50),
+                    SplitShareEntity(splitId = 0, personId = friend, shareAmount = 275.50),
+                ),
+                splitType = "equal",
+            )
+            val actualHisaab = requireNotNull(HisaabItemiser.itemise(repository.getLedgerForPerson(friend, context).first()))
+            val message = AskMessage.build("Rohan", actualHisaab, asked = 125.50, upiId = null, zone = zone)
+
+            assertTrue(message.contains("Total: ₹275.50\nAsking ₹125.50 of the ₹275.50 for now.\n"))
+            assertFalse("the outgoing message must not put pressure on a friend", message.contains("you owe", ignoreCase = true))
+            assertEquals(275.50, requireNotNull(HisaabItemiser.itemise(repository.getLedgerForPerson(friend, context).first())).total, 0.0)
+        } finally {
+            db.close()
+        }
     }
 
     @Test

@@ -30,8 +30,12 @@ In this file the audit IDs carry a prefix so they don't collide: **SEC-** (secur
 **Where things stand and what's next (2026-10-27): [`docs/plan-1.6-to-launch.md`](../plan-1.6-to-launch.md).**
 Read it before this page's tiers; who builds what is in `docs/agents/work-split.md`.
 
-Release preparation (2026-11-03): R2's [1.6.0 phone checklist](../testing/1.6.0-device-checks.md)
+Release preparation (2026-11-03): **R2 done in #193**. Its [1.6.0 phone checklist](../testing/1.6.0-device-checks.md)
 records the retained-data, release sign-in, proxy and widget checks; none is phone acceptance yet.
+
+Release preparation (2026-11-03): **R1 friendly partial payment asks — done in #190**.
+**F2 first-day Insights test selector — done in #192**; all money sizing assertions remain.
+The 1.6.0 signed build and phone acceptance remain separate owner checks; progress is on issue #188.
 
 0. **Ask everything up front, then run on autopilot** (the owner's rule, also in CLAUDE.md). Before
    starting, read through the items you plan to do this session and send the owner one batch of
