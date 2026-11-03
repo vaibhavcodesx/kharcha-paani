@@ -176,6 +176,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-04 · #207 · T7 backup file coverage · merged; the full supported-field fixture now encodes and decodes the actual backup file, asserts decoded settings/object equality, and restores that decoded payload into real Room. Every prior restored-row assertion remains. Coverage claim narrowed to supported backup fields; stored IDs/sync metadata are not falsely promised. Lead integrated current main and preserved all log/changelog entries; exact-head CI passed before merge. No production or phone behavior changes.
 
+- 2026-11-04 · #218 · F1 review timing · draft; after 750 ms, wait up to six seconds for the UI to permit a review request, retaining lifecycle cancellation and claiming cooldown only through the requester. Real-Room/actual-composable red CI 41694356770 ran 980 tests with exactly the intended four-second snackbar failure; timeout/fresh-moment control passed. Earlier wrong-clock control failure and paused-clock stall/cancellation are documented in the PR; production changed only after isolated red. Local Gradle skipped below 4 GB free RAM; final exact-head CI and independent review gate merge. No review-asking copy, balance, server or phone acceptance changes.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
