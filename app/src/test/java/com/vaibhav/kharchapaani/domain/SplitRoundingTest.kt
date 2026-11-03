@@ -91,7 +91,7 @@ class SplitRoundingTest {
     }
 
     @Test
-    fun `equal mode sums to the paisa across exhaustive amounts and group sizes up to 50`() {
+    fun `equal mode sums to the paisa across representative amounts and group sizes up to 50`() {
         val testAmounts = listOf(
             0.01, 0.02, 0.03, 0.07, 0.10, 0.99,
             1.00, 3.00, 7.00, 10.00, 19.99, 33.33, 49.95, 99.99, 100.00,
@@ -123,6 +123,10 @@ class SplitRoundingTest {
                     "All shares inside must be non-negative",
                     sharesInside.values.all { it >= 0.0 }
                 )
+                for (share in sharesInside.values) {
+                    val cents = share * 100.0
+                    assertEquals("Equal share inside must be exact whole paisa", Math.round(cents).toDouble(), cents, 1e-9)
+                }
 
                 // Case 2: Payer is outside participants
                 val payerOutside = 999L
@@ -142,6 +146,10 @@ class SplitRoundingTest {
                     "All shares outside must be non-negative",
                     sharesOutside.values.all { it >= 0.0 }
                 )
+                for (share in sharesOutside.values) {
+                    val cents = share * 100.0
+                    assertEquals("Equal share outside must be exact whole paisa", Math.round(cents).toDouble(), cents, 1e-9)
+                }
             }
         }
     }
@@ -187,6 +195,10 @@ class SplitRoundingTest {
                         "All normalized shares must be non-negative",
                         normalized.values.all { it >= 0.0 }
                     )
+                    for (share in normalized.values) {
+                        val cents = share * 100.0
+                        assertEquals("Normalized share must be exact whole paisa", Math.round(cents).toDouble(), cents, 1e-9)
+                    }
                 }
             }
         }
@@ -237,6 +249,10 @@ class SplitRoundingTest {
                             "All shares must be non-negative",
                             sharesInside.values.all { it >= 0.0 }
                         )
+                        for (share in sharesInside.values) {
+                            val cents = share * 100.0
+                            assertEquals("byWeights share inside must be exact whole paisa", Math.round(cents).toDouble(), cents, 1e-9)
+                        }
 
                         // Payer outside
                         val sharesOutside = SplitRounding.byWeights(amount, weights, payerId = payerOutside)
@@ -249,6 +265,10 @@ class SplitRoundingTest {
                             "All shares outside must be non-negative",
                             sharesOutside.values.all { it >= 0.0 }
                         )
+                        for (share in sharesOutside.values) {
+                            val cents = share * 100.0
+                            assertEquals("byWeights share outside must be exact whole paisa", Math.round(cents).toDouble(), cents, 1e-9)
+                        }
                     }
                 }
             }
@@ -256,13 +276,19 @@ class SplitRoundingTest {
     }
 
     @Test
-    fun `byWeights rejects non-positive or negative weights`() {
+    fun `byWeights rejects negative or all-zero weights while allowing mixed zero weights`() {
+        // Negative weight is rejected
         assertThrows(IllegalArgumentException::class.java) {
             SplitRounding.byWeights(100.0, mapOf(1L to -5.0, 2L to 10.0), payerId = 1L)
         }
+        // All-zero weights are rejected
         assertThrows(IllegalArgumentException::class.java) {
             SplitRounding.byWeights(100.0, mapOf(1L to 0.0, 2L to 0.0), payerId = 1L)
         }
+        // Mixed zeros are allowed when at least one weight is positive
+        val mixedShares = SplitRounding.byWeights(100.0, mapOf(1L to 0.0, 2L to 10.0), payerId = 1L)
+        assertEquals(0.0, mixedShares[1L] ?: -1.0, 0.0)
+        assertEquals(100.0, mixedShares[2L] ?: -1.0, 0.0)
     }
 
     @Test

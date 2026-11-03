@@ -15,7 +15,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
-- SplitRounding invariant tests verifying equal, exact, and share modes sum to the paisa across exhaustive amounts and group sizes up to 50 (T3).
+- SplitRounding invariant tests verifying equal, exact, and share modes sum to the paisa across representative amounts and group sizes up to 50 (T3).
+
+### Fixed
+- Home waits for the complete ledger before showing money or its first-entry invitation, preventing a false empty state on cold launch.
+- Statement re-import leaves saved payments unticked with “Already in your ledger”, reserving exact dates before nearby matches so a genuine extra purchase stays importable.
 
 ## [1.6.0] - 2026-11-03
 
