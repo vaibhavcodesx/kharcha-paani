@@ -36,6 +36,7 @@ import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -74,16 +75,26 @@ class ReviewAfterSettlementTimingTest {
         store.put("main", vm)
         manager = CountingManager(app)
         PlayFactory.manager = manager
+        assertSame("only the external Play boundary is replaced", manager, ReviewManagerFactory.create(app))
+        compose.mainClock.autoAdvance = false
         compose.setContent { if (showCollector) ReviewAfterSettlement(vm.reviewMoments, enabled = allowed) }
         pump()
     }
 
     private fun pump() {
         dispatcher.scheduler.runCurrent()
+        compose.mainClock.advanceTimeByFrame()
         compose.waitForIdle()
         dispatcher.scheduler.runCurrent()
         shadowOf(Looper.getMainLooper()).idle()
         dispatcher.scheduler.runCurrent()
+    }
+
+    private fun advanceUiBy(millis: Long) {
+        // The ViewModel and LaunchedEffect/repeatOnLifecycle collector have separate schedulers.
+        dispatcher.scheduler.advanceTimeBy(millis)
+        compose.mainClock.advanceTimeBy(millis)
+        pump()
     }
 
     private suspend fun until(condition: suspend () -> Boolean) = withTimeout(10_000) {
@@ -110,8 +121,7 @@ class ReviewAfterSettlementTimingTest {
 
     @Test fun `the confirmed payment waits through a four second snackbar before asking Play`(): Unit = runBlocking {
         confirmPayment(100.0)
-        dispatcher.scheduler.advanceTimeBy(4_000)
-        pump()
+        advanceUiBy(4_000)
         assertEquals(0, manager.requests)
         assertFalse(app.getSharedPreferences("play_review_preferences", 0).contains("last_attempt"))
 
@@ -125,16 +135,14 @@ class ReviewAfterSettlementTimingTest {
 
     @Test fun `a UI busy past the window drops the moment without consuming its cooldown`(): Unit = runBlocking {
         confirmPayment(80.0)
-        dispatcher.scheduler.advanceTimeBy(8_000)
-        pump()
+        advanceUiBy(8_000)
         compose.runOnIdle { allowed = true }
         pump()
         assertEquals(0, manager.requests)
         assertFalse(app.getSharedPreferences("play_review_preferences", 0).contains("last_attempt"))
 
         confirmPayment(90.0)
-        dispatcher.scheduler.advanceTimeBy(750)
-        pump()
+        advanceUiBy(750)
         assertEquals(1, manager.requests)
         assertEquals(2, db.settlementDao().getAllSettlements().first().size)
     }
