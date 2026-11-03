@@ -19,27 +19,15 @@ habit. The owner is Vaibhav Chauhan.
    [`docs/designs/`](../designs/), and the device checklist format in
    [`docs/testing/1.5.0-device-checks.md`](../testing/1.5.0-device-checks.md).
 
-## Codex solo period: 2026-10-27 to 2026-10-30
+## Who is working now
 
-Claude is away for at least three days; Codex works alone and the owner isn't reviewing code. For
-this period only, these rules replace "Don't merge" below. Everything else on this page still holds.
+**Antigravity, from 2026-11-03**, while Claude and Codex are out of quota. Its queue and limits are in
+[`antigravity-brief.md`](antigravity-brief.md). It follows Codex's rules on this page, **doesn't merge**,
+and never takes Claude's lane.
 
-1. **Codex merges its own PRs**, one at a time, when all of these are true:
-   - the branch has the latest `main` merged in (resolve `CHANGELOG.md` by keeping both entries), and
-     CI (unit-tests, lint, release-bundle) is green on that exact commit;
-   - the PR is in Codex's lane and touches none of the files Codex may not edit (below);
-   - the PR body has its "Check on the phone" list.
-   Squash-merge with the PR title as the commit subject. If CI fails twice on the same item, leave the
-   PR open with a note saying what failed and move to the next item.
-2. **Never** merge anything owner-review, anything of Claude's (#71, #103, Dependabot PRs), or a PR
-   whose CI didn't run. Don't apply anything to Supabase, don't run the release workflow, don't change
-   repository settings.
-3. **Order of work:** finish the lanes in this order: X5's remaining TODOS items (8, 5, 2, 9), X6, X8,
-   X9, X10, then X7, then X11 and X12 below. One item per PR, each from the latest `main`.
-4. **Keep a log:** append one line per merged or parked PR to `docs/agents/solo-log.md`
-   (`2026-10-28 · #123 · X6 in-app updates · merged` / `· parked: <why>`), in the same PR. Claude
-   reads it on return.
-5. **Questions go in the log, not to anyone.** Make the safe, reversible choice and note it.
+**The Codex solo period (2026-10-27 to 2026-10-30) is over.** Its self-merge exception ended with it:
+Codex doesn't merge. What it did is in [`solo-log.md`](solo-log.md) and
+[`../production-readiness/solo-progress-2026-10-27.md`](../production-readiness/solo-progress-2026-10-27.md).
 
 ## The lanes
 

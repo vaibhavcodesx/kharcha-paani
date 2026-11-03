@@ -1,6 +1,7 @@
 # From 1.6 to the Play Store: the plan
 
-Written 2026-10-27. The work order (`docs/production-readiness/README.md`) is still the source for each
+Written 2026-10-27; §1's table and §2's PR list predate Codex's solo period. Since then T1.1 (#103), T2.3
+(#107), T2.5 (#120) and T2.8 (#129) are done. Current queue: `docs/agents/antigravity-brief.md`. The work order (`docs/production-readiness/README.md`) is still the source for each
 item's detail; this page says where things stand and in what order the rest goes. Who builds what is
 in `docs/agents/work-split.md`.
 

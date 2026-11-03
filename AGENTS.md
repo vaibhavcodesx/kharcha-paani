@@ -3,10 +3,11 @@
 A native Android app: Kotlin, Jetpack Compose, Room, Supabase, Gemini. Package
 `com.vaibhav.kharchapaani`, everything under `app/`.
 
-**Two agents work on this repo, Claude and Codex.** Before any task, read
+**Several agents work on this repo: Claude, Codex and Antigravity.** Before any task, read
 [`docs/agents/work-split.md`](docs/agents/work-split.md). It says which items are yours, which files
 you may not touch, how to name branches and PRs, and which guides to read next. If anything else
-disagrees with it, that page wins.
+disagrees with it, that page wins. Antigravity: your queue is
+[`docs/agents/antigravity-brief.md`](docs/agents/antigravity-brief.md).
 
 Quick reference (details in the page above):
 
