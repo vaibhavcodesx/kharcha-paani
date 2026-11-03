@@ -13,6 +13,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- Golden test suite for LocalStatementParser and StatementChecks with invented data verifying date parsing, safety anomaly checks, and multi-month grouping (T6).
+
 ## [1.6.0] - 2026-11-03
 
 ### Added
