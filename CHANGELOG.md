@@ -17,6 +17,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - Ask-message tests reconcile displayed lines and totals across all five history kinds (T11).
 
+- String-resource checker covers placeholders and format execution with positive self-tests (T13).
+
 - UPI-link tests check encoded parameters, exact supported amounts and omitted invalid amounts (T9).
 
 - Migration-chain regression checks legacy v2 rows through v10, UUID uniqueness and post-migration DAO writes (T8).

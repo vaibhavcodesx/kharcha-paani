@@ -189,6 +189,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-04 · #209 · T9 UPI-link coverage · prepared for merge; independent full source review found no blocker; original assertions retained, no production behavior change. Lead integrated current main with one Unreleased entry. Exact-head unit-tests, lint and release-bundle gate merge; local Gradle skipped below 4 GB free RAM. No phone acceptance claimed.
 
+- 2026-11-04 · #221 · T13 formatting checker · correction prepared; initial red CI 41710054770 ran 1038 tests with exactly three predicted valid-format failures; second red CI 41711669426 ran 1042 tests with exactly two predicted mixed-reuse/signature failures, the initial three now passing. Checker corrections followed each isolated red; all resource assertions and five positive self-tests remain, plus incompatible reuse rejection. No production resources changed. Independent final review and current-main exact-head three-job CI gate merge; local Gradle skipped below 4 GB free RAM.
+
 - 2026-11-04 · #217 · T11 Ask-message totals · prepared for merge; independent full source review found no blocker; original assertions retained, no production behavior change. Lead integrated current main with one Unreleased entry. Exact-head unit-tests, lint and release-bundle gate merge; local Gradle skipped below 4 GB free RAM. No phone acceptance claimed.
 
 ## Questions
