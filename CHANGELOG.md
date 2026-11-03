@@ -15,6 +15,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Evidence-scoped source review notes for six merged reliability/accessibility changes (F3).
+
 - Agent handoff records reviewed PR states, owner decisions and restart instructions, with a working Codex lead progress report (#222).
 
 
@@ -67,8 +69,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 ## [1.6.0] - 2026-11-03
 
 ### Added
-
-- Review findings and verification notes for unreviewed PRs #133, #135, #136, #138, #140 and #141 (F3).
 
 - A 1.6.0 phone checklist combines the post-1.5.0 changes, starting with retained data,
   release sign-in, proxy reads and widget splits, and separates Play-only checks (R2).

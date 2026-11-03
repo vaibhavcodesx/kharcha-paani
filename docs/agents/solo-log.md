@@ -179,6 +179,8 @@ owner or Claude go at the bottom.
 - 2026-11-03 · #203 · T3 / SplitRounding exact paisa · prepared for merge; generative property tests verify sum equality to exact paisa, representative sample coverage, negative/all-zero weight guards, and independent whole-paisa checks. Independent source review completed; no production code changes; exact-head CI gates merge.
 - 2026-11-04 · #218 · F1 review timing · merged in b688fa1; exact-head CI 41704849025 passed all three jobs and independent source review cleared the final fixture/implementation; after 750 ms, wait up to six seconds for the UI to permit a review request, retaining lifecycle cancellation and claiming cooldown only through the requester. Real-Room/actual-composable red CI 41694356770 ran 980 tests with exactly the intended four-second snackbar failure; timeout/fresh-moment control passed. Earlier wrong-clock control failure and paused-clock stall/cancellation are documented in the PR; production changed only after isolated red. Local Gradle skipped below 4 GB free RAM; final exact-head CI and independent review gate merge. No review-asking copy, balance, server or phone acceptance changes.
 
+- 2026-11-04 · #199 · F3 source review notes · prepared for merge; corrected first-day selector cause, actual minimum text/layout behavior and component/parser/Room evidence boundaries for six merged PRs. PNG generation is not claimed as visual or phone acceptance. Independent review and exact-head current-main CI gate merge; docs only.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
