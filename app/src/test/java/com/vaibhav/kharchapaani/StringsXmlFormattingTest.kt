@@ -287,7 +287,7 @@ class StringsXmlFormattingTest {
 
         for (plural in plurals) {
             val itemSignatures = plural.items.mapValues { (_, text) ->
-                extractSpecifiers(text, plural.formatted).map { Pair(it.argumentIndex, it.conversion) }
+                pluralSignature(text, plural.formatted)
             }
 
             val distinctSignatures = itemSignatures.values.distinct()
@@ -305,35 +305,35 @@ class StringsXmlFormattingTest {
         )
     }
 
+    private fun testFormatExecution(name: String, rawText: String, formatted: Boolean) {
+        val specifiers = extractSpecifiers(rawText, formatted)
+        if (specifiers.isEmpty()) return
+
+        val maxIndex = specifiers.mapNotNull { it.argumentIndex }.maxOrNull() ?: specifiers.size
+        val dummyArgs = Array<Any>(maxIndex) { i ->
+            val matchingSpec = specifiers.firstOrNull { it.argumentIndex == i + 1 }
+            when (matchingSpec?.conversion) {
+                'd', 'o', 'x', 'X' -> 42L
+                'f', 'e', 'g', 'a' -> 42.5
+                'c' -> 'A'
+                'b' -> true
+                else -> "sample_${i + 1}"
+            }
+        }
+
+        // Android resources escape unescaped apostrophes as \'
+        val template = rawText.replace("\\'", "'").replace("\\\"", "\"")
+        try {
+            val result = String.format(Locale.ROOT, template, *dummyArgs)
+            assertTrue("Formatted result for '$name' must not be empty", result.isNotEmpty())
+        } catch (e: Exception) {
+            throw AssertionError("Failed to format resource '$name' with template \"$template\": ${e.message}", e)
+        }
+    }
+
     @Test
     fun `all format strings evaluate cleanly without runtime formatting exceptions`() {
         val (strings, plurals) = loadResourceFiles()
-
-        fun testFormatExecution(name: String, rawText: String, formatted: Boolean) {
-            val specifiers = extractSpecifiers(rawText, formatted)
-            if (specifiers.isEmpty()) return
-
-            val maxIndex = specifiers.mapNotNull { it.argumentIndex }.maxOrNull() ?: specifiers.size
-            val dummyArgs = Array<Any>(maxIndex) { i ->
-                val matchingSpec = specifiers.firstOrNull { it.argumentIndex == i + 1 }
-                when (matchingSpec?.conversion) {
-                    'd', 'o', 'x', 'X' -> 42L
-                    'f', 'e', 'g', 'a' -> 42.5
-                    'c' -> 'A'
-                    'b' -> true
-                    else -> "sample_${i + 1}"
-                }
-            }
-
-            // Android resources escape unescaped apostrophes as \'
-            val template = rawText.replace("\\'", "'").replace("\\\"", "\"")
-            try {
-                val result = String.format(Locale.ROOT, template, *dummyArgs)
-                assertTrue("Formatted result for '$name' must not be empty", result.isNotEmpty())
-            } catch (e: Exception) {
-                throw AssertionError("Failed to format resource '$name' with template \"$template\": ${e.message}", e)
-            }
-        }
 
         for (string in strings) {
             testFormatExecution(string.name, string.text, string.formatted)
@@ -362,5 +362,32 @@ class StringsXmlFormattingTest {
             "Vaibhav's guests are in this split, so only Vaibhav can change who's in it or the amounts.",
             formatted,
         )
+    }
+
+    private fun pluralSignature(text: String, formatted: Boolean): List<Pair<Int?, Char>> =
+        extractSpecifiers(text, formatted).map { Pair(it.argumentIndex, it.conversion) }
+
+    @Test
+    fun `a valid single unindexed integer substitution formats successfully`() {
+        assertTrue(findStrayPercents("%d").isEmpty())
+        assertEquals(1, extractSpecifiers("%d").size)
+        testFormatExecution("single_unindexed_integer", "%d", formatted = true)
+    }
+
+    @Test
+    fun `plural forms can reorder explicitly indexed arguments without changing their signature`() {
+        val one = "%1\$s has %2\$d entry"
+        val other = "%2\$d entries belong to %1\$s"
+        assertTrue(findStrayPercents(one).isEmpty())
+        assertTrue(findStrayPercents(other).isEmpty())
+        assertEquals(pluralSignature(one, true), pluralSignature(other, true))
+    }
+
+    @Test
+    fun `an accepted indexed date time substitution formats successfully`() {
+        val template = "%1\$tH"
+        assertTrue(findStrayPercents(template).isEmpty())
+        assertEquals('H', extractSpecifiers(template).single().conversion)
+        testFormatExecution("indexed_date_time", template, formatted = true)
     }
 }
