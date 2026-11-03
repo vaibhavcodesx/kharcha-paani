@@ -13,6 +13,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- DebtSimplifier invariant tests verifying every net position is preserved down to the paisa and transfers are bounded by at most n - 1 (T2).
+
 ## [1.6.0] - 2026-11-03
 
 ### Added

@@ -2,7 +2,10 @@ package com.vaibhav.kharchapaani.domain
 
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.math.abs
+import kotlin.random.Random
 
 class DebtSimplifierTest {
 
@@ -106,5 +109,173 @@ class DebtSimplifierTest {
         assertEquals(10.01, roundPaisa(10.005), 0.0)
         assertEquals(-10.01, roundPaisa(-10.005), 0.0)
         assertEquals(33.33, roundPaisa(100.0 / 3), 0.0)
+    }
+
+    @Test
+    fun `simplifyPositions preserves every net and produces at most n minus 1 transfers across varied group sizes and balances`() {
+        val seeds = listOf(1337L, 424242L, 20261103L)
+        for (seed in seeds) {
+            val rng = Random(seed)
+            for (trial in 1..100) {
+                val n = rng.nextInt(2, 21)
+                val memberIds = (1L..n.toLong()).toList()
+
+                // Generate random whole-paisa balances that sum to zero
+                val rawPaisa = memberIds.dropLast(1).map { rng.nextLong(-250000L, 250000L) }.toMutableList()
+                rawPaisa.add(-rawPaisa.sum())
+
+                val positions = memberIds.zip(rawPaisa).associate { (id, paisa) -> id to (paisa / 100.0) }
+                val activeCount = positions.count { abs(roundPaisa(it.value)) >= 0.01 }
+
+                val debts = DebtSimplifier.simplifyPositions(positions) { "Person $it" }
+
+                // INVARIANT 1: At most n - 1 transfers (specifically at most activeCount - 1)
+                val maxAllowedTransfers = maxOf(0, activeCount - 1)
+                assertTrue(
+                    "Seed $seed trial $trial: transfers count ${debts.size} must be at most $maxAllowedTransfers for $activeCount active participants",
+                    debts.size <= maxAllowedTransfers
+                )
+
+                // INVARIANT 2: Every transfer is positive whole paisa and between distinct people
+                for (debt in debts) {
+                    assertTrue("Transfer amount must be >= 0.01", debt.amount >= 0.01)
+                    assertTrue("No self-transfer", debt.fromPersonId != debt.toPersonId)
+                }
+
+                // INVARIANT 3: Every participant's net position is preserved to the exact paisa
+                val netReceived = mutableMapOf<Long, Double>()
+                for (debt in debts) {
+                    netReceived[debt.toPersonId] = (netReceived[debt.toPersonId] ?: 0.0) + debt.amount
+                    netReceived[debt.fromPersonId] = (netReceived[debt.fromPersonId] ?: 0.0) - debt.amount
+                }
+
+                for ((personId, initialNet) in positions) {
+                    val expectedNet = roundPaisa(initialNet)
+                    val actualNet = roundPaisa(netReceived[personId] ?: 0.0)
+                    assertEquals(
+                        "Seed $seed trial $trial: net position of person $personId must be preserved",
+                        expectedNet,
+                        actualNet,
+                        0.0
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `simplify preserves every friend balance and restricts direct payments to shared groups across random scenarios`() {
+        val seeds = listOf(777L, 9999L, 123456L)
+        for (seed in seeds) {
+            val rng = Random(seed)
+            for (trial in 1..50) {
+                val friendCount = rng.nextInt(2, 9)
+                val friends = (2L..1L + friendCount).map { id ->
+                    PersonEntity(id = id, name = "Friend $id", avatarColor = "#fff")
+                }
+
+                // Net balances with "You" (-1L)
+                val netBalances = friends.associate { it.id to (rng.nextLong(-100000L, 100000L) / 100.0) }
+
+                // Generate random groups (some friends share groups, some don't)
+                val groupCount = rng.nextInt(1, 4)
+                val groups = (1..groupCount).map {
+                    val memberCount = rng.nextInt(2, friends.size + 1)
+                    val groupMembers = friends.shuffled(rng).take(memberCount).map { it.id }.toMutableSet()
+                    if (rng.nextBoolean()) groupMembers.add(-1L) // "You" may or may not be in this group
+                    groupMembers.toSet()
+                }
+
+                val debts = DebtSimplifier.simplify(
+                    people = friends,
+                    netBalances = netBalances,
+                    groups = groups,
+                    myName = "You",
+                    friendName = "Friend"
+                )
+
+                // INVARIANT 1: Friend-to-friend payments occur only if they share a group
+                for (debt in debts) {
+                    if (debt.fromPersonId != -1L && debt.toPersonId != -1L) {
+                        val shareGroup = groups.any { debt.fromPersonId in it && debt.toPersonId in it }
+                        assertTrue(
+                            "Direct payment between friend ${debt.fromPersonId} and ${debt.toPersonId} requires a shared group",
+                            shareGroup
+                        )
+                    }
+                }
+
+                // INVARIANT 2: Every friend's balance with "You" is accurately cleared
+                for (friend in friends) {
+                    val received = debts.filter { it.toPersonId == friend.id }.sumOf { it.amount }
+                    val paid = debts.filter { it.fromPersonId == friend.id }.sumOf { it.amount }
+                    val actualNet = roundPaisa(received - paid)
+                    val expectedNet = -roundPaisa(netBalances[friend.id] ?: 0.0)
+                    assertEquals(
+                        "Seed $seed trial $trial: friend ${friend.id} balance must be cleared exactly",
+                        expectedNet,
+                        actualNet,
+                        0.0
+                    )
+                }
+
+                // INVARIANT 3: "You" net position clears the sum of all friend balances
+                val myReceived = debts.filter { it.toPersonId == -1L }.sumOf { it.amount }
+                val myPaid = debts.filter { it.fromPersonId == -1L }.sumOf { it.amount }
+                val myActualNet = roundPaisa(myReceived - myPaid)
+                val myExpectedNet = roundPaisa(netBalances.values.sumOf { roundPaisa(it) })
+                assertEquals(
+                    "Seed $seed trial $trial: My net position must match sum of friend balances",
+                    myExpectedNet,
+                    myActualNet,
+                    0.0
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `simplifyPositions with large group of 50 members scales and respects at most 49 transfers`() {
+        val n = 50
+        val memberIds = (1L..n.toLong()).toList()
+        val rng = Random(12345)
+        val rawPaisa = memberIds.dropLast(1).map { rng.nextLong(-100000L, 100000L) }.toMutableList()
+        rawPaisa.add(-rawPaisa.sum())
+
+        val positions = memberIds.zip(rawPaisa).associate { (id, paisa) -> id to (paisa / 100.0) }
+        val activeCount = positions.count { abs(roundPaisa(it.value)) >= 0.01 }
+
+        val debts = DebtSimplifier.simplifyPositions(positions) { "Member $it" }
+
+        assertTrue(debts.size <= activeCount - 1)
+        assertTrue(debts.size < n)
+
+        val netReceived = mutableMapOf<Long, Double>()
+        for (debt in debts) {
+            netReceived[debt.toPersonId] = (netReceived[debt.toPersonId] ?: 0.0) + debt.amount
+            netReceived[debt.fromPersonId] = (netReceived[debt.fromPersonId] ?: 0.0) - debt.amount
+        }
+
+        for ((id, initialNet) in positions) {
+            assertEquals(roundPaisa(initialNet), roundPaisa(netReceived[id] ?: 0.0), 0.0)
+        }
+    }
+
+    @Test
+    fun `simplifyPositions with zero balances or sub-paisa amounts generates no spurious transfers`() {
+        val positions = mapOf(
+            1L to 50.0,
+            2L to -50.0,
+            3L to 0.0,
+            4L to 0.002, // Below half paisa, rounds to 0.00
+            5L to -0.002,
+        )
+
+        val debts = DebtSimplifier.simplifyPositions(positions) { "Person $it" }
+
+        assertEquals(1, debts.size)
+        assertEquals(2L, debts.single().fromPersonId)
+        assertEquals(1L, debts.single().toPersonId)
+        assertEquals(50.0, debts.single().amount, 0.0)
     }
 }
