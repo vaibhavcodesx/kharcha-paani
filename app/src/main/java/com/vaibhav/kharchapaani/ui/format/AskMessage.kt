@@ -34,7 +34,7 @@ object AskMessage {
             hisaab.lines.forEach { append("• ").append(describe(it, zone)).append('\n') }
             append("Total: ").append(Money.format(hisaab.total)).append('\n')
             if (abs(asked - hisaab.total) >= 0.005) {
-                append("Asking ").append(Money.format(asked)).append(" of the ").append(Money.format(hisaab.total)).append(" you owe.\n")
+                append("Asking ").append(Money.format(asked)).append(" of the ").append(Money.format(hisaab.total)).append(" for now.\n")
             }
             upiId?.let { append("UPI: ").append(it).append('\n') }
             append("Sent from Kharcha Paani")

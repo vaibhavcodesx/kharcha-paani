@@ -135,6 +135,16 @@ owner or Claude go at the bottom.
 
 - 2026-10-30 · #184 · X12 / T3.11 split self labels; resolve self by ID through entry_you in editable/locked rows, preserving canonical participant data; actual VM/Room save test · merged.
 
+- 2026-11-03 · #193 · R2 phone checklist · merged; the post-1.5.0 PR phone lists are deduplicated and grouped, with release-build sign-in/proxy/widget checks first, throwaway-only deletion, exact owner release clicks and Play-only limits. No device/server acceptance is claimed. The owner subsequently requested a quick release in chat, authorizing the single v1.6.0 phone-test prerelease after green R3; exact build status and download steps go on #188.
+
+- 2026-11-03 · #192 · F2 Insights first-day fixture · merged; the test uses day one of the current month and identifies the amount beside PER DAY SO FAR, preserving every money/overflow/single-line assertion. Predicted red run 41662128957 had 967 tests and exactly one selector failure, reproducing run 41270005355; no production layout, timing or stored data changed. Local Gradle skipped below the 4 GB RAM floor.
+
+- 2026-11-03 · #190 · R1 friendly partial asks · merged; the outgoing partial-request sentence uses the decided friendly wording. Android CI 41661445167 proved both pinned and real-Room regressions fail on the old wording (968 tests, exactly 2 predicted failures); totals, ledger rows and sharing behavior remain unchanged. Local Gradle skipped below the 4 GB RAM floor; phone sharing still needs owner verification.
+
+- 2026-11-03 · #194 · backup-preview CI fixture · merged; clear the real ViewModel and await its existing scope job before Room close/Main reset, with partial-setup guards. Run 41662753973 exposed concurrent resetMain cancellation and secondary setup failures; every test body/assertion is unchanged, no sleeps or production changes. This corrects the fixture lifecycle rather than ignoring the race.
+
+- 2026-11-03 · #198 · R3 version 1.6.0 (7) · merged; promote the reviewed Unreleased entries without rewording, consolidate duplicate headings/markers and retain a fresh Unreleased section. The owner requested a quick release in chat, authorizing one GitHub phone-test prerelease after exact-head CI; no Play rollout or phone acceptance is claimed. Product merges freeze until #188 records the signed build result; the owner tests with docs/testing/1.6.0-device-checks.md.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.

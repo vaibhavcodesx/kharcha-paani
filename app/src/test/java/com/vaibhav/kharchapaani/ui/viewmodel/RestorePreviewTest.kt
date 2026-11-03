@@ -3,6 +3,8 @@ package com.vaibhav.kharchapaani.ui.viewmodel
 import android.app.Application
 import android.net.Uri
 import androidx.room.Room
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.viewModelScope
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
 import androidx.work.testing.SynchronousExecutor
@@ -12,6 +14,7 @@ import com.vaibhav.kharchapaani.domain.BackupTransaction
 import com.vaibhav.kharchapaani.domain.LocalBackup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.resetMain
@@ -42,19 +45,28 @@ class RestorePreviewTest {
     private val application = ApplicationProvider.getApplicationContext<Application>()
     private lateinit var db: AppDatabase
     private lateinit var viewModel: MainViewModel
+    private val store = ViewModelStore()
+    private var mainDispatcherInstalled = false
 
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
+        mainDispatcherInstalled = true
         WorkManagerTestInitHelper.initializeTestWorkManager(application, Configuration.Builder().setExecutor(SynchronousExecutor()).build())
         db = Room.inMemoryDatabaseBuilder(application, AppDatabase::class.java).allowMainThreadQueries().build()
         viewModel = MainViewModel(application, db, "11111111-2222-3333-4444-555555555555")
+        store.put("main", viewModel)
     }
 
     @After
-    fun tearDown() {
-        db.close()
-        Dispatchers.resetMain()
+    fun tearDown(): Unit = runBlocking {
+        if (::viewModel.isInitialized) {
+            val job = viewModel.viewModelScope.coroutineContext[Job]!!
+            store.clear()
+            withTimeout(10_000) { job.join() }
+        }
+        if (::db.isInitialized) db.close()
+        if (mainDispatcherInstalled) Dispatchers.resetMain()
     }
 
     private fun file(text: String): Uri = Uri.fromFile(File.createTempFile("backup", ".json", application.cacheDir).apply { writeText(text) })
