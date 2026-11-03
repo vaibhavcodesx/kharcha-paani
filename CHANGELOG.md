@@ -19,6 +19,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   `docs/store-listing/assets/`, rendered from the shipped screens with the listing's fictional
   fixture in a real database, so every figure is the app's own (test-only; Stream C item 3).
 
+### Fixed
+- Home waits for the complete ledger before showing money or its first-entry invitation, preventing a false empty state on cold launch.
+- Statement re-import leaves saved payments unticked with “Already in your ledger”, reserving exact dates before nearby matches so a genuine extra purchase stays importable.
+
 ## [1.6.0] - 2026-11-03
 
 ### Added
