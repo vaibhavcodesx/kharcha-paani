@@ -151,6 +151,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-03 · #216 · F7 / X12 Home strings · prepared for merge; original Home/capture/filter/day-total wording moves to resources with canonical IDs and Money.format retained. Downloaded historical run 40418934304 XML: missing Today node, not a wording or precision failure; the fixture had waited only for the streak. It now also waits for both real activity rows, with every original assertion intact and complete Home readiness from #213. Local Gradle skipped below the 4 GB floor; final exact-head CI and independent review gate merge. Supersedes parked #143. F6/#139 stays parked under the 200% font deferral reported on #188 (comment 6611367782); no phone acceptance claimed.
 
+- 2026-11-03 · #(this PR) · BackToHomeTest fixture (Claude) · prepared for merge; the test owned no ViewModelStore, so app-shell flows queried Room after db.close() ("connection pool has been closed"), failing #195 CI 41666122928 and a local merged run. Its MainViewModel and SharedGroupsViewModel now live in a store that's cleared, with the main looper idled until their jobs finish, before Room closes. Assertions unchanged; three consecutive local runs green. Test-only.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
