@@ -151,6 +151,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-03 · #216 · F7 / X12 Home strings · prepared for merge; original Home/capture/filter/day-total wording moves to resources with canonical IDs and Money.format retained. Downloaded historical run 40418934304 XML: missing Today node, not a wording or precision failure; the fixture had waited only for the streak. It now also waits for both real activity rows, with every original assertion intact and complete Home readiness from #213. Local Gradle skipped below the 4 GB floor; final exact-head CI and independent review gate merge. Supersedes parked #143. F6/#139 stays parked under the 200% font deferral reported on #188 (comment 6611367782); no phone acceptance claimed.
 
+- 2026-11-03 · #210 · Store assets, Stream C item 3 (Claude) · prepared for merge; six listing screenshots (1081×1921) and the 1024×500 feature graphic rendered by test-only `ui/store/` from the shipped screens with the fictional fixture in a real Room database. Review fixes: captures clear and await their ViewModels (incl. SharedGroupsViewModel) before Room closes; fixture dates stay in the capture's month (StoreFixtureDatesTest fails without the guard: 2026-11 for a 2026-12-01T00:02 capture). Provenance and phone checks in docs/store-listing/README.md. Test/docs only; owner approves and uploads.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
