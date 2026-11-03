@@ -153,6 +153,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-03 · #195 · T3.5 / REL M5 sheet-first quick add (Claude) · prepared for merge; the sheet opens on the phone's guess and the AI fills only untouched fields, then says "Updated by AI" briefly. Review blockers fixed: the draft is held at the first Save tap (large-amount dialog) and a friend added from the sheet counts as a split change. Red proof: LateAiAnswerTest, written only against pre-fix APIs, fails both cases on pre-fix main f128a87 locally ("turned the edit into a new entry", "reopened a closed sheet"); LargeAmountWhileReadingTest and the add-friend case fail with their fixes removed (Rs 20,00,000 saved for a confirmed Rs 15,00,000; the new friend dropped). Tests clear and await their ViewModel before Room closes. Exact-head CI gates merge; no phone verification claimed (not in the 1.6.0 APK).
 
+- 2026-11-03 · #200 · T1 / Group balances zero-sum · prepared for merge; property tests assert group balances sum to zero, shares sum to total amount, and member balances are conserved across random add, edit, delete, and settle sequences. Independent source review completed; no production code changes; exact-head CI gates merge.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
