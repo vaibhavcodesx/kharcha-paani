@@ -19,7 +19,11 @@ import com.vaibhav.kharchapaani.data.repository.GeminiRepository
 import com.vaibhav.kharchapaani.data.settings.AppSettings
 import com.vaibhav.kharchapaani.ui.components.ConfirmSheetContent
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -57,6 +61,9 @@ class LargeAmountWhileReadingTest {
     private val store = ViewModelStore()
     private lateinit var db: AppDatabase
     private lateinit var viewModel: MainViewModel
+    // The shell keeps the friends list subscribed for the whole session. Hold it here too, off the
+    // compose clock, so quick add finds Rohan however the test machine schedules the composition.
+    private val shell = CoroutineScope(Dispatchers.Unconfined + Job())
 
     private val aiMayAnswer = CountDownLatch(1)
     private val asked = AtomicInteger()
@@ -91,11 +98,13 @@ class LargeAmountWhileReadingTest {
         )
         viewModel = MainViewModel(application, db, "11111111-2222-3333-4444-555555555555", geminiRepo = gemini)
         store.put("main", viewModel)
+        shell.launch { viewModel.people.collect {} }
     }
 
     @After
     fun tearDown() {
         aiMayAnswer.countDown()
+        shell.cancel()
         if (::viewModel.isInitialized) {
             val job = viewModel.viewModelScope.coroutineContext[Job]!!
             store.clear()
@@ -134,7 +143,7 @@ class LargeAmountWhileReadingTest {
                 )
             }
         }
-        compose.waitUntil(10_000) { viewModel.people.value.size == 1 }
+        waitFor("Rohan in the friends list quick add reads") { viewModel.people.value.size == 1 }
 
         compose.runOnIdle {
             viewModel.parseInputText("laptop 1500000 upi")
@@ -157,5 +166,15 @@ class LargeAmountWhileReadingTest {
         val saved = runBlocking { db.transactionDao().getAllTransactionsDirect() }.single()
         assertEquals("saved what the dialog asked about", 1_500_000.0, saved.amount, 0.001)
         assertFalse("the AI's split didn't arrive behind the dialog", saved.isSplit)
+    }
+
+    /** [compose.waitUntil], but a timeout says what it was waiting for and what the database held. */
+    private fun waitFor(what: String, condition: () -> Boolean) {
+        try {
+            compose.waitUntil(10_000, condition)
+        } catch (e: androidx.compose.ui.test.ComposeTimeoutException) {
+            val inDb = runBlocking { db.personDao().getAllPeopleDirect().map { it.name } }
+            throw AssertionError("timed out waiting for $what; people flow=${viewModel.people.value.map { it.name }}, database=$inDb", e)
+        }
     }
 }
