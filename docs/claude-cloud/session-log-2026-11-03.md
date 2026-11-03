@@ -16,13 +16,13 @@ Written at the end of the session for the next Claude Code cloud session. Read
 | PR | What | State at hand-off |
 |---|---|---|
 | #195 | T3.5 sheet-first quick add: the sheet opens at once on the phone's guess, "Improving with AI…", the AI fills only untouched fields, "✓ Updated by AI" for a moment when it changed something | **Merged** after review fixes (draft held at the first Save tap; a friend added counts as a split change; red proof on pre-fix main). In the next build; phone checks in the PR |
-| #210 | Play store listing: 6 screenshots (1081×1921) and the 1024×500 feature graphic, rendered by test-only `ui/store/` | Codex reviewed; **all fixed at 15390c2** (capture lifecycle, month-start dates, provenance, phone checks). Owner approves and uploads |
+| #210 | Play store listing: 6 screenshots (1081×1921) and the 1024×500 feature graphic, rendered by test-only `ui/store/` | **Merged.** Owner approves and uploads |
 | #212 | UI audit of every screen at four device sizes, 28 findings, report `docs/production-readiness/audits/ui-audit-2026-11.md` | Green; **Codex asked for changes** (checklist below) |
 | #214 | Audit batch A: money never cut or misread ("1.27L" in the day strip, "₹300" not "₹0" for a pending payment, "<1%", "You're owed" wraps) | Green, stacked on #212; **Codex asked for changes** (below) |
 | #215 | Audit batch B: consistency (no empty Insights tiles, disabled chips look disabled, "5 Nov 2026" and ₹ in Subscriptions, "What Rohan will see", sort aligned, "Spent most on") | Green, stacked on #214; no production blocker, **more tests asked** (below) |
 | #220 | CI fixture: `BackToHomeTest` stops its ViewModels before closing Room (the random "connection pool has been closed" failure) | Test-only, just opened |
 
-Merge order for what's left: #220, #210, #212, #214, #215, then this handoff (#222). Every PR adds a `CHANGELOG.md` line under
+Merge order for what's left: #220, #212, #214, #215, then this handoff (#222). Every PR adds a `CHANGELOG.md` line under
 Unreleased, so each merge conflicts the next there: keep both sides.
 
 ### Codex's open review asks: the next session's first checklist
@@ -63,7 +63,7 @@ Reviews arrived at the very end of the session (18:14–18:22 UTC). Read each PR
       spend highlights.
 - [ ] Solo-log row, latest `main`, three green jobs.
 
-**#195 merged.** **#210:** review fixes pushed and green at 15390c2; waiting on Codex's re-review.
+**#195 and #210 merged.** The listing assets are in `docs/store-listing/assets/` for the owner to approve and upload.
 **#220** was green.
 
 ## Owner decisions this session (also on #188)
