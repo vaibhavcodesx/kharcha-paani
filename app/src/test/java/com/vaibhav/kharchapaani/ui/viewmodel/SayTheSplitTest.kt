@@ -136,7 +136,8 @@ class SayTheSplitTest {
 
         viewModel.parseInputText("dinner 1800 with rohan bhai and priya")
         viewModel.acceptAiNotice()
-        until { viewModel.isConfirmSheetOpen.value && !viewModel.isParsing.value }
+        // The sheet opens on the phone's guess at once; this waits for Gemini's reading to land on it.
+        until { viewModel.isConfirmSheetOpen.value && !viewModel.isImprovingWithAi.value }
 
         assertNull(viewModel.groupId.value)
         assertEquals(setOf(-1L, 1L), ticked())
@@ -150,7 +151,7 @@ class SayTheSplitTest {
 
         viewModel.parseInputText("lunch 900 goa trip with rohan")
         viewModel.acceptAiNotice()
-        until { viewModel.isConfirmSheetOpen.value && !viewModel.isParsing.value }
+        until { viewModel.isConfirmSheetOpen.value && !viewModel.isImprovingWithAi.value }
 
         assertEquals(10L, viewModel.groupId.value)
         assertEquals(setOf(-1L, 1L), ticked())
