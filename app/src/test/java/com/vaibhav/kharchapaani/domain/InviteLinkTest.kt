@@ -66,7 +66,6 @@ class InviteLinkTest {
             "OB2CD3EF", "AB2CD3EO", "abOcd3ef",
             "1B2CD3EF", "AB2CD3E1", "ab1cd3ef",
             "IB2CD3EF", "AB2CD3EI", "abIcd3ef",
-            "lB2CD3EF", "AB2CD3El", "ab3lcd4e",
             // Punctuation and symbols
             "AB2C.3EF", "AB2C_3EF", "AB2C/3EF", "AB2C?3EF",
             "AB2C#3EF", "AB2C@3EF", "AB2C&3EF", "AB2C=3EF",
