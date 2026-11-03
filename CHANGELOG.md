@@ -16,9 +16,16 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 ### Added
 
 
+
 - DebtSimplifier invariant tests verifying every net position is preserved down to the paisa and transfers are bounded by at most n - 1 (T2).
 
+- The Play listing's six screenshots and its 1024×500 feature graphic, in
+  `docs/store-listing/assets/`, rendered from the shipped screens with the listing's fictional
+  fixture in a real database, so every figure is the app's own (test-only; Stream C item 3).
+
+
 - Group balances sum to zero, shares sum to total amount, and member balances are conserved across random add, edit, delete, and settle sequences (T1).
+
 
 ### Changed
 
@@ -32,6 +39,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 
 ### Fixed
+- The Back-on-Home test stops its real ViewModels before closing Room, so a late app-shell query no
+  longer fails it at random (CI fixture, as #194 did for backup preview).
 - Home waits for the complete ledger before showing money or its first-entry invitation, preventing a false empty state on cold launch.
 - Statement re-import leaves saved payments unticked with “Already in your ledger”, reserving exact dates before nearby matches so a genuine extra purchase stays importable.
 
