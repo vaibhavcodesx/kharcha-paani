@@ -15,7 +15,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
-- String-resource formatting safety tests include valid numeric, date/time and reordered-argument self-checks (T13).
+- String-resource checker covers placeholders and format execution with positive self-tests (T13).
+
+- Migration-chain regression checks legacy v2 rows through v10, UUID uniqueness and post-migration DAO writes (T8).
+
+- Deterministic local-parser golden cases cover 30 representative English/Hinglish inputs (T5).
 
 - Money formatting and input tests cover Indian grouping, invalid numbers, limits, intermediate keystrokes and representative round trips (T4).
 

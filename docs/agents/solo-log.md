@@ -183,6 +183,10 @@ owner or Claude go at the bottom.
 
 - 2026-11-03 · #204 · T4 / Money parsing and formatting · prepared for merge; invariant tests verify parse-format round-trip across representative samples of the numeric domain, symbol resilience, and formatting invariants. Independent source review completed; no production code changes; exact-head CI gates merge.
 
+- 2026-11-04 · #205 · T5 local-parser golden table · prepared for merge; 30 deterministic cases pin current heuristic output, including English/Hinglish and known split names. Existing tests/assertions preserved; no claim of ideal natural-language understanding, no production changes. Independent source review completed; exact-head current-main three-job CI gates merge; local Gradle skipped below 4 GB free RAM.
+
+- 2026-11-04 · #208 · T8 migration-chain coverage · prepared for merge; real legacy v2 database runs the actual chain to v10. Retained all 108 original assertion lines and added 26 assertions for second-row legacy values/defaults, membership pairings and remote UUID uniqueness. Room closes in finally. New-table writes are smoke checks, not historical rows. No production/schema migration change. Independent source review completed; current-main exact-head CI gates merge; local Gradle skipped below 4 GB free RAM.
+
 - 2026-11-04 · #221 · T13 formatting checker · correction prepared; CI 41710054770 ran 1038 tests with exactly the three predicted self-check failures. After that red, corrected implicit dummy-argument indexes, date/time dummy types and plural signature ordering; existing checker helpers extracted unchanged. Added valid single unindexed integer, indexed date/time and reordered explicit plural-argument examples. Existing resource assertions and all three new regressions remain; final latest-main CI and independent review gate merge. Second review found supported mixed argument reuse and datetime-prefix signatures still wrong. Added two regression self-tests before those corrections; exactly two failures predicted. No production strings changed; not merge-ready. Local Gradle skipped below 4 GB free RAM.
 
 ## Questions
