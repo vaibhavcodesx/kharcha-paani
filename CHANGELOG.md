@@ -13,6 +13,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- A UI audit of every screen at four device sizes, rendered from the real app shell and database,
+  with 28 findings and a fix plan (`docs/production-readiness/audits/ui-audit-2026-11.md`;
+  test-only harness in `ui/audit/`).
+
 ## [1.6.0] - 2026-11-03
 
 ### Added
