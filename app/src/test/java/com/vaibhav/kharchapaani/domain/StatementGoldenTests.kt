@@ -6,12 +6,15 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.Calendar
 import java.util.Locale
+import java.util.TimeZone
 
 /**
  * Golden test suite for LocalStatementParser and StatementChecks (T6).
@@ -20,6 +23,17 @@ import java.util.Locale
  * fictional banks, synthetic dates, and dummy merchant names.
  */
 class StatementGoldenTests {
+
+    private lateinit var originalTimeZone: TimeZone
+
+    @Before fun pinTimeZone() {
+        originalTimeZone = TimeZone.getDefault()
+        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Kolkata"))
+    }
+
+    @After fun restoreTimeZone() {
+        if (::originalTimeZone.isInitialized) TimeZone.setDefault(originalTimeZone)
+    }
 
     private val utc = ZoneOffset.UTC
     private val testToday = LocalDate.of(2026, 9, 15)

@@ -410,12 +410,12 @@ phase where "everyone in the split gets told Priya added an expense" first works
 | T3.3 | Verified App Links for invites (`https://<domain>/join/CODE`) instead of the hijackable `kharchapaani://` scheme **[owner review]** | M | SEC M-1 |
 | T3.4 | The half-filled entry, statement result and pending undo-deletes survive process death | M | REL M2, L11 |
 | T3.5 | Quick-add: open the sheet immediately with the on-phone guess, cancel the AI job when the user moves on, never overwrite what they typed | M | REL M5 |
-| T3.6 | Statement re-import marks "Already in your ledger" rows unticked | S | REL M6 |
+| T3.6 | Statement re-import marks "Already in your ledger" rows unticked — done in #201, exact dates reserved before neighbours; phone check pending | S | REL M6 |
 | T3.7 | Performance: share the base Room flows, move the feed build off Main, stop per-friend ledger queries, lazy lists in sheets, a Baseline Profile | L | REL M8, L12 |
 | T3.8 | Search by friend name and amount; "Edited by X · time" on shared expenses | M | REL M11 |
 | T3.9 | In-app review prompt after a happy moment (a confirmed settlement), never after an error | S | REL L13, PLAY §10 |
 | T3.10 | Small things: empty-state flash on cold start (L1), `collectAsStateWithLifecycle` everywhere (L2), offline sign-in error wording (L5), haptics on money confirmations (L6), "Scan bill" naming (L7), thread-safe date parsing (L10), DataStore corruption handler (L14), export warning line (SEC L-10) | S each | REL L*, SEC L-10 |
-| T3.11 | Strings into `strings.xml` (0 `stringResource` today, about 640 literals). Needed before any Hindi/Hinglish build | L | REL i18n |
+| T3.11 | Strings into `strings.xml`: ongoing; shipped areas are recorded in the solo log, with Home in #216. Needed before any Hindi/Hinglish build | L | REL i18n |
 | T3.12 | Light theme (Google's quality guideline; the app is dark only) | L | PLAY §10 |
 | T3.13 | Incident plan (one page: who to tell, within 72 hours for the DPDP Board) | S | PLAY §11 |
 
