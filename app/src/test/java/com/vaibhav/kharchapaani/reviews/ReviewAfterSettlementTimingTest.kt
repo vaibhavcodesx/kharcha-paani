@@ -8,6 +8,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewModelScope
 import androidx.room.Room
@@ -28,6 +31,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -46,22 +50,25 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.Implementation
 import org.robolectric.annotation.Implements
+import java.util.concurrent.atomic.AtomicInteger
 
 /** Actual money save -> actual composable collector -> Play boundary, while a snackbar is busy. */
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36], shadows = [ReviewAfterSettlementTimingTest.PlayFactory::class],
     instrumentedPackages = ["com.google.android.play.core.review"])
 class ReviewAfterSettlementTimingTest {
-    @get:Rule val compose = createComposeRule()
-    private val app = ApplicationProvider.getApplicationContext<Application>()
     private val dispatcher = StandardTestDispatcher()
+    @get:Rule val compose = createComposeRule(effectContext = dispatcher)
+    private val app = ApplicationProvider.getApplicationContext<Application>()
     private val store = ViewModelStore()
     private lateinit var db: AppDatabase
     private lateinit var vm: MainViewModel
     private lateinit var manager: CountingManager
     private var allowed by mutableStateOf(false)
     private var showCollector by mutableStateOf(true)
+    private val delivered = AtomicInteger()
+    private lateinit var screenLifecycle: Lifecycle
 
     @Before fun setUp(): Unit = runBlocking {
         Dispatchers.setMain(dispatcher)
@@ -76,14 +83,18 @@ class ReviewAfterSettlementTimingTest {
         manager = CountingManager(app)
         PlayFactory.manager = manager
         assertSame("only the external Play boundary is replaced", manager, ReviewManagerFactory.create(app))
-        compose.mainClock.autoAdvance = false
-        compose.setContent { if (showCollector) ReviewAfterSettlement(vm.reviewMoments, enabled = allowed) }
+        val moments = vm.reviewMoments.onEach { delivered.incrementAndGet() }
+        compose.setContent {
+            screenLifecycle = LocalLifecycleOwner.current.lifecycle
+            if (showCollector) ReviewAfterSettlement(moments, enabled = allowed)
+        }
         pump()
+        assertEquals(Lifecycle.State.RESUMED, screenLifecycle.currentState)
+        compose.mainClock.autoAdvance = false
     }
 
     private fun pump() {
         dispatcher.scheduler.runCurrent()
-        compose.mainClock.advanceTimeByFrame()
         compose.waitForIdle()
         dispatcher.scheduler.runCurrent()
         shadowOf(Looper.getMainLooper()).idle()
@@ -91,8 +102,7 @@ class ReviewAfterSettlementTimingTest {
     }
 
     private fun advanceUiBy(millis: Long) {
-        // The ViewModel and LaunchedEffect/repeatOnLifecycle collector have separate schedulers.
-        dispatcher.scheduler.advanceTimeBy(millis)
+        // Composition, lifecycle collector and ViewModel deliberately share this test clock.
         compose.mainClock.advanceTimeBy(millis)
         pump()
     }
@@ -102,14 +112,17 @@ class ReviewAfterSettlementTimingTest {
     }
 
     private suspend fun confirmPayment(amount: Double) {
+        val before = delivered.get()
         vm.recordSettlementPayment(-1L, 2L, amount, "Test payment")
-        until { vm.submitting.value.isEmpty() && db.settlementDao().getAllSettlements().first().any { it.amount == amount && it.isConfirmed } }
+        until { delivered.get() > before && vm.submitting.value.isEmpty() &&
+            db.settlementDao().getAllSettlements().first().any { it.amount == amount && it.isConfirmed } }
         pump()
     }
 
     @After fun tearDown(): Unit = runBlocking {
         if (::manager.isInitialized) {
-            compose.runOnIdle { showCollector = false }
+            compose.runOnUiThread { showCollector = false }
+            compose.mainClock.advanceTimeByFrame()
             pump()
         }
         val jobs = listOfNotNull(if (::vm.isInitialized) vm.viewModelScope.coroutineContext[Job] else null)
@@ -125,7 +138,8 @@ class ReviewAfterSettlementTimingTest {
         assertEquals(0, manager.requests)
         assertFalse(app.getSharedPreferences("play_review_preferences", 0).contains("last_attempt"))
 
-        compose.runOnIdle { allowed = true }
+        compose.runOnUiThread { allowed = true }
+        compose.mainClock.advanceTimeByFrame()
         pump()
 
         assertEquals("the success must survive its confirmation snackbar", 1, manager.requests)
@@ -136,7 +150,8 @@ class ReviewAfterSettlementTimingTest {
     @Test fun `a UI busy past the window drops the moment without consuming its cooldown`(): Unit = runBlocking {
         confirmPayment(80.0)
         advanceUiBy(8_000)
-        compose.runOnIdle { allowed = true }
+        compose.runOnUiThread { allowed = true }
+        compose.mainClock.advanceTimeByFrame()
         pump()
         assertEquals(0, manager.requests)
         assertFalse(app.getSharedPreferences("play_review_preferences", 0).contains("last_attempt"))
