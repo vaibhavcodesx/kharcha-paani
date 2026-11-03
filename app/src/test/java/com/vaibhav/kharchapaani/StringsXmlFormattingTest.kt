@@ -397,4 +397,26 @@ class StringsXmlFormattingTest {
         assertEquals('H', extractSpecifiers(template).single().conversion)
         testFormatExecution("indexed_date_time", template, formatted = true)
     }
+
+    @Test
+    fun `reused arguments support compatible general numeric character and date conversions`() {
+        for (template in listOf(
+            "%1\$s / %1\$d",
+            "%1\$s / %1\$tH",
+            "%1\$s / %1\$d / %1\$c",
+            "%1\$s / %1\$d / %1\$tH",
+        )) {
+            testFormatExecution("compatible_reused_argument", template, formatted = true)
+        }
+        org.junit.Assert.assertThrows(AssertionError::class.java) {
+            testFormatExecution("incompatible_reused_argument", "%1\$d / %1\$f", formatted = true)
+        }
+    }
+
+    @Test
+    fun `plural signatures distinguish date time conversions from ordinary conversions`() {
+        assertFalse(pluralSignature("%1\$tH", true) == pluralSignature("%1\$H", true))
+        assertFalse(pluralSignature("%1\$tH", true) == pluralSignature("%1\$TH", true))
+        assertEquals(pluralSignature("%1\$tH %2\$s", true), pluralSignature("%2\$s %1\$tH", true))
+    }
 }
