@@ -6,6 +6,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/** Comprehensive test coverage for T10: malformed inputs and alphabet validation. */
 class InviteLinkTest {
 
     @Test
