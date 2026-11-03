@@ -15,6 +15,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Agent handoff records reviewed PR states, owner decisions and restart instructions, with a working Codex lead progress report (#222).
+
+
+
+- Invariant test asserting the local backup file round trip preserves supported fields for people, groups, members, subscriptions, direct and split transactions, split shares, settlements, and settings (T7).
 
 
 - Golden test suite for LocalStatementParser and StatementChecks with invented data verifying date parsing, safety anomaly checks, and multi-month grouping (T6).
@@ -22,6 +27,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 
 - DebtSimplifier invariant tests verifying every net position is preserved down to the paisa and transfers are bounded by at most n - 1 (T2).
+
 
 
 - The Play listing's six screenshots and its 1024×500 feature graphic, in
@@ -45,9 +51,13 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 - The large-amount quick-add test keeps the friends list subscribed the way the app shell does,
-  so a slow CI machine no longer times it out before Rohan loads; a timeout now says what it saw.
+  and reports flow/database contents on timeout, while retaining the original wait limit.
+
+- A confirmed settlement can wait briefly for its confirmation snackbar before requesting a rare Play review; an expired or cancelled opportunity does not consume the cooldown.
+
 - The Back-on-Home test stops its real ViewModels before closing Room, so a late app-shell query no
   longer fails it at random (CI fixture, as #194 did for backup preview).
+
 - Home waits for the complete ledger before showing money or its first-entry invitation, preventing a false empty state on cold launch.
 - Statement re-import leaves saved payments unticked with “Already in your ledger”, reserving exact dates before nearby matches so a genuine extra purchase stays importable.
 
