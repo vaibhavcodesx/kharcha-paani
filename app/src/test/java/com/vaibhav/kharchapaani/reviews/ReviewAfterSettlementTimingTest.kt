@@ -107,6 +107,17 @@ class ReviewAfterSettlementTimingTest {
         pump()
     }
 
+    private fun advanceUiUntil(timeoutMillis: Long, condition: () -> Boolean) {
+        val startedAt = compose.mainClock.currentTime
+        // Snapshot notifications and Play callbacks also need Android's native main looper.
+        pump()
+        while (!condition() && compose.mainClock.currentTime - startedAt < timeoutMillis) {
+            compose.mainClock.advanceTimeByFrame()
+            pump()
+        }
+        check(condition()) { "The UI condition was not met within $timeoutMillis ms of virtual time" }
+    }
+
     private suspend fun until(condition: suspend () -> Boolean) = withTimeout(10_000) {
         while (!condition()) { pump(); delay(10) }
     }
@@ -141,7 +152,7 @@ class ReviewAfterSettlementTimingTest {
         compose.runOnUiThread { allowed = true }
         compose.mainClock.advanceTimeByFrame()
         // Readiness recomposes first; its snapshotFlow notification can need a later frame.
-        compose.mainClock.advanceTimeUntil(timeoutMillis = 500) { manager.requests == 1 }
+        advanceUiUntil(timeoutMillis = 500) { manager.requests == 1 }
         pump()
 
         assertEquals("the success must survive its confirmation snackbar", 1, manager.requests)
