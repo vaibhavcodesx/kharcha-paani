@@ -13,6 +13,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- Comprehensive unit tests for InviteLink covering malformed schemes, hosts, paths, disallowed/ambiguous characters, symbols, unicode, length boundaries, and injection attempts (T10).
+
 ## [1.6.0] - 2026-11-03
 
 ### Added
