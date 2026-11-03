@@ -135,6 +135,8 @@ owner or Claude go at the bottom.
 
 - 2026-10-30 · #184 · X12 / T3.11 split self labels; resolve self by ID through entry_you in editable/locked rows, preserving canonical participant data; actual VM/Room save test · merged.
 
+- 2026-11-03 · R2 phone checklist · merged; the post-1.5.0 PR phone lists are deduplicated and grouped, with release-build sign-in/proxy/widget checks first, throwaway-only deletion, exact owner release clicks and Play-only limits. No APK/device/server acceptance is claimed; publishing remains an owner action because release.yml has no draft mode.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
