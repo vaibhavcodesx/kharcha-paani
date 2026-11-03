@@ -44,6 +44,7 @@ class BackToHomeTest {
     private val userId = "11111111-2222-3333-4444-555555555555"
     private lateinit var db: AppDatabase
     private lateinit var viewModel: MainViewModel
+    private lateinit var sharedGroups: SharedGroupsViewModel
     // Both ViewModels are owned here, as an Activity would own them, so they're stopped before Room
     // closes: an app-shell query still running after db.close() failed this test at random.
     private val store = ViewModelStore()
@@ -56,8 +57,8 @@ class BackToHomeTest {
         )
         db = Room.inMemoryDatabaseBuilder(application, AppDatabase::class.java).allowMainThreadQueries().build()
         viewModel = MainViewModel(application, db, userId)
-        val sharedGroups = SharedGroupsViewModel(application, db, userId)
         store.put("main", viewModel)
+        sharedGroups = SharedGroupsViewModel(application, db, userId)
         store.put("shared", sharedGroups)
         compose.setContent {
             SplitFlowTheme {
@@ -76,13 +77,16 @@ class BackToHomeTest {
 
     @After
     fun tearDown() {
-        if (::viewModel.isInitialized) {
-            val job = viewModel.viewModelScope.coroutineContext[Job]!!
+        if (::viewModel.isInitialized || ::sharedGroups.isInitialized) {
+            val jobs = listOfNotNull(
+                if (::viewModel.isInitialized) viewModel.viewModelScope.coroutineContext[Job] else null,
+                if (::sharedGroups.isInitialized) sharedGroups.viewModelScope.coroutineContext[Job] else null,
+            )
             store.clear()
             // The ViewModel's jobs finish on the real main looper here: keep it turning, don't block it.
             val deadline = System.currentTimeMillis() + 10_000
-            while (!job.isCompleted && System.currentTimeMillis() < deadline) ShadowLooper.idleMainLooper()
-            check(job.isCompleted) { "the ViewModel's jobs didn't finish" }
+            while (jobs.any { !it.isCompleted } && System.currentTimeMillis() < deadline) ShadowLooper.idleMainLooper()
+            check(jobs.all { it.isCompleted }) { "the ViewModels' jobs didn't finish" }
         }
         if (::db.isInitialized) db.close()
     }
