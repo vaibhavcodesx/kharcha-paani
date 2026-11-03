@@ -17,11 +17,15 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 
 
+- Invariant test asserting the local backup file round trip preserves supported fields for people, groups, members, subscriptions, direct and split transactions, split shares, settlements, and settings (T7).
+
+
 - Golden test suite for LocalStatementParser and StatementChecks with invented data verifying date parsing, safety anomaly checks, and multi-month grouping (T6).
 
 
 
 - DebtSimplifier invariant tests verifying every net position is preserved down to the paisa and transfers are bounded by at most n - 1 (T2).
+
 
 
 - The Play listing's six screenshots and its 1024×500 feature graphic, in
