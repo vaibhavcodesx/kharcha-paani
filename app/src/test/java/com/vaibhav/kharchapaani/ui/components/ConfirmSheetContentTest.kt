@@ -42,10 +42,12 @@ class ConfirmSheetContentTest {
         splitMode: SplitMode = SplitMode.EQUAL,
         shares: List<ShareInput> = emptyList(),
         isImprovingWithAi: Boolean = false,
+        updatedByAi: Boolean = false,
     ) {
         SplitFlowTheme {
             ConfirmSheetContent(
                 isImprovingWithAi = isImprovingWithAi,
+                updatedByAi = updatedByAi,
                 isParsing = false, isEditing = false, notice = notice, type = "expense", amount = amount, merchant = "McDonald's",
                 category = category, paymentMethod = "GPay", note = "", date = 0L, groupId = null,
                 availableGroups = emptyList(), isSplit = isSplit, splitMode = splitMode, paidByPersonId = -1L,
@@ -152,6 +154,21 @@ class ConfirmSheetContentTest {
         composeTestRule.setContent { Sheet(isImprovingWithAi = false) }
 
         composeTestRule.onNodeWithTag("confirm_improving").assertDoesNotExist()
+    }
+
+    @Test
+    fun `when the AI's reading changed the entry, the sheet says so for a moment, then goes quiet`() {
+        composeTestRule.mainClock.autoAdvance = false
+        composeTestRule.setContent { Sheet(isImprovingWithAi = false, updatedByAi = true) }
+        composeTestRule.mainClock.advanceTimeBy(500)
+
+        composeTestRule.onNodeWithTag("confirm_updated_by_ai").assertExists()
+        composeTestRule.onNodeWithText("Updated by AI").assertExists()
+        composeTestRule.onNodeWithTag("confirm_improving").assertDoesNotExist()
+
+        composeTestRule.mainClock.advanceTimeBy(5_000)
+
+        composeTestRule.onNodeWithTag("confirm_updated_by_ai").assertDoesNotExist()
     }
 
     @Test

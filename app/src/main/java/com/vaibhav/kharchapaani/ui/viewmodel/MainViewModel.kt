@@ -610,11 +610,16 @@ class MainViewModel(
     private var improveJob: Job? = null
     private val touchedWhileImproving = mutableSetOf<EntryField>()
 
+    private val _updatedByAi = MutableStateFlow(false)
+    /** The AI's reading landed and changed something on the open sheet; the sheet says so briefly. */
+    val updatedByAi: StateFlow<Boolean> = _updatedByAi.asStateFlow()
+
     /** The AI's reading isn't wanted any more: the sheet closed, saved, or now holds another entry. */
     private fun stopImprovingWithAi() {
         improveJob?.cancel()
         improveJob = null
         _isImprovingWithAi.value = false
+        _updatedByAi.value = false
     }
 
     /** The person changed [field] themselves, so the AI's reading leaves it alone. */
@@ -1102,6 +1107,7 @@ class MainViewModel(
     private fun improveWith(parsed: ParsedTransactionResult, rawText: String): String? {
         val touched = touchedWhileImproving
         val choices = parseChoices()
+        val before = currentDraft()
         // A category belongs to its type (Salary isn't a spend), so the two move together.
         if (EntryField.Type !in touched && EntryField.Category !in touched) {
             _type.value = parsed.type
@@ -1114,13 +1120,20 @@ class MainViewModel(
             _paymentMethod.value = if (parsed.paymentMethod.isBlank()) defaultPaymentMethod() else choices.paymentFor(parsed.paymentMethod)
         }
         if (EntryField.Note !in touched) _note.value = parsed.note
-        if (EntryField.Date !in touched) _date.value = parsed.date
-        if (EntryField.Split in touched) {
+        // No day in the line comes back as the AI's own "now", moments after the phone's: the same
+        // time, not a change worth saying "Updated by AI" over.
+        if (EntryField.Date !in touched && abs(parsed.date - _date.value) >= SAME_MOMENT_MS) _date.value = parsed.date
+        val splitNotice = if (EntryField.Split in touched) {
             // Their split stays as they set it, sized to the amount now on the sheet.
             recalculateShares()
-            return null
+            null
+        } else {
+            applySplitTarget(parsed, rawText)
         }
-        return applySplitTarget(parsed, rawText)
+        // Fields changing under someone's eyes with no word would feel like a glitch; when the AI
+        // agreed with the phone, there's nothing to say.
+        _updatedByAi.value = currentDraft() != before
+        return splitNotice
     }
 
     fun parseReceiptImage(bitmap: Bitmap) {
@@ -2327,6 +2340,9 @@ class MainViewModel(
             viewModelFactory { initializer { MainViewModel(application, db, userId) } }
     }
 }
+
+/** Two readings' times this close are the same moment ("now" on the phone, "now" from the AI). */
+private const val SAME_MOMENT_MS = 60_000L
 
 /** A part of the quick-add sheet the person can change; see [MainViewModel.isImprovingWithAi]. */
 private enum class EntryField { Type, Amount, Merchant, Category, Payment, Note, Date, Split }

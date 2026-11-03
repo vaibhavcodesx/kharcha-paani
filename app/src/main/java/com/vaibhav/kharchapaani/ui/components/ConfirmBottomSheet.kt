@@ -4,11 +4,13 @@ import androidx.compose.ui.res.stringResource
 import com.vaibhav.kharchapaani.R
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -41,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -93,6 +96,7 @@ import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -147,6 +151,8 @@ fun ConfirmBottomSheet(
     isSaving: Boolean = false,
     // True while the sheet shows the phone's guess and the AI's reading is on its way.
     isImprovingWithAi: Boolean = false,
+    // The AI's reading landed and changed something: said briefly where "Improving…" was.
+    updatedByAi: Boolean = false,
 ) {
     if (!isOpen) return
     val focusManager = LocalFocusManager.current
@@ -171,6 +177,7 @@ fun ConfirmBottomSheet(
             billPhoto = billPhoto, onAddBillPhoto = onAddBillPhoto, onRemoveBillPhoto = onRemoveBillPhoto,
             isSaving = isSaving,
             isImprovingWithAi = isImprovingWithAi,
+            updatedByAi = updatedByAi,
             onSave = {
                 focusManager.clearFocus()
                 onSave()
@@ -240,6 +247,7 @@ fun ConfirmSheetContent(
     // The sheet opened on the phone's guess and the AI's reading is on its way: said quietly beside
     // the eyebrow, so nothing on the sheet moves while they're already typing.
     isImprovingWithAi: Boolean = false,
+    updatedByAi: Boolean = false,
 ) {
     // An entry keeps its own category or method even when it isn't a choice here (hidden since, or a
     // groupmate's own category), so it's shown and stays selected.
@@ -301,9 +309,7 @@ fun ConfirmSheetContent(
                 style = EyebrowText,
                 modifier = Modifier.weight(1f).semantics { heading() },
             )
-            AnimatedVisibility(visible = isImprovingWithAi, enter = fadeIn(), exit = fadeOut()) {
-                ImprovingWithAi()
-            }
+            AiReadingStatus(isImprovingWithAi = isImprovingWithAi, updatedByAi = updatedByAi)
         }
         // A groupmate's expense stays an expense: only its adder could make it something else.
         if (addedBy == null) {
@@ -522,23 +528,53 @@ internal fun ExpandableDetail(
     }
 }
 
-/** A small working mark and "Improving with AI…", read out once when it appears. */
+private enum class AiReading { Improving, Updated, Quiet }
+
+/** How long "Updated by AI" stays: long enough to glance at, short enough not to linger as noise. */
+private const val UPDATED_BY_AI_MS = 3_500L
+
+/**
+ * Beside the eyebrow: a small working mark and "Improving with AI…" while the AI reads the line,
+ * then a tick and "Updated by AI" for a moment if its reading changed anything, cross-faded in one
+ * slot so nothing else on the sheet moves. Each is read out once.
+ */
 @Composable
-private fun ImprovingWithAi() {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .padding(start = Spacing.m)
-            .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
-            .testTag("confirm_improving"),
-    ) {
-        CircularProgressIndicator(color = WarmAmberPrimary, strokeWidth = 1.5.dp, modifier = Modifier.size(12.dp))
-        Text(
-            text = stringResource(R.string.entry_improving_ai),
-            style = MaterialTheme.typography.labelMedium,
-            color = MutedWarmGray,
-            modifier = Modifier.padding(start = Spacing.xs),
-        )
+private fun AiReadingStatus(isImprovingWithAi: Boolean, updatedByAi: Boolean) {
+    var showUpdated by remember { mutableStateOf(false) }
+    LaunchedEffect(updatedByAi) {
+        showUpdated = updatedByAi
+        if (updatedByAi) {
+            delay(UPDATED_BY_AI_MS)
+            showUpdated = false
+        }
+    }
+    val state = when {
+        isImprovingWithAi -> AiReading.Improving
+        showUpdated -> AiReading.Updated
+        else -> AiReading.Quiet
+    }
+    AnimatedContent(targetState = state, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "ai_reading") { reading ->
+        if (reading == AiReading.Quiet) return@AnimatedContent
+        val improving = reading == AiReading.Improving
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .padding(start = Spacing.m)
+                .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
+                .testTag(if (improving) "confirm_improving" else "confirm_updated_by_ai"),
+        ) {
+            if (improving) {
+                CircularProgressIndicator(color = WarmAmberPrimary, strokeWidth = 1.5.dp, modifier = Modifier.size(12.dp))
+            } else {
+                Icon(KpIcons.Check, contentDescription = null, tint = WarmAmberPrimary, modifier = Modifier.size(14.dp))
+            }
+            Text(
+                text = stringResource(if (improving) R.string.entry_improving_ai else R.string.entry_updated_by_ai),
+                style = MaterialTheme.typography.labelMedium,
+                color = MutedWarmGray,
+                modifier = Modifier.padding(start = Spacing.xs),
+            )
+        }
     }
 }
 

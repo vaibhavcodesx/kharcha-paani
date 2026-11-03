@@ -155,6 +155,25 @@ class SheetFirstQuickAddTest {
         assertEquals(setOf(-1L, 1L), ticked())
         assertEquals(2400.0, viewModel.shares.value.filter { it.isSelected }.sumOf { it.amount }, 0.001)
         assertNull(viewModel.parseNotice.value)
+        assertTrue("the sheet says the AI changed it", viewModel.updatedByAi.value)
+    }
+
+    @Test
+    fun `when the AI agrees with the phone, the sheet doesn't claim it changed anything`() = runBlocking {
+        // The same reading the phone made, and no date said, which comes back as the AI's own "now".
+        answer = """{"type":"expense","amount":40,"merchant":"Chai","category":"Food","paymentMethod":"Cash","date":"","splitWith":[],"note":"chai 40 cash"}"""
+
+        viewModel.parseInputText("chai 40 cash")
+        viewModel.acceptAiNotice()
+        val openedAt = viewModel.date.value
+
+        aiAnswers()
+        until { !viewModel.isImprovingWithAi.value }
+
+        assertFalse(viewModel.updatedByAi.value)
+        assertEquals("the entry's time stays when the AI found no date", openedAt, viewModel.date.value)
+        assertEquals("40", viewModel.amount.value)
+        assertEquals("Chai", viewModel.merchant.value)
     }
 
     @Test

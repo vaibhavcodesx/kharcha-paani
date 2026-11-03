@@ -17,7 +17,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - Quick add opens the sheet instantly, on the phone's own reading of the line, with a quiet
   "Improving with AI…" while the AI reads it. The AI's answer fills in only what you haven't
-  changed. Closing, saving or opening another entry stops it, so a slow answer can no longer
+  changed, and the sheet says "Updated by AI" for a moment when it did. Closing, saving or opening another entry stops it, so a slow answer can no longer
   overwrite what you're typing or turn an edit into a new entry (T3.5, REL M5;
   `docs/designs/sheet-first-quick-add.md`).
 

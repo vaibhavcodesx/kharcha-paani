@@ -398,6 +398,7 @@ fun SplitFlowApp(
     val rawGroups by viewModel.rawGroups.collectAsState()
     val isParsing by viewModel.isParsing.collectAsState()
     val isImprovingWithAi by viewModel.isImprovingWithAi.collectAsState()
+    val updatedByAi by viewModel.updatedByAi.collectAsState()
     val voiceCaptureRequested by viewModel.voiceCaptureRequested.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedFilter by viewModel.selectedFilter.collectAsState()
@@ -878,6 +879,7 @@ fun SplitFlowApp(
         onRemoveBillPhoto = viewModel::removeBillPhoto,
         isSaving = Submit.SaveEntry in submitting,
         isImprovingWithAi = isImprovingWithAi,
+        updatedByAi = updatedByAi,
     )
 
     val isExportOpen by viewModel.isExportOpen.collectAsState()
