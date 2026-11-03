@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewModelScope
 import androidx.room.Room
@@ -109,6 +110,7 @@ class StatementReimportTest {
         compose.onNodeWithText("Already in your ledger").assertExists()
         compose.onNodeWithContentDescription("Import Swiggy").assertIsOff()
         compose.onNodeWithContentDescription("Import Zomato").assertIsOn()
+        compose.onNodeWithContentDescription("Import Swiggy").performClick().assertIsOn()
         assertEquals(1, db.transactionDao().getAllTransactionsDirect().size)
     }
 
