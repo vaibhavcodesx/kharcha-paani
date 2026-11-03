@@ -151,10 +151,17 @@ owner or Claude go at the bottom.
 
 - 2026-11-03 · #216 · F7 / X12 Home strings · prepared for merge; original Home/capture/filter/day-total wording moves to resources with canonical IDs and Money.format retained. Downloaded historical run 40418934304 XML: missing Today node, not a wording or precision failure; the fixture had waited only for the streak. It now also waits for both real activity rows, with every original assertion intact and complete Home readiness from #213. Local Gradle skipped below the 4 GB floor; final exact-head CI and independent review gate merge. Supersedes parked #143. F6/#139 stays parked under the 200% font deferral reported on #188 (comment 6611367782); no phone acceptance claimed.
 
+
 - 2026-11-03 · #220 · BackToHomeTest fixture (Claude) · prepared for merge; the test owned no ViewModelStore, so app-shell flows queried Room after db.close() ("connection pool has been closed"), failing #195 CI 41666122928 and a local merged run. Its MainViewModel and SharedGroupsViewModel now live in a store that's cleared, with the main looper idled until their jobs finish, before Room closes. Assertions unchanged; three consecutive local runs green. Test-only.
+
+
+- 2026-11-03 · #210 · Store assets, Stream C item 3 (Claude) · prepared for merge; six listing screenshots (1081×1921) and the 1024×500 feature graphic rendered by test-only `ui/store/` from the shipped screens with the fictional fixture in a real Room database. Review fixes: captures clear and await their ViewModels (incl. SharedGroupsViewModel) before Room closes; fixture dates stay in the capture's month (StoreFixtureDatesTest fails without the guard: 2026-11 for a 2026-12-01T00:02 capture). Provenance and phone checks in docs/store-listing/README.md. Test/docs only; owner approves and uploads.
+
+
 - 2026-11-03 · #195 · T3.5 / REL M5 sheet-first quick add (Claude) · prepared for merge; the sheet opens on the phone's guess and the AI fills only untouched fields, then says "Updated by AI" briefly. Review blockers fixed: the draft is held at the first Save tap (large-amount dialog) and a friend added from the sheet counts as a split change. Red proof: LateAiAnswerTest, written only against pre-fix APIs, fails both cases on pre-fix main f128a87 locally ("turned the edit into a new entry", "reopened a closed sheet"); LargeAmountWhileReadingTest and the add-friend case fail with their fixes removed (Rs 20,00,000 saved for a confirmed Rs 15,00,000; the new friend dropped). Tests clear and await their ViewModel before Room closes. Exact-head CI gates merge; no phone verification claimed (not in the 1.6.0 APK).
 
 - 2026-11-03 · #200 · T1 / Group balances zero-sum · prepared for merge; property tests assert group balances sum to zero, shares sum to total amount, and member balances are conserved across random add, edit, delete, and settle sequences. Independent source review completed; no production code changes; exact-head CI gates merge.
+
 
 ## Questions
 
