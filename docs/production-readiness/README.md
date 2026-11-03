@@ -415,7 +415,7 @@ phase where "everyone in the split gets told Priya added an expense" first works
 | T3.8 | Search by friend name and amount; "Edited by X · time" on shared expenses | M | REL M11 |
 | T3.9 | In-app review prompt after a happy moment (a confirmed settlement), never after an error | S | REL L13, PLAY §10 |
 | T3.10 | Small things: empty-state flash on cold start (L1), `collectAsStateWithLifecycle` everywhere (L2), offline sign-in error wording (L5), haptics on money confirmations (L6), "Scan bill" naming (L7), thread-safe date parsing (L10), DataStore corruption handler (L14), export warning line (SEC L-10) | S each | REL L*, SEC L-10 |
-| T3.11 | Strings into `strings.xml` (0 `stringResource` today, about 640 literals). Needed before any Hindi/Hinglish build | L | REL i18n |
+| T3.11 | Strings into `strings.xml`: ongoing; shipped areas are recorded in the solo log, with Home in #216. Needed before any Hindi/Hinglish build | L | REL i18n |
 | T3.12 | Light theme (Google's quality guideline; the app is dark only) | L | PLAY §10 |
 | T3.13 | Incident plan (one page: who to tell, within 72 hours for the DPDP Board) | S | PLAY §11 |
 
