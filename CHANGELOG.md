@@ -66,6 +66,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- A 1.6.0 phone checklist combines the post-1.5.0 changes, starting with retained data,
+  release sign-in, proxy reads and widget splits, and separates Play-only checks (R2).
+
 - A dated solo-progress report and Codex restart guide preserve the verified PR queue, parked
   work and remaining phone/protected-file checks (documentation handoff).
 
