@@ -44,6 +44,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 
 ### Fixed
+- The large-amount quick-add test keeps the friends list subscribed the way the app shell does,
+  so a slow CI machine no longer times it out before Rohan loads; a timeout now says what it saw.
 - The Back-on-Home test stops its real ViewModels before closing Room, so a late app-shell query no
   longer fails it at random (CI fixture, as #194 did for backup preview).
 - Home waits for the complete ledger before showing money or its first-entry invitation, preventing a false empty state on cold launch.
