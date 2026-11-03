@@ -13,6 +13,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- Safety net tests for strings.xml and widget_strings.xml: no stray %, positional arguments, equal plural placeholders, and clean format execution (T13).
+
 ### Changed
 - Home headings, capture notices, filters and day totals use Android string resources, preserving their English wording and full rupee figures.
 
