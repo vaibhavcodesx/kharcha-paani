@@ -1,8 +1,9 @@
 # Play Store listing draft (X1 / T2.9)
 
 English (India) copy for adults tracking spending and splitting with friends. This is a
-reviewable text and art handoff; screenshots and the feature graphic still need producing
-and owner approval before upload. No Play Console settings are changed by this item.
+reviewable text and art handoff. The six screenshots and the feature graphic are produced in
+[`assets/`](assets/) (Stream C item 3) and need the owner's approval before upload. No Play
+Console settings are changed by this item.
 
 ## Copy to paste
 
