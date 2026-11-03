@@ -135,9 +135,11 @@ owner or Claude go at the bottom.
 
 - 2026-10-30 · #184 · X12 / T3.11 split self labels; resolve self by ID through entry_you in editable/locked rows, preserving canonical participant data; actual VM/Room save test · merged.
 
+- 2026-11-03 · #192 · F2 Insights first-day fixture · merged; the test uses day one of the current month and identifies the amount beside PER DAY SO FAR, preserving every money/overflow/single-line assertion. Predicted red run 41662128957 had 967 tests and exactly one selector failure, reproducing run 41270005355; no production layout, timing or stored data changed. Local Gradle skipped below the 4 GB RAM floor.
+
 - 2026-11-03 · #190 · R1 friendly partial asks · merged; the outgoing partial-request sentence uses the decided friendly wording. Android CI 41661445167 proved both pinned and real-Room regressions fail on the old wording (968 tests, exactly 2 predicted failures); totals, ledger rows and sharing behavior remain unchanged. Local Gradle skipped below the 4 GB RAM floor; phone sharing still needs owner verification.
 
-- 2026-11-03 · backup-preview CI fixture · merged; clear the real ViewModel and await its existing scope job before Room close/Main reset, with partial-setup guards. Run 41662753973 exposed concurrent resetMain cancellation and secondary setup failures; every test body/assertion is unchanged, no sleeps or production changes. This corrects the fixture lifecycle rather than ignoring the race.
+- 2026-11-03 · #194 · backup-preview CI fixture · merged; clear the real ViewModel and await its existing scope job before Room close/Main reset, with partial-setup guards. Run 41662753973 exposed concurrent resetMain cancellation and secondary setup failures; every test body/assertion is unchanged, no sleeps or production changes. This corrects the fixture lifecycle rather than ignoring the race.
 
 ## Questions
 

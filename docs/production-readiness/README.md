@@ -31,6 +31,8 @@ In this file the audit IDs carry a prefix so they don't collide: **SEC-** (secur
 Read it before this page's tiers; who builds what is in `docs/agents/work-split.md`.
 
 Release preparation (2026-11-03): **R1 friendly partial payment asks — done in #190**.
+**F2 first-day Insights test selector — done in #192**; all money sizing assertions remain.
+Backup-preview fixture lifecycle is corrected in **#194**, without changing backup assertions.
 The 1.6.0 signed build and phone acceptance remain separate owner checks; progress is on issue #188.
 
 0. **Ask everything up front, then run on autopilot** (the owner's rule, also in CLAUDE.md). Before

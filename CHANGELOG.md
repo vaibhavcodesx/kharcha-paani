@@ -38,6 +38,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Backup-preview tests stop their real ViewModel before closing Room and resetting Main,
   preventing a background cancellation from leaking into the next test (CI fixture).
 
+- The Insights large-text test checks the per-day tile even when its amount equals the total
+  on the first day of a month, retaining the full-amount and overflow assertions (F2).
+
 - Partial payment asks say “Asking ₹X of the ₹Y for now.”, keeping the full balance and history
   without putting pressure on a friend (R1).
 
