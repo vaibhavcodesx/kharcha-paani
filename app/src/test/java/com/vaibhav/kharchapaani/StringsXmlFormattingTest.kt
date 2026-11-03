@@ -315,14 +315,16 @@ class StringsXmlFormattingTest {
         }
         val maxIndex = indexedSpecifiers.maxOf { it.first }
         val dummyArgs = Array<Any>(maxIndex) { i ->
-            val matchingSpec = indexedSpecifiers.firstOrNull { it.first == i + 1 }?.second
-            if (matchingSpec != null && matchingSpec.raw.dropLast(1).lastOrNull() in listOf('t', 'T')) {
-                0L // Java Formatter accepts epoch milliseconds for date/time conversions.
-            } else when (matchingSpec?.conversion) {
-                'd', 'o', 'x', 'X' -> 42L
-                'f', 'e', 'g', 'a' -> 42.5
-                'c' -> 'A'
-                'b' -> true
+            val matchingSpecs = indexedSpecifiers.filter { it.first == i + 1 }.map { it.second }
+            val dateSpecs = matchingSpecs.filter { it.raw.dropLast(1).lastOrNull() in listOf('t', 'T') }
+            val conversions = (matchingSpecs - dateSpecs.toSet()).map { it.conversion.lowercaseChar() }
+            // General s/b/h conversions accept any value. Pick from all stricter uses of this argument.
+            // Incompatible combinations still fail when the complete template is formatted below.
+            when {
+                conversions.any { it in "efga" } -> 42.5
+                dateSpecs.isNotEmpty() -> 42L
+                'c' in conversions -> 65 // Int supports both character and integral conversions.
+                conversions.any { it in "dox" } -> 42
                 else -> "sample_${i + 1}"
             }
         }
@@ -370,9 +372,12 @@ class StringsXmlFormattingTest {
         )
     }
 
-    private fun pluralSignature(text: String, formatted: Boolean): List<Pair<Int?, Char>> =
-        extractSpecifiers(text, formatted).map { Pair(it.argumentIndex, it.conversion) }
-            .sortedWith(compareBy<Pair<Int?, Char>> { it.first }.thenBy { it.second })
+    private fun pluralSignature(text: String, formatted: Boolean): List<Pair<Int?, String>> =
+        extractSpecifiers(text, formatted).map {
+            val prefix = it.raw.dropLast(1).lastOrNull()
+            val conversion = if (prefix in listOf('t', 'T')) "$prefix${it.conversion}" else it.conversion.toString()
+            Pair(it.argumentIndex, conversion)
+        }.sortedWith(compareBy<Pair<Int?, String>> { it.first }.thenBy { it.second })
 
     @Test
     fun `a valid single unindexed integer substitution formats successfully`() {
