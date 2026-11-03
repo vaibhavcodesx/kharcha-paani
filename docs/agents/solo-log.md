@@ -183,7 +183,7 @@ owner or Claude go at the bottom.
 
 - 2026-11-03 · #204 · T4 / Money parsing and formatting · prepared for merge; invariant tests verify parse-format round-trip across representative samples of the numeric domain, symbol resilience, and formatting invariants. Independent source review completed; no production code changes; exact-head CI gates merge.
 
-- 2026-11-04 · #221 · T13 formatting checker · regression-only stage; existing checker helpers extracted unchanged. Added valid single unindexed integer, indexed date/time and reordered explicit plural-argument examples. Predicted CI failures are exactly these three self-checks. No production strings changed; not merge-ready. Local Gradle skipped below 4 GB free RAM.
+- 2026-11-04 · #221 · T13 formatting checker · correction prepared; CI 41710054770 ran 1038 tests with exactly the three predicted self-check failures. After that red, corrected implicit dummy-argument indexes, date/time dummy types and plural signature ordering; existing checker helpers extracted unchanged. Added valid single unindexed integer, indexed date/time and reordered explicit plural-argument examples. Existing resource assertions and all three new regressions remain; final latest-main CI and independent review gate merge. No production strings changed; not merge-ready. Local Gradle skipped below 4 GB free RAM.
 
 ## Questions
 

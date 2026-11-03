@@ -15,7 +15,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
-- String-resource formatting safety tests include valid numeric, date/time and reordered-argument self-checks (T13; regression work in progress).
+- String-resource formatting safety tests include valid numeric, date/time and reordered-argument self-checks (T13).
 
 - Money formatting and input tests cover Indian grouping, invalid numbers, limits, intermediate keystrokes and representative round trips (T4).
 

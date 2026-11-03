@@ -309,10 +309,16 @@ class StringsXmlFormattingTest {
         val specifiers = extractSpecifiers(rawText, formatted)
         if (specifiers.isEmpty()) return
 
-        val maxIndex = specifiers.mapNotNull { it.argumentIndex }.maxOrNull() ?: specifiers.size
+        var implicitIndex = 0
+        val indexedSpecifiers = specifiers.map { specifier ->
+            (specifier.argumentIndex ?: ++implicitIndex) to specifier
+        }
+        val maxIndex = indexedSpecifiers.maxOf { it.first }
         val dummyArgs = Array<Any>(maxIndex) { i ->
-            val matchingSpec = specifiers.firstOrNull { it.argumentIndex == i + 1 }
-            when (matchingSpec?.conversion) {
+            val matchingSpec = indexedSpecifiers.firstOrNull { it.first == i + 1 }?.second
+            if (matchingSpec != null && matchingSpec.raw.dropLast(1).lastOrNull() in listOf('t', 'T')) {
+                0L // Java Formatter accepts epoch milliseconds for date/time conversions.
+            } else when (matchingSpec?.conversion) {
                 'd', 'o', 'x', 'X' -> 42L
                 'f', 'e', 'g', 'a' -> 42.5
                 'c' -> 'A'
@@ -366,6 +372,7 @@ class StringsXmlFormattingTest {
 
     private fun pluralSignature(text: String, formatted: Boolean): List<Pair<Int?, Char>> =
         extractSpecifiers(text, formatted).map { Pair(it.argumentIndex, it.conversion) }
+            .sortedWith(compareBy<Pair<Int?, Char>> { it.first }.thenBy { it.second })
 
     @Test
     fun `a valid single unindexed integer substitution formats successfully`() {
