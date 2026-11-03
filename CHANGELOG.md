@@ -13,6 +13,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- Architecture and domain understanding document with verified source citations (O2).
+
 ### Changed
 
 - Notification channels, private payment reminders and daily reminder copy use string resources
