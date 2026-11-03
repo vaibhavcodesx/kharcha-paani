@@ -120,6 +120,7 @@ import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -600,6 +601,27 @@ class MainViewModel(
     private val _isParsing = MutableStateFlow(false)
     val isParsing: StateFlow<Boolean> = _isParsing.asStateFlow()
 
+    // Sheet-first quick add (docs/designs/sheet-first-quick-add.md): a typed or said line opens the
+    // sheet at once on the phone's own guess, and the AI's reading, when it comes, fills in only what
+    // the person hasn't touched since.
+    private val _isImprovingWithAi = MutableStateFlow(false)
+    /** True while the open sheet shows the phone's guess and the AI's reading of the line is on its way. */
+    val isImprovingWithAi: StateFlow<Boolean> = _isImprovingWithAi.asStateFlow()
+    private var improveJob: Job? = null
+    private val touchedWhileImproving = mutableSetOf<EntryField>()
+
+    /** The AI's reading isn't wanted any more: the sheet closed, saved, or now holds another entry. */
+    private fun stopImprovingWithAi() {
+        improveJob?.cancel()
+        improveJob = null
+        _isImprovingWithAi.value = false
+    }
+
+    /** The person changed [field] themselves, so the AI's reading leaves it alone. */
+    private fun touched(field: EntryField) {
+        if (_isImprovingWithAi.value) touchedWhileImproving += field
+    }
+
     // Set by the widget's Speak button; Home starts listening once, then clears it.
     private val _voiceCaptureRequested = MutableStateFlow(false)
     val voiceCaptureRequested: StateFlow<Boolean> = _voiceCaptureRequested.asStateFlow()
@@ -828,6 +850,7 @@ class MainViewModel(
     private fun defaultPaymentMethod(): String = Categories.defaultPaymentMethod(categoryPrefs.value)
 
     fun openManualAdd(defaultType: String = "expense") {
+        stopImprovingWithAi()
         resetBillPhoto()
         _parseNotice.value = null
         _editingTransactionId.value = null
@@ -850,6 +873,7 @@ class MainViewModel(
     }
 
     fun openManualAddForGroup(targetGroupId: Long) {
+        stopImprovingWithAi()
         resetBillPhoto()
         // A notice left from an earlier bill that couldn't be read doesn't belong on a fresh entry.
         _parseNotice.value = null
@@ -906,6 +930,7 @@ class MainViewModel(
             _statusMessage.value = archivedMessage(ArchivedGroupException(group.name))
             return
         }
+        stopImprovingWithAi()
         _editingTransactionId.value = tx.id
         resetBillPhoto()
         _type.value = tx.type
@@ -1012,37 +1037,90 @@ class MainViewModel(
 
     /** "Type it myself" on a quick add: the phone's own guess, and the sheet to check it in. */
     private fun fillInOnPhone(rawText: String) {
+        val splitNotice = openOnPhoneGuess(rawText)
+        _parseNotice.value = listOfNotNull(getApplication<Application>().getString(R.string.ai_display_local_filled), splitNotice).joinToString(" ")
+    }
+
+    /**
+     * Opens the sheet straight away on the phone's own reading of the line. Returns what to tell them
+     * about the split when a name didn't find its friend, or null.
+     */
+    private fun openOnPhoneGuess(rawText: String): String? {
+        stopImprovingWithAi()
         resetBillPhoto()
         val splitNotice = applyParsedResult(
             LocalHeuristicParser.parse(rawText, people.value.map { it.name }).copy(date = System.currentTimeMillis()),
             rawText,
         )
         if (_paymentMethod.value.isBlank()) _paymentMethod.value = defaultPaymentMethod()
-        _parseNotice.value = listOfNotNull(getApplication<Application>().getString(R.string.ai_display_local_filled), splitNotice).joinToString(" ")
+        _parseNotice.value = null
         _isConfirmSheetOpen.value = true
+        return splitNotice
     }
 
     private fun readTextWithAi(rawText: String) {
-        viewModelScope.launch {
-            _isParsing.value = true
-            _parseNotice.value = null
-            resetBillPhoto()
+        // The sheet doesn't wait for the AI: on a captive portal or 2G that was a spinner for up to
+        // 40 s (REL M5). The phone's guess is there to check, and to save, from the first moment.
+        val onPhoneSplitNotice = openOnPhoneGuess(rawText)
+        // No AI in this build: the phone's guess is the answer, with nothing to apologise for.
+        if (!aiAvailable) {
+            _parseNotice.value = onPhoneSplitNotice
+            return
+        }
+        touchedWhileImproving.clear()
+        _isImprovingWithAi.value = true
+        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             try {
-                val friendNames = people.value.map { it.name }
-                val outcome = geminiRepo.parseText(rawText, friendNames, parseChoices())
-                val splitNotice = applyParsedResult(outcome.result, rawText)
-                // No method said: this account's own default, not "Other".
-                if (outcome.result.paymentMethod.isBlank()) _paymentMethod.value = defaultPaymentMethod()
+                val outcome = geminiRepo.parseText(rawText, people.value.map { it.name }, parseChoices())
+                val splitNotice = when {
+                    outcome.failure == null -> improveWith(outcome.result, rawText)
+                    // The AI couldn't read it: the guess on the sheet stands, and so does what it said.
+                    EntryField.Split in touchedWhileImproving -> null
+                    else -> onPhoneSplitNotice
+                }
                 // Why it's a guess, when it is: offline, out of quota and a refused key each say so.
                 // Then any name in the line that didn't find its friend.
                 _parseNotice.value = listOfNotNull(outcome.failure?.let { getApplication<Application>().getString(it.quickAddNoticeResource) }, splitNotice)
                     .joinToString(" ").ifEmpty { null }
             } finally {
-                // Whatever happened, the sheet never stays stuck on "Reading…".
-                _isParsing.value = false
+                // Whatever happened, the sheet never stays stuck on "Improving…". A newer line has its
+                // own job, and its own flag.
+                if (improveJob === coroutineContext[Job]) {
+                    improveJob = null
+                    _isImprovingWithAi.value = false
+                }
             }
-            _isConfirmSheetOpen.value = true
         }
+        improveJob = job
+        job.start()
+    }
+
+    /**
+     * The AI's reading, laid over the phone's guess the sheet opened on, for only what the person
+     * hasn't touched since. Returns what to tell them about the split, as [applyParsedResult] does.
+     */
+    private fun improveWith(parsed: ParsedTransactionResult, rawText: String): String? {
+        val touched = touchedWhileImproving
+        val choices = parseChoices()
+        // A category belongs to its type (Salary isn't a spend), so the two move together.
+        if (EntryField.Type !in touched && EntryField.Category !in touched) {
+            _type.value = parsed.type
+            _category.value = choices.categoryFor(parsed.type, parsed.category)
+        }
+        if (EntryField.Amount !in touched && isSavableAmount(parsed.amount)) _amount.value = Money.input(parsed.amount)
+        if (EntryField.Merchant !in touched && parsed.merchant.isNotBlank()) _merchant.value = parsed.merchant
+        if (EntryField.Payment !in touched) {
+            // No method said: this account's own default, not "Other".
+            _paymentMethod.value = if (parsed.paymentMethod.isBlank()) defaultPaymentMethod() else choices.paymentFor(parsed.paymentMethod)
+        }
+        if (EntryField.Note !in touched) _note.value = parsed.note
+        if (EntryField.Date !in touched) _date.value = parsed.date
+        if (EntryField.Split in touched) {
+            // Their split stays as they set it, sized to the amount now on the sheet.
+            recalculateShares()
+            return null
+        }
+        return applySplitTarget(parsed, rawText)
     }
 
     fun parseReceiptImage(bitmap: Bitmap) {
@@ -1054,6 +1132,7 @@ class MainViewModel(
     }
 
     private fun readReceiptWithAi(bitmap: Bitmap) {
+        stopImprovingWithAi()
         // The picture that was read is kept with the expense by default; one tap on the row drops it.
         resetBillPhoto()
         keepBillPhoto { bitmap }
@@ -1219,7 +1298,14 @@ class MainViewModel(
         _paymentMethod.value = choices.paymentFor(parsed.paymentMethod)
         _note.value = parsed.note
         _date.value = parsed.date
+        return applySplitTarget(parsed, rawText)
+    }
 
+    /**
+     * The split a parsed line names: a group, friends, or just me, with an equal split paid by me.
+     * Returns what to tell them when a name in the line didn't find its friend, or null.
+     */
+    private fun applySplitTarget(parsed: ParsedTransactionResult, rawText: String?): String? {
         val target = SplitTargets.resolve(rawText.orEmpty(), parsed.splitWithPersonNames, people.value, rawGroups.value)
         val groupId = target.groupId
         groupChoiceIsExplicit = groupId != null
@@ -1253,27 +1339,33 @@ class MainViewModel(
     }
 
     fun updateAmount(newAmount: String) {
+        if (newAmount != _amount.value) touched(EntryField.Amount)
         _amount.value = newAmount
         recalculateShares()
     }
 
     fun updateMerchant(newMerchant: String) {
+        if (newMerchant != _merchant.value) touched(EntryField.Merchant)
         _merchant.value = newMerchant
     }
 
     fun updateCategory(newCat: String) {
+        touched(EntryField.Category)
         _category.value = newCat
     }
 
     fun updatePaymentMethod(newMethod: String) {
+        touched(EntryField.Payment)
         _paymentMethod.value = newMethod
     }
 
     fun updateNote(newNote: String) {
+        if (newNote != _note.value) touched(EntryField.Note)
         _note.value = newNote
     }
 
     fun updateType(newType: String) {
+        touched(EntryField.Type)
         _type.value = newType
         val prefs = categoryPrefs.value
         val isIncomeCategory = Categories.isIncomeCategory(_category.value, prefs)
@@ -1286,10 +1378,12 @@ class MainViewModel(
     }
 
     fun updateDate(newDate: Long) {
+        touched(EntryField.Date)
         _date.value = newDate
     }
 
     fun updateGroupId(newGroupId: Long?) {
+        touched(EntryField.Split)
         groupChoiceIsExplicit = true
         changeGroupId(newGroupId)
     }
@@ -1334,6 +1428,7 @@ class MainViewModel(
     val splitLocked: StateFlow<Boolean> = _splitLocked.asStateFlow()
 
     fun setIsSplit(split: Boolean) {
+        touched(EntryField.Split)
         _isSplit.value = split
         if (split) {
             val current = _shares.value.toMutableList()
@@ -1350,17 +1445,20 @@ class MainViewModel(
     }
 
     fun setSplitMode(mode: SplitMode) {
+        touched(EntryField.Split)
         _splitMode.value = mode
         recalculateShares()
     }
 
     fun setPaidByPersonId(id: Long) {
+        touched(EntryField.Split)
         _paidByPersonId.value = id
         // In a shared group the leftover paisa follow the payer.
         if (isSharedGroup(_groupId.value)) recalculateShares()
     }
 
     fun togglePersonShare(personId: Long) {
+        touched(EntryField.Split)
         val current = _shares.value.toMutableList()
         val index = current.indexOfFirst { it.personId == personId }
         if (index != -1) {
@@ -1385,6 +1483,7 @@ class MainViewModel(
     }
 
     fun updateExactShareAmount(personId: Long, exactAmount: Double) {
+        touched(EntryField.Split)
         val current = _shares.value.toMutableList()
         val index = current.indexOfFirst { it.personId == personId }
         if (index != -1) {
@@ -1395,6 +1494,7 @@ class MainViewModel(
     }
 
     fun updateSharePercentage(personId: Long, pct: Double) {
+        touched(EntryField.Split)
         val total = Money.parseInput(_amount.value) ?: 0.0
         val current = _shares.value.toMutableList()
         val index = current.indexOfFirst { it.personId == personId }
@@ -1460,6 +1560,7 @@ class MainViewModel(
     }
 
     fun dismissConfirmSheet() {
+        stopImprovingWithAi()
         _isConfirmSheetOpen.value = false
         _parseNotice.value = null
         resetBillPhoto()
@@ -1496,6 +1597,9 @@ class MainViewModel(
     fun saveCurrentTransaction(askForGroup: Boolean = true) {
         val total = Money.parseInput(_amount.value) ?: 0.0
         if (total <= 0) return
+        // Saved as it is on the sheet: an AI reading arriving now must not change who paid or the
+        // split under a save that's already writing.
+        stopImprovingWithAi()
         // Income has no split: the sheet hides the editor, but the toggle stayed on, and the hidden
         // shares were saved as friends owing me (correctness audit, 2026-10-24).
         val splitting = _isSplit.value && _type.value != "income"
@@ -2223,6 +2327,9 @@ class MainViewModel(
             viewModelFactory { initializer { MainViewModel(application, db, userId) } }
     }
 }
+
+/** A part of the quick-add sheet the person can change; see [MainViewModel.isImprovingWithAi]. */
+private enum class EntryField { Type, Amount, Merchant, Category, Payment, Note, Date, Split }
 
 /** Offline and no-key failures never reached Google, so they don't count against the daily cap. */
 private fun AiAskResult.spendsAnAsk(): Boolean =

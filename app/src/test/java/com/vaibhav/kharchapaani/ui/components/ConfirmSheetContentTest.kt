@@ -41,9 +41,11 @@ class ConfirmSheetContentTest {
         isSplit: Boolean = false,
         splitMode: SplitMode = SplitMode.EQUAL,
         shares: List<ShareInput> = emptyList(),
+        isImprovingWithAi: Boolean = false,
     ) {
         SplitFlowTheme {
             ConfirmSheetContent(
+                isImprovingWithAi = isImprovingWithAi,
                 isParsing = false, isEditing = false, notice = notice, type = "expense", amount = amount, merchant = "McDonald's",
                 category = category, paymentMethod = "GPay", note = "", date = 0L, groupId = null,
                 availableGroups = emptyList(), isSplit = isSplit, splitMode = splitMode, paidByPersonId = -1L,
@@ -131,6 +133,25 @@ class ConfirmSheetContentTest {
         composeTestRule.onNodeWithTag("split_with_friends_button").performClick()
 
         assertEquals(true, split)
+    }
+
+    @Test
+    fun `while the AI improves the phone's guess, the sheet says so and can still be saved`() {
+        var saves = 0
+        composeTestRule.setContent { Sheet(amount = "1299", isImprovingWithAi = true, onSave = { saves++ }) }
+
+        composeTestRule.onNodeWithTag("confirm_improving").assertExists()
+        composeTestRule.onNodeWithText("Improving with AI…").assertExists()
+        composeTestRule.onNodeWithTag("confirm_save_button").assertIsEnabled().performClick()
+
+        assertEquals(1, saves)
+    }
+
+    @Test
+    fun `once the AI is done, nothing says it's still improving`() {
+        composeTestRule.setContent { Sheet(isImprovingWithAi = false) }
+
+        composeTestRule.onNodeWithTag("confirm_improving").assertDoesNotExist()
     }
 
     @Test

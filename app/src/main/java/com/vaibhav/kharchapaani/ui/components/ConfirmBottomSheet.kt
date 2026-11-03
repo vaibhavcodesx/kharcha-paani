@@ -32,6 +32,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -144,6 +145,8 @@ fun ConfirmBottomSheet(
     onRemoveBillPhoto: () -> Unit = {},
     // True while the save is still writing: Save shows a spinner and takes no second tap.
     isSaving: Boolean = false,
+    // True while the sheet shows the phone's guess and the AI's reading is on its way.
+    isImprovingWithAi: Boolean = false,
 ) {
     if (!isOpen) return
     val focusManager = LocalFocusManager.current
@@ -167,6 +170,7 @@ fun ConfirmBottomSheet(
             splitLocked = splitLocked, categories = categories, paymentMethods = paymentMethods,
             billPhoto = billPhoto, onAddBillPhoto = onAddBillPhoto, onRemoveBillPhoto = onRemoveBillPhoto,
             isSaving = isSaving,
+            isImprovingWithAi = isImprovingWithAi,
             onSave = {
                 focusManager.clearFocus()
                 onSave()
@@ -233,6 +237,9 @@ fun ConfirmSheetContent(
     onRemoveBillPhoto: () -> Unit = {},
     // True while the save is still writing: Save shows a spinner and takes no second tap.
     isSaving: Boolean = false,
+    // The sheet opened on the phone's guess and the AI's reading is on its way: said quietly beside
+    // the eyebrow, so nothing on the sheet moves while they're already typing.
+    isImprovingWithAi: Boolean = false,
 ) {
     // An entry keeps its own category or method even when it isn't a choice here (hidden since, or a
     // groupmate's own category), so it's shown and stays selected.
@@ -284,15 +291,20 @@ fun ConfirmSheetContent(
     ) {
         // The Expense / Income control names the sheet; a "New expense" title beside it said the
         // same thing twice.
-        Text(
-            text = when {
-                addedBy != null -> stringResource(R.string.entry_editing_added_by, addedBy.uppercase())
-                isEditing -> stringResource(R.string.entry_editing)
-                else -> stringResource(R.string.entry_new)
-            },
-            style = EyebrowText,
-            modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() },
-        )
+        Row(Modifier.fillMaxWidth().padding(bottom = Spacing.s), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = when {
+                    addedBy != null -> stringResource(R.string.entry_editing_added_by, addedBy.uppercase())
+                    isEditing -> stringResource(R.string.entry_editing)
+                    else -> stringResource(R.string.entry_new)
+                },
+                style = EyebrowText,
+                modifier = Modifier.weight(1f).semantics { heading() },
+            )
+            AnimatedVisibility(visible = isImprovingWithAi, enter = fadeIn(), exit = fadeOut()) {
+                ImprovingWithAi()
+            }
+        }
         // A groupmate's expense stays an expense: only its adder could make it something else.
         if (addedBy == null) {
             SegmentedControl(
@@ -507,6 +519,26 @@ internal fun ExpandableDetail(
         AnimatedVisibility(visible = expanded, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
             Box(Modifier.padding(start = Spacing.l, end = Spacing.l, bottom = Spacing.m)) { choices() }
         }
+    }
+}
+
+/** A small working mark and "Improving with AI…", read out once when it appears. */
+@Composable
+private fun ImprovingWithAi() {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .padding(start = Spacing.m)
+            .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
+            .testTag("confirm_improving"),
+    ) {
+        CircularProgressIndicator(color = WarmAmberPrimary, strokeWidth = 1.5.dp, modifier = Modifier.size(12.dp))
+        Text(
+            text = stringResource(R.string.entry_improving_ai),
+            style = MaterialTheme.typography.labelMedium,
+            color = MutedWarmGray,
+            modifier = Modifier.padding(start = Spacing.xs),
+        )
     }
 }
 
