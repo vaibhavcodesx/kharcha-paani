@@ -35,6 +35,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- The Insights large-text test checks the per-day tile even when its amount equals the total
+  on the first day of a month, retaining the full-amount and overflow assertions (F2).
+
 - Money confirmation action bars keep complete amounts and move the action below the summary
   at large font sizes (X7 / T2.10, REL M7; sheets).
 

@@ -135,6 +135,8 @@ owner or Claude go at the bottom.
 
 - 2026-10-30 · #184 · X12 / T3.11 split self labels; resolve self by ID through entry_you in editable/locked rows, preserving canonical participant data; actual VM/Room save test · merged.
 
+- 2026-11-03 · #192 · F2 Insights first-day fixture · merged; the test uses day one of the current month and identifies the amount beside PER DAY SO FAR, preserving every money/overflow/single-line assertion. Predicted red run 41662128957 had 967 tests and exactly one selector failure, reproducing run 41270005355; no production layout, timing or stored data changed. Local Gradle skipped below the 4 GB RAM floor.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.

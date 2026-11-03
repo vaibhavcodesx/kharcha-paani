@@ -89,7 +89,10 @@ class InsightsAccessibilityTest {
         compose.onNodeWithContentDescription("Spent ${Money.format(amount)}. Food 100 percent").assertExists()
         compose.onNode(hasScrollAction()).performScrollToNode(hasText("PER DAY SO FAR"))
         val layouts = mutableListOf<TextLayoutResult>()
-        compose.onNodeWithText(Money.format(amount / today.dayOfMonth), useUnmergedTree = true)
+        compose.onNode(
+            hasText(Money.format(amount / today.dayOfMonth)) and hasAnySibling(hasText("PER DAY SO FAR")),
+            useUnmergedTree = true,
+        )
             .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
         compose.onNodeWithText("1 entry · 100%").assertExists()
         assertFalse("per-day money must not ellipsize", layouts.single().hasVisualOverflow)
