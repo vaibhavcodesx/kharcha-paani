@@ -17,6 +17,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - Source-pinned architecture map distinguishes checked-in configuration from release and live-service acceptance (O3).
 
+- Outgoing-message and notification tests guard friendly wording while distinguishing in-app self views (T12).
+
 - Source-pinned architecture and domain understanding for agent onboarding, with explicit verification limits (O2).
 
 - Invite-link tests cover malformed inputs and valid normalized alphabet boundaries (T10).
@@ -72,6 +74,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 
 ### Fixed
+
+- ViewModel fixtures verify that their scopes stop before Room closes, protecting later money tests from background database errors.
 - The large-amount quick-add test keeps the friends list subscribed the way the app shell does,
   and reports flow/database contents on timeout, while retaining the original wait limit.
 
