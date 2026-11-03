@@ -18,6 +18,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Agent handoff records reviewed PR states, owner decisions and restart instructions, with a working Codex lead progress report (#222).
 
 
+- SplitRounding invariant tests verifying equal, exact, and share modes sum to the paisa across representative amounts and group sizes up to 50 (T3).
+
+
 
 - Invariant test asserting the local backup file round trip preserves supported fields for people, groups, members, subscriptions, direct and split transactions, split shares, settlements, and settings (T7).
 
@@ -47,6 +50,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
   or turn an edit into a new entry (T3.5, REL M5; `docs/designs/sheet-first-quick-add.md`).
 
 - Home headings, capture notices, filters and day totals use Android string resources, preserving their English wording and full rupee figures.
+
 
 
 ### Fixed
