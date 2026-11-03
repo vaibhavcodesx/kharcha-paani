@@ -79,6 +79,9 @@ fun SharerFaces(
                 "+$extra",
                 style = MaterialTheme.typography.labelSmall,
                 color = SubMutedWarmGray,
+                // At the largest font it broke into "+" over "1".
+                softWrap = false,
+                maxLines = 1,
                 modifier = Modifier.clearAndSetSemantics {},
             )
         }

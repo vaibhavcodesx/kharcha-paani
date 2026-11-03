@@ -487,7 +487,9 @@ private fun GroupExpenseRow(expense: FullTransaction, people: List<PersonEntity>
 @Composable
 private fun Figure(label: String, value: String, color: androidx.compose.ui.graphics.Color, modifier: Modifier) {
     Column(modifier.semantics(mergeDescendants = true) {}) {
-        Text(label.uppercase(), style = EyebrowText, maxLines = 1)
+        // Two lines, not one: three of these share a row, and on a 360 dp phone "You're owed" was
+        // clipped to "YOU'RE".
+        Text(label.uppercase(), style = EyebrowText, maxLines = 2)
         Text(value, style = MoneyText.title, color = color, maxLines = 1)
     }
 }

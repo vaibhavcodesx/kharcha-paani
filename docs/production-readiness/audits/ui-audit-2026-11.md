@@ -45,6 +45,8 @@ inconsistent; **Low** is polish. Files are under `app/src/main/java/com/vaibhav/
 
 ### High
 
+U3, U4 and U5 are at the largest font only, deferred by the owner (see Fixes).
+
 | # | Where | What | Evidence |
 |---|---|---|---|
 | U1 | Insights, day strip | Money is cut: ₹1,27,366 reads **"1,27,36"**. Each day cell is a fixed 52 dp and the figure is `maxLines = 1` with a clip (`ui/components/SpendCharts.kt` `DayCell`). Breaks the rule "money never ellipsizes". | [pixel insights](ui-audit-2026-11/pixel--insights-1-top.png) |
@@ -101,9 +103,13 @@ for the 1.6 freeze; shared files are listed on #188 before editing.
 
 | Batch | Findings | PR |
 |---|---|---|
-| A. Money is never cut or misread | U1, U2, U6, U7, U9 | (opening) |
-| B. The largest font | U3, U4, U5, U10, U11, U12 | next |
-| C. Consistency and empty states | U8, U14, U15, U16, U18, U21, U24 | after B; U13, U17, U19, U27 need a design call first |
+| A. Money is never cut or misread | U1, U2, U6, U7 (and U9, a one-line guard) | the PR after #212; after: [Insights](ui-audit-2026-11/after-A--pixel--insights-1-top.png), [history](ui-audit-2026-11/after-A--pixel--sheet-person-ledger.png), [group on 360 dp](ui-audit-2026-11/after-A--small--sheet-group-detail.png) |
+| B. Consistency and empty states, at normal size | U8, U14, U15, U16, U18, U21, U24 | next; U13, U17, U19, U27 need a design call first |
+
+**Deferred by the owner (2026-11-03): the largest system font.** "Focus on the normal user for
+launch; deal with 200% later." U3, U4, U5, U10, U11 and U12 stay recorded here with their evidence
+and the harness still renders `font-2x`, so they can be picked up after launch. Small phones (360 dp)
+are not deferred: they're a normal size for many Android phones in India.
 
 ## Check on the phone
 
