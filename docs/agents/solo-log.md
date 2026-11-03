@@ -141,6 +141,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-03 · #190 · R1 friendly partial asks · merged; the outgoing partial-request sentence uses the decided friendly wording. Android CI 41661445167 proved both pinned and real-Room regressions fail on the old wording (968 tests, exactly 2 predicted failures); totals, ledger rows and sharing behavior remain unchanged. Local Gradle skipped below the 4 GB RAM floor; phone sharing still needs owner verification.
 
+- 2026-11-03 · #194 · backup-preview CI fixture · merged; clear the real ViewModel and await its existing scope job before Room close/Main reset, with partial-setup guards. Run 41662753973 exposed concurrent resetMain cancellation and secondary setup failures; every test body/assertion is unchanged, no sleeps or production changes. This corrects the fixture lifecycle rather than ignoring the race.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
