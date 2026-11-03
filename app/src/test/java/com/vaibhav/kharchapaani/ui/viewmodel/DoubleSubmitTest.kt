@@ -1,6 +1,8 @@
 package com.vaibhav.kharchapaani.ui.viewmodel
 
 import android.app.Application
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
@@ -8,6 +10,7 @@ import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -17,6 +20,7 @@ import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -36,6 +40,8 @@ class DoubleSubmitTest {
     private val userId = "11111111-2222-3333-4444-555555555555"
     private lateinit var db: AppDatabase
     private lateinit var viewModel: MainViewModel
+    private val store = ViewModelStore()
+    private var mainDispatcherInstalled = false
     /**
      * Main runs only when the test says so, so the first save is certainly still under way when the
      * second tap comes. Unconfined, the first one could finish in between, and the test then saw two.
@@ -45,15 +51,32 @@ class DoubleSubmitTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(main)
+        mainDispatcherInstalled = true
         WorkManagerTestInitHelper.initializeTestWorkManager(application, Configuration.Builder().setExecutor(SynchronousExecutor()).build())
         db = Room.inMemoryDatabaseBuilder(application, AppDatabase::class.java).allowMainThreadQueries().build()
         viewModel = MainViewModel(application, db, userId)
+        store.put("main", viewModel)
     }
 
     @After
-    fun tearDown() {
-        db.close()
-        Dispatchers.resetMain()
+    fun tearDown(): Unit = runBlocking {
+        try {
+            if (::viewModel.isInitialized) {
+                val job = viewModel.viewModelScope.coroutineContext[Job]!!
+                store.clear()
+                withTimeout(10_000) {
+                    while (!job.isCompleted) {
+                        main.scheduler.runCurrent()
+                        if (!job.isCompleted) delay(20)
+                    }
+                }
+                assertTrue("Fixture must stop MainViewModel before Room closes",
+                    job.isCompleted)
+            }
+        } finally {
+            if (::db.isInitialized) db.close()
+            if (mainDispatcherInstalled) Dispatchers.resetMain()
+        }
     }
 
     private suspend fun until(condition: suspend () -> Boolean) = withTimeout(10_000) {
