@@ -13,6 +13,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+
+- Golden table test suite for LocalHeuristicParser covering English and Hinglish phrases, shorthand, categories, and payment methods (T5).
+
 ## [1.6.0] - 2026-11-03
 
 ### Added
