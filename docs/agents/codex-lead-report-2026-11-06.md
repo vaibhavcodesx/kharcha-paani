@@ -31,17 +31,15 @@ Release source: `5fb95e8b308b7b352d5139dd806c7afbfb002720`.
 | Reviewed fictional Play screenshots and feature graphic; owner approval/upload still separate | [#210](https://github.com/vaibhavcodesx/kharcha-paani/pull/210) |
 | Back-to-Home test clears and awaits both ViewModels before closing Room | [#220](https://github.com/vaibhavcodesx/kharcha-paani/pull/220) |
 | Statement-row golden tests consistently use the parser timezone, with an India-zone regression | [#206](https://github.com/vaibhavcodesx/kharcha-paani/pull/206) |
+| Review requests wait through the confirmation snackbar, with a bounded timeout and untouched cooldown rules | [#218](https://github.com/vaibhavcodesx/kharcha-paani/pull/218) |
 | Backup coverage now encodes/decodes the file before checking the restored Room data | [#207](https://github.com/vaibhavcodesx/kharcha-paani/pull/207) |
 
 Each merged head had latest main, independent review and green unit-tests, lint and release-bundle.
-**#201, #213, #216 and #195 are next-build changes; they are not in the published v1.6 APK.**
+**#201, #213, #216, #195 and #218 are next-build changes; they are not in the published v1.6 APK.**
 Their superseded drafts #130, #132 and #143 are closed. No history was deleted.
 
 ## Open and held
 
-- [#218](https://github.com/vaibhavcodesx/kharcha-paani/pull/218): draft; review-prompt timing attempt is not green or merge-ready.
-  Real-Room/composable red run 41694356770 ran 980 tests with only the intended snackbar failure;
-  its timeout/fresh-moment control passed. Post-fix readiness observation is still failing; the attempts are documented in the PR.
 - [#212](https://github.com/vaibhavcodesx/kharcha-paani/pull/212): UI audit needs capture lifecycle,
   readiness/date and report corrections. Store assets are merged; owner approval still precedes any Play upload.
 - [#214](https://github.com/vaibhavcodesx/kharcha-paani/pull/214): compact day amounts still exceed
@@ -61,7 +59,6 @@ leave the owner's Z: checkout alone. Read the [lead instructions](codex-lead-202
 [work split](work-split.md) and latest #188 comments before acting.
 
 1. Owner phone reports first. Current owner priority is parallel PR review/cleanup; merge source-ready PRs sequentially.
-   #218 stays draft until its readiness-observation test and implementation are green; record unexpected runs honestly.
 2. Recheck reviewed PRs after author fixes; merge only latest-main, all-three-green exact heads, with log and phone list.
 3. Continue Y5 receipt-result cancellation, Y6 draft survival, Y7 pending-delete survival, then T2.4 sync-error visibility.
    Coordinate the receipt cancellation job with #195; do not create competing AI-job ownership.
