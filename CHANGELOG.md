@@ -15,6 +15,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Source-pinned architecture and domain understanding for agent onboarding, with explicit verification limits (O2).
+
 - Invite-link tests cover malformed inputs and valid normalized alphabet boundaries (T10).
 
 - Ask-message tests reconcile displayed lines and totals across all five history kinds (T11).

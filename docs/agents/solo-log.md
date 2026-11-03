@@ -195,6 +195,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-04 · #211 · T10 invite-link coverage · prepared for merge; independent full source review found no blocker; original assertions retained, no production behavior change. Lead integrated current main with one Unreleased entry. Exact-head unit-tests, lint and release-bundle gate merge; local Gradle skipped below 4 GB free RAM. No phone acceptance claimed.
 
+- 2026-11-04 · #196 · O2 onboarding source map · prepared for merge; corrected API/entity/mode names, parse/save/sync ordering and session cleanup against pinned main ebfc2b6. Portable source links replace local paths; source-traced behavior is explicitly separate from phone/live deployment acceptance. Independent source review and exact-head current-main CI gate merge; docs only.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
