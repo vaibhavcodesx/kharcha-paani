@@ -12,6 +12,8 @@ on:
 
 jobs:
   claude-review:
+    # Antigravity opens many PRs and each review spends the owner's Claude quota.
+    if: ${{ !startsWith(github.head_ref, 'antigravity/') }}
     # Optional: Filter by PR author
     # if: |
     #   github.event.pull_request.user.login == 'external-contributor' ||

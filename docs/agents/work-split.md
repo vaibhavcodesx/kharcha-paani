@@ -22,8 +22,8 @@ habit. The owner is Vaibhav Chauhan.
 ## Who is working now
 
 **Antigravity, from 2026-11-03**, while Claude and Codex are out of quota. Its queue and limits are in
-[`antigravity-brief.md`](antigravity-brief.md). It follows Codex's rules on this page, **doesn't merge**,
-and never takes Claude's lane.
+[`../antigravity/HANDBOOK.md`](../antigravity/HANDBOOK.md). It follows Codex's rules on this page, **doesn't merge**,
+merges only into `antigravity/integration`, and takes only what its handbook lists. Claude cloud sessions review that branch and land it on `main` (handbook section 8).
 
 **The Codex solo period (2026-10-27 to 2026-10-30) is over.** Its self-merge exception ended with it:
 Codex doesn't merge. What it did is in [`solo-log.md`](solo-log.md) and

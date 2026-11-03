@@ -33,3 +33,7 @@ simplification algorithm, the AI ingestion pipeline, the groups/trips model). Im
 
 Record what changed in CHANGELOG.md (Keep a Changelog format). Update PRD.md only when what the
 product is, or a rule, changes.
+
+## Claude Code cloud sessions
+
+If you were started in the cloud or from a fresh clone, read `docs/antigravity/HANDBOOK.md` section 8 and `docs/antigravity/PROGRESS.md` (on branch `antigravity/integration`) first.
