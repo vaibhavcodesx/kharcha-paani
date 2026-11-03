@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.home
 
+import com.vaibhav.kharchapaani.R
+import androidx.compose.ui.res.stringResource
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
@@ -100,9 +102,9 @@ fun CaptureCard(
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-            .putExtra(RecognizerIntent.EXTRA_PROMPT, "Say what you spent, like “coffee 150 card”")
+            .putExtra(RecognizerIntent.EXTRA_PROMPT, context.getString(R.string.home_capture_voice_prompt))
         runCatching { speechLauncher.launch(intent) }
-            .onFailure { onCaptureFailed("Voice input isn't available on this phone. Type it instead.") }
+            .onFailure { onCaptureFailed(context.getString(R.string.home_capture_voice_unavailable)) }
     }
     LaunchedEffect(startVoiceCapture) {
         if (startVoiceCapture) {
@@ -118,14 +120,14 @@ fun CaptureCard(
         if (uri != null) scope.launch {
             when (val read = SharedFiles.readBytes(context, uri, StatementPdf.MAX_BYTES)) {
                 is SharedFiles.Read.Bytes -> onParsePdf(read.bytes, "statement.pdf")
-                SharedFiles.Read.TooLarge -> onCaptureFailed("That statement is too big to read in one go. Export a shorter date range and try again.")
-                SharedFiles.Read.Unreadable -> onCaptureFailed("Couldn't open that PDF.")
+                SharedFiles.Read.TooLarge -> onCaptureFailed(context.getString(R.string.home_capture_pdf_too_large))
+                SharedFiles.Read.Unreadable -> onCaptureFailed(context.getString(R.string.home_capture_pdf_unreadable))
             }
         }
     }
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) scope.launch {
-            SharedFiles.decodeImage(context, uri)?.let(onParseImage) ?: onCaptureFailed("Couldn't open that image.")
+            SharedFiles.decodeImage(context, uri)?.let(onParseImage) ?: onCaptureFailed(context.getString(R.string.home_capture_image_unreadable))
         }
     }
 
@@ -142,7 +144,7 @@ fun CaptureCard(
             Box(Modifier.weight(1f).padding(vertical = Spacing.m)) {
                 if (input.isEmpty()) {
                     Text(
-                        text = if (isParsing) "Reading it…" else "What did you spend on?",
+                        text = if (isParsing) stringResource(R.string.home_capture_reading) else stringResource(R.string.home_capture_prompt),
                         style = MaterialTheme.typography.bodyLarge,
                         color = SubMutedWarmGray,
                     )
@@ -167,14 +169,14 @@ fun CaptureCard(
                 }
                 input.isNotBlank() -> CaptureAction(
                     icon = KpIcons.Send,
-                    label = "Log it",
+                    label = stringResource(R.string.home_capture_log),
                     filled = true,
                     onClick = ::submit,
                     modifier = Modifier.testTag("quick_parse_button"),
                 )
                 else -> CaptureAction(
                     icon = KpIcons.Mic,
-                    label = "Say it",
+                    label = stringResource(R.string.home_capture_say),
                     filled = false,
                     onClick = ::listen,
                     modifier = Modifier.testTag("voice_mic_button"),
@@ -183,9 +185,9 @@ fun CaptureCard(
         }
         Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.l).height(1.dp).background(CharcoalBorder))
         Row(Modifier.padding(Spacing.xs)) {
-            CaptureMode(KpIcons.Scan, "Bill photo", Modifier.testTag("scan_receipt_button")) { imagePicker.launch("image/*") }
-            CaptureMode(KpIcons.Statement, "Statement", Modifier.testTag("upload_pdf_statement_button")) { pdfPicker.launch("application/pdf") }
-            CaptureMode(KpIcons.Lend, "IOU", Modifier.testTag("home_iou_button"), onOpenIou)
+            CaptureMode(KpIcons.Scan, stringResource(R.string.home_capture_bill_photo), Modifier.testTag("scan_receipt_button")) { imagePicker.launch("image/*") }
+            CaptureMode(KpIcons.Statement, stringResource(R.string.home_capture_statement), Modifier.testTag("upload_pdf_statement_button")) { pdfPicker.launch("application/pdf") }
+            CaptureMode(KpIcons.Lend, stringResource(R.string.home_capture_iou), Modifier.testTag("home_iou_button"), onOpenIou)
         }
     }
 }
