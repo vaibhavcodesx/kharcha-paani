@@ -107,7 +107,8 @@ class GroupDetailContentTest {
 
         // Activated the way TalkBack does: a tap at its centre can land under the floating action bar,
         // which the test's own scrolling doesn't account for.
-        composeTestRule.onNodeWithTag("export_group_button").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNode(hasScrollToKeyAction()).performScrollToKey("feed_header")
+        composeTestRule.onNodeWithTag("export_group_button").assertIsDisplayed()
             .performSemanticsAction(SemanticsActions.OnClick)
 
         assertEquals(7L, exported)

@@ -21,7 +21,9 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.hasScrollToKeyAction
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.lifecycle.ViewModelStore
 import androidx.room.Room
@@ -128,7 +130,12 @@ class GroupMemberColourTest {
     }
 
     private fun assertDot(tag: String, color: Int) {
-        val dot = compose.onNodeWithTag(tag, useUnmergedTree = true).performScrollTo()
+        val match = Regex("""group_expense_(\d+)""").find(tag)
+        if (match != null) {
+            val txId = match.groupValues[1]
+            compose.onNode(hasScrollToKeyAction()).performScrollToKey("tx_$txId")
+        }
+        val dot = compose.onNodeWithTag(tag, useUnmergedTree = true)
         val center = dot.fetchSemanticsNode().boundsInRoot.center
         val pixel = compose.runOnIdle {
             val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
