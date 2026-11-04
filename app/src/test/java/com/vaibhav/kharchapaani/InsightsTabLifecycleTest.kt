@@ -22,6 +22,7 @@ import com.vaibhav.kharchapaani.ui.shell.AppTab
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
 import com.vaibhav.kharchapaani.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -107,17 +108,19 @@ class InsightsTabLifecycleTest {
     fun `backgrounding below STARTED halts collection and resuming receives mutated Room analytics`() {
         // 1. Seed nonzero Room data
         val now = System.currentTimeMillis()
-        db.transactionDao().insertTransaction(
-            TransactionEntity(
-                id = 1,
-                type = "expense",
-                amount = 1200.0,
-                category = "Food",
-                merchant = "Dhaba",
-                paymentMethod = "UPI",
-                date = now,
-            ),
-        )
+        runBlocking {
+            db.transactionDao().insertTransaction(
+                TransactionEntity(
+                    id = 1,
+                    type = "expense",
+                    amount = 1200.0,
+                    category = "Food",
+                    merchant = "Dhaba",
+                    paymentMethod = "UPI",
+                    date = now,
+                ),
+            )
+        }
 
         // 2. Open Insights tab and verify initial nonzero spent figure
         compose.onNodeWithTag("tab_insights").performClick()
@@ -133,17 +136,19 @@ class InsightsTabLifecycleTest {
         ShadowLooper.idleMainLooper(5500, TimeUnit.MILLISECONDS)
 
         // 5. Mutate Room data while UI is stopped in background
-        db.transactionDao().insertTransaction(
-            TransactionEntity(
-                id = 2,
-                type = "expense",
-                amount = 800.0,
-                category = "Travel",
-                merchant = "Metro",
-                paymentMethod = "UPI",
-                date = now,
-            ),
-        )
+        runBlocking {
+            db.transactionDao().insertTransaction(
+                TransactionEntity(
+                    id = 2,
+                    type = "expense",
+                    amount = 800.0,
+                    category = "Travel",
+                    merchant = "Metro",
+                    paymentMethod = "UPI",
+                    date = now,
+                ),
+            )
+        }
 
         // 6. Resume Activity to RESUMED (passing STARTED)
         compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
