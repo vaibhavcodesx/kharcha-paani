@@ -35,7 +35,12 @@ object LedgerDatabases {
 
     private class OpenDatabase(val name: String, val database: AppDatabase) {
         val owners = mutableListOf<CloseOwner>()
-        suspend fun drainOwners() { owners.forEach { it.beforeClose() } }
+        suspend fun drainOwners() {
+            owners.forEach { it.beforeClose() }
+            // Only a fully successful drain releases owners. Cancellation/failure retains
+            // every callback for a safe, idempotent retry of unfinished closing work.
+            owners.clear()
+        }
     }
 
     suspend fun open(context: Context, userId: String, isCurrent: () -> Boolean = { true }): AppDatabase =
