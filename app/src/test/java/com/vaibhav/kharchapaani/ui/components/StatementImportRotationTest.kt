@@ -2,6 +2,7 @@ package com.vaibhav.kharchapaani.ui.components
 
 import android.os.Bundle
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.saveable.SaverScope
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -24,6 +25,8 @@ class StatementImportRotationTest {
 
     @get:Rule
     val compose = createComposeRule()
+
+    private val testSaverScope = SaverScope { true }
 
     @Test
     fun `statementItemListSaver saves and restores all fields accurately`() {
@@ -61,7 +64,7 @@ class StatementImportRotationTest {
             ),
         )
 
-        val bundle = saver.save(originalItems) as Bundle
+        val bundle = with(saver) { testSaverScope.save(originalItems) } as Bundle
         val restored = saver.restore(bundle)
 
         assertEquals(2, restored?.size)
@@ -93,7 +96,7 @@ class StatementImportRotationTest {
         val saver = statementExpandedSaver()
         val originalMap = mutableStateMapOf("202410" to true, "202409" to false)
 
-        val bundle = saver.save(originalMap) as Bundle
+        val bundle = with(saver) { testSaverScope.save(originalMap) } as Bundle
         val restored = saver.restore(bundle)
 
         assertEquals(true, restored?.get("202410"))
@@ -129,7 +132,7 @@ class StatementImportRotationTest {
         )
         val statement = LocalStatementParser.buildStatementGroups(
             bankOrApp = "HDFC Bank",
-            statementPeriod = "October 2026",
+            period = "October 2026",
             items = listOf(item1, item2),
         )
 
