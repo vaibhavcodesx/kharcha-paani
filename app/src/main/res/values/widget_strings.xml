@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="widget_compact_label">Quick add</string>
+    <string name="widget_compact_description">A small button: tap, type what you spent, done</string>
     <string name="widget_quick_add_description">One tap to log an expense, with today’s spending beside it</string>
 </resources>

@@ -117,6 +117,8 @@ fun HomeScreen(
     billPhotoIds: Set<Long> = emptySet(),
     startVoiceCapture: Boolean = false,
     onVoiceCaptureStarted: () -> Unit = {},
+    focusCapture: Boolean = false,
+    onCaptureFocused: () -> Unit = {},
     syncStatus: SyncStatus = SyncStatus(),
     onShowMessage: (String) -> Unit = {},
 ) {
@@ -157,6 +159,8 @@ fun HomeScreen(
                 onParsePdf = onParsePdf,
                 onOpenIou = onOpenIouDialog,
                 startVoiceCapture = startVoiceCapture,
+                focusCapture = focusCapture,
+                onCaptureFocused = onCaptureFocused,
                 onCaptureFailed = onShowMessage,
                 onVoiceCaptureStarted = onVoiceCaptureStarted,
                 modifier = Modifier.padding(top = Spacing.xl),
