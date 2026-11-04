@@ -982,4 +982,9 @@
     <string name="ai_choice_voice_off">AI is off, including speech recognition. Type an entry instead.</string>
     <string name="ai_choice_capture_on">Quick add, bill and statement reads use Google Gemini</string>
     <string name="ai_choice_capture_off">AI is off · quick add stays on this phone</string>
+    <!-- Auth messages: hue conflict/offline, account deletion errors -->
+    <string name="auth_hue_error_offline">You\'re offline, so your colour wasn\'t saved. Try again when you\'re connected.</string>
+    <string name="auth_hue_error_conflict">Someone in your groups has a colour too close to that one. Pick one further away.</string>
+    <string name="auth_delete_account_error_offline">You\'re offline. Connect and try again; nothing was deleted.</string>
+    <string name="auth_delete_account_error_server">Couldn\'t delete your account just now. Nothing was deleted; try again in a minute.</string>
 </resources>
