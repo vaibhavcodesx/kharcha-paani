@@ -13,6 +13,8 @@ owner or Claude go at the bottom.
 
 ## Log
 
+- 2026-11-04 · Y12 / SEC L-10 export warning line · in review; added plaintext export warning in the app's voice ("This file contains your ledger in plain text. Share it only with yourself or people you trust.") to ExportSheet.
+
 - 2026-11-04 · #226 · AI choice · in review; six existing-API regressions fail as predicted in CI41841846737 (1080 tests,6 failures). Device-wide setting, HTTP/request cancellation and local capture fallbacks; code head3d7cb0f passed all three jobs in CI41845836878; head6c45720 passed CI41857681967 after grouped-settings/widget integration; normally refreshed main004690e for parser feedback, fresh exact-head merge checks pending. The ca76 unit run timed out and was not counted as passing; phone checks remain pending. Guest/auth and complete backup are separate PRs.
 
 - 2026-10-27 · #125 · X5 / TODOS 8 group settlements view · merged; All activity stays default, payments and IOUs retain confirmation status, archived history is read-only.

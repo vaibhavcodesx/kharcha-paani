@@ -15,6 +15,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- A plain text warning in the export spreadsheet sheet advising to share exports only with trusted recipients (Y12, SEC L-10).
+
 - A device-wide Use AI switch stops Gemini reads everywhere, keeps manual capture available and labels AI-powered capture.
 
 
