@@ -1,6 +1,6 @@
 # Group expense rows: dots, not names
 
-Status: proposed with the PR that builds it. Owner asked for it after v1.6.0 (screenshot of a group's Activity list).
+Status: built. The "added by" word was dropped from the row in the end (the second line has no room for it at 360 dp); it stays in the edit sheet. Owner asked for it after v1.6.0 (screenshot of a group's Activity list).
 
 ## The problem
 
@@ -32,7 +32,7 @@ Two lines, about 56 dp.
 - Line 2: date, then **one ring dot** for who paid, a hairline gap, then **filled dots** for who it
   was split with (the same dots Activity rows use, `SharerFaces` style: 8 dp, up to 4, then `+N`).
   The right column keeps "yours ₹40".
-- The ring is the payer's own colour, filled dots are the sharers'. A ring is "paid", a dot is
+- The ring is the payer's own colour (the dot inside it is the same colour, so it is the person's dot wherever it appears), filled dots are the sharers'. A ring is "paid", a dot is
   "shares", and one line under the group's Activity heading says so once: `◉ paid · ● split between`.
 - Names are not on the row. They are one tap away (the edit sheet) and in the accessibility label,
   which reads "Paid by You. Split with You, Aaru, Pruthva and 1 more." Colour never carries meaning

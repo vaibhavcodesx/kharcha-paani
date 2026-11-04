@@ -65,6 +65,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Changed
 
+- Group screen: expenses are two compact lines (merchant and amount, then the date and who it involved) instead of five. Who paid and who it was split with are colour dots only: a ringed dot for the payer, then a dot per person it was split with (four, then "+N"), with a one-line legend above the list. The names are no longer repeated on every row; a screen reader still hears "Paid by Aaru. Split with You, Aaru, Pruthva." The "added by" wording that was in the second line is gone from the row.
+
 - Activity shows only the group items you are part of: a settlement between two other people, and a group expense you didn't add, pay or share in (a ₹0 share doesn't count), no longer appear. The group's own screen still lists everything.
 
 - Quick add opens the sheet instantly, on the phone's own reading of the line, with a quiet
