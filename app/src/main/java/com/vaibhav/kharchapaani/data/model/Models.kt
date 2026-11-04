@@ -7,6 +7,7 @@ import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.domain.allButOwnShareOf
+import com.vaibhav.kharchapaani.domain.coveredBy
 import com.vaibhav.kharchapaani.domain.ownShareOf
 
 data class ParsedTransactionResult(
@@ -42,6 +43,15 @@ data class FullTransaction(
      */
     val canEdit: Boolean
         get() = transaction.isOwnedByMe || (transaction.groupId != null && split?.paidByPersonId == -1L)
+
+    /**
+     * Whether this belongs in my own Activity. A group's expenses are everyone's, so the group sheet
+     * shows them all; my feed only shows the ones I'm part of: I added it, I paid, or something of it
+     * is mine (my share, or a guest I cover). A ₹0 share isn't being part of it. Anything outside a
+     * group is mine by definition.
+     */
+    val involvesMe: Boolean
+        get() = transaction.groupId == null || canEdit || (shares.coveredBy(-1L) ?: 0.0) > 0.0
 
     val myPersonalShare: Double
         get() {
