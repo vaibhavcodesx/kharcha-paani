@@ -59,10 +59,11 @@ class ActivitySearchTest {
     private suspend fun until(condition: () -> Boolean) = withTimeout(10000) {
         while (!condition()) { dispatcher.scheduler.runCurrent(); delay(10) }
     }
-    private fun search(query: String): Set<String> {
+    private fun search(query: String): Set<String> = runBlocking {
         vm.setSearchQuery(query)
+        delay(MainViewModel.SEARCH_DEBOUNCE_MS + 80)
         dispatcher.scheduler.runCurrent()
-        return vm.activityFeed.value.map { it.key }.toSet()
+        vm.activityFeed.value.map { it.key }.toSet()
     }
     @After fun tearDown() = runBlocking {
         screen.cancel()
@@ -96,5 +97,43 @@ class ActivitySearchTest {
         assertEquals(setOf("tx_3"), search("Travel"))
         assertEquals(setOf("tx_4"), search("Morning chai"))
         assertEquals(5, search("").size)
+    }
+
+    @Test fun `search query is debounced by 150ms before feed updates`() = runBlocking {
+        vm.setSearchQuery("Salary")
+        dispatcher.scheduler.runCurrent()
+        // Immediately after setting search query, feed is NOT yet filtered
+        assertEquals(5, vm.activityFeed.value.size)
+
+        // After the debounce duration, feed reflects the search result
+        delay(MainViewModel.SEARCH_DEBOUNCE_MS + 80)
+        until { vm.activityFeed.value.size == 1 }
+        assertEquals(setOf("tx_2"), vm.activityFeed.value.map { it.key }.toSet())
+    }
+
+    @Test fun `clearing search query updates immediately with zero debounce`() = runBlocking {
+        search("Salary")
+        assertEquals(setOf("tx_2"), vm.activityFeed.value.map { it.key }.toSet())
+
+        vm.setSearchQuery("")
+        // Empty query has 0 ms debounce: immediate emission
+        until { vm.activityFeed.value.size == 5 }
+        assertEquals(5, vm.activityFeed.value.size)
+    }
+
+    @Test fun `rapid keystrokes within debounce window build feed only once after typing pauses`() = runBlocking {
+        vm.setSearchQuery("S")
+        delay(60)
+        vm.setSearchQuery("Sa")
+        delay(60)
+        vm.setSearchQuery("Sal")
+        dispatcher.scheduler.runCurrent()
+        // Keystrokes were <150ms apart: feed remains un-updated
+        assertEquals(5, vm.activityFeed.value.size)
+
+        // Wait for debounce silence
+        delay(MainViewModel.SEARCH_DEBOUNCE_MS + 80)
+        until { vm.activityFeed.value.size == 1 }
+        assertEquals(setOf("tx_2"), vm.activityFeed.value.map { it.key }.toSet())
     }
 }

@@ -134,6 +134,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -497,17 +500,18 @@ class MainViewModel(
     }
 
     /** Cold sources retain the difference between an empty ledger and one not read yet. */
+    @OptIn(FlowPreview::class)
     private val activityFeedSource = combine(
         combine(ledgerRepo.fullTransactions, pendingDeletes.ids) { transactions, hidden ->
             if (hidden.isEmpty()) transactions else transactions.filterNot { it.transaction.id in hidden }
         },
         ledgerRepo.allSettlements,
         combine(ledgerRepo.allPeople, ledgerRepo.allGroups) { people, groups -> people to groups },
-        searchQuery,
+        searchQuery.debounce { if (it.isEmpty()) 0L else SEARCH_DEBOUNCE_MS },
         selectedFilter
     ) { transactions, settlements, (people, groups), query, filter ->
         ActivityFeed.build(getApplication<Application>(), transactions, settlements, people, groups, query, filter)
-    }
+    }.flowOn(Dispatchers.Default)
 
     /** Recent Activity: transactions plus settlements and IOUs, filtered and searched together. */
     val activityFeed: StateFlow<List<ActivityItem>> = activityFeedSource
@@ -2385,6 +2389,9 @@ class MainViewModel(
 
 /** Two readings' times this close are the same moment ("now" on the phone, "now" from the AI). */
 private const val SAME_MOMENT_MS = 60_000L
+
+/** Debounce window for search input so rapid keystrokes don't re-build the feed synchronously. */
+internal const val SEARCH_DEBOUNCE_MS = 150L
 
 /** A part of the quick-add sheet the person can change; see [MainViewModel.isImprovingWithAi]. */
 private enum class EntryField { Type, Amount, Merchant, Category, Payment, Note, Date, Split }

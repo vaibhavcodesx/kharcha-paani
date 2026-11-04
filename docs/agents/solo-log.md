@@ -205,6 +205,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-04 · #199 · F3 source review notes · prepared for merge; corrected first-day selector cause, actual minimum text/layout behavior and component/parser/Room evidence boundaries for six merged PRs. PNG generation is not claimed as visual or phone acceptance. Independent review and exact-head current-main CI gate merge; docs only.
 
+- 2026-11-04 · Y8 feed building off Main & debounced search · prepared; ActivityFeed.build moved to Dispatchers.Default via flowOn in activityFeedSource, and searchQuery is debounced by ~150 ms (0 ms on empty query). ActivitySearchTest updated and extended with debounce verification tests.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
