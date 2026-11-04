@@ -325,6 +325,8 @@ class MainActivity : ComponentActivity() {
                 val sharedGroups: SharedGroupsViewModel = viewModel(
                     factory = SharedGroupsViewModel.factory(application, session.database, session.userId, isLocal = session.isLocal),
                 )
+                session.register(viewModel)
+                session.register(sharedGroups)
                 // App start and every return to the foreground: push anything queued, pull the rest.
                 LifecycleStartEffect(viewModel) {
                     if (!session.isLocal) viewModel.requestSync()

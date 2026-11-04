@@ -20,6 +20,14 @@ import com.vaibhav.kharchapaani.data.settings.GuestSession
 import com.vaibhav.kharchapaani.data.settings.LedgerMode
 import com.vaibhav.kharchapaani.ui.session.AccountSessionHolder
 import com.vaibhav.kharchapaani.ui.session.AccountSessionState
+import com.vaibhav.kharchapaani.ui.session.AccountSession
+import com.vaibhav.kharchapaani.ui.session.CloudAuthOwner
+import com.vaibhav.kharchapaani.ui.session.SessionClosingWork
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
@@ -42,6 +50,8 @@ class GuestActivityLaunchTest {
     private lateinit var guest: GuestSession
     private var previousMode: Map<String, *> = emptyMap<String, Any?>()
     private val jobs = mutableListOf<Job>()
+    private val sessions = mutableListOf<AccountSession>()
+    private val closingWork = mutableListOf<SessionClosingWork>()
     private val prefs get() = app.getSharedPreferences(LedgerMode.PREFS, Context.MODE_PRIVATE)
 
     private val localChoice = object : ExternalResource() {
@@ -61,9 +71,19 @@ class GuestActivityLaunchTest {
 
         override fun after() = runBlocking {
             try {
-                val deadline = System.nanoTime() + 10_000_000_000L
-                while (jobs.any { !it.isCompleted } && System.nanoTime() < deadline) shadowOf(Looper.getMainLooper()).idle()
-                check(jobs.all { it.isCompleted }) { "Activity ViewModels did not finish cleanup" }
+                val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+                try {
+                    val closing = cleanupScope.async {
+                        sessions.forEach { it.awaitClosed() }
+                        closingWork.forEach { it.awaitSessionClosingWork() }
+                    }
+                    val deadline = System.nanoTime() + 10_000_000_000L
+                    while ((jobs.any { !it.isCompleted } || !closing.isCompleted) && System.nanoTime() < deadline) {
+                        shadowOf(Looper.getMainLooper()).idle()
+                    }
+                    check(jobs.all { it.isCompleted } && closing.isCompleted) { "Activity ViewModels did not finish cleanup" }
+                    closing.await()
+                } finally { cleanupScope.cancel() }
                 LedgerDatabases.close()
                 SupabaseClientProvider.closeExisting()
                 if (::guest.isInitialized) app.deleteDatabase(LedgerDatabases.localDatabaseName(guest))
@@ -95,12 +115,15 @@ class GuestActivityLaunchTest {
             // Capture scopes even on a failed assertion, before the Activity rule destroys stores.
             val holder = ViewModelProvider(compose.activity)[AccountSessionHolder::class.java]
             val session = (holder.state.value as? AccountSessionState.Ready)?.session
-            if (session != null) jobs += session.viewModelStore.keys().mapNotNull {
-                session.viewModelStore[it]?.viewModelScope?.coroutineContext?.get(Job)
+            if (session != null) {
+                sessions += session
+                jobs += session.scopeJobs
             }
-            jobs += compose.activity.viewModelStore.keys().mapNotNull {
-                compose.activity.viewModelStore[it]?.viewModelScope?.coroutineContext?.get(Job)
-            }
+            holder.viewModelScope.coroutineContext[Job]?.let(jobs::add)
+            closingWork += holder
+            // Known activity owners only; this never asks CloudAuthOwner for an auth ViewModel.
+            val cloudOwner = ViewModelProvider(compose.activity)[CloudAuthOwner::class.java]
+            cloudOwner.viewModelScope.coroutineContext[Job]?.let(jobs::add)
         }
     }
 }

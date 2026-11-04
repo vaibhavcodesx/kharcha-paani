@@ -32,6 +32,9 @@ import android.net.Uri
 import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
+import com.vaibhav.kharchapaani.ui.session.SessionClosingWork
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.joinAll
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
@@ -158,7 +161,7 @@ class MainViewModel(
         aiAllowed = { AiSettings(application).enabledNow },
     ),
     private val isLocal: Boolean = false,
-) : AndroidViewModel(application) {
+) : AndroidViewModel(application), SessionClosingWork {
 
     private val _moneyConfirmations = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val moneyConfirmations = _moneyConfirmations.asSharedFlow()
@@ -1837,6 +1840,11 @@ class MainViewModel(
     override fun onCleared() {
         pendingDeletes.commitAll()
         super.onCleared()
+    }
+
+    /** The Undo deletion scope outlives viewModelScope, but never this ledger's open lifetime. */
+    override suspend fun awaitSessionClosingWork() {
+        // API scaffold for the deterministic held-delete red test; no new drain behavior yet.
     }
 
     // Groups Management

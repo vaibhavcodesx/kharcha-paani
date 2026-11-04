@@ -22,7 +22,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -39,6 +38,7 @@ sealed interface LocalSignInState {
 /** The owner exists locally, but no auth ViewModel or cloud client exists until explicitly needed. */
 class CloudAuthOwner(application: Application) : AndroidViewModel(application) {
     private var authStore = ViewModelStore()
+    private var auth: AuthViewModel? = null
     private val transition = Mutex()
     private var cleared = false
     private val _localSignIn = MutableStateFlow<LocalSignInState>(LocalSignInState.Idle)
@@ -47,17 +47,20 @@ class CloudAuthOwner(application: Application) : AndroidViewModel(application) {
     /** Called only by cloud composition or the explicit Google sign-in action. */
     fun authViewModel(): AuthViewModel {
         check(!cleared) { "Cloud auth owner has ended" }
+        auth?.let { return it }
         val owner = object : ViewModelStoreOwner { override val viewModelStore = authStore }
         return ViewModelProvider(owner, ViewModelProvider.AndroidViewModelFactory.getInstance(getApplication()))[AuthViewModel::class.java]
+            .also { auth = it }
     }
 
     /** Close the old client without signing out or removing the stored account's tokens. */
     suspend fun clearAndClose() = withContext(NonCancellable) {
         transition.withLock {
-            val jobs = authStore.keys().mapNotNull { authStore[it]?.viewModelScope?.coroutineContext?.get(Job) }
+            val job = auth?.viewModelScope?.coroutineContext?.get(Job)
             authStore.clear()
+            auth = null
             // Recreate only after cancellation has finished, so old profile work cannot reach a new client.
-            jobs.joinAll()
+            job?.join()
             if (!cleared) {
                 SupabaseClientProvider.closeExisting()
                 authStore = ViewModelStore()
@@ -108,15 +111,16 @@ class CloudAuthOwner(application: Application) : AndroidViewModel(application) {
 
     override fun onCleared() {
         cleared = true
-        val jobs = authStore.keys().mapNotNull { authStore[it]?.viewModelScope?.coroutineContext?.get(Job) }
+        val job = auth?.viewModelScope?.coroutineContext?.get(Job)
         authStore.clear()
+        auth = null
         // Finishing a local sign-in screen must not leave the SDK refreshing while the app is local.
         if (LedgerMode(getApplication()).choice == LedgerMode.Choice.LOCAL) {
             CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).launch(start = CoroutineStart.UNDISPATCHED) {
                 // Detach now, before a replacement Activity can create a new client. A delayed
                 // closeExisting after join could otherwise close that replacement's client.
                 SupabaseClientProvider.closeExisting()
-                jobs.joinAll()
+                job?.join()
             }
         }
     }

@@ -4,6 +4,7 @@ import com.vaibhav.kharchapaani.diagnostics.CrashReporting
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewModelScope
@@ -28,6 +29,23 @@ import kotlinx.coroutines.launch
  */
 class AccountSession(val userId: String, val database: AppDatabase, val isLocal: Boolean = false) : ViewModelStoreOwner {
     override val viewModelStore = ViewModelStore()
+    private val registered = linkedSetOf<ViewModel>()
+    private val jobs = mutableListOf<Job>()
+    private val closingWork = mutableListOf<SessionClosingWork>()
+
+    /** Register each account ViewModel when created; no inspection of ViewModelStore internals. */
+    fun register(viewModel: ViewModel) {
+        if (!registered.add(viewModel)) return
+        viewModel.viewModelScope.coroutineContext[Job]?.let(jobs::add)
+        (viewModel as? SessionClosingWork)?.let(closingWork::add)
+    }
+
+    /** Captured scope lifetimes, including after the store has been cleared. */
+    val scopeJobs: List<Job> get() = jobs.toList()
+
+    internal suspend fun awaitClosed() {
+        scopeJobs.joinAll()
+    }
 }
 
 sealed interface AccountSessionState {
@@ -40,14 +58,14 @@ sealed interface AccountSessionState {
 /**
  * Activity-scoped, so the session survives configuration changes but not a switch of account.
  */
-class AccountSessionHolder(application: Application) : AndroidViewModel(application) {
+class AccountSessionHolder(application: Application) : AndroidViewModel(application), SessionClosingWork {
 
     private val _state = MutableStateFlow<AccountSessionState>(AccountSessionState.None)
     val state: StateFlow<AccountSessionState> = _state.asStateFlow()
 
     private var activeUserId: String? = null
     private var activeIsLocal = false
-    private val retiringJobs = mutableListOf<Job>()
+    private val retiringSessions = mutableListOf<AccountSession>()
     private var openJob: Job? = null
 
     /** [userId] is the signed-in account, or null once signed out. */
@@ -74,9 +92,7 @@ class AccountSessionHolder(application: Application) : AndroidViewModel(applicat
         openJob = viewModelScope.launch {
             previousOpen?.join()
             // clear() cancels scopes; await their cleanup before the shared database is closed.
-            val jobs = retiringJobs.toList()
-            jobs.joinAll()
-            retiringJobs.removeAll(jobs.toSet())
+            awaitSessionClosingWork()
             if (userId == null) {
                 LedgerDatabases.close()
                 _state.value = AccountSessionState.None
@@ -109,11 +125,18 @@ class AccountSessionHolder(application: Application) : AndroidViewModel(applicat
     }
 
     private fun endSession() {
-        (_state.value as? AccountSessionState.Ready)?.session?.viewModelStore?.let { store ->
-            retiringJobs += store.keys().mapNotNull { store[it]?.viewModelScope?.coroutineContext?.get(Job) }
-            store.clear()
+        (_state.value as? AccountSessionState.Ready)?.session?.let { session ->
+            retiringSessions += session
+            session.viewModelStore.clear()
         }
         _state.value = AccountSessionState.None
+    }
+
+    /** Also usable by an owner that clears this holder before explicitly closing its database. */
+    override suspend fun awaitSessionClosingWork() {
+        val sessions = retiringSessions.toList()
+        sessions.forEach { it.awaitClosed() }
+        retiringSessions.removeAll(sessions.toSet())
     }
 
     override fun onCleared() {
