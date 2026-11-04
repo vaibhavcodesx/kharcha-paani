@@ -557,13 +557,16 @@ fun SplitFlowApp(
             sharedGroups.clearMessage()
         }
     }
-    LaunchedEffect(viewModel) {
-        viewModel.shareIntents.collect { intent ->
-            try {
-                context.startActivity(intent)
-            } catch (e: ActivityNotFoundException) {
-                Log.w("MainActivity", "No app available to handle share chooser", e)
-                viewModel.showMessage(context.getString(R.string.shell_copy_file_failed))
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(viewModel, lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewModel.shareIntents.collect { intent ->
+                try {
+                    context.startActivity(intent)
+                } catch (e: ActivityNotFoundException) {
+                    Log.w("MainActivity", "No app available to handle share chooser", e)
+                    viewModel.showMessage(context.getString(R.string.shell_copy_file_failed))
+                }
             }
         }
     }
