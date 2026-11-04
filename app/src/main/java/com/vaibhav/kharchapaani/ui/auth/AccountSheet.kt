@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.auth
 
+import com.vaibhav.kharchapaani.R
+import androidx.compose.ui.res.stringResource
 import android.app.TimePickerDialog
 import android.text.format.DateUtils
 import androidx.compose.foundation.BorderStroke
@@ -131,6 +133,8 @@ fun AccountSheet(
     onOpenLicences: () -> Unit = {},
     /** When the phone has no app to open a link or an email with: what to tell the person instead. */
     onNoApp: (String) -> Unit = {},
+    aiEnabled: Boolean = true,
+    onAiEnabledChange: (Boolean) -> Unit = {},
 ) {
     // Read here rather than passed in: the setting lives with crash reporting, which starts before
     // anything else and can't wait for a view model. Null in a build with no Firebase project.
@@ -161,6 +165,8 @@ fun AccountSheet(
             onSaveHue = onSaveHue,
             onOpenLicences = onOpenLicences,
             onNoApp = onNoApp,
+            aiEnabled = aiEnabled,
+            onAiEnabledChange = onAiEnabledChange,
             crashReports = crashReports,
             onCrashReportsChange = {
                 CrashReporting.setEnabled(context, it)
@@ -198,6 +204,8 @@ fun AccountSheetContent(
     onOpenLicences: () -> Unit = {},
     /** When the phone has no app to open a link or an email with: what to tell the person instead. */
     onNoApp: (String) -> Unit = {},
+    aiEnabled: Boolean = true,
+    onAiEnabledChange: (Boolean) -> Unit = {},
     /** Whether crash reports are on; null when this build can't send any, and the switch isn't shown. */
     crashReports: Boolean? = null,
     onCrashReportsChange: (Boolean) -> Unit = {},
@@ -386,6 +394,19 @@ fun AccountSheetContent(
                         uncheckedBorderColor = OutlineInteractive,
                     ),
                 )
+            }
+            SettingRow(
+                title = stringResource(R.string.ai_choice_title),
+                detail = stringResource(if (aiEnabled) R.string.ai_choice_enabled_detail else R.string.ai_choice_disabled_detail),
+                position = RowPosition.Middle,
+                modifier = Modifier.toggleable(value = aiEnabled, role = Role.Switch, onValueChange = onAiEnabledChange)
+                    .testTag("setting_ai_enabled"),
+            ) {
+                Switch(checked = aiEnabled, onCheckedChange = null, colors = SwitchDefaults.colors(
+                    checkedTrackColor = WarmAmberPrimary, checkedThumbColor = CharcoalBg,
+                    uncheckedTrackColor = CharcoalElevated, uncheckedThumbColor = MutedWarmGray,
+                    uncheckedBorderColor = OutlineInteractive,
+                ))
             }
             val reminderTime = ReminderSchedule.label(reminder.minuteOfDay, android.text.format.DateFormat.is24HourFormat(LocalContext.current))
             SettingRow(

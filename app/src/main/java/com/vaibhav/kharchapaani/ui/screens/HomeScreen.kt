@@ -115,6 +115,7 @@ fun HomeScreen(
     today: LocalDate = LocalDate.now(),
     /** Expenses with a bill photo, which get a small receipt icon. */
     billPhotoIds: Set<Long> = emptySet(),
+    aiEnabled: Boolean = true,
     startVoiceCapture: Boolean = false,
     onVoiceCaptureStarted: () -> Unit = {},
     focusCapture: Boolean = false,
@@ -159,6 +160,7 @@ fun HomeScreen(
                 onParsePdf = onParsePdf,
                 onOpenIou = onOpenIouDialog,
                 startVoiceCapture = startVoiceCapture,
+                aiEnabled = aiEnabled,
                 focusCapture = focusCapture,
                 onCaptureFocused = onCaptureFocused,
                 onCaptureFailed = onShowMessage,

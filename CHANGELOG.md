@@ -15,6 +15,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- CI records test starts and bounded worker thread snapshots so stalled unit runs can be diagnosed without skipping tests.
+
+- A device-wide Use AI switch stops Gemini reads everywhere, keeps manual capture available and labels AI-powered capture.
+
 
 - A compact 2x1 "Quick add" widget (the brand button and a label) with the same tap, for a home screen with no room for the bar.
 - Evidence-scoped source review notes for six merged reliability/accessibility changes (F3).
