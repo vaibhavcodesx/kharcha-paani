@@ -553,6 +553,16 @@ fun SplitFlowApp(
             sharedGroups.clearMessage()
         }
     }
+    LaunchedEffect(viewModel) {
+        viewModel.shareIntents.collect { intent ->
+            try {
+                context.startActivity(intent)
+            } catch (e: ActivityNotFoundException) {
+                Log.w("MainActivity", "No app available to handle share chooser", e)
+                viewModel.showMessage(context.getString(R.string.shell_copy_file_failed))
+            }
+        }
+    }
     val syncStatus by viewModel.syncStatus.collectAsStateWithLifecycle()
     val parseNotice by viewModel.parseNotice.collectAsState()
 
@@ -723,9 +733,15 @@ fun SplitFlowApp(
             },
             onBackUp = {
                 isAccountSheetOpen = false
-                viewModel.exportLocalBackup(context)
+                viewModel.exportLocalBackup()
             },
-            onRestore = { pickBackup.launch(arrayOf("application/json", "text/plain", "*/*")) },
+            onRestore = {
+                try {
+                    pickBackup.launch(arrayOf("application/json", "text/plain", "*/*"))
+                } catch (e: ActivityNotFoundException) {
+                    viewModel.showMessage(context.getString(R.string.shell_copy_file_failed))
+                }
+            },
             onRetryFailedSync = viewModel::retryFailedSync,
             onRetryProfile = onRetryProfile,
             onSignOut = {
@@ -830,7 +846,13 @@ fun SplitFlowApp(
                     viewModel.showMessage(context.getString(R.string.shell_copy_camera_missing))
                 }
             }
-            BillPhotoSource.Gallery -> pickBillPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            BillPhotoSource.Gallery -> {
+                try {
+                    pickBillPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                } catch (e: ActivityNotFoundException) {
+                    viewModel.showMessage(context.getString(R.string.shell_copy_file_failed))
+                }
+            }
         }
     }
 
@@ -890,7 +912,7 @@ fun SplitFlowApp(
         transactions = rawTransactions,
         initialMonth = insightsMonth,
         earliestMonth = earliestInsightsMonth,
-        onExport = { viewModel.exportCsv(context, it) },
+        onExport = { viewModel.exportCsv(it) },
         onDismiss = { viewModel.closeExport() },
     )
 
@@ -912,7 +934,7 @@ fun SplitFlowApp(
         onDismiss = { viewModel.dismissSettleUp() },
         upiPayee = upiPayee,
         hisaab = settleUpHisaab,
-        onAsk = { amount, message -> settleUpPerson?.let { viewModel.askToPay(context, it, amount, message) } },
+        onAsk = { amount, message -> settleUpPerson?.let { viewModel.askToPay(it, amount, message) } },
     )
 
     SubscriptionsSheet(
@@ -986,7 +1008,7 @@ fun SplitFlowApp(
                 viewModel.openSettleUp(person)
             }
         },
-        onExportGroup = { groupId -> viewModel.exportGroupCsv(context, groupId) },
+        onExportGroup = { groupId -> viewModel.exportGroupCsv(groupId) },
         onAskTripReview = { groupId -> viewModel.askTripReview(groupId) },
         tripReview = tripReview,
         aiAsksLeft = aiAsksLeft,

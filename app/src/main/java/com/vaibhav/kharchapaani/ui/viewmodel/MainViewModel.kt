@@ -86,6 +86,8 @@ import com.vaibhav.kharchapaani.ui.format.MonthNames
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import com.vaibhav.kharchapaani.domain.StatementPdf
@@ -159,6 +161,9 @@ class MainViewModel(
 
     private val _reviewMoments = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val reviewMoments = _reviewMoments.asSharedFlow()
+
+    private val _shareIntents = Channel<Intent>(Channel.BUFFERED)
+    val shareIntents = _shareIntents.receiveAsFlow()
 
     private val ledgerRepo = LedgerRepository(db, onLocalTransactionChange = ::requestSync, selfProfileId = userId)
 
@@ -1874,10 +1879,10 @@ class MainViewModel(
     }
 
     /**
-     * Opens the share sheet with [message] and, when you have a UPI ID, your payment code for [amount]
-     * (ask-to-pay). The ask is logged only if an app is picked (ask/AskSentReceiver).
+     * Emits a one-shot share chooser intent with [message] and payment code for [amount].
+     * The ask is logged only if an app is picked (ask/AskSentReceiver).
      */
-    fun askToPay(context: Context, person: PersonEntity, amount: Double, message: String) {
+    fun askToPay(person: PersonEntity, amount: Double, message: String) {
         launchAction {
             val app = getApplication<Application>()
             val qr = upiPayee.value?.let { payee ->
@@ -1887,7 +1892,7 @@ class MainViewModel(
             }
             val firstName = person.name.trim().substringBefore(' ').ifEmpty { person.name }
             val chooser = AskShare.chooser(app, AskShare.sendIntent(app, message, qr), person.id, amount, userId, uiText(R.string.action_notice_ask_chooser, firstName))
-            context.startActivity(chooser)
+            _shareIntents.send(chooser)
         }
     }
 
@@ -2208,11 +2213,11 @@ class MainViewModel(
      * Gmail cut off after a screenful, so a whole ledger arrived as its last 10-20 rows.
      */
     /** One group's whole history as a spreadsheet, from its own screen. */
-    fun exportGroupCsv(context: Context, groupId: Long) {
-        exportCsv(context, ExportRange.Everything, groupId)
+    fun exportGroupCsv(groupId: Long) {
+        exportCsv(ExportRange.Everything, groupId)
     }
 
-    fun exportCsv(context: Context, range: ExportRange, groupId: Long? = null) {
+    fun exportCsv(range: ExportRange, groupId: Long? = null) {
         launchAction {
             val csv = ledgerRepo.exportCsv(range, groupId = groupId)
             if (csv.rows == 0) {
@@ -2228,7 +2233,8 @@ class MainViewModel(
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             _isExportOpen.value = false
-            context.startActivity(Intent.createChooser(send, uiQuantity(R.plurals.action_notice_export, csv.rows, csv.rows)))
+            val chooser = Intent.createChooser(send, uiQuantity(R.plurals.action_notice_export, csv.rows, csv.rows))
+            _shareIntents.send(chooser)
         }
     }
 
@@ -2240,7 +2246,7 @@ class MainViewModel(
      * Insurance, not routine: a normal app update keeps all of this. It is uninstalling, a new
      * phone, or a change of signing key that loses it. See [LocalBackup].
      */
-    fun exportLocalBackup(context: Context) {
+    fun exportLocalBackup() {
         launchAction {
             // Settings are read here and handed in: the repository owns the database, not
             // DataStore, and the first version of this simply forgot to pass them — which is
@@ -2263,7 +2269,8 @@ class MainViewModel(
                 clipData = ClipData.newRawUri(fileName, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(Intent.createChooser(send, uiText(R.string.action_notice_backup_chooser, backup.summary(getApplication<Application>()))))
+            val chooser = Intent.createChooser(send, uiText(R.string.action_notice_backup_chooser, backup.summary(getApplication<Application>())))
+            _shareIntents.send(chooser)
         }
     }
 

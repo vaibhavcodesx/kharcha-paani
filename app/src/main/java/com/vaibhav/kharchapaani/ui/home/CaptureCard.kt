@@ -185,8 +185,14 @@ fun CaptureCard(
         }
         Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.l).height(1.dp).background(CharcoalBorder))
         Row(Modifier.padding(Spacing.xs)) {
-            CaptureMode(KpIcons.Scan, stringResource(R.string.home_capture_bill_photo), Modifier.testTag("scan_receipt_button")) { imagePicker.launch("image/*") }
-            CaptureMode(KpIcons.Statement, stringResource(R.string.home_capture_statement), Modifier.testTag("upload_pdf_statement_button")) { pdfPicker.launch("application/pdf") }
+            CaptureMode(KpIcons.Scan, stringResource(R.string.home_capture_bill_photo), Modifier.testTag("scan_receipt_button")) {
+                runCatching { imagePicker.launch("image/*") }
+                    .onFailure { onCaptureFailed(context.getString(R.string.home_capture_image_unreadable)) }
+            }
+            CaptureMode(KpIcons.Statement, stringResource(R.string.home_capture_statement), Modifier.testTag("upload_pdf_statement_button")) {
+                runCatching { pdfPicker.launch("application/pdf") }
+                    .onFailure { onCaptureFailed(context.getString(R.string.home_capture_pdf_unreadable)) }
+            }
             CaptureMode(KpIcons.Lend, stringResource(R.string.home_capture_iou), Modifier.testTag("home_iou_button"), onOpenIou)
         }
     }
