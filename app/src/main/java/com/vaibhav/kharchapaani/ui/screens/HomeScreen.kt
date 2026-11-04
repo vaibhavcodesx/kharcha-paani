@@ -8,8 +8,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.testTag
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import kotlinx.coroutines.flow.first
@@ -99,8 +97,7 @@ import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import java.time.LocalDate
 import java.time.ZoneId
 
-@OptIn(ExperimentalFoundationApi::class)
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     people: List<PersonEntity> = emptyList(),
