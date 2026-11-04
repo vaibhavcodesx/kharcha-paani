@@ -100,24 +100,27 @@ class PersonLedgerRecompositionTest {
         // 1. Seed two real persons and a split transaction in Room
         val person1 = PersonEntity(id = 10, name = "Aman", avatarColor = "#70C1FF")
         val person2 = PersonEntity(id = 20, name = "Rohan", avatarColor = "#FF9070")
-        db.personDao().insertPersons(listOf(person1, person2))
-        db.transactionDao().insertTransaction(
-            TransactionEntity(
-                id = 100,
-                type = "expense",
-                amount = 400.0,
-                category = "Food",
-                merchant = "Biryani",
-                paymentMethod = "UPI",
-                date = System.currentTimeMillis(),
-                isSplit = true,
+        runBlocking {
+            db.personDao().insertPerson(person1)
+            db.personDao().insertPerson(person2)
+            db.transactionDao().insertTransaction(
+                TransactionEntity(
+                    id = 100,
+                    type = "expense",
+                    amount = 400.0,
+                    category = "Food",
+                    merchant = "Biryani",
+                    paymentMethod = "UPI",
+                    date = System.currentTimeMillis(),
+                    isSplit = true,
+                ),
             )
-        )
-        db.splitDao().insertSplit(SplitEntity(id = 1, transactionId = 100, totalAmount = 400.0, paidByPersonId = -1))
-        db.splitDao().insertSplitShares(listOf(
-            SplitShareEntity(splitId = 1, personId = -1, shareAmount = 200.0),
-            SplitShareEntity(splitId = 1, personId = 10, shareAmount = 200.0),
-        ))
+            db.splitDao().insertSplit(SplitEntity(id = 1, transactionId = 100, totalAmount = 400.0, paidByPersonId = -1))
+            db.splitDao().insertSplitShares(listOf(
+                SplitShareEntity(splitId = 1, personId = -1, shareAmount = 200.0),
+                SplitShareEntity(splitId = 1, personId = 10, shareAmount = 200.0),
+            ))
+        }
 
         var currentPerson by mutableStateOf(person1)
         var unrelatedTrigger by mutableStateOf(0)
