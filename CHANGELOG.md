@@ -13,6 +13,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Changed
+
+- Activity shows only the group items you are part of: a settlement between two other people, and a group expense you didn't add, pay or share in (a ₹0 share doesn't count), no longer appear. The group's own screen still lists everything.
+
 ### Added
 
 - Evidence-scoped source review notes for six merged reliability/accessibility changes (F3).
