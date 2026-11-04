@@ -16,6 +16,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 ### Added
 
 
+- **Voice entry, recorded in the app** *(owner review: new microphone permission; spoken audio now goes to Gemini)*. Tapping the mic opens a small listening bar (a dot that swells with your voice, what it hears, Cancel and Done) instead of Google's dialog. When Gemini's notice has been accepted and the phone is online, the app records up to 30 seconds in memory and sends that audio, once, through the existing `gemini-proxy` as feature `quick_add`; the entry comes back in one step and opens on the sheet, with "Heard: …" shown so a wrong amount is easy to trace. Otherwise (offline, no AI, notice not accepted) Android's speech recogniser shows the words live, in Indian English and listening for your friends' names, and the text goes the typed way. With the microphone permission refused, the old system dialog still works. The microphone is closed when the card leaves the screen or the app goes to the background. New: `RECORD_AUDIO` (and `ACCESS_NETWORK_STATE`, to tell offline from online before listening); privacy policy and the Play Data Safety answers updated. No Supabase change: the proxy already forwards the body as it comes (15 MB limit; 30 s of audio is about 1 MB).
+
 - A compact 2x1 "Quick add" widget (the brand button and a label) with the same tap, for a home screen with no room for the bar.
 - Evidence-scoped source review notes for six merged reliability/accessibility changes (F3).
 
