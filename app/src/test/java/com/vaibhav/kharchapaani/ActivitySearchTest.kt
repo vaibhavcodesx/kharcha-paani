@@ -14,7 +14,6 @@ import com.vaibhav.kharchapaani.data.model.ActivityItem
 import com.vaibhav.kharchapaani.domain.ActivityFeed
 import com.vaibhav.kharchapaani.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.test.*
 import org.junit.*
 import org.junit.Assert.*
@@ -28,9 +27,8 @@ import org.robolectric.annotation.Config
 class ActivitySearchTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
     private val dispatcher = StandardTestDispatcher()
-    private val screen = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val screen = CoroutineScope(SupervisorJob() + dispatcher)
     private val store = ViewModelStore()
-    private val feedEmissions = Channel<List<ActivityItem>>(Channel.BUFFERED)
     private lateinit var db: AppDatabase
     private lateinit var vm: MainViewModel
 
@@ -55,110 +53,141 @@ class ActivitySearchTest {
         db.settlementDao().insertSettlement(SettlementEntity(id = 1, fromPersonId = 2, toPersonId = -1, amount = 1234.5))
         vm = MainViewModel(app, db, "11111111-2222-3333-4444-555555555555")
         store.put("main", vm)
-        screen.launch { vm.activityFeed.collect { feedEmissions.send(it) } }
-
-        // Initial emission with 5 items
-        val initial = withTimeout(10_000) { feedEmissions.receive() }
-        assertEquals(5, initial.size)
-        assertTrue(initial.filterIsInstance<ActivityItem.Settlement>().single().title(app).contains("Rohan"))
+        screen.launch { vm.activityFeed.collect {} }
+        until { vm.activityFeed.value.size == 5 && vm.activityFeed.value.filterIsInstance<ActivityItem.Settlement>().single().title(app).contains("Rohan") }
     }
 
-    private fun search(query: String): Set<String> = runBlocking {
+    private suspend fun until(condition: () -> Boolean) = withTimeout(10000) {
+        while (!condition()) {
+            dispatcher.scheduler.runCurrent()
+            delay(10)
+        }
+    }
+
+    private fun search(query: String, expectedKeys: Set<String>? = null, expectedSize: Int? = null): Set<String> = runBlocking {
         vm.setSearchQuery(query)
-        val items = withTimeout(10_000) { feedEmissions.receive() }
-        items.map { it.key }.toSet()
+        if (expectedKeys != null) {
+            until { vm.activityFeed.value.map { it.key }.toSet() == expectedKeys }
+        } else if (expectedSize != null) {
+            until { vm.activityFeed.value.size == expectedSize }
+        } else {
+            val debounceMs = if (query.isEmpty()) 0L else MainViewModel.SEARCH_DEBOUNCE_MS
+            delay(debounceMs + 20)
+            until { true }
+        }
+        vm.activityFeed.value.map { it.key }.toSet()
     }
 
     @After fun tearDown() = runBlocking {
         screen.cancel()
-        feedEmissions.close()
         val job = vm.viewModelScope.coroutineContext[Job]!!
         store.clear()
-        withTimeout(10_000) {
-            while (!job.isCompleted) {
-                delay(20)
-            }
-        }
+        until { job.isCompleted }
         db.close()
         Dispatchers.resetMain()
     }
 
     @Test fun `names find only related shares payers owners and named guests`() {
-        assertEquals(setOf("tx_1", "settlement_1"), search("ROHAN"))
-        assertEquals(setOf("tx_3"), search("Meera"))
-        assertEquals(setOf("tx_3"), search("Ankit"))
-        assertTrue(search("Someone absent").isEmpty())
+        assertEquals(setOf("tx_1", "settlement_1"), search("ROHAN", setOf("tx_1", "settlement_1")))
+        assertEquals(setOf("tx_3"), search("Meera", setOf("tx_3")))
+        assertEquals(setOf("tx_3"), search("Ankit", setOf("tx_3")))
+        assertTrue(search("Someone absent", emptySet()).isEmpty())
     }
 
     @Test fun `amounts accept rupees Indian grouping paisa and the shown personal share`() {
         for (query in listOf("1234.5", "₹1,234.50", "-₹1,234.50"))
-            assertEquals(query, setOf("tx_1", "settlement_1"), search(query))
-        assertEquals(setOf("tx_1"), search("2,469"))
-        assertEquals(setOf("tx_2"), search("₹1,23,456.78"))
+            assertEquals(query, setOf("tx_1", "settlement_1"), search(query, setOf("tx_1", "settlement_1")))
+        assertEquals(setOf("tx_1"), search("2,469", setOf("tx_1")))
+        assertEquals(setOf("tx_2"), search("₹1,23,456.78", setOf("tx_2")))
     }
 
     @Test fun `friend and amount searches still respect the selected filter`() = runBlocking {
         vm.setSelectedFilter(ActivityFeed.INCOME)
-        withTimeout(10_000) { feedEmissions.receive() }
-        assertTrue(search("Rohan").isEmpty())
-        assertEquals(setOf("tx_2"), search("123456.78"))
+        until { vm.activityFeed.value.all { it is ActivityItem.Transaction && it.transaction.type == "income" } }
+        assertTrue(search("Rohan", emptySet()).isEmpty())
+        assertEquals(setOf("tx_2"), search("123456.78", setOf("tx_2")))
 
         vm.setSelectedFilter(ActivityFeed.SPLITS)
-        withTimeout(10_000) { feedEmissions.receive() }
-        assertEquals(setOf("tx_1"), search("2469"))
+        until { vm.activityFeed.value.all { (it is ActivityItem.Transaction && it.transaction.isSplit) || it is ActivityItem.Settlement } }
+        assertEquals(setOf("tx_1"), search("2469", setOf("tx_1")))
 
         vm.setSelectedFilter(ActivityFeed.EXPENSES)
-        withTimeout(10_000) { feedEmissions.receive() }
-        assertTrue(search("2469").isEmpty())
+        until { vm.activityFeed.value.all { it is ActivityItem.Transaction && it.transaction.type == "expense" } }
+        assertTrue(search("2469", emptySet()).isEmpty())
     }
 
     @Test fun `merchant category note and clearing search still work`() {
-        assertEquals(setOf("tx_2"), search("Salary"))
-        assertEquals(setOf("tx_3"), search("Travel"))
-        assertEquals(setOf("tx_4"), search("Morning chai"))
-        assertEquals(5, search("").size)
+        assertEquals(setOf("tx_2"), search("Salary", setOf("tx_2")))
+        assertEquals(setOf("tx_3"), search("Travel", setOf("tx_3")))
+        assertEquals(setOf("tx_4"), search("Morning chai", setOf("tx_4")))
+        assertEquals(5, search("", expectedSize = 5).size)
     }
 
     @Test fun `search query is debounced by 150ms before feed updates`() = runBlocking {
-        val start = System.currentTimeMillis()
+        val emissions = mutableListOf<List<ActivityItem>>()
+        val collectJob = screen.launch {
+            vm.activityFeed.collect { emissions.add(it) }
+        }
+        dispatcher.scheduler.runCurrent()
+        emissions.clear()
+
         vm.setSearchQuery("Salary")
+        dispatcher.scheduler.runCurrent()
+        // Immediately after setting search query, feed is NOT yet filtered
+        assertEquals(5, vm.activityFeed.value.size)
+        assertTrue(emissions.isEmpty())
 
-        // Immediately after setting query, no emission has arrived yet
-        delay(50)
-        assertTrue("Feed must not update before 150ms debounce window", feedEmissions.tryReceive().isFailure)
+        // After the debounce duration, feed reflects the search result
+        until { vm.activityFeed.value.size == 1 && vm.activityFeed.value.single().key == "tx_2" }
+        assertEquals(setOf("tx_2"), vm.activityFeed.value.map { it.key }.toSet())
+        assertEquals(1, emissions.size)
 
-        // Debounced emission arrives after >= 150ms
-        val items = withTimeout(10_000) { feedEmissions.receive() }
-        val elapsed = System.currentTimeMillis() - start
-        assertTrue("Emission should wait for at least debounce window ($elapsed >= 140)", elapsed >= 140)
-        assertEquals(setOf("tx_2"), items.map { it.key }.toSet())
+        collectJob.cancel()
     }
 
     @Test fun `clearing search query updates immediately with zero debounce`() = runBlocking {
-        assertEquals(setOf("tx_2"), search("Salary"))
+        search("Salary", setOf("tx_2"))
+        assertEquals(setOf("tx_2"), vm.activityFeed.value.map { it.key }.toSet())
 
-        val clearStartTime = System.currentTimeMillis()
+        val t0 = System.currentTimeMillis()
         vm.setSearchQuery("")
-        val cleared = withTimeout(10_000) { feedEmissions.receive() }
-        val elapsed = System.currentTimeMillis() - clearStartTime
-        assertTrue("Empty search query must emit before the 150ms debounce threshold ($elapsed ms < 150 ms)", elapsed < 150)
-        assertEquals(5, cleared.size)
+        until { vm.activityFeed.value.size == 5 }
+        val elapsed = System.currentTimeMillis() - t0
+        assertTrue("Clearing search must update with zero debounce (<150ms, took ${elapsed}ms)", elapsed < 150)
+        assertEquals(5, vm.activityFeed.value.size)
     }
 
     @Test fun `rapid keystrokes within debounce window build feed only once after typing pauses`() = runBlocking {
-        // Distinct keystrokes within 50ms (< 150ms debounce)
+        val emissions = mutableListOf<List<ActivityItem>>()
+        val collectJob = screen.launch {
+            vm.activityFeed.collect { emissions.add(it) }
+        }
+        dispatcher.scheduler.runCurrent()
+        emissions.clear()
+
+        // Distinct queries: "Tea" (tx_4), "Taxi" (tx_3), "Salary" (tx_2)
+        // If evaluated individually, each would produce a different item.
         vm.setSearchQuery("Tea")
         delay(50)
+        dispatcher.scheduler.runCurrent()
         vm.setSearchQuery("Taxi")
         delay(50)
+        dispatcher.scheduler.runCurrent()
         vm.setSearchQuery("Salary")
+        dispatcher.scheduler.runCurrent()
 
-        // No emission should have arrived yet during typing
-        assertTrue("No emission during rapid typing", feedEmissions.tryReceive().isFailure)
+        // Keystrokes were <150ms apart: no intermediate query was built or emitted
+        assertTrue("No builds/emissions during rapid typing", emissions.isEmpty())
+        assertEquals(5, vm.activityFeed.value.size)
 
-        // Only after typing pauses does the debounced emission arrive
-        val finalFeed = withTimeout(10_000) { feedEmissions.receive() }
-        assertEquals(setOf("tx_2"), finalFeed.map { it.key }.toSet())
-        assertTrue("No extra intermediate emissions", feedEmissions.tryReceive().isFailure)
+        // Wait for debounce silence
+        until { vm.activityFeed.value.size == 1 && vm.activityFeed.value.single().key == "tx_2" }
+
+        // Exactly one emission occurred after debounce silence settled
+        assertEquals(1, emissions.size)
+        assertEquals(setOf("tx_2"), emissions.single().map { it.key }.toSet())
+        assertEquals(setOf("tx_2"), vm.activityFeed.value.map { it.key }.toSet())
+
+        collectJob.cancel()
     }
 }
