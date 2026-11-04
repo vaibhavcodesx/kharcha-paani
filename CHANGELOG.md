@@ -15,6 +15,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Personal data breach incident response plan with 72-hour DPDP Board notification lifecycle and communication templates (D3).
+
 - CI records test starts and bounded worker thread snapshots so stalled unit runs can be diagnosed without skipping tests.
 
 - A device-wide Use AI switch stops Gemini reads everywhere, keeps manual capture available and labels AI-powered capture.
