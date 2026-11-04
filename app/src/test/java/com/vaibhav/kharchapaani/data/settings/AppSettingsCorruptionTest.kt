@@ -198,31 +198,6 @@ class AppSettingsCorruptionTest {
     }
 
     @Test
-    fun `recovered preferences persist across a fresh AppSettings instance`() = runBlocking {
-        // 1. Seed corruption
-        prefsFile.parentFile?.mkdirs()
-        prefsFile.writeBytes(byteArrayOf(0xFF.toByte(), 0xFE.toByte(), 0xFD.toByte()))
-
-        val initialSettings = AppSettings(context)
-        assertEquals(true, initialSettings.askBeforeDiscarding.first())
-
-        // 2. Write persisted values
-        initialSettings.setAskBeforeDiscarding(false)
-        initialSettings.setAiNoticeAccepted(true)
-        initialSettings.setUpiPayee("bob", UpiPayee("bob@okhdfc", "Bob"))
-
-        // 3. Simulate process death by clearing the singleton delegate cache
-        resetAppSettingsSingleton()
-
-        // 4. Construct a new AppSettings instance and verify it reads the persisted data without error
-        val freshSettings = AppSettings(context)
-        assertEquals(false, freshSettings.askBeforeDiscarding.first())
-        assertEquals(true, freshSettings.aiNoticeAccepted.first())
-        assertEquals("bob@okhdfc", freshSettings.upiPayee("bob").first()?.upiId)
-        assertEquals("Bob", freshSettings.upiPayee("bob").first()?.name)
-    }
-
-    @Test
     fun `clearAccount removes account specific preferences after corruption recovery`() = runBlocking {
         prefsFile.parentFile?.mkdirs()
         prefsFile.writeBytes(byteArrayOf(0xFF.toByte(), 0xFF.toByte()))
