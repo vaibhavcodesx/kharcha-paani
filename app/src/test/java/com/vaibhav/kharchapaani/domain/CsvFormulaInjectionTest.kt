@@ -181,7 +181,6 @@ class CsvFormulaInjectionTest {
         val attacker = PersonEntity(id = 5, name = "=cmd", avatarColor = "#f00")
         val splitTx = tx(
             id = 1,
-            isSplit = true,
             split = SplitEntity(id = 1, transactionId = 1, totalAmount = 100.0, paidByPersonId = 5),
             shares = listOf(SplitShareEntity(splitId = 1, personId = 5, shareAmount = 100.0)),
         )
@@ -301,7 +300,6 @@ class CsvFormulaInjectionTest {
         val normal = PersonEntity(id = 3, name = "Bob", avatarColor = "#fff")
         val splitTx = tx(
             id = 1,
-            isSplit = true,
             split = SplitEntity(id = 1, transactionId = 1, totalAmount = 100.0, paidByPersonId = 2),
             shares = listOf(
                 SplitShareEntity(splitId = 1, personId = 2, shareAmount = 50.0),
@@ -322,7 +320,6 @@ class CsvFormulaInjectionTest {
         val attacker = PersonEntity(id = 3, name = "=attacker", avatarColor = "#fff")
         val splitTx = tx(
             id = 1,
-            isSplit = true,
             split = SplitEntity(id = 1, transactionId = 1, totalAmount = 100.0, paidByPersonId = 2),
             shares = listOf(
                 SplitShareEntity(splitId = 1, personId = 2, shareAmount = 50.0),
