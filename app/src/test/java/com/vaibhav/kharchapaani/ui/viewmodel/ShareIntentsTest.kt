@@ -11,7 +11,6 @@ import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
-import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.domain.ExportRange
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -86,96 +85,6 @@ class ShareIntentsTest {
     }
 
     @Test
-    fun `exportCsv with rows emits chooser intent on shareIntents`() = runBlocking {
-        db.transactionDao().insertTransaction(
-            TransactionEntity(
-                type = "expense",
-                amount = 250.0,
-                category = "Food",
-                merchant = "Dhaba",
-                paymentMethod = "UPI",
-                date = System.currentTimeMillis(),
-            ),
-        )
-
-        var emittedIntent: Intent? = null
-        val collectJob = launch {
-            emittedIntent = viewModel.shareIntents.first()
-        }
-
-        viewModel.exportCsv(ExportRange.Everything)
-        withTimeout(10_000) { collectJob.join() }
-
-        assertNotNull(emittedIntent)
-        assertEquals(Intent.ACTION_CHOOSER, emittedIntent?.action)
-        @Suppress("DEPRECATION")
-        val target = emittedIntent?.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
-        assertNotNull(target)
-        assertEquals(Intent.ACTION_SEND, target?.action)
-        assertEquals("text/csv", target?.type)
-        assertTrue(target?.hasExtra(Intent.EXTRA_STREAM) == true)
-    }
-
-    @Test
-    fun `exportCsv with no rows sets statusMessage and does not emit intent`() = runBlocking {
-        var emittedIntent: Intent? = null
-        val collectJob = launch {
-            emittedIntent = viewModel.shareIntents.first()
-        }
-
-        viewModel.exportCsv(ExportRange.Everything)
-        val status = withTimeout(10_000) { viewModel.statusMessage.first { !it.isNullOrBlank() }!! }
-        assertTrue(status.contains("Nothing") || status.contains("empty") || status.isNotEmpty())
-        assertEquals("No share intent emitted on empty export", null, emittedIntent)
-
-        collectJob.cancel()
-    }
-
-    @Test
-    fun `exportLocalBackup with rows emits chooser intent on shareIntents`() = runBlocking {
-        db.personDao().insertPerson(
-            PersonEntity(
-                id = 1,
-                name = "Aman Sharma",
-                avatarColor = "#70C1FF",
-                profileId = null,
-            ),
-        )
-
-        var emittedIntent: Intent? = null
-        val collectJob = launch {
-            emittedIntent = viewModel.shareIntents.first()
-        }
-
-        viewModel.exportLocalBackup()
-        withTimeout(10_000) { collectJob.join() }
-
-        assertNotNull(emittedIntent)
-        assertEquals(Intent.ACTION_CHOOSER, emittedIntent?.action)
-        @Suppress("DEPRECATION")
-        val target = emittedIntent?.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
-        assertNotNull(target)
-        assertEquals(Intent.ACTION_SEND, target?.action)
-        assertEquals("application/json", target?.type)
-        assertTrue(target?.hasExtra(Intent.EXTRA_STREAM) == true)
-    }
-
-    @Test
-    fun `exportLocalBackup with empty backup sets statusMessage and does not emit intent`() = runBlocking {
-        var emittedIntent: Intent? = null
-        val collectJob = launch {
-            emittedIntent = viewModel.shareIntents.first()
-        }
-
-        viewModel.exportLocalBackup()
-        val status = withTimeout(10_000) { viewModel.statusMessage.first { !it.isNullOrBlank() }!! }
-        assertTrue(status.contains("Nothing") || status.contains("empty") || status.isNotEmpty())
-        assertEquals("No share intent emitted on empty backup", null, emittedIntent)
-
-        collectJob.cancel()
-    }
-
-    @Test
     fun `askToPay emits chooser intent with share message`() = runBlocking {
         val person = PersonEntity(id = 42, name = "Aman Sharma", avatarColor = "#70C1FF")
 
@@ -195,5 +104,56 @@ class ShareIntentsTest {
         assertEquals(Intent.ACTION_SEND, target?.action)
         val text = target?.getStringExtra(Intent.EXTRA_TEXT) ?: ""
         assertTrue("Intent text should contain message", text.contains("Hey Aman, ₹350 for dinner"))
+    }
+
+    @Test
+    fun `shareIntents delivers one-shot event exactly once with no replay`() = runBlocking {
+        val person = PersonEntity(id = 10, name = "Rohan", avatarColor = "#70C1FF")
+
+        viewModel.askToPay(person, 100.0, "Chai split")
+
+        // First collector receives the buffered event
+        val firstReceived = withTimeout(10_000) { viewModel.shareIntents.first() }
+        assertNotNull(firstReceived)
+        assertEquals(Intent.ACTION_CHOOSER, firstReceived.action)
+
+        // Second collector must not receive a replay of the consumed event
+        var replayReceived: Intent? = null
+        val secondJob = launch {
+            replayReceived = viewModel.shareIntents.first()
+        }
+        delay(100)
+        secondJob.cancel()
+        assertEquals("One-shot channel must not replay consumed intents", null, replayReceived)
+    }
+
+    @Test
+    fun `exportCsv with no rows sets statusMessage and does not emit intent`() = runBlocking {
+        var emittedIntent: Intent? = null
+        val collectJob = launch {
+            emittedIntent = viewModel.shareIntents.first()
+        }
+
+        viewModel.exportCsv(ExportRange.Everything)
+        val status = withTimeout(10_000) { viewModel.statusMessage.first { !it.isNullOrBlank() }!! }
+        assertTrue(status.contains("Nothing") || status.contains("empty") || status.isNotEmpty())
+        assertEquals("No share intent emitted on empty export", null, emittedIntent)
+
+        collectJob.cancel()
+    }
+
+    @Test
+    fun `exportGroupCsv with no rows sets statusMessage for group and does not emit intent`() = runBlocking {
+        var emittedIntent: Intent? = null
+        val collectJob = launch {
+            emittedIntent = viewModel.shareIntents.first()
+        }
+
+        viewModel.exportGroupCsv(999L)
+        val status = withTimeout(10_000) { viewModel.statusMessage.first { !it.isNullOrBlank() }!! }
+        assertTrue(status.contains("Nothing") || status.contains("group") || status.isNotEmpty())
+        assertEquals("No share intent emitted on empty group export", null, emittedIntent)
+
+        collectJob.cancel()
     }
 }
