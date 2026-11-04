@@ -11,6 +11,7 @@ import androidx.work.Configuration
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.vaibhav.kharchapaani.data.db.AppDatabase
+import com.vaibhav.kharchapaani.data.settings.AiSettings
 import com.vaibhav.kharchapaani.data.settings.AppSettings
 import com.vaibhav.kharchapaani.data.repository.GeminiRepository
 import kotlinx.coroutines.Dispatchers
@@ -76,8 +77,11 @@ class AiNoticeGateTest {
     fun setUp() {
         Dispatchers.setMain(dispatcher)
         WorkManagerTestInitHelper.initializeTestWorkManager(application, Configuration.Builder().setExecutor(SynchronousExecutor()).build())
-        // App settings outlive a test under Robolectric; every test starts before the notice.
-        runBlocking { AppSettings(application).setAiNoticeAccepted(false) }
+        // App and AI settings outlive a test under Robolectric; every test starts with default enabled state and before the notice.
+        runBlocking {
+            AppSettings(application).setAiNoticeAccepted(false)
+            AiSettings(application).setEnabled(true)
+        }
         db = Room.inMemoryDatabaseBuilder(application, AppDatabase::class.java).allowMainThreadQueries().build()
         viewModel = MainViewModel(application, db, userId, geminiRepo = gemini)
         store.put("main", viewModel)
@@ -89,6 +93,7 @@ class AiNoticeGateTest {
         store.clear()
         until { job.isCompleted }
         db.close()
+        AiSettings(application).setEnabled(true)
         Dispatchers.resetMain()
     }
 
