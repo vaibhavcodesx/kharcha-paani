@@ -80,6 +80,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 
+- Capped friend names at 64 characters and settlement dispute notes at 200 characters in SheetTextInput, matching Supabase column constraints and preventing private split sync failures (Y3, REL L9).
+
 - ViewModel fixtures verify that their scopes stop before Room closes, protecting later money tests from background database errors.
 - The large-amount quick-add test keeps the friends list subscribed the way the app shell does,
   and reports flow/database contents on timeout, while retaining the original wait limit.
