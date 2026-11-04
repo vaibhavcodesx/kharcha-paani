@@ -4,11 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.test.assert
-import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.performTextInput
 import com.vaibhav.kharchapaani.data.model.ShareInput
 import com.vaibhav.kharchapaani.data.model.SplitMode
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
@@ -52,5 +49,44 @@ class SplitEditorTest {
 
         field.assert(hasText("12.5"))
         assertEquals(12.5, bobsShare, 0.0)
+    }
+
+    @Test
+    fun `search filters payer chips and split rows and clear restores them`() {
+        composeTestRule.setContent {
+            val shares = listOf(
+                ShareInput(-1, "You", isSelected = true),
+                ShareInput(2, "Rohan", isSelected = false),
+                ShareInput(3, "Amit", isSelected = false),
+                ShareInput(4, "Zara", isSelected = true),
+            )
+            SplitFlowTheme {
+                SplitEditor(
+                    amount = "100", splitMode = SplitMode.EQUAL, paidByPersonId = -1L, shares = shares,
+                    onSplitModeChange = {}, onPaidByPersonIdChange = {}, onTogglePersonShare = {},
+                    onExactAmountChange = { _, _ -> }, onPercentageChange = { _, _ -> }, onOpenAddFriend = {},
+                )
+            }
+        }
+
+        // Initially all candidates exist
+        composeTestRule.onNodeWithText("Rohan").assertExists()
+        composeTestRule.onNodeWithText("Amit").assertExists()
+        composeTestRule.onNodeWithText("Zara").assertExists()
+
+        // Filter by "Roh"
+        composeTestRule.onNodeWithTag("split_search_input").performTextInput("Roh")
+
+        composeTestRule.onNodeWithText("Rohan").assertExists()
+        // Amit is not selected and doesn't match query, so hidden
+        composeTestRule.onNodeWithText("Amit").assertDoesNotExist()
+        // Zara is selected, so stays visible in split rows
+        composeTestRule.onNodeWithText("Zara").assertExists()
+
+        // Clear search
+        composeTestRule.onNodeWithTag("split_search_clear").performClick()
+
+        // Amit reappears
+        composeTestRule.onNodeWithText("Amit").assertExists()
     }
 }
