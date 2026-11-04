@@ -6,4 +6,5 @@
     <string name="fullbackup_vm_busy">Please wait for the backup operation to finish.</string>
     <string name="fullbackup_vm_exported">Complete backup saved.</string>
     <string name="fullbackup_vm_restored">Complete backup restored on this phone.</string>
+    <string name="fullbackup_vm_delete_wait">Please wait for the current deletion to finish before restoring.</string>
 </resources>

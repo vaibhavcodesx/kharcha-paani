@@ -2611,14 +2611,28 @@ class MainViewModel(
         _fullBackupTargetEmpty.value = false
     }
 
+    private fun restoreDeleteWorkPending(): Boolean =
+        pendingDeletes.ids.value.isNotEmpty() ||
+            deleteScope.coroutineContext[Job]?.children?.any { !it.isCompleted } == true
+
     fun confirmEverythingRestore() {
         val backup = _fullBackupPreview.value ?: return
         if (_fullBackupBusy.value) return
+        if (restoreDeleteWorkPending()) {
+            _statusMessage.value = uiText(R.string.fullbackup_vm_delete_wait)
+            // Preserve preview and availability; an empty target stays retryable after cleanup.
+            return
+        }
         _fullBackupBusy.value = true
         _fullBackupReadError.value = false
         viewModelScope.launch {
             try {
                 backupStartupJob?.join()
+                if (restoreDeleteWorkPending()) {
+                    _fullBackupTargetEmpty.value = fullTargetAvailable(backup)
+                    _statusMessage.value = uiText(R.string.fullbackup_vm_delete_wait)
+                    return@launch
+                }
                 requireCurrentLocalSession()
                 require(fullTargetAvailable(backup)) { "Restore needs an empty local ledger" }
                 recoveryBlocked = true

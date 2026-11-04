@@ -85,6 +85,21 @@ class EverythingBackupRepository(private val db: AppDatabase, private val receip
                     }
                 }
                 backup.people.forEach { db.personDao().insertPerson(it.entity()) }
+                // No-FK historical payer/guest references must never become a new friend's id.
+                // Reserve their full Long range in SQLite's existing AUTOINCREMENT metadata,
+                // in this same transaction; no dummy people or schema change is needed.
+                backup.missingPersonIds.maxOrNull()?.let { reservedId ->
+                    val sqlite = db.openHelper.writableDatabase
+                    sqlite.execSQL(
+                        "INSERT INTO sqlite_sequence(name, seq) SELECT 'people', ? " +
+                            "WHERE NOT EXISTS (SELECT 1 FROM sqlite_sequence WHERE name = 'people')",
+                        arrayOf<Any>(reservedId),
+                    )
+                    sqlite.execSQL(
+                        "UPDATE sqlite_sequence SET seq = MAX(COALESCE(seq, 0), ?) WHERE name = 'people'",
+                        arrayOf<Any>(reservedId),
+                    )
+                }
                 backup.groups.forEach { db.groupSyncDao().insertGroup(it.entity()) }
                 db.groupSyncDao().insertMembers(backup.members.map { it.entity() })
                 backup.transactions.forEach { db.transactionDao().insertTransaction(it.entity()) }
