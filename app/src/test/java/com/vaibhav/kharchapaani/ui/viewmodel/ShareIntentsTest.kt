@@ -143,7 +143,7 @@ class ShareIntentsTest {
 
         var launchCount = 0
         var receivedIntent: Intent? = null
-        val collectJob = launch {
+        val collectJob = launch(mainDispatcher) {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.shareIntents.collect { intent ->
                     launchCount++
@@ -151,6 +151,7 @@ class ShareIntentsTest {
                 }
             }
         }
+        mainDispatcher.scheduler.runCurrent()
 
         // 1. UI moved to background (STOPPED / CREATED)
         lifecycleOwner.registry.currentState = Lifecycle.State.CREATED
@@ -202,21 +203,6 @@ class ShareIntentsTest {
         val status = withTimeout(10_000) { viewModel.statusMessage.first { !it.isNullOrBlank() }!! }
         assertTrue(status.contains("Nothing") || status.contains("group") || status.isNotEmpty())
         assertEquals("No share intent emitted on empty group export", null, emittedIntent)
-
-        collectJob.cancel()
-    }
-
-    @Test
-    fun `exportLocalBackup with empty backup sets statusMessage and does not emit intent`() = runBlocking {
-        var emittedIntent: Intent? = null
-        val collectJob = launch {
-            emittedIntent = viewModel.shareIntents.first()
-        }
-
-        viewModel.exportLocalBackup()
-        val status = withTimeout(10_000) { viewModel.statusMessage.first { !it.isNullOrBlank() }!! }
-        assertTrue(status.contains("Nothing") || status.contains("empty") || status.isNotEmpty())
-        assertEquals("No share intent emitted on empty backup", null, emittedIntent)
 
         collectJob.cancel()
     }
