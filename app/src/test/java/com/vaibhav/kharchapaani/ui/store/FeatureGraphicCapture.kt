@@ -45,6 +45,7 @@ import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
 import com.vaibhav.kharchapaani.ui.viewmodel.MainViewModel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -84,8 +85,11 @@ class FeatureGraphicCapture {
     fun setUp() {
         WorkManagerTestInitHelper.initializeTestWorkManager(application, Configuration.Builder().setExecutor(SynchronousExecutor()).build())
         db = Room.inMemoryDatabaseBuilder(application, AppDatabase::class.java).allowMainThreadQueries().build()
-        runBlocking { StoreFixture.seed(db) }
-        viewModel = MainViewModel(application, db, StoreFixture.USER_ID)
+        runBlocking {
+            StoreFixture.seed(db)
+            viewModel = MainViewModel(application, db, StoreFixture.USER_ID)
+            viewModel.groups.first { it.isNotEmpty() }
+        }
         store.put("main", viewModel)
     }
 

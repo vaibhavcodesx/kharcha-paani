@@ -225,8 +225,8 @@ class GroupDetailLazyTest {
             compose.onNodeWithText("Goa trip").assertExists()
             // Total group expense: SPENT ₹1,200
             compose.onNode(hasText("SPENT") and hasText("₹1,200")).assertExists()
-            // My share: SHARE ₹400
-            compose.onNode(hasText("SHARE") and hasText("₹400")).assertExists()
+            // My share: YOUR SHARE ₹400
+            compose.onNode(hasText("YOUR SHARE") and hasText("₹400")).assertExists()
 
             // Verify action wiring
             // 1. Add expense button triggers onAddExpense
