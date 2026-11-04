@@ -253,4 +253,31 @@ class EverythingBackupRepositoryTest {
         assertEquals("Restoring shared history must preserve the displayed group balance", before.netBalanceForMe, after.netBalanceForMe, 0.0)
     }
 
+    @Test fun `restoring a deleted guest reserves its historical identity before adding a new friend`() = runBlocking {
+        source.personDao().insertPerson(PersonEntity(id = 1, name = "Existing", avatarColor = "#123456"))
+        source.personDao().insertPerson(PersonEntity(id = 2, name = "Deleted guest", avatarColor = "#654321"))
+        source.transactionDao().insertTransaction(TransactionEntity(id = 10, type = "expense", amount = 100.0,
+            category = "Food", merchant = "Historical guest dinner", paymentMethod = "Cash", isSplit = true))
+        source.groupSyncDao().insertSplit(SplitEntity(id = 11, transactionId = 10, totalAmount = 100.0, paidByPersonId = -1))
+        source.groupSyncDao().insertShares(listOf(
+            SplitShareEntity(id = 12, splitId = 11, personId = -1, shareAmount = 70.0),
+            SplitShareEntity(id = 13, splitId = 11, personId = -1, shareAmount = 30.0, guestName = "Deleted guest", guestPersonId = 2),
+        ))
+        LedgerRepository(source, localFriendSync = false).deletePerson(2)
+        assertNull(source.personDao().getPersonById(2))
+        val archive = EverythingBackup.decode(EverythingBackup.encode(exporter.collect("identity fixture")))
+        assertEquals(listOf(2L), archive.missingPersonIds)
+        importer.restoreIntoEmptyLocalLedger(archive)
+        val beforeShares = target.splitDao().getAllSplitSharesDirect().sortedBy { it.id }
+        val beforeBalances = LedgerRepository(target).personBalances.first().associate { it.person.id to it.netBalance }
+        val newId = LedgerRepository(target).addPerson("New unrelated friend", "#778899")
+        assertTrue("A new friend must never reuse a missing historical identity", newId > archive.missingPersonIds.max())
+        assertNull(target.personDao().getPersonById(2))
+        assertEquals(beforeShares, target.splitDao().getAllSplitSharesDirect().sortedBy { it.id })
+        val after = LedgerRepository(target).personBalances.first().associate { it.person.id to it.netBalance }
+        beforeBalances.forEach { (id, balance) -> assertEquals(balance, after.getValue(id), 0.0) }
+        assertEquals(0.0, after.getValue(newId), 0.0)
+        assertEquals(2L, target.splitDao().getAllSplitSharesDirect().single { it.guestName != null }.guestPersonId!!)
+    }
+
 }

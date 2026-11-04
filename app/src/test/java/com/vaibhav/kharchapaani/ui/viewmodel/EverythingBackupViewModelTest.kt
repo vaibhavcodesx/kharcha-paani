@@ -7,6 +7,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewModelScope
 import androidx.room.Room
+import androidx.room.withTransaction
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
 import androidx.work.testing.SynchronousExecutor
@@ -310,6 +311,99 @@ class EverythingBackupViewModelTest {
         assertTrue(vm.fullBackupReadError.value)
         assertArrayEquals(bytes, journal.readBytes())
         assertEquals(setOf(11L, 12L), db.transactionDao().getAllTransactionsDirect().map { it.id }.toSet())
+    }
+
+    @Test fun `restore waits for active old receipt cleanup without creating a recovery journal`(): Unit = runBlocking {
+        val backup = archive()
+        val photos = ReceiptStore.forLocal(app, guest)
+        photos.dir.mkdirs()
+        val oldPhoto = photos.file("kept.jpg").apply { writeBytes(byteArrayOf(1, 2, 3, 4)) }
+        db.transactionDao().insertTransaction(TransactionEntity(id = 41, type = "expense", amount = 9.0,
+            category = "Food", merchant = "Old local entry", paymentMethod = "Cash", syncState = SyncState.LOCAL_ONLY))
+        db.receiptDao().insert(ReceiptEntity(id = 42, transactionId = 41, fileName = "kept.jpg", width = 2, height = 2, bytes = 4))
+        val vm = vm()
+        awaitActualStartup(vm)
+        // Controlled fixture seam: READ the actual VM-owned scope, never replace a field or add a
+        // production hook. This real Room+file child models the exact post-delete/pre-unlink window.
+        val deleteScope = MainViewModel::class.java.getDeclaredField("deleteScope").let {
+            it.isAccessible = true
+            it.get(vm) as CoroutineScope
+        }
+        val rowRemoved = CompletableDeferred<Unit>()
+        val releaseCleanup = CompletableDeferred<Unit>()
+        val cleanup = deleteScope.async {
+            db.withTransaction { db.transactionDao().deleteTransactionById(41) }
+            rowRemoved.complete(Unit)
+            releaseCleanup.await()
+            withContext(Dispatchers.IO) { oldPhoto.delete() }
+        }
+        try {
+            until { rowRemoved.isCompleted }
+            assertTrue(db.transactionDao().getAllTransactionsDirect().isEmpty())
+            assertTrue(oldPhoto.exists())
+            vm.importLocalBackup(app, file(EverythingBackup.encode(backup)).second)
+            until { !vm.fullBackupBusy.value && vm.fullBackupPreview.value != null }
+            assertTrue(vm.fullBackupTargetEmpty.value)
+            vm.confirmEverythingRestore()
+            assertFalse("Active old cleanup must refuse before accepting a restore", vm.fullBackupBusy.value)
+            assertEquals(backup, vm.fullBackupPreview.value)
+            assertTrue("An empty target must remain retryable after cleanup", vm.fullBackupTargetEmpty.value)
+            assertNotNull(vm.statusMessage.value)
+            assertTrue(db.transactionDao().getAllTransactionsDirect().isEmpty())
+            assertFalse(File(app.filesDir, "backup-recovery/local-${guest.id}.json").exists())
+            releaseCleanup.complete(Unit)
+            until { cleanup.isCompleted }
+            cleanup.await()
+            assertFalse(oldPhoto.exists())
+            vm.confirmEverythingRestore()
+            assertTrue(vm.fullBackupBusy.value)
+            until { !vm.fullBackupBusy.value && vm.fullBackupPreview.value == null }
+            assertEquals(setOf(11L, 12L), db.transactionDao().getAllTransactionsDirect().map { it.id }.toSet())
+            assertArrayEquals(byteArrayOf(1, 2, 3, 4), photos.file("kept.jpg").readBytes())
+        } finally {
+            releaseCleanup.complete(Unit)
+            until { cleanup.isCompleted && !vm.fullBackupBusy.value }
+            cleanup.await()
+        }
+    }
+
+    @Test fun `restore never commits a pending swipe and Undo still protects the existing row`(): Unit = runBlocking {
+        val backup = archive()
+        val old = TransactionEntity(id = 41, type = "expense", amount = 9.0,
+            category = "Food", merchant = "Keep until Undo finishes", paymentMethod = "Cash", syncState = SyncState.LOCAL_ONLY)
+        db.transactionDao().insertTransaction(old)
+        val vm = vm()
+        awaitActualStartup(vm)
+        vm.deleteTransaction(41)
+        assertEquals(41L, vm.undoPrompt.value!!.txId)
+        vm.importLocalBackup(app, file(EverythingBackup.encode(backup)).second)
+        until { !vm.fullBackupBusy.value && vm.fullBackupPreview.value != null }
+        assertFalse(vm.fullBackupTargetEmpty.value)
+        try {
+            vm.confirmEverythingRestore()
+            assertFalse("Pending Undo must refuse before accepting a restore", vm.fullBackupBusy.value)
+            assertEquals(listOf(old), db.transactionDao().getAllTransactionsDirect())
+            assertEquals(backup, vm.fullBackupPreview.value)
+            assertEquals(41L, vm.undoPrompt.value!!.txId)
+            assertFalse(File(app.filesDir, "backup-recovery/local-${guest.id}.json").exists())
+            vm.undoDelete(41)
+            vm.commitDelete(41) // The old snackbar may now finish: Undo removed its right to commit.
+            main.scheduler.runCurrent(); ShadowLooper.idleMainLooper()
+            assertEquals(listOf(old), db.transactionDao().getAllTransactionsDirect())
+        } finally {
+            vm.undoDelete(41)
+            until { !vm.fullBackupBusy.value }
+        }
+    }
+
+    private suspend fun awaitActualStartup(vm: MainViewModel) {
+        // Read the real startup job so the held-cleanup fixture begins only after maintenance.
+        val startup = MainViewModel::class.java.getDeclaredField("backupStartupJob").let {
+            it.isAccessible = true
+            requireNotNull(it.get(vm) as Job?)
+        }
+        until { startup.isCompleted }
+        assertFalse("The fixture must not cancel startup maintenance", startup.isCancelled)
     }
 
     private suspend fun clearOwnedVms() {

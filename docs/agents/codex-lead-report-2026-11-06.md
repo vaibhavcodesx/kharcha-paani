@@ -13,8 +13,26 @@ Report item numbers and results on [#188](https://github.com/vaibhavcodesx/kharc
 
 The signed release run [41670911242](https://github.com/vaibhavcodesx/kharcha-paani/actions/runs/41670911242)
 passed; its certificate matches the existing release key. This is a GitHub phone-test prerelease,
-not a Play rollout. **Installation and acceptance on the owner's phone are still unconfirmed.**
+not a Play rollout. **The owner has supplied 1.6 UI feedback; complete signed-build smoke acceptance, proxy and throwaway-account deletion checks remain unconfirmed.**
 Release source: `5fb95e8b308b7b352d5139dd806c7afbfb002720`.
+
+## Current priority: local-first for the next build
+
+The owner moved this ahead of the routine queue on November 4. **No 1.7 build is published.** The existing 1.6 APK does not include the later main/PR changes.
+
+| Requested change | Progress | Still needed |
+|---|---|---|
+| Turn AI off everywhere; identify Gemini before use | [#226 merged](https://github.com/vaibhavcodesx/kharcha-paani/pull/226), squash6b1b189; final head3251078 passed tests/lint/release CI41860028454 | Phone checks; voice #241 remains a separate owner-review change |
+| Use without an account | [#230](https://github.com/vaibhavcodesx/kharcha-paani/pull/230): isolated local ledger/settings/photos, welcome/settings controls, no local sync/shared collaboration; Room regression fixes prepared | Auth owner review; scoped background-operation red/green checks and final current-main CI; do not merge yet |
+| Export everything and restore a complete local copy | [#227](https://github.com/vaibhavcodesx/kharcha-paani/pull/227): all stored records/settings/photos, preview, protected empty target, durable interrupted-restore recovery; legacy imports retained | Final active-photo-cleanup and deleted-friend identity regressions/fixes, integration CI, dependent #230 approval; do not merge yet |
+
+Use the [1.7 local-first phone checklist](../testing/1.7.0-local-first-device-checks.md) on test data/a second installation, preserving the original export. A complete file is unencrypted. Restore never overwrites a populated ledger, uploads guest data or restores login/consent/OS permissions. Source latest-edit metadata is included; the app has no historical edit-version table.
+
+**Verification boundary:** initial archive/recovery tests passed, and subsequent group-balance, local-write/queue/session-close, recovery-modal/maintenance/sort defects were reproduced before fixes. The newest GitHub jobs are queued without assigned runners; pending/cancelled runs are not passing evidence. Local Gradle remains below the repository's 4GB-free-RAM gate (last2.24GB). No emulator, Supabase operation or 1.7 publication.
+
+Claude separately merged the owner's phone UI feedback: [Activity #228](https://github.com/vaibhavcodesx/kharcha-paani/pull/228), [group sorting #231](https://github.com/vaibhavcodesx/kharcha-paani/pull/231), [group rows #232](https://github.com/vaibhavcodesx/kharcha-paani/pull/232), [account layout #233](https://github.com/vaibhavcodesx/kharcha-paani/pull/233), [widgets #236](https://github.com/vaibhavcodesx/kharcha-paani/pull/236), [local parser #238](https://github.com/vaibhavcodesx/kharcha-paani/pull/238) and [capture hints #239](https://github.com/vaibhavcodesx/kharcha-paani/pull/239). These are next-build changes, not evidence that a new signed APK was installed or accepted.
+
+Review holds posted on Antigravity PRs: [#229](https://github.com/vaibhavcodesx/kharcha-paani/pull/229) DataStore test lifetime, [#234](https://github.com/vaibhavcodesx/kharcha-paani/pull/234) foreground share delivery, [#240](https://github.com/vaibhavcodesx/kharcha-paani/pull/240) deterministic search evidence, [#242](https://github.com/vaibhavcodesx/kharcha-paani/pull/242) actual-shell coverage. No rubber-stamp merge based on green checks.
 
 ## Merged
 
