@@ -15,6 +15,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Comprehensive CSV export formula injection test suite and vulnerability report covering formula triggers, composite fields, and bypass edge cases (T14).
+
 - Evidence-scoped source review notes for six merged reliability/accessibility changes (F3).
 
 - Source-pinned architecture map distinguishes checked-in configuration from release and live-service acceptance (O3).

@@ -205,6 +205,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-04 · #199 · F3 source review notes · prepared for merge; corrected first-day selector cause, actual minimum text/layout behavior and component/parser/Room evidence boundaries for six merged PRs. PNG generation is not claimed as visual or phone acceptance. Independent review and exact-head current-main CI gate merge; docs only.
 
+- 2026-11-04 · T14 / CSV formula injection coverage · prepared; comprehensive security analysis and property/boundary tests in CsvFormulaInjectionTest check formula starters (=, +, -, @, \t, \r), bypass edge cases (leading whitespace, Unix LF \n, composite fields), and numeric formatting. Full report added in docs/reports/csv-export-formula-injection.md. No production code changes; CI gates merge.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.
