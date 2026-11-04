@@ -13,7 +13,9 @@ owner or Claude go at the bottom.
 
 ## Log
 
-- 2026-11-04 · #230 · Local mode · source01fca62 passed all3jobs CI41866338463; final scoped-background baseline8d36ac1 ran1137tests with exactly5predicted failures CI41864757240 (XML verified). Prior namespace3-red, local-write/session6-red, shared-close4-red and retention1-red verified too. Implementation source-reviewed; current documentation-head checks available on the PR. Owner-review/unmerged: auth approval and phone acceptance still required; no anonymous account or guest upload.
+- 2026-11-04 · #249 · CI test diagnostics · squash-merged9b46565 after formal exact-head allthree success at a45efd0 CI41879719382 (1102tests,0failures/errors/skips). Full diff and independent shell/YAML/execution reviews passed; original task list, assertions and30m job preserved. Metadata lagged before formal success; no merge was inferred early. Worker inspectors bounded15s+2s kill grace; no Java worker kill or app behavior change. Local Gradle skipped below4GB free RAM; no phone acceptance claimed.
+
+- 2026-11-04 · #230 · Local mode · source01fca62 passed all3jobs CI41866338463; final scoped-background baseline8d36ac1 ran1137tests with exactly5predicted failures CI41864757240 (XML verified). Prior namespace3-red, local-write/session6-red, shared-close4-red and retention1-red verified too. Implementation source-reviewed; 56843a3 passed all3jobs CI41869627518; normal latest-main9b46565 refresh changes only CI/log/changelog and requires fresh exact-head checks. External Maven SDK429 currently affects some backup runs; no test, dependency or time-limit workaround. Owner-review/unmerged: auth approval and phone acceptance still required; no anonymous account or guest upload.
 
 - 2026-11-04 · #226 · AI choice · squash-merged6b1b189; final current-main head3251078 passed all3jobs CI41860028454, six initial regressions proved red. Manual capture stays available. No phone acceptance; ca76 timeout was not passing evidence.
 
