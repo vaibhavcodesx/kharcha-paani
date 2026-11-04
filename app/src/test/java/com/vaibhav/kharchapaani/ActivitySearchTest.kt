@@ -136,6 +136,7 @@ class ActivitySearchTest {
 
         // After the debounce duration, feed reflects the search result
         until { vm.activityFeed.value.size == 1 && vm.activityFeed.value.single().key == "tx_2" }
+        dispatcher.scheduler.runCurrent()
         assertEquals(setOf("tx_2"), vm.activityFeed.value.map { it.key }.toSet())
         assertEquals(1, emissions.size)
 
@@ -179,6 +180,7 @@ class ActivitySearchTest {
 
         // Wait for debounce silence
         until { vm.activityFeed.value.size == 1 && vm.activityFeed.value.single().key == "tx_2" }
+        dispatcher.scheduler.runCurrent()
 
         // Exactly one emission occurred after debounce silence settled
         assertEquals(1, emissions.size)
