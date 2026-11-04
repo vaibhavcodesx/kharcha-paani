@@ -101,8 +101,9 @@ class ReceiptStore(val dir: File) {
         fun forAccount(context: Context, userId: String): ReceiptStore =
             ReceiptStore(File(File(context.filesDir, "receipts"), LedgerDatabases.databaseName(userId).removeSuffix(".db")))
 
-        // API scaffold: still uses the old account namespace until the fix.
-        fun forLocal(context: Context, guest: GuestSession): ReceiptStore = forAccount(context, guest.id)
+        /** The local identity uses the same separate namespace as its database. */
+        fun forLocal(context: Context, guest: GuestSession): ReceiptStore =
+            ReceiptStore(File(File(context.filesDir, "receipts"), LedgerDatabases.localDatabaseName(guest).removeSuffix(".db")))
 
         internal fun scaledDown(bitmap: Bitmap, maxSide: Int = MAX_SIDE): Bitmap {
             val longest = maxOf(bitmap.width, bitmap.height)

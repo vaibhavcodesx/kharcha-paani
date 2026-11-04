@@ -28,30 +28,33 @@ object LedgerDatabases {
     private val lock = Mutex()
     private var open: OpenDatabase? = null
 
-    private class OpenDatabase(val userId: String, val database: AppDatabase)
+    private class OpenDatabase(val name: String, val database: AppDatabase)
 
-    suspend fun open(context: Context, userId: String): AppDatabase = lock.withLock {
-        open?.takeIf { it.userId == userId }?.let { return it.database }
+    suspend fun open(context: Context, userId: String): AppDatabase =
+        openNamed(context, databaseName(userId), legacyOwner = userId)
+
+    /** Local ledgers never claim the pre-accounts database, even on the very first launch. */
+    suspend fun openLocal(context: Context, guest: GuestSession): AppDatabase =
+        openNamed(context, localDatabaseName(guest), legacyOwner = null)
+
+    internal fun localDatabaseName(guest: GuestSession): String = "ledger-local-${guest.id}.db"
+
+    private suspend fun openNamed(context: Context, name: String, legacyOwner: String?): AppDatabase = lock.withLock {
+        open?.takeIf { it.name == name }?.let { return it.database }
 
         val appContext = context.applicationContext
-        val name = databaseName(userId)
         open?.database?.close()
         open = null
 
         val database = withContext(Dispatchers.IO) {
-            if (claimLegacyDatabase(appContext, userId)) {
+            if (legacyOwner != null && claimLegacyDatabase(appContext, legacyOwner)) {
                 Log.i(TAG, "Moved the pre-accounts ledger into this account's database")
             }
             AppDatabase.builder(appContext, name).build()
         }
-        open = OpenDatabase(userId, database)
+        open = OpenDatabase(name, database)
         database
     }
-
-    // API scaffold for the red run: deliberately retains the old account opening behavior.
-    suspend fun openLocal(context: Context, guest: GuestSession): AppDatabase = open(context, guest.id)
-
-    internal fun localDatabaseName(guest: GuestSession): String = "ledger-local-${guest.id}.db"
 
     /** Closes the open database, if any. The file stays on disk (signing out keeps local data). */
     suspend fun close() = lock.withLock {

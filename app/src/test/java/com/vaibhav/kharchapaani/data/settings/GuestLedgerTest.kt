@@ -103,4 +103,23 @@ class GuestLedgerTest {
         })
     }
 
+    @Test fun `local ask callback records locally and a stale cloud callback cannot switch its database`() = runBlocking {
+        val chosen = LedgerMode(context).useLocal()
+        files += LedgerDatabases.localDatabaseName(chosen)
+        val local = LedgerDatabases.openLocal(context, chosen)
+        val person = local.personDao().insertPerson(PersonEntity(name = "Rohan", avatarColor = "#FFFFFF"))
+        fun picked(id: String, isLocal: Boolean = true) = Intent(context, AskSentReceiver::class.java).apply {
+            putExtra(AskShare.EXTRA_PERSON_ID, person)
+            putExtra(AskShare.EXTRA_AMOUNT, 200.0)
+            putExtra(AskShare.EXTRA_USER_ID, id)
+            putExtra(AskShare.EXTRA_IS_LOCAL, isLocal)
+        }
+        assertTrue(AskSentReceiver.record(context, picked(chosen.id), now = 5_000L))
+        assertFalse(AskSentReceiver.record(context, picked(guest.id), now = 6_000L))
+        assertFalse(AskSentReceiver.record(context, picked(chosen.id, isLocal = false), now = 7_000L))
+        assertTrue(local.isOpen)
+        val ask = local.paymentAskDao().observeAll().first().single()
+        assertEquals(200.0, ask.amount, 0.0)
+        assertEquals(5_000L, ask.sentAt)
+    }
 }
