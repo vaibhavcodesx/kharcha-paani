@@ -28,14 +28,17 @@ abstract class KpWidgetProvider : AppWidgetProvider() {
         val pending = goAsync()
         scope.launch {
             try {
-                val summary = withTimeoutOrNull(LOAD_TIMEOUT_MS) { WidgetData.load(context) }
-                if (summary == null) {
-                    Log.w(TAG, "${javaClass.simpleName}: figures didn't load in time; keeping what's shown")
-                    return@launch
+                val updated = withTimeoutOrNull(LOAD_TIMEOUT_MS) {
+                    WidgetData.withSummary(context) { summary ->
+                        for (id in appWidgetIds) {
+                            val views = RemoteViews(context.packageName, layoutId).apply { bind(context, summary) }
+                            appWidgetManager.updateAppWidget(id, views)
+                        }
+                    }
+                    true
                 }
-                for (id in appWidgetIds) {
-                    val views = RemoteViews(context.packageName, layoutId).apply { bind(context, summary) }
-                    appWidgetManager.updateAppWidget(id, views)
+                if (updated != true) {
+                    Log.w(TAG, "${javaClass.simpleName}: figures didn't load in time; keeping what's shown")
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "${javaClass.simpleName}: couldn't update", e)

@@ -63,6 +63,28 @@ class LedgerMode(context: Context) {
 
 /** Shared by widgets, reminders and share callbacks; local resolution never touches auth. */
 data class BackgroundLedger(val userId: String, val isLocal: Boolean) {
+    // Resolver belongs to the descriptor, not its equality/copy fields. Keep application context only.
+    private var cloudIdentity: (suspend () -> String?)? = null
+
+    suspend fun <T> withDatabase(context: Context, block: suspend (AppDatabase) -> T): T {
+        val app = context.applicationContext
+        val mode = LedgerMode(app)
+        return LedgerDatabases.withDatabase(app, userId, isLocal,
+            isCurrent = {
+                if (isLocal) mode.guestOrNull()?.id == userId else mode.choice == LedgerMode.Choice.CLOUD
+            },
+            verifyCurrent = if (isLocal) null else {
+                suspend {
+                    val resolver = cloudIdentity
+                    mode.choice == LedgerMode.Choice.CLOUD &&
+                        (if (resolver == null) BackgroundAuth.signedInUserId(app) else resolver()) == userId &&
+                        mode.choice == LedgerMode.Choice.CLOUD
+                }
+            },
+            block = block,
+        )
+    }
+
     suspend fun open(context: Context): AppDatabase {
         val mode = LedgerMode(context)
         return if (isLocal) {
@@ -87,7 +109,10 @@ data class BackgroundLedger(val userId: String, val isLocal: Boolean) {
             val userId = (if (cloudUserId == null) BackgroundAuth.signedInUserId(context) else cloudUserId()) ?: return null
             // A mode switch while cloud identity was loading must not open the previous ledger.
             if (mode.choice == LedgerMode.Choice.LOCAL) return null
-            return BackgroundLedger(userId, false)
+            val app = context.applicationContext
+            return BackgroundLedger(userId, false).also { ledger ->
+                ledger.cloudIdentity = cloudUserId ?: suspend { BackgroundAuth.signedInUserId(app) }
+            }
         }
     }
 }

@@ -65,6 +65,22 @@ object LedgerDatabases {
         ownerFactory = ownerFactory,
     )
 
+    /** Scope a background consumer to its database; the result must not expose the handle. */
+    suspend fun <T> withDatabase(
+        context: Context,
+        userId: String,
+        isLocal: Boolean,
+        isCurrent: () -> Boolean = { true },
+        verifyCurrent: (suspend () -> Boolean)? = null,
+        block: suspend (AppDatabase) -> T,
+    ): T {
+        // API scaffold: does not yet retain/cancel the consumer or verify atomically with open.
+        val database = if (isLocal) openLocal(context, GuestSession(userId), isCurrent)
+            else open(context, userId, isCurrent)
+        check(isCurrent() && (verifyCurrent?.invoke() != false)) { "Ledger selection changed before use" }
+        return block(database)
+    }
+
     internal fun localDatabaseName(guest: GuestSession): String = "ledger-local-${guest.id}.db"
 
     private suspend fun openNamed(

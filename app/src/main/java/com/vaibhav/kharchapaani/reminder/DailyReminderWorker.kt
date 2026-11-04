@@ -49,11 +49,12 @@ class DailyReminderWorker(context: Context, params: WorkerParameters) : Coroutin
         // background that waits until the app is next opened, which is exactly when this isn't needed.
         val ledger = BackgroundLedger.current(applicationContext) ?: return
         // The same instance the app uses when it's open; never closed here.
-        val database = ledger.open(applicationContext)
-        val zone = ZoneId.systemDefault()
-        val transactions = database.transactionDao().getAllTransactionsDirect()
-        if (ReminderRule.nothingLoggedToday(transactions, LocalDate.now(zone), zone)) {
-            NotificationHelper.showDailyReminder(applicationContext)
+        ledger.withDatabase(applicationContext) { database ->
+            val zone = ZoneId.systemDefault()
+            val transactions = database.transactionDao().getAllTransactionsDirect()
+            if (ReminderRule.nothingLoggedToday(transactions, LocalDate.now(zone), zone)) {
+                NotificationHelper.showDailyReminder(applicationContext)
+            }
         }
     }
 
