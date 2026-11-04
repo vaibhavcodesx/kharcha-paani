@@ -88,12 +88,12 @@ class AccountSheetStringResourcesTest {
         }
 
         composeTestRule.onNodeWithContentDescription("Your avatar").assertExists()
-        composeTestRule.onNodeWithText("Profile").assertExists()
+        composeTestRule.onNodeWithText("PROFILE").assertExists()
         composeTestRule.onNodeWithText("Name").assertExists()
         composeTestRule.onNodeWithText("Avatar").assertExists()
         composeTestRule.onNodeWithText("Initials").assertExists()
         composeTestRule.onNodeWithText("Groupmates see your name and avatar.").assertExists()
-        composeTestRule.onNodeWithText("Account").assertExists()
+        composeTestRule.onNodeWithText("ACCOUNT").assertExists()
         composeTestRule.onNodeWithText("Cloud profile ready").assertExists()
     }
 }
