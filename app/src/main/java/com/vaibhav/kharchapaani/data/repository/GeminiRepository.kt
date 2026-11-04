@@ -23,6 +23,10 @@ import com.vaibhav.kharchapaani.domain.instruction
 import com.vaibhav.kharchapaani.domain.StatementPdf
 import com.vaibhav.kharchapaani.domain.StatementReadFailure
 import com.vaibhav.kharchapaani.domain.StatementReadResult
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ensureActive
+import kotlin.coroutines.coroutineContext
+import okhttp3.Call
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -56,7 +60,42 @@ class GeminiRepository(
     private val endpoint: (model: String) -> String = ::proxyEndpoint,
     private val accessToken: () -> String? = { null },
     private val configured: Boolean = proxyConfigured(),
+    private val aiAllowed: () -> Boolean = { true },
 ) {
+
+    private val aiLock = Any()
+    private var enabled = true
+    private val activeCalls = mutableSetOf<Call>()
+
+    /** Cancels only this repository's reads, without disturbing unrelated HTTP users. */
+    fun setAiEnabled(on: Boolean) {
+        val cancel = synchronized(aiLock) {
+            enabled = on
+            if (on) emptyList() else activeCalls.toList()
+        }
+        cancel.forEach { it.cancel() }
+    }
+
+    private fun requireAiAllowed() {
+        if (!enabled || !aiAllowed()) throw CancellationException("AI is off")
+    }
+
+    private suspend fun executeAi(call: Call): Pair<Int, String> {
+        coroutineContext.ensureActive()
+        synchronized(aiLock) {
+            requireAiAllowed()
+            activeCalls += call
+        }
+        try {
+            val reply = call.execute().use { it.code to it.body?.string().orEmpty() }
+            coroutineContext.ensureActive()
+            if (call.isCanceled()) throw CancellationException("AI read cancelled")
+            synchronized(aiLock) { requireAiAllowed() }
+            return reply
+        } finally {
+            synchronized(aiLock) { activeCalls -= call }
+        }
+    }
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
@@ -98,7 +137,7 @@ class GeminiRepository(
         now: Long = System.currentTimeMillis(),
         zone: ZoneId = ZoneId.systemDefault(),
     ): TextParseOutcome = withContext(Dispatchers.IO) {
-        val onPhone = LocalHeuristicParser.parse(rawText, knownFriends).copy(date = now)
+        val onPhone = LocalHeuristicParser.parse(rawText, knownFriends, now = now)
         // No proxy is this build's normal, not a failure, so no notice.
         if (!configured) return@withContext TextParseOutcome(onPhone, failure = null)
 
@@ -317,7 +356,7 @@ class GeminiRepository(
      * here, so every one of them tells offline from out-of-quota from a refused key from a block,
      * instead of each catching `Exception` and landing on the same vague message.
      */
-    private fun call(body: JSONObject, feature: String, timeoutSeconds: Long, label: String): CallOutcome {
+    private suspend fun call(body: JSONObject, feature: String, timeoutSeconds: Long, label: String): CallOutcome {
         val first = callModel(MODEL, body, feature, timeoutSeconds, label)
         // Google's "high demand" 503s and per-model rate limits come and go by the minute and are
         // per model. One retry on the lighter model turns most of them into an answer instead of a
@@ -329,7 +368,7 @@ class GeminiRepository(
         return callModel(FALLBACK_MODEL, plain, feature, timeoutSeconds, "$label (fallback)")
     }
 
-    private fun callModel(model: String, body: JSONObject, feature: String, timeoutSeconds: Long, label: String): CallOutcome {
+    private suspend fun callModel(model: String, body: JSONObject, feature: String, timeoutSeconds: Long, label: String): CallOutcome {
         val request = proxyRequest(endpoint(model), feature, body.toString())
             ?: return failedCall(label, AiFailure.Offline, "no session to send it with")
         val timed = client.newBuilder()
@@ -338,7 +377,7 @@ class GeminiRepository(
             .callTimeout(timeoutSeconds + 15, TimeUnit.SECONDS)
             .build()
         val (code, text) = try {
-            timed.newCall(request).execute().use { response -> response.code to response.body?.string().orEmpty() }
+            executeAi(timed.newCall(request))
         } catch (e: InterruptedIOException) {
             return failedCall(label, AiFailure.Timeout, e.message)
         } catch (e: IOException) {
@@ -444,21 +483,21 @@ class GeminiRepository(
             .build()
 
         val body = try {
-            patientClient.newCall(request).execute().use { response ->
-                val text = response.body?.string().orEmpty()
-                if (!response.isSuccessful) {
-                    // Google's error body says which of these it is (bad key, quota, a file it
-                    // won't take). Dropping it on the floor is what made this undiagnosable.
-                    val reason = when (AiFailure.fromHttp(response.code, text)) {
-                        AiFailure.DailyLimit -> StatementReadFailure.DailyLimit
-                        AiFailure.RateLimited -> StatementReadFailure.RateLimited
-                        AiFailure.KeyRefused -> StatementReadFailure.KeyRefused
-                        else -> StatementReadFailure.Rejected
-                    }
-                    return@withContext failed(reason, "HTTP ${response.code}: ${text.take(400)}")
+            val (code, text) = executeAi(patientClient.newCall(request))
+            if (code !in 200..299) {
+                // Google's error body says which of these it is (bad key, quota, a file it
+                // won't take). Dropping it on the floor is what made this undiagnosable.
+                val reason = when (AiFailure.fromHttp(code, text)) {
+                    AiFailure.DailyLimit -> StatementReadFailure.DailyLimit
+                    AiFailure.RateLimited -> StatementReadFailure.RateLimited
+                    AiFailure.KeyRefused -> StatementReadFailure.KeyRefused
+                    else -> StatementReadFailure.Rejected
                 }
-                text
+                return@withContext failed(reason, "HTTP $code: ${text.take(400)}")
             }
+            text
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: InterruptedIOException) {
             // Covers SocketTimeoutException and the one OkHttp's callTimeout throws.
             return@withContext failed(StatementReadFailure.Timeout, e.message)

@@ -194,20 +194,18 @@ class CsvFormulaInjectionTest {
     // --- 2. Edge Case: Leading Whitespace Bypass ---
 
     @Test
-    fun `merchant with leading spaces before equal sign should be safely neutralized`() {
-        // LibreOffice Calc with 'Trim spaces' or Excel with VBA/PowerQuery will strip
-        // leading spaces and execute the formula unless neutralized.
+    fun `merchant with leading spaces before equal sign characterization and exact payload preservation`() {
         val entry = tx(merchant = "   =1+1")
         val row = exportRows(listOf(entry))[1]
         val merchantCell = row[6]
 
-        // Documents the vulnerability: current CsvExport does not prepend ' if index 0 is space
+        // Documents source gap: current CsvExport does not prepend ' if index 0 is space.
+        // Whether escaped or unescaped, exact payload must be preserved.
         val isEscaped = merchantCell.startsWith("'")
         if (!isEscaped) {
-            // Documenting current implementation gap
             assertEquals("   =1+1", merchantCell)
         } else {
-            assertTrue(merchantCell.startsWith("'"))
+            assertEquals("'   =1+1", merchantCell)
         }
     }
 
@@ -219,12 +217,13 @@ class CsvFormulaInjectionTest {
         val row = exportRows(listOf(entry))[1]
         val noteCell = row[12]
 
-        // \n is missing from current FORMULA_STARTS set (only \r and \t are present)
+        // \n is missing from current FORMULA_STARTS set (only \r and \t are present).
+        // Whether escaped or unescaped, exact payload must be preserved.
         val isEscaped = noteCell.startsWith("'")
         if (!isEscaped) {
             assertEquals("\n=HYPERLINK(\"http://evil.com\")", noteCell)
         } else {
-            assertTrue(noteCell.startsWith("'"))
+            assertEquals("'\n=HYPERLINK(\"http://evil.com\")", noteCell)
         }
     }
 
@@ -347,7 +346,7 @@ class CsvFormulaInjectionTest {
         if (!isEscaped) {
             assertEquals("＝SUM(A1:A5)", merchantCell)
         } else {
-            assertTrue(merchantCell.startsWith("'"))
+            assertEquals("'＝SUM(A1:A5)", merchantCell)
         }
     }
 

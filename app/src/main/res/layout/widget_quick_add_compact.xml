@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The compact quick-add (2x1): the brand button and one word. The same tap as the 4x1 bar: Home's
+  capture line, keyboard up. For a home screen with no room for a bar, or a thumb that just wants
+  "add".
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/quick_compact_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bar_background"
+    android:contentDescription="@string/widget_copy_log_description"
+    android:gravity="center_vertical"
+    android:minHeight="56dp"
+    android:orientation="horizontal"
+    android:paddingStart="8dp"
+    android:paddingEnd="12dp">
+
+    <FrameLayout
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="@drawable/widget_circle_brand"
+        android:importantForAccessibility="no">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_add" />
+    </FrameLayout>
+
+    <TextView
+        style="@style/KpWidgetPrompt"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_weight="1"
+        android:importantForAccessibility="no"
+        android:text="@string/widget_compact_label"
+        android:textColor="#F4F0E8" />
+
+</LinearLayout>

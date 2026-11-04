@@ -86,27 +86,27 @@ private val FORMULA_STARTS = setOf('=', '+', '-', '@', '\t', '\r')
   - While line 151 notes `"amounts are written unsigned"`, the code neither enforces `abs()` nor prevents negative `Double` amounts from being quoted as text.
 * **Status:** **FUNCTIONAL DEFECT / DEGRADED UX**.
 
-### Gap 4: Subfields & Composite Fields in "Shares"
+### Gap 4: Subfields & Composite Fields in "Shares" (Downstream Execution Unverified)
 * **Finding:** In Column 11 ("Shares"), entries are generated via:
   ```kotlin
   ft.shares.joinToString("; ") { "${nameOf(it.personId)}: ${money(it.shareAmount)}" }
   ```
-* **Asymmetry:**
+* **Observation:**
   - If **Person 1** is `=cmd`: The composite string starts with `"=cmd: 100.00; Bob: 200.00"`. `field[0]` is `'='`, so `quote()` prepends `'`.
-  - If **Person 2** is `=cmd`: The composite string is `"Alice: 100.00; =cmd: 200.00"`. `field[0]` is `'A'`. `quote()` does **not** escape it!
-* **Second-Order Risk:** When users or accounting staff import CSVs and perform standard "Text to Columns" (splitting by `;`), the second column begins with `=cmd: 200.00`, executing formula injection upon cell generation.
-* **Status:** **PARTIALLY VULNERABLE** (Second-order injection).
+  - If **Person 2** is `=cmd`: The composite string is `"Alice: 100.00; =cmd: 200.00"`. `field[0]` is `'A'`. `quote()` does **not** escape it.
+* **Scope Note:** In serialized CSV, `"Alice: 100.00; =cmd: 200.00"` remains a single quoted text cell; embedded `=` is not a cell-start formula. Any Text-to-Columns or data-normalization exploit is conditional and unverified without a named spreadsheet version, configuration options, or reproduction evidence. Serialized output confirms text composition, not spreadsheet execution.
+* **Status:** **SOURCE CHARACTERIZED** (Unverified downstream execution).
 
-### Gap 5: Settlement Payee Composite Injection (`"$from paid $to"`)
+### Gap 5: Settlement Payee Composite (`"$from paid $to"`) (Downstream Execution Unverified)
 * **Finding:** Column 6 ("Merchant / payee") for settlements renders:
   ```kotlin
   if (settlement.isIou) "$from lent $to" else "$from paid $to"
   ```
-* **Asymmetry:**
+* **Observation:**
   - If `$from` is `"=cmd"`: Composite string is `"=cmd paid You"`. `field[0]` is `'='`, escaped by `quote()`.
-  - If `$to` is `"=cmd"` (e.g. "You paid =cmd"): Composite string starts with `'Y'`. `field[0]` is NOT in `FORMULA_STARTS`.
-  - If `$from` has leading space `" =cmd"`: Composite string starts with `' '`. Neither `$from` nor the whole cell is escaped.
-* **Status:** **PARTIALLY VULNERABLE**.
+  - If `$to` is `"=cmd"`: Composite string is `"You paid =cmd"`. `field[0]` is `'Y'`, so no apostrophe is prepended.
+* **Scope Note:** The output remains a single quoted text cell. An embedded `=` after "You paid " does not act as a formula starter in standard spreadsheet parsers. Serialized output confirms cell content only.
+* **Status:** **SOURCE CHARACTERIZED** (Unverified downstream execution).
 
 ### Gap 6: Missing Full-Width Unicode Formula Starters & Pipe (`|`)
 * **Finding:** East Asian versions of Microsoft Excel (Japanese, Chinese, Korean) automatically normalize full-width Unicode characters:
@@ -118,71 +118,40 @@ private val FORMULA_STARTS = setOf('=', '+', '-', '@', '\t', '\r')
 
 ---
 
-## 4. Vulnerability & Defense Matrix
+## 4. Characterization Examples Matrix
 
-| Field | Injection Payload Example | Current Output | Safe? | Remediation Required |
+| Field | Example Payload | Serialized Output | Behavior Status | Design Note |
 |---|---|---|---|---|
-| `tx.merchant` | `=HYPERLINK("http://evil.com")` | `"'=HYPERLINK(...) "` | ✅ Yes | Keep single quote prefix |
-| `tx.merchant` | `   =1+1` (leading spaces) | `"   =1+1"` | ❌ No | Check `trimStart()[0]` before escaping |
-| `tx.merchant` | `\n=cmd\|' /C calc'!A0` | `"\n=cmd..."` | ❌ No | Add `\n` to `FORMULA_STARTS` |
-| `tx.category` | `+12345` | `"'+12345'"` | ✅ Yes | Single quote prepended |
-| `tx.amount` | `-50.00` (negative amount) | `"'-50.00'"` | ⚠️ Degraded | If numeric (`toDoubleOrNull() != null`), do not prepend `'` |
-| Settlement `to` | `You paid =cmd` | `"You paid =cmd"` | ⚠️ Risk | Sanitize sub-names or sanitize before composite join |
-| Shares (2nd person)| `Alice: 10; =cmd: 20` | `"Alice: 10; =cmd: 20"`| ⚠️ Risk | Sanitize individual person names before joining |
-| `tx.note` | `＝SUM(A1)` (Full-width) | `"＝SUM(A1)"` | ❌ No | Include full-width Unicode formula starters |
+| `tx.merchant` | `=HYPERLINK("http://evil.com")` | `"'=HYPERLINK(...) "` | Neutralized | Leading trigger prepended with single quote |
+| `tx.merchant` | `   =1+1` (leading spaces) | `"   =1+1"` | Unescaped | Source gap: `quote()` only inspects `field[0]` |
+| `tx.merchant` | `\n=cmd\|' /C calc'!A0` | `"\n=cmd..."` | Unescaped | Source gap: `\n` omitted from `FORMULA_STARTS` |
+| `tx.category` | `+12345` | `"'+12345'"` | Neutralized | Correctly escapes leading `+` |
+| `tx.amount` | `-50.00` (negative amount) | `"'-50.00'"` | Text-quoted | Amount column rendered with `'` |
+| Settlement `to` | `You paid =cmd` | `"You paid =cmd"` | Quoted text cell | Unverified execution; embedded `=` |
+| Shares (2nd person)| `Alice: 10; =cmd: 20` | `"Alice: 10; =cmd: 20"`| Quoted text cell | Unverified execution; embedded `=` |
+| `tx.note` | `＝SUM(A1)` (Full-width) | `"＝SUM(A1)"` | Unescaped | Full-width triggers not in ASCII set |
 
 ---
 
-## 5. Concrete Recommendations for Claude & Codex
+## 5. Security & Repair Notes for Maintainers
 
-To fix all vulnerabilities cleanly without breaking existing tests or performance, update `CsvExport.kt`:
+1. **Numeric Exceptions Must Be Typed Column Exceptions:**
+   A global `toDoubleOrNull() != null` exemption is **unsafe** because it would also unescape arbitrary user text such as category `+123456789`, contradicting category protections. Any future numeric unescaping must be strictly scoped to typed, trusted amount columns (columns 3 and 4: Amount and Your share), not general string cells.
 
-### Recommended Code Implementation
+2. **Downstream Execution Evidence:**
+   Serialized output is not proof of spreadsheet execution or exfiltration. While leading space and `\n` omissions are source-confirmed in `CsvExport.kt`, actual spreadsheet exploitation depends on specific client software versions and options. Embedded formulas in composite cells (`You paid =cmd`, `Alice: 10; =cmd: 20`) remain single quoted strings.
 
-```kotlin
-// In CsvExport.kt:
+3. **Format Distinctions:**
+   Security considerations for CSV export do not apply to the JSON complete backup, which is structured data and not parsed as spreadsheet formulas.
 
-private val FORMULA_STARTS = setOf(
-    '=', '+', '-', '@', '\t', '\r', '\n', '|',
-    '\uFF1D', // Full-width =
-    '\uFF0B', // Full-width +
-    '\uFF0D', // Full-width -
-    '\uFF20', // Full-width @
-)
-
-private fun quote(field: String): String {
-    // 1. If it's a valid number (e.g. negative amount "-50.00"), keep it numeric for Excel/Calc.
-    val isNumeric = field.toDoubleOrNull() != null
-    
-    // 2. Trim leading whitespace/control characters to detect hidden formula triggers.
-    val trimmed = field.trimStart(' ', '\t', '\r', '\n')
-    
-    val needsPrefix = !isNumeric && trimmed.isNotEmpty() && trimmed[0] in FORMULA_STARTS
-    val safe = if (needsPrefix) "'$field" else field
-    return "\"" + safe.replace("\"", "\"\"") + "\""
-}
-```
-
-### Sanitizing Composite Subfields
-For person names inside composite strings (`Shares` and `Settlement` payee), sanitize person names when formatting:
-```kotlin
-fun sanitizeName(name: String): String {
-    val trimmed = name.trimStart(' ', '\t', '\r', '\n')
-    return if (trimmed.isNotEmpty() && trimmed[0] in FORMULA_STARTS) "'$name" else name
-}
-```
+4. **Follow-up Ownership:**
+   Any production changes to `CsvExport.kt` remain subject to owner-review and maintainer design decisions. The unit test suite `CsvFormulaInjectionTest` provides concrete characterization examples with exact payload preservation assertions without weakening existing behavior.
 
 ---
 
-## 6. Verification and "Check on the Phone"
+## 6. Verification and Characterization Checks
 
-1. **Unit Tests:** Execute `CsvFormulaInjectionTest` and `CsvExportTest`:
-   `./gradlew :app:testDebugUnitTest --tests "com.vaibhav.kharchapaani.domain.*"`
+1. **Unit Tests:** Execute `CsvFormulaInjectionTest`:
+   Runs 17 concrete characterization examples asserting exact payload preservation across all formula trigger types, composite fields, and whitespace variations.
 2. **Device Verification:**
-   - On the phone, create an expense with merchant `=HYPERLINK("https://google.com","Google")` and note `   @SUM(1,2)`.
-   - Export CSV via Account Sheet $\rightarrow$ Export CSV.
-   - Send the CSV to a PC via email or Google Drive.
-   - Open the exported CSV in **Microsoft Excel** and **LibreOffice Calc**:
-     - Verify no formula executes and no DDE / security prompt appears.
-     - Verify cells display the text cleanly.
-     - Verify negative numbers (if any) are formatted as numbers and can be summed with `=SUM(...)`.
+   Export CSV on device, inspect raw file output, and verify that all cells preserve exact user data without loss or distortion.
