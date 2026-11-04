@@ -69,8 +69,9 @@ class PersonLedgerLazyTest {
         compose.onNodeWithText("Dinner 1").assertExists()
         compose.onNodeWithText("History · 60").assertExists()
 
-        // Scroll to the 60th item
-        compose.onNodeWithText("Dinner 60").performScrollTo().assertExists()
+        // Scroll to the 60th item using LazyList scrollToKey
+        compose.onNode(hasScrollToKeyAction()).performScrollToKey("item_60")
+        compose.onNodeWithText("Dinner 60").assertExists()
 
         // Settle up action bar button remains clickable
         compose.onNodeWithTag("ledger_settle_up_button").performClick()
