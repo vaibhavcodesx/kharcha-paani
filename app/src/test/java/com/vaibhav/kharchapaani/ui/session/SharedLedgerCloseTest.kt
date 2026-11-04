@@ -267,6 +267,35 @@ class SharedLedgerCloseTest {
         }
     }
 
+    @Test fun `cached owner replacements discard drained callbacks and retain the current close hook`() = runBlocking {
+        val account = UUID.randomUUID().toString()
+        files += LedgerDatabases.databaseName(account)
+        var first = 0
+        var second = 0
+        var current = 0
+        val original = LedgerDatabases.openOwned(app, account, isLocal = false) { database ->
+            LedgerDatabases.CloseOwner { assertTrue(database.isOpen); first++ }
+        }
+        original.transactionDao().getAllTransactionsDirect()
+        assertSame(original, LedgerDatabases.openOwned(app, account, isLocal = false) { database ->
+            LedgerDatabases.CloseOwner { assertTrue(database.isOpen); second++ }
+        })
+        assertEquals(1, first)
+        assertEquals(0, second)
+        assertSame(original, LedgerDatabases.openOwned(app, account, isLocal = false) { database ->
+            LedgerDatabases.CloseOwner { assertTrue(database.isOpen); current++ }
+        })
+        assertEquals("Completed first owner must not remain in the cached record", 1, first)
+        assertEquals(1, second)
+        assertEquals(0, current)
+        assertSame(original, LedgerDatabases.open(app, account))
+        assertEquals("Ordinary cached reads must not drain the current UI owner", 0, current)
+        LedgerDatabases.close()
+        assertEquals(1, first)
+        assertEquals(1, second)
+        assertEquals("Current owner is still retained until the actual close", 1, current)
+    }
+
     private suspend fun localSession(): AccountSession {
         withContext(main) { holder.onLocalMode() }
         val session = (withTimeout(5_000) { holder.state.first { it is AccountSessionState.Ready } } as AccountSessionState.Ready).session

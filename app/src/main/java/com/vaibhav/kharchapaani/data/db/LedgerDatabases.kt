@@ -33,7 +33,10 @@ object LedgerDatabases {
     private val lock = Mutex()
     private var open: OpenDatabase? = null
 
-    private class OpenDatabase(val name: String, val database: AppDatabase)
+    private class OpenDatabase(val name: String, val database: AppDatabase) {
+        val owners = mutableListOf<CloseOwner>()
+        suspend fun drainOwners() { owners.forEach { it.beforeClose() } }
+    }
 
     suspend fun open(context: Context, userId: String, isCurrent: () -> Boolean = { true }): AppDatabase =
         openNamed(context, databaseName(userId), legacyOwner = userId, isCurrent = isCurrent)
@@ -49,13 +52,13 @@ object LedgerDatabases {
         isLocal: Boolean,
         isCurrent: () -> Boolean = { true },
         ownerFactory: (AppDatabase) -> CloseOwner,
-    ): AppDatabase {
-        // API scaffold: ownership is not retained by the database record until the barrier fix.
-        val database = if (isLocal) openLocal(context, GuestSession(userId), isCurrent)
-            else open(context, userId, isCurrent)
-        withContext(Dispatchers.Main.immediate) { ownerFactory(database) }
-        return database
-    }
+    ): AppDatabase = openNamed(
+        context,
+        if (isLocal) localDatabaseName(GuestSession(userId)) else databaseName(userId),
+        legacyOwner = if (isLocal) null else userId,
+        isCurrent = isCurrent,
+        ownerFactory = ownerFactory,
+    )
 
     internal fun localDatabaseName(guest: GuestSession): String = "ledger-local-${guest.id}.db"
 
@@ -64,13 +67,27 @@ object LedgerDatabases {
         name: String,
         legacyOwner: String?,
         isCurrent: () -> Boolean,
+        ownerFactory: ((AppDatabase) -> CloseOwner)? = null,
     ): AppDatabase = lock.withLock {
         // The caller may have waited behind a mode/account switch. Reject it before even
         // returning a cached connection, and especially before closing the current ledger.
         check(isCurrent()) { "Ledger selection changed before opening" }
-        open?.takeIf { it.name == name }?.let { return it.database }
+        open?.takeIf { it.name == name }?.let { current ->
+            if (ownerFactory != null) {
+                // A new session must not initialize over a destroyed owner's canceled restore.
+                // Plain cached background reads retain their fast path and never clear the UI.
+                current.drainOwners()
+                check(isCurrent()) { "Ledger selection changed while replacing its owner" }
+            }
+            attachOwner(current, ownerFactory)
+            check(isCurrent()) { "Ledger selection changed while creating its owner" }
+            return current.database
+        }
 
         val appContext = context.applicationContext
+        open?.drainOwners()
+        // Owner cleanup suspends; an obsolete opener must not close the now-selected ledger.
+        check(isCurrent()) { "Ledger selection changed while closing its owner" }
         open?.database?.close()
         open = null
 
@@ -80,12 +97,22 @@ object LedgerDatabases {
             }
             AppDatabase.builder(appContext, name).build()
         }
-        open = OpenDatabase(name, database)
+        val current = OpenDatabase(name, database)
+        open = current
+        attachOwner(current, ownerFactory)
+        check(isCurrent()) { "Ledger selection changed while creating its owner" }
         database
+    }
+
+    // Called only while lock is held. Factories create ownership, never ViewModels, DAO work
+    // or registry calls. Main construction and hook publication finish before the handle escapes.
+    private suspend fun attachOwner(current: OpenDatabase, factory: ((AppDatabase) -> CloseOwner)?) {
+        if (factory != null) current.owners += withContext(Dispatchers.Main.immediate) { factory(current.database) }
     }
 
     /** Closes the open database, if any. The file stays on disk (signing out keeps local data). */
     suspend fun close() = lock.withLock {
+        open?.drainOwners()
         open?.database?.close()
         open = null
     }
