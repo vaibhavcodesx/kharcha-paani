@@ -246,6 +246,7 @@ fun AccountSheetContent(
         BrandMark(Modifier.padding(bottom = Spacing.l))
         // Your own colour once you have one (design item 11): the same one groupmates see you in.
         val mine = state.hue?.let(::hueColour)
+        val avatarDescription = stringResource(R.string.account_avatar_content_description)
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.xl)) {
             Box(
                 contentAlignment = Alignment.Center,
@@ -258,7 +259,7 @@ fun AccountSheetContent(
                     // an edge. This is the one avatar in the app that is *yours*, which is the
                     // right place for it and the reason it goes nowhere else.
                     .then(if (mine != null) Modifier.border(2.dp, mine, CircleShape) else Modifier.border(2.dp, BrandGradient.diagonal(), CircleShape))
-                    .semantics { contentDescription = stringResource(R.string.account_avatar_content_description) },
+                    .semantics { contentDescription = avatarDescription },
             ) {
                 Text(
                     text = previewAvatar,
