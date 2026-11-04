@@ -38,6 +38,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLooper
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
@@ -69,10 +70,9 @@ class PersonLedgerRecompositionTest {
             if (::viewModel.isInitialized) {
                 val job = viewModel.viewModelScope.coroutineContext[Job]!!
                 store.clear()
-                withTimeout(10_000) {
-                    while (!job.isCompleted) {
-                        delay(20)
-                    }
+                val deadline = System.currentTimeMillis() + 5000
+                while (!job.isCompleted && System.currentTimeMillis() < deadline) {
+                    ShadowLooper.idleMainLooper()
                 }
                 assertTrue("Fixture must stop MainViewModel before Room closes", job.isCompleted)
             }
