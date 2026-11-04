@@ -982,4 +982,27 @@
     <string name="ai_choice_voice_off">AI is off, including speech recognition. Type an entry instead.</string>
     <string name="ai_choice_capture_on">Quick add, bill and statement reads use Google Gemini</string>
     <string name="ai_choice_capture_off">AI is off · quick add stays on this phone</string>
+    <!-- Delete account (M1 / D1) -->
+    <string name="delete_account_dialog_title">Delete your account for good?</string>
+    <string name="delete_account_dialog_body">This can\'t be undone. You\'ll be signed out, and this phone keeps nothing of the account.</string>
+    <string name="delete_account_action_delete">Delete my account</string>
+    <string name="delete_account_dialog_keep">Keep it</string>
+    <string name="delete_account_action_discard_continue">Discard them and continue</string>
+    <string name="delete_account_action_continue">Continue</string>
+    <string name="delete_account_title">Delete your account?</string>
+    <string name="delete_account_supporting">Here\'s what happens.</string>
+    <string name="delete_account_section_goes">GOES</string>
+    <string name="delete_account_goes_body">Your sign-in, your own expenses and income, splits and IOUs with friends who aren\'t on the app, and your profile: picture, emoji, colour and UPI ID. Bill photos and everything else on this phone go too.</string>
+    <string name="delete_account_section_stays">STAYS</string>
+    <string name="delete_account_stays_body">Shared expenses and payments stay in your groups, so nobody\'s balance changes. Groups you made pass to the person who\'s been in them longest.</string>
+    <string name="delete_account_section_show_me_as">ON PAST GROUP EXPENSES, SHOW ME AS</string>
+    <string name="delete_account_former_member_detail">Nothing of you stays but that</string>
+    <string name="delete_account_keep_name_title">My name, as it is now</string>
+    <string name="delete_account_keep_name_detail">Only the name; nothing else about you</string>
+    <plurals name="delete_account_unsynced_warning">
+        <item quantity="one">1 change hasn\'t synced yet. Sync first, or it\'s lost with the account.</item>
+        <item quantity="other">%1$d changes haven\'t synced yet. Sync first, or they\'re lost with the account.</item>
+    </plurals>
+    <string name="delete_account_sync_now">Sync now</string>
+    <string name="delete_account_keep_account">Keep my account</string>
 </resources>
