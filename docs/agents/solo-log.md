@@ -209,7 +209,7 @@ owner or Claude go at the bottom.
 
 - 2026-11-04 · #199 · F3 source review notes · prepared for merge; corrected first-day selector cause, actual minimum text/layout behavior and component/parser/Room evidence boundaries for six merged PRs. PNG generation is not claimed as visual or phone acceptance. Independent review and exact-head current-main CI gate merge; docs only.
 
-- 2026-11-05 · M1 / Auth messages string resources · prepared; moved AuthViewModel colour conflict/offline and account deletion error strings into strings.xml resources; verified with AuthMessagesStringResourcesTest. Exact-head CI gates merge.
+- 2026-11-05 · #256 · M1 / Auth messages string resources · prepared; moved AuthViewModel colour conflict/offline and account deletion error strings into strings.xml resources; verified with AuthMessagesStringResourcesTest. Exact-head CI gates merge.
 
 ## Questions
 
