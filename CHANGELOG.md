@@ -15,6 +15,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+
+- A compact 2x1 "Quick add" widget (the brand button and a label) with the same tap, for a home screen with no room for the bar.
 - Evidence-scoped source review notes for six merged reliability/accessibility changes (F3).
 
 - Source-pinned architecture map distinguishes checked-in configuration from release and live-service acceptance (O3).
@@ -64,6 +66,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 
 ### Changed
+
+- The quick-add widget's tap opens Home's "What did you spend on?" line with the cursor in it and the keyboard up, instead of the empty New entry form. Its mic button still starts voice.
 
 - Activity shows only the group items you are part of: a settlement between two other people, and a group expense you didn't add, pay or share in (a ₹0 share doesn't count), no longer appear. The group's own screen still lists everything.
 
