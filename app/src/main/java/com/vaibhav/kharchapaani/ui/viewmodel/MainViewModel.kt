@@ -660,6 +660,19 @@ class MainViewModel(
         _voiceCaptureRequested.value = false
     }
 
+    // Set by the widget's quick-add bar: Home puts the cursor in the capture line (keyboard up),
+    // reports it, and this clears.
+    private val _captureFocusRequested = MutableStateFlow(false)
+    val captureFocusRequested: StateFlow<Boolean> = _captureFocusRequested.asStateFlow()
+
+    fun requestCaptureFocus() {
+        _captureFocusRequested.value = true
+    }
+
+    fun onCaptureFocused() {
+        _captureFocusRequested.value = false
+    }
+
     private val _editingTransactionId = MutableStateFlow<Long?>(null)
     val editingTransactionId: StateFlow<Long?> = _editingTransactionId.asStateFlow()
 
