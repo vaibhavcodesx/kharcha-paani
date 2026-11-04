@@ -44,6 +44,7 @@ object ActivityFeed {
         fun matchesPerson(id: Long?) = id != null && nameOf(id).contains(term, ignoreCase = true)
 
         val transactionItems = transactions
+            .filter { it.involvesMe }
             .filter { fullTx ->
                 val tx = fullTx.transaction
                 val matchesQuery = term.isBlank() ||
@@ -77,6 +78,8 @@ object ActivityFeed {
                         recordedByName = it.recordedByPersonId?.let { id -> if (id == ME) context.getString(R.string.activity_description_you) else names[id] },
                     )
                 }
+                // What two other people settled between themselves isn't mine to see.
+                .filter { it.involvesMe }
                 .filter { item ->
                     term.isBlank() ||
                         item.title(context).contains(term, ignoreCase = true) ||

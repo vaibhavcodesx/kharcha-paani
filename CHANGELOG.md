@@ -67,6 +67,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Changed
 
+- Splits > Groups: the sort control is a header row of its own, "Sort by" on the left and the current choice as a quiet pill with a chevron at the right edge (the menu ticks the active option), instead of a text button floating under "Join" with empty space beside it. Layout only; the sort options and the remembered choice are unchanged.
+- Activity shows only the group items you are part of: a settlement between two other people, and a group expense you didn't add, pay or share in (a ₹0 share doesn't count), no longer appear. The group's own screen still lists everything.
+
 - Quick add opens the sheet instantly, on the phone's own reading of the line, with a quiet
   "Improving with AI…" while the AI reads it. The AI's answer fills in only what you haven't
   changed, and the sheet says "Updated by AI" for a moment when it did. Closing, saving or

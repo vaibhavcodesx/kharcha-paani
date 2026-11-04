@@ -4,6 +4,7 @@ import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
+import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.data.model.ActivityItem
@@ -45,7 +46,7 @@ class ActivityFeedTest {
     @Test
     fun `settlements and IOUs appear alongside transactions, newest first`() {
         assertEquals(
-            listOf("tx_1", "settlement_12", "settlement_10", "settlement_11", "tx_2", "tx_3"),
+            listOf("tx_1", "settlement_10", "settlement_11", "tx_2", "tx_3"),
             feed().map { it.key },
         )
     }
@@ -54,7 +55,7 @@ class ActivityFeedTest {
     fun `settlement rows read naturally from this account's point of view`() {
         val titles = feed().filterIsInstance<ActivityItem.Settlement>().associate { it.settlement.id to it.title(context) }
 
-        assertEquals(mapOf(12L to "Carol paid Bob", 10L to "You paid Bob", 11L to "Bob lent you"), titles)
+        assertEquals(mapOf(10L to "You paid Bob", 11L to "Bob lent you"), titles)
         assertEquals("Goa", feed().filterIsInstance<ActivityItem.Settlement>().single { it.settlement.id == 10L }.groupName)
     }
 
@@ -62,7 +63,7 @@ class ActivityFeedTest {
     fun `settlements show under All and Splits but not Expenses or Income`() {
         assertEquals(listOf("tx_1"), feed(filter = ActivityFeed.EXPENSES).map { it.key })
         assertEquals(listOf("tx_3"), feed(filter = ActivityFeed.INCOME).map { it.key })
-        assertEquals(listOf("settlement_12", "settlement_10", "settlement_11", "tx_2"), feed(filter = ActivityFeed.SPLITS).map { it.key })
+        assertEquals(listOf("settlement_10", "settlement_11", "tx_2"), feed(filter = ActivityFeed.SPLITS).map { it.key })
     }
 
     @Test
@@ -88,10 +89,77 @@ class ActivityFeedTest {
 
     @Test
     fun `search finds settlements by person, note, group or kind`() {
-        assertEquals(listOf("settlement_12", "settlement_10", "settlement_11"), feed(query = "bob").map { it.key })
-        assertEquals(listOf("settlement_12"), feed(query = "cab").map { it.key })
+        assertEquals(listOf("settlement_10", "settlement_11"), feed(query = "bob").map { it.key })
+        assertEquals(emptyList<String>(), feed(query = "cab").map { it.key })
         assertEquals(listOf("settlement_10"), feed(query = "goa").map { it.key })
         assertEquals(listOf("settlement_11"), feed(query = "IOU").map { it.key })
         assertEquals(listOf("tx_1"), feed(query = "chai").map { it.key })
+    }
+
+    @Test
+    fun `a settlement between two other people is not in my Activity, in a group or out of one`() {
+        val others = listOf(
+            settlement(30, 10, from = 2, to = 3, groupId = 7),
+            settlement(31, 20, from = 3, to = 2),
+        )
+        val mine = listOf(
+            settlement(32, 30, from = -1, to = 2, groupId = 7),
+            settlement(33, 40, from = 3, to = -1, groupId = 7),
+        )
+
+        val keys = ActivityFeed.build(context, emptyList(), others + mine, listOf(bob, carol), listOf(goa), "", ActivityFeed.ALL).map { it.key }
+
+        assertEquals(listOf("settlement_33", "settlement_32"), keys)
+    }
+
+    private fun groupExpense(
+        id: Long,
+        paidBy: Long?,
+        shares: Map<Long, Double>,
+        addedBy: String? = null,
+        groupId: Long? = 7,
+        guestOf: Long? = null,
+    ): FullTransaction {
+        val tx = TransactionEntity(
+            id = id, type = "expense", amount = 100.0, category = "Food", merchant = "Item $id", paymentMethod = "UPI",
+            date = id, isSplit = paidBy != null, createdAt = id, groupId = groupId, ownerProfileId = addedBy,
+        )
+        if (paidBy == null) return FullTransaction(tx)
+        return FullTransaction(
+            tx,
+            SplitEntity(id = id, transactionId = id, totalAmount = 100.0, paidByPersonId = paidBy),
+            shares.map { (person, amount) ->
+                SplitShareEntity(splitId = id, personId = person, shareAmount = amount, guestName = if (person == guestOf) "Guest" else null)
+            },
+        )
+    }
+
+    @Test
+    fun `a group expense I did not pay, add or share is hidden, however it is split`() {
+        val hidden = listOf(
+            groupExpense(40, paidBy = 2, shares = mapOf(2L to 50.0, 3L to 50.0), addedBy = "bob"),
+            // I am listed, but my share is nothing: "yours ₹0".
+            groupExpense(41, paidBy = 2, shares = mapOf(2L to 100.0, -1L to 0.0), addedBy = "bob"),
+        )
+        val shown = listOf(
+            groupExpense(42, paidBy = 2, shares = mapOf(2L to 50.0, -1L to 50.0), addedBy = "bob"),
+            groupExpense(43, paidBy = -1L, shares = mapOf(2L to 100.0), addedBy = "bob"),
+            groupExpense(44, paidBy = 2, shares = mapOf(2L to 50.0, 3L to 50.0)), // I added it
+            groupExpense(45, paidBy = 2, shares = mapOf(2L to 50.0, -1L to 50.0), addedBy = "bob", guestOf = -1L), // a guest I cover
+            groupExpense(46, paidBy = null, shares = emptyMap(), groupId = null), // personal, no group
+        )
+
+        val keys = ActivityFeed.build(context, hidden + shown, emptyList(), listOf(bob, carol), listOf(goa), "", ActivityFeed.ALL).map { it.key }
+
+        assertEquals(listOf("tx_46", "tx_45", "tx_44", "tx_43", "tx_42"), keys)
+    }
+
+    @Test
+    fun `search and filters never bring back what I am not in`() {
+        val notMine = groupExpense(50, paidBy = 2, shares = mapOf(2L to 50.0, 3L to 50.0), addedBy = "bob")
+
+        for (filter in listOf(ActivityFeed.ALL, ActivityFeed.SPLITS)) {
+            assertEquals(emptyList<String>(), ActivityFeed.build(context, listOf(notMine), emptyList(), listOf(bob, carol), listOf(goa), "Item 50", filter).map { it.key })
+        }
     }
 }
