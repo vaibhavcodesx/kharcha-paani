@@ -3,6 +3,8 @@ package com.vaibhav.kharchapaani.ui.components
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.performSemanticsAction
@@ -87,7 +89,7 @@ class MoneyAutoSizeTest {
         }
 
         val spentLayouts = mutableListOf<TextLayoutResult>()
-        composeTestRule.onNode(hasText(Money.format(totalAmount)), useUnmergedTree = true)
+        composeTestRule.onNode(hasText(Money.format(totalAmount)) and hasAnyAncestor(hasTestTag("group_figure_SPENT")), useUnmergedTree = true)
             .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(spentLayouts) }
 
         assertFalse(
@@ -97,7 +99,7 @@ class MoneyAutoSizeTest {
         assertEquals(1, spentLayouts.first().lineCount)
 
         val shareLayouts = mutableListOf<TextLayoutResult>()
-        composeTestRule.onNode(hasText(Money.format(myShareAmount)), useUnmergedTree = true)
+        composeTestRule.onNode(hasText(Money.format(myShareAmount)) and hasAnyAncestor(hasTestTag("group_figure_YOUR SHARE")), useUnmergedTree = true)
             .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(shareLayouts) }
 
         assertFalse(
@@ -171,7 +173,7 @@ class MoneyAutoSizeTest {
         }
 
         val spentLayouts = mutableListOf<TextLayoutResult>()
-        composeTestRule.onNode(hasText(Money.format(spentAmount)), useUnmergedTree = true)
+        composeTestRule.onNode(hasText(Money.format(spentAmount)) and hasAnyAncestor(hasTestTag("import_figure_SPENT")), useUnmergedTree = true)
             .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(spentLayouts) }
 
         assertFalse(
@@ -181,7 +183,7 @@ class MoneyAutoSizeTest {
         assertEquals(1, spentLayouts.first().lineCount)
 
         val incomeLayouts = mutableListOf<TextLayoutResult>()
-        composeTestRule.onNode(hasText(Money.format(incomeAmount)), useUnmergedTree = true)
+        composeTestRule.onNode(hasText(Money.format(incomeAmount)) and hasAnyAncestor(hasTestTag("import_figure_CAME IN")), useUnmergedTree = true)
             .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(incomeLayouts) }
 
         assertFalse(

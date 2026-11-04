@@ -498,7 +498,11 @@ private fun GroupExpenseRow(expense: FullTransaction, people: List<PersonEntity>
 
 @Composable
 private fun Figure(label: String, value: String, color: androidx.compose.ui.graphics.Color, modifier: Modifier) {
-    Column(modifier.semantics(mergeDescendants = true) {}) {
+    Column(
+        modifier
+            .testTag("group_figure_$label")
+            .semantics(mergeDescendants = true) {},
+    ) {
         Text(label.uppercase(), style = EyebrowText, maxLines = 1)
         BasicText(
             text = value,
