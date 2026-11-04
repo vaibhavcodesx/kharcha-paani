@@ -469,18 +469,18 @@ fun AccountSheetContent(
             // subscription and a custom category come through. What loses it is uninstalling, a
             // new phone, or a change of signing key.
             SettingRow(
-                title = "Back up what's only on this phone",
-                detail = "Local friends, subscriptions and your own categories, as a file",
+                title = stringResource(R.string.full_backup_ui_export_title),
+                detail = stringResource(R.string.full_backup_ui_export_detail),
                 position = RowPosition.Middle,
-                modifier = Modifier.clickable(onClickLabel = "Back up local data", onClick = onBackUp).testTag("setting_backup"),
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.full_backup_ui_export_title), onClick = onBackUp).testTag("setting_backup"),
             ) {
                 Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
             }
             SettingRow(
-                title = "Restore from a backup",
-                detail = "Adds back anything missing; never overwrites what's here",
+                title = stringResource(R.string.full_backup_ui_restore_title),
+                detail = stringResource(R.string.full_backup_ui_restore_detail),
                 position = RowPosition.Last,
-                modifier = Modifier.clickable(onClickLabel = "Restore from a backup", onClick = onRestore).testTag("setting_restore"),
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.full_backup_ui_restore_title), onClick = onRestore).testTag("setting_restore"),
             ) {
                 Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
             }

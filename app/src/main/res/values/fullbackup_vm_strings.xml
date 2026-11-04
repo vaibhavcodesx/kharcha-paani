@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="fullbackup_vm_read_failed">Could not read this backup. Choose a valid Kharcha Paani backup file.</string>
+    <string name="fullbackup_vm_operation_failed">Could not finish the backup operation. Your existing entries are kept. Try again.</string>
+    <string name="fullbackup_vm_recovery_pending">The previous restore needs to finish before editing. Keep your backup file and reopen the app to retry.</string>
+    <string name="fullbackup_vm_busy">Please wait for the backup operation to finish.</string>
+    <string name="fullbackup_vm_exported">Complete backup saved.</string>
+    <string name="fullbackup_vm_restored">Complete backup restored on this phone.</string>
+</resources>

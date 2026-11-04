@@ -83,6 +83,19 @@ import com.vaibhav.kharchapaani.domain.AiContext
 import com.vaibhav.kharchapaani.domain.AiPrompt
 import com.vaibhav.kharchapaani.domain.AskBoard
 import com.vaibhav.kharchapaani.domain.AskState
+import com.vaibhav.kharchapaani.domain.EverythingBackup
+import com.vaibhav.kharchapaani.domain.EverythingSettings
+import com.vaibhav.kharchapaani.domain.GroupSort
+import com.vaibhav.kharchapaani.data.repository.EverythingBackupRepository
+import com.vaibhav.kharchapaani.data.repository.EverythingRestoreCoordinator
+import com.vaibhav.kharchapaani.data.repository.EVERYTHING_RESTORE_MARKER
+import com.vaibhav.kharchapaani.data.settings.LedgerMode
+import com.vaibhav.kharchapaani.data.settings.GroupSortPreferences
+import org.json.JSONObject
+import java.nio.ByteBuffer
+import java.security.MessageDigest
+import android.util.AtomicFile
+import java.io.ByteArrayOutputStream
 import com.vaibhav.kharchapaani.domain.LocalBackup
 import com.vaibhav.kharchapaani.domain.BackupSettings
 import com.vaibhav.kharchapaani.domain.BackupReadResult
@@ -163,6 +176,21 @@ class MainViewModel(
     private val isLocal: Boolean = false,
 ) : AndroidViewModel(application), SessionClosingWork {
 
+    private val recoveryJournal = if (isLocal) File(application.filesDir, "backup-recovery/local-$userId.json") else null
+    private fun hasRecoveryJournal(): Boolean = recoveryJournal?.let { it.exists() || File(it.path + ".bak").exists() } == true
+    private var backupStartupJob: Job? = null
+    private var recoveryBlocked = hasRecoveryJournal()
+    private val _fullBackupBusy = MutableStateFlow(recoveryBlocked)
+    val fullBackupBusy: StateFlow<Boolean> = _fullBackupBusy.asStateFlow()
+    private val _fullBackupPreview = MutableStateFlow<EverythingBackup?>(null)
+    val fullBackupPreview: StateFlow<EverythingBackup?> = _fullBackupPreview.asStateFlow()
+    private val _fullBackupReadError = MutableStateFlow(false)
+    val fullBackupReadError: StateFlow<Boolean> = _fullBackupReadError.asStateFlow()
+    private val _fullBackupTargetEmpty = MutableStateFlow(false)
+    val fullBackupTargetEmpty: StateFlow<Boolean> = _fullBackupTargetEmpty.asStateFlow()
+    private val _fullBackupExportOpen = MutableStateFlow(false)
+    val fullBackupExportOpen: StateFlow<Boolean> = _fullBackupExportOpen.asStateFlow()
+
     private val _moneyConfirmations = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val moneyConfirmations = _moneyConfirmations.asSharedFlow()
 
@@ -180,6 +208,7 @@ class MainViewModel(
      * reported instead of taking the app down. Cancellation passes through.
      */
     private fun launchAction(block: suspend CoroutineScope.() -> Unit): Job = viewModelScope.launch {
+        if (fullBackupBlocksActions()) return@launch
         try {
             block()
         } catch (e: CancellationException) {
@@ -235,17 +264,12 @@ class MainViewModel(
     private fun canUseAi(): Boolean = !isLocal && _aiEnabled.value && aiSettings.enabledNow
 
 
-    init {
-        // A subscription is a rule; its charges become real entries when their date has arrived.
-        viewModelScope.launch {
-            if (ledgerRepo.runDueSubscriptions() > 0) SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
-        }
-    }
 
     val askBeforeDiscarding: StateFlow<Boolean> = settings.askBeforeDiscarding
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     fun setAskBeforeDiscarding(ask: Boolean) {
+        if (fullBackupBlocksActions()) return
         viewModelScope.launch { settings.setAskBeforeDiscarding(ask) }
     }
 
@@ -253,6 +277,7 @@ class MainViewModel(
         .stateIn(viewModelScope, SharingStarted.Eagerly, CategoryPrefs())
 
     fun updateCategoryPrefs(change: (CategoryPrefs) -> CategoryPrefs) {
+        if (fullBackupBlocksActions()) return
         viewModelScope.launch { settings.updateCategoryPrefs(settingsId, change) }
     }
 
@@ -294,14 +319,17 @@ class MainViewModel(
     }
 
     fun setPaymentsToConfirm(on: Boolean) {
+        if (fullBackupBlocksActions()) return
         viewModelScope.launch { settings.setPaymentsToConfirm(on) }
     }
 
     fun setQuietHours(quietHours: QuietHours) {
+        if (fullBackupBlocksActions()) return
         viewModelScope.launch { settings.setQuietHours(quietHours) }
     }
 
     fun setReminderEnabled(enabled: Boolean) {
+        if (fullBackupBlocksActions()) return
         viewModelScope.launch {
             settings.setReminderEnabled(enabled)
             ReminderScheduler.apply(getApplication(), settings.reminder.first(), replace = true)
@@ -309,6 +337,7 @@ class MainViewModel(
     }
 
     fun setReminderTime(minuteOfDay: Int) {
+        if (fullBackupBlocksActions()) return
         viewModelScope.launch {
             settings.setReminderMinute(minuteOfDay)
             ReminderScheduler.apply(getApplication(), settings.reminder.first(), replace = true)
@@ -322,7 +351,6 @@ class MainViewModel(
     init {
         // Books the reminder if nothing is booked yet (first run, or after it was switched back on
         // elsewhere); KEEP leaves an existing booking alone, so opening the app never moves it.
-        viewModelScope.launch { ReminderScheduler.apply(getApplication(), settings.reminder.first(), replace = false) }
         // A reminder still in the shade after something has been logged today would be wrong.
         viewModelScope.launch {
             ledgerRepo.allTransactions.collect { transactions ->
@@ -350,6 +378,7 @@ class MainViewModel(
 
     fun addSubscription(new: NewSubscription, chargeFromStart: Boolean) {
         submissions.launch(Submit.AddSubscription) {
+            if (fullBackupBlocksActions()) return@launch
             ledgerRepo.saveSubscription(
                 SubscriptionEntity(
                     name = new.name,
@@ -410,6 +439,7 @@ class MainViewModel(
     }
 
     fun saveUpi(payee: UpiPayee?) {
+        if (fullBackupBlocksActions()) return
         launchAction {
             settings.setUpiPayee(settingsId, payee)
             _isUpiOpen.value = false
@@ -438,10 +468,6 @@ class MainViewModel(
      * blocks in declaration order, so an `init` above `settings` gets a null `settings` and takes
      * the app down on launch. It did, once.
      */
-    init {
-        publishUpiIfMissing()
-        viewModelScope.launch { ledgerRepo.repairPersonColours() }
-    }
 
     /** Sends this account's UPI ID up if the profile doesn't have it yet (first run after update). */
     private fun publishUpiIfMissing() {
@@ -566,6 +592,7 @@ class MainViewModel(
 
     /** Once my own colour is known (or changes), friends on this phone move off it. */
     fun fitColoursAround(myHue: Int?) {
+        if (fullBackupBlocksActions()) return
         if (myHue == null) return
         viewModelScope.launch { ledgerRepo.repairPersonColours(myHue) }
     }
@@ -801,13 +828,6 @@ class MainViewModel(
     val billPhotoIds: StateFlow<Set<Long>> = receipts.transactionIds
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
-    init {
-        // Photos whose expense went by a route that doesn't know about files (a sync pull, a
-        // groupmate's delete), and photos picked but never saved.
-        viewModelScope.launch {
-            runCatching { receipts.sweepOrphans() }.onFailure { Log.w("MainViewModel", "Bill photo sweep failed", it) }
-        }
-    }
 
     /** A picture from the camera or the gallery for the bill photo row; [onRead] runs once it's read. */
     fun attachBillPhoto(context: Context, uri: Uri, onRead: () -> Unit = {}) {
@@ -911,6 +931,7 @@ class MainViewModel(
     private fun defaultPaymentMethod(): String = Categories.defaultPaymentMethod(categoryPrefs.value)
 
     fun openManualAdd(defaultType: String = "expense") {
+        if (fullBackupBlocksActions()) return
         stopImprovingWithAi()
         resetBillPhoto()
         _parseNotice.value = null
@@ -934,6 +955,7 @@ class MainViewModel(
     }
 
     fun openManualAddForGroup(targetGroupId: Long) {
+        if (fullBackupBlocksActions()) return
         if (blockLocalSharedHistory(targetGroupId)) return
         stopImprovingWithAi()
         resetBillPhoto()
@@ -974,6 +996,7 @@ class MainViewModel(
     }
 
     fun openEditTransaction(fullTx: FullTransaction) {
+        if (fullBackupBlocksActions()) return
         val tx = fullTx.transaction
         if (blockLocalSharedHistory(tx.groupId)) return
         lockedShares = null
@@ -1094,6 +1117,7 @@ class MainViewModel(
     }
 
     fun parseInputText(rawText: String) {
+        if (fullBackupBlocksActions()) return
         if (rawText.isBlank()) return
         withAiNotice(insteadOfAi = { fillInOnPhone(rawText) }) { readTextWithAi(rawText) }
     }
@@ -1195,6 +1219,7 @@ class MainViewModel(
     }
 
     fun parseReceiptImage(bitmap: Bitmap) {
+        if (fullBackupBlocksActions()) return
         withAiNotice(insteadOfAi = {
             // Typed by hand, with the bill still kept beside it.
             openManualAdd()
@@ -1249,6 +1274,7 @@ class MainViewModel(
     private var statementJob: Job? = null
 
     fun parseBankOrUpiStatement(pdfBytes: ByteArray, fileName: String = "statement.pdf") {
+        if (fullBackupBlocksActions()) return
         withAiNotice(insteadOfAi = {
             _statusMessage.value = uiText(R.string.action_notice_statement_manual)
         }) { readStatementWithAi(pdfBytes, fileName) }
@@ -1336,6 +1362,7 @@ class MainViewModel(
         }
 
         submissions.launch(Submit.ImportStatement) {
+            if (fullBackupBlocksActions()) return@launch
             // A row the statement reader got wrong (no amount, or more than the server stores) is
             // left out rather than refusing the whole import.
             val entities = items.filter { isSavableAmount(it.amount) }.map { item ->
@@ -1421,32 +1448,38 @@ class MainViewModel(
     }
 
     fun updateAmount(newAmount: String) {
+        if (fullBackupBlocksActions()) return
         if (newAmount != _amount.value) touched(EntryField.Amount)
         _amount.value = newAmount
         recalculateShares()
     }
 
     fun updateMerchant(newMerchant: String) {
+        if (fullBackupBlocksActions()) return
         if (newMerchant != _merchant.value) touched(EntryField.Merchant)
         _merchant.value = newMerchant
     }
 
     fun updateCategory(newCat: String) {
+        if (fullBackupBlocksActions()) return
         touched(EntryField.Category)
         _category.value = newCat
     }
 
     fun updatePaymentMethod(newMethod: String) {
+        if (fullBackupBlocksActions()) return
         touched(EntryField.Payment)
         _paymentMethod.value = newMethod
     }
 
     fun updateNote(newNote: String) {
+        if (fullBackupBlocksActions()) return
         if (newNote != _note.value) touched(EntryField.Note)
         _note.value = newNote
     }
 
     fun updateType(newType: String) {
+        if (fullBackupBlocksActions()) return
         touched(EntryField.Type)
         _type.value = newType
         val prefs = categoryPrefs.value
@@ -1460,11 +1493,13 @@ class MainViewModel(
     }
 
     fun updateDate(newDate: Long) {
+        if (fullBackupBlocksActions()) return
         touched(EntryField.Date)
         _date.value = newDate
     }
 
     fun updateGroupId(newGroupId: Long?) {
+        if (fullBackupBlocksActions()) return
         touched(EntryField.Split)
         groupChoiceIsExplicit = true
         changeGroupId(newGroupId)
@@ -1510,6 +1545,7 @@ class MainViewModel(
     val splitLocked: StateFlow<Boolean> = _splitLocked.asStateFlow()
 
     fun setIsSplit(split: Boolean) {
+        if (fullBackupBlocksActions()) return
         touched(EntryField.Split)
         _isSplit.value = split
         if (split) {
@@ -1527,12 +1563,14 @@ class MainViewModel(
     }
 
     fun setSplitMode(mode: SplitMode) {
+        if (fullBackupBlocksActions()) return
         touched(EntryField.Split)
         _splitMode.value = mode
         recalculateShares()
     }
 
     fun setPaidByPersonId(id: Long) {
+        if (fullBackupBlocksActions()) return
         touched(EntryField.Split)
         _paidByPersonId.value = id
         // In a shared group the leftover paisa follow the payer.
@@ -1540,6 +1578,7 @@ class MainViewModel(
     }
 
     fun togglePersonShare(personId: Long) {
+        if (fullBackupBlocksActions()) return
         touched(EntryField.Split)
         val current = _shares.value.toMutableList()
         val index = current.indexOfFirst { it.personId == personId }
@@ -1565,6 +1604,7 @@ class MainViewModel(
     }
 
     fun updateExactShareAmount(personId: Long, exactAmount: Double) {
+        if (fullBackupBlocksActions()) return
         touched(EntryField.Split)
         val current = _shares.value.toMutableList()
         val index = current.indexOfFirst { it.personId == personId }
@@ -1576,6 +1616,7 @@ class MainViewModel(
     }
 
     fun updateSharePercentage(personId: Long, pct: Double) {
+        if (fullBackupBlocksActions()) return
         touched(EntryField.Split)
         val total = Money.parseInput(_amount.value) ?: 0.0
         val current = _shares.value.toMutableList()
@@ -1677,6 +1718,7 @@ class MainViewModel(
     }
 
     fun saveCurrentTransaction(askForGroup: Boolean = true) {
+        if (fullBackupBlocksActions()) return
         if (blockLocalSharedHistory(_groupId.value)) return
         val total = Money.parseInput(_amount.value) ?: 0.0
         if (total <= 0) return
@@ -1753,6 +1795,7 @@ class MainViewModel(
         }
 
         submissions.launch(Submit.SaveEntry) {
+            if (fullBackupBlocksActions()) return@launch
             // A photo still being written goes with the expense rather than being dropped.
             billPhotoJob?.join()
             val savedId = try {
@@ -1797,6 +1840,7 @@ class MainViewModel(
 
     /** Takes the row away now; the ledger delete waits for the Undo snackbar to go. */
     fun deleteTransaction(txId: Long) {
+        if (fullBackupBlocksActions()) return
         val tx = rawTransactions.value.firstOrNull { it.transaction.id == txId }?.transaction
         if (blockLocalSharedHistory(tx?.groupId)) return
         pendingDeletes.hide(txId)
@@ -1855,12 +1899,14 @@ class MainViewModel(
     val createGroupShared: StateFlow<Boolean> = _createGroupShared.asStateFlow()
 
     fun openCreateGroup() {
+        if (fullBackupBlocksActions()) return
         _createGroupShared.value = false
         _isCreateGroupOpen.value = true
     }
 
     /** From a settlement, IOU or split that needs a shared group with someone. */
     fun openCreateSharedGroup() {
+        if (fullBackupBlocksActions()) return
         if (isLocal) { _statusMessage.value = uiText(R.string.local_mode_shared_requires_account); return }
         _isSettleUpOpen.value = false
         _isIouOpen.value = false
@@ -1880,8 +1926,10 @@ class MainViewModel(
         memberPersonIds: List<Long>,
         shared: Boolean = false,
     ) {
+        if (fullBackupBlocksActions()) return
         if (isLocal && shared) { _statusMessage.value = uiText(R.string.local_mode_shared_requires_account); return }
         submissions.launch(Submit.CreateGroup) {
+            if (fullBackupBlocksActions()) return@launch
             if (shared) {
                 ledgerRepo.createSharedGroup(name, description, emoji, colorHex)
             } else {
@@ -1957,7 +2005,9 @@ class MainViewModel(
     }
 
     fun recordSettlementPayment(fromPersonId: Long, toPersonId: Long, amount: Double, note: String, groupId: Long? = null) {
+        if (fullBackupBlocksActions()) return
         submissions.launch(Submit.RecordSettlement) {
+            if (fullBackupBlocksActions()) return@launch
             val settlementId = try {
                 ledgerRepo.recordSettlement(
                     fromPersonId = fromPersonId,
@@ -1996,7 +2046,9 @@ class MainViewModel(
     }
 
     fun recordIou(fromPersonId: Long, toPersonId: Long, amount: Double, note: String, groupId: Long? = null) {
+        if (fullBackupBlocksActions()) return
         submissions.launch(Submit.RecordIou) {
+            if (fullBackupBlocksActions()) return@launch
             try {
                 ledgerRepo.recordSettlement(
                     fromPersonId = fromPersonId,
@@ -2038,8 +2090,10 @@ class MainViewModel(
     }
 
     fun addNewFriend(name: String, colorHex: String) {
+        if (fullBackupBlocksActions()) return
         if (name.isBlank()) return
         submissions.launch(Submit.AddFriend) {
+            if (fullBackupBlocksActions()) return@launch
             val newId = try {
                 ledgerRepo.addPerson(name, colorHex)
             } catch (e: DuplicateFriendException) {
@@ -2061,6 +2115,7 @@ class MainViewModel(
     }
 
     fun deleteFriend(personId: Long) {
+        if (fullBackupBlocksActions()) return
         launchAction {
             ledgerRepo.deletePerson(personId)
             if (_selectedPersonForLedger.value?.id == personId) {
@@ -2279,6 +2334,7 @@ class MainViewModel(
 
     /** The switch takes effect immediately; enabling waits until the preference is durable. */
     fun setAiEnabled(enabled: Boolean) {
+        if (fullBackupBlocksActions()) return
         requestedAiChoice = enabled
         val version = ++aiChoiceVersion
         if (!enabled) applyAiChoice(false)
@@ -2406,32 +2462,60 @@ class MainViewModel(
      * it was picked, with no way to see what it held (security audit, 2026-10-24).
      */
     fun importLocalBackup(context: Context, uri: Uri) {
-        launchAction {
-            val text = when (val read = SharedFiles.readBytes(context.applicationContext, uri, BACKUP_MAX_BYTES)) {
-                is SharedFiles.Read.Bytes -> read.bytes.toString(Charsets.UTF_8)
-                SharedFiles.Read.TooLarge -> {
-                    _statusMessage.value = uiText(R.string.action_notice_backup_big)
-                    return@launchAction
+        if (_fullBackupBusy.value) return
+        _fullBackupBusy.value = true
+        _fullBackupReadError.value = false
+        viewModelScope.launch {
+            try {
+                val bytes = when (val read = SharedFiles.readBytes(context.applicationContext, uri, EverythingBackup.MAX_JSON_BYTES)) {
+                    is SharedFiles.Read.Bytes -> read.bytes
+                    SharedFiles.Read.TooLarge -> throw IllegalArgumentException("Backup exceeds the input limit")
+                    SharedFiles.Read.Unreadable -> throw IllegalArgumentException("Backup could not be read")
                 }
-                SharedFiles.Read.Unreadable -> {
-                    _statusMessage.value = uiText(R.string.action_notice_file_failed)
-                    return@launchAction
+                val text = withContext(Dispatchers.Default) {
+                    Charsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).toString()
                 }
-            }
-            when (val result = withContext(Dispatchers.Default) { LocalBackup.decode(getApplication<Application>(), text) }) {
-                is BackupReadResult.Unreadable ->
-                    _statusMessage.value = uiText(R.string.action_notice_backup_invalid)
-                is BackupReadResult.TooNew ->
-                    _statusMessage.value = uiText(R.string.action_notice_backup_newer)
-                is BackupReadResult.Invalid ->
-                    _statusMessage.value = uiText(R.string.action_notice_backup_problem, result.problem)
-                is BackupReadResult.Ok -> _restorePreview.value = result.backup
+                val format = withContext(Dispatchers.Default) { runCatching { JSONObject(text).optString("format") }.getOrNull() }
+                if (format == "kharcha-paani-everything") {
+                    val backup = withContext(Dispatchers.Default) { EverythingBackup.decode(text) }
+                    _restorePreview.value = null
+                    _fullBackupPreview.value = backup
+                    _fullBackupTargetEmpty.value = fullTargetAvailable(backup)
+                } else {
+                    require(bytes.size <= BACKUP_MAX_BYTES) { "Legacy backup exceeds the input limit" }
+                    _fullBackupPreview.value = null
+                    when (val result = withContext(Dispatchers.Default) { LocalBackup.decode(getApplication<Application>(), text) }) {
+                        BackupReadResult.Unreadable -> {
+                            _fullBackupReadError.value = true
+                            _statusMessage.value = uiText(R.string.action_notice_backup_invalid)
+                        }
+                        is BackupReadResult.TooNew -> {
+                            _fullBackupReadError.value = true
+                            _statusMessage.value = uiText(R.string.action_notice_backup_newer)
+                        }
+                        is BackupReadResult.Invalid -> {
+                            _fullBackupReadError.value = true
+                            _statusMessage.value = uiText(R.string.action_notice_backup_problem, result.problem)
+                        }
+                        is BackupReadResult.Ok -> _restorePreview.value = result.backup
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                _fullBackupReadError.value = true
+                _fullBackupPreview.value = null
+                _restorePreview.value = null
+                _statusMessage.value = uiText(R.string.fullbackup_vm_read_failed)
+            } finally {
+                _fullBackupBusy.value = false
             }
         }
     }
 
     /** Puts back whatever in the previewed backup is missing here. */
     fun confirmRestore() {
+        if (fullBackupBlocksActions()) return
         val backup = _restorePreview.value ?: return
         _restorePreview.value = null
         launchAction {
@@ -2443,6 +2527,175 @@ class MainViewModel(
 
     fun dismissRestore() {
         _restorePreview.value = null
+    }
+
+    private val everythingRepository by lazy {
+        EverythingBackupRepository(db, if (isLocal) ReceiptStore.forLocal(getApplication(), GuestSession(userId))
+            else ReceiptStore.forAccount(getApplication(), userId))
+    }
+    private val everythingCoordinator by lazy {
+        EverythingRestoreCoordinator(db, everythingRepository, requireNotNull(recoveryJournal), ::applyEverythingSettings)
+    }
+
+    private fun fullBackupBlocksActions(): Boolean {
+        if (!_fullBackupBusy.value && !recoveryBlocked) return false
+        _statusMessage.value = uiText(if (recoveryBlocked) R.string.fullbackup_vm_recovery_pending else R.string.fullbackup_vm_busy)
+        return true
+    }
+
+    private fun requireCurrentLocalSession() {
+        require(isLocal && LedgerMode(getApplication()).guestOrNull()?.id == userId) { "Complete restore requires the current local session" }
+    }
+
+    fun openEverythingExport() {
+        if (fullBackupBlocksActions()) return
+        _fullBackupExportOpen.value = true
+    }
+
+    fun dismissEverythingExport() {
+        if (!_fullBackupBusy.value) _fullBackupExportOpen.value = false
+    }
+
+    fun exportEverything(context: Context, uri: Uri) {
+        if (fullBackupBlocksActions()) return
+        _fullBackupBusy.value = true
+        _fullBackupExportOpen.value = true
+        val app = context.applicationContext
+        viewModelScope.launch {
+            try {
+                backupStartupJob?.join()
+                val saved = settings.collectEverythingSettings(settingsId).copy(
+                    aiEnabled = aiSettings.enabledNow, groupSort = GroupSortPreferences(app).read().name,
+                )
+                val archive = everythingRepository.collect(BuildConfig.VERSION_NAME, saved)
+                withContext(Dispatchers.IO) {
+                    val encoded = EverythingBackup.encode(archive)
+                    val output = requireNotNull(app.contentResolver.openOutputStream(uri, "wt")) { "Could not open export destination" }
+                    output.bufferedWriter(Charsets.UTF_8).use { it.write(encoded) }
+                }
+                _fullBackupExportOpen.value = false
+                _statusMessage.value = uiText(R.string.fullbackup_vm_exported)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                _statusMessage.value = uiText(R.string.fullbackup_vm_operation_failed)
+            } finally {
+                _fullBackupExportOpen.value = false
+                _fullBackupBusy.value = false
+            }
+        }
+    }
+
+    fun dismissEverythingRestore() {
+        if (_fullBackupBusy.value || recoveryBlocked) return
+        _fullBackupPreview.value = null
+        _fullBackupReadError.value = false
+        _fullBackupTargetEmpty.value = false
+    }
+
+    fun confirmEverythingRestore() {
+        val backup = _fullBackupPreview.value ?: return
+        if (_fullBackupBusy.value) return
+        _fullBackupBusy.value = true
+        _fullBackupReadError.value = false
+        viewModelScope.launch {
+            try {
+                backupStartupJob?.join()
+                requireCurrentLocalSession()
+                require(fullTargetAvailable(backup)) { "Restore needs an empty local ledger" }
+                recoveryBlocked = true
+                everythingCoordinator.restore(backup, isLocal = true)
+                recoveryBlocked = false
+                _fullBackupPreview.value = null
+                _fullBackupTargetEmpty.value = false
+                _statusMessage.value = uiText(R.string.fullbackup_vm_restored)
+                ReminderScheduler.apply(getApplication(), settings.reminder.first(), replace = true)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                recoveryBlocked = hasRecoveryJournal()
+                _fullBackupTargetEmpty.value = runCatching { fullTargetAvailable(backup) }.getOrDefault(false)
+                _statusMessage.value = uiText(if (recoveryBlocked) R.string.fullbackup_vm_recovery_pending else R.string.fullbackup_vm_operation_failed)
+            } finally {
+                _fullBackupBusy.value = false
+            }
+        }
+    }
+
+    private suspend fun applyEverythingSettings(saved: EverythingSettings) {
+        requireCurrentLocalSession()
+        settings.restoreEverythingSettings(settingsId, saved)
+        requireCurrentLocalSession()
+        aiSettings.setEnabled(saved.aiEnabled && aiSettings.enabledNow)
+        saved.groupSort?.let { name -> GroupSort.entries.firstOrNull { it.name == name } }?.let {
+            GroupSortPreferences(getApplication()).writeDurably(it)
+        }
+    }
+
+    private suspend fun fullTargetAvailable(backup: EverythingBackup): Boolean = withContext(Dispatchers.IO) {
+        if (!isLocal || LedgerMode(getApplication()).guestOrNull()?.id != userId) return@withContext false
+        val tables = listOf("people", "groups", "group_members", "transactions", "splits", "split_shares",
+            "settlements", "subscriptions", "payment_asks", "receipts", "sync_meta", "pending_remote_deletes")
+        val empty = db.withTransaction {
+            tables.all { table -> db.openHelper.writableDatabase.query("SELECT EXISTS(SELECT 1 FROM `$table` LIMIT 1)").use {
+                check(it.moveToFirst()); it.getInt(0) == 0
+            } }
+        }
+        if (empty) true else if (hasRecoveryJournal()) {
+            val hash = MessageDigest.getInstance("SHA-256").digest(EverythingBackup.encode(backup).toByteArray(Charsets.UTF_8))
+                .joinToString("") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
+            db.syncDao().meta(EVERYTHING_RESTORE_MARKER) == hash
+        } else false
+    }
+
+    private suspend fun readRecoveryPreview(): EverythingBackup = withContext(Dispatchers.IO) {
+        val bytes = AtomicFile(requireNotNull(recoveryJournal)).openRead().use { input ->
+            val output = ByteArrayOutputStream()
+            val buffer = ByteArray(8192)
+            var size = 0L
+            while (true) {
+                val count = input.read(buffer)
+                if (count == -1) break
+                size += count
+                require(size <= EverythingBackup.MAX_JSON_BYTES) { "Restore journal is too large" }
+                output.write(buffer, 0, count)
+            }
+            output.toByteArray()
+        }
+        EverythingBackup.decode(Charsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).toString())
+    }
+
+    // Last: all state above is initialized before recovery can run, including on Unconfined Main.
+    // No automatic charge, colour rewrite or receipt sweep may run before a pending restore resumes.
+    init {
+        val startupRecovery = recoveryBlocked
+        backupStartupJob = viewModelScope.launch {
+            try {
+                if (hasRecoveryJournal()) {
+                    requireCurrentLocalSession()
+                    _fullBackupPreview.value = readRecoveryPreview()
+                    everythingCoordinator.resume(isLocal = true)
+                    recoveryBlocked = false
+                    _fullBackupPreview.value = null
+                }
+                if (ledgerRepo.runDueSubscriptions() > 0) SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
+                ledgerRepo.repairPersonColours()
+                runCatching { receipts.sweepOrphans() }.onFailure { Log.w("MainViewModel", "Bill photo sweep failed", it) }
+                publishUpiIfMissing()
+                ReminderScheduler.apply(getApplication(), settings.reminder.first(), replace = false)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                recoveryBlocked = hasRecoveryJournal()
+                _fullBackupReadError.value = recoveryBlocked && _fullBackupPreview.value == null
+                _fullBackupPreview.value?.let { preview ->
+                    _fullBackupTargetEmpty.value = runCatching { fullTargetAvailable(preview) }.getOrDefault(false)
+                }
+                _statusMessage.value = uiText(if (recoveryBlocked) R.string.fullbackup_vm_recovery_pending else R.string.fullbackup_vm_operation_failed)
+            } finally {
+                if (startupRecovery) _fullBackupBusy.value = false
+            }
+        }
     }
 
     /** Category and payment-method choices live in DataStore, so they restore separately. */

@@ -130,6 +130,8 @@ import com.vaibhav.kharchapaani.ui.groups.SharedGroupsViewModel
 import com.vaibhav.kharchapaani.ui.components.IouSheet
 import com.vaibhav.kharchapaani.ui.components.AiNoticeSheet
 import com.vaibhav.kharchapaani.ui.components.PersonLedgerSheet
+import com.vaibhav.kharchapaani.ui.components.EverythingBackupDialog
+import com.vaibhav.kharchapaani.ui.components.EverythingBackupExportDialog
 import com.vaibhav.kharchapaani.ui.components.RestoreBackupDialog
 import com.vaibhav.kharchapaani.ui.components.SettleUpSheet
 import com.vaibhav.kharchapaani.ui.components.SimplifyDebtsSheet
@@ -472,6 +474,18 @@ fun SplitFlowApp(
     val subscriptions by viewModel.subscriptions.collectAsStateWithLifecycle()
     val isUpiOpen by viewModel.isUpiOpen.collectAsStateWithLifecycle()
     val restorePreview by viewModel.restorePreview.collectAsStateWithLifecycle()
+    val fullBackupBusy by viewModel.fullBackupBusy.collectAsStateWithLifecycle()
+    val fullBackupPreview by viewModel.fullBackupPreview.collectAsStateWithLifecycle()
+    val fullBackupReadError by viewModel.fullBackupReadError.collectAsStateWithLifecycle()
+    val fullBackupTargetEmpty by viewModel.fullBackupTargetEmpty.collectAsStateWithLifecycle()
+    val fullBackupExportOpen by viewModel.fullBackupExportOpen.collectAsStateWithLifecycle()
+    val fullBackupModalOpen = fullBackupBusy || fullBackupPreview != null || fullBackupReadError || fullBackupExportOpen
+    LaunchedEffect(fullBackupBusy) {
+        if (fullBackupBusy) {
+            isAccountSheetOpen = false
+            isDeleteAccountOpen = false
+        }
+    }
     val currentTab by viewModel.currentTab.collectAsState()
     // Back from Splits or Insights goes Home first, rather than closing the app; Back on Home leaves.
     // Sheets and dialogs are their own windows and still take Back before this does.
@@ -713,13 +727,13 @@ fun SplitFlowApp(
                             syncStatus = syncStatus,
                             onShowMessage = viewModel::showMessage,
                             onVoiceCaptureStarted = viewModel::onVoiceCaptureStarted,
-                            onOpenAccount = { isAccountSheetOpen = true }
+                            onOpenAccount = { if (!fullBackupModalOpen) isAccountSheetOpen = true }
                         )
                     }
 
                     1 -> SplitsScreen(
                         accountAvatar = authUiState.accountAvatar,
-                        onOpenAccount = { isAccountSheetOpen = true },
+                        onOpenAccount = { if (!fullBackupModalOpen) isAccountSheetOpen = true },
                         syncStatus = syncStatus,
                         personBalances = personBalances,
                         groups = groups,
@@ -742,7 +756,7 @@ fun SplitFlowApp(
 
                     2 -> InsightsScreen(
                         accountAvatar = authUiState.accountAvatar,
-                        onOpenAccount = { isAccountSheetOpen = true },
+                        onOpenAccount = { if (!fullBackupModalOpen) isAccountSheetOpen = true },
                         syncStatus = syncStatus,
                         analytics = insightsAnalytics,
                         transactions = rawTransactions,
@@ -765,13 +779,15 @@ fun SplitFlowApp(
             com.vaibhav.kharchapaani.ui.components.MoneyConfirmationHaptics(viewModel.moneyConfirmations)
             ReviewAfterSettlement(
                 moments = viewModel.reviewMoments,
-                enabled = !isConfirmSheetOpen && !isSettleUpOpen && !isIouOpen && !isImportStatementOpen &&
+                enabled = !fullBackupBusy && !fullBackupExportOpen && fullBackupPreview == null && !fullBackupReadError &&
+                    !isConfirmSheetOpen && !isSettleUpOpen && !isIouOpen && !isImportStatementOpen &&
                     !isParsingStatement && !isParsing && !isCreateGroupOpen && !isAddFriendOpen &&
                     !isAccountSheetOpen && !isDeleteAccountOpen && !authUiState.isDeletingAccount &&
                     answeringSettlement == null && splitGroupPrompt == null && snackbarHostState.currentSnackbarData == null,
             )
             FlexibleUpdates(
-                enabled = !isConfirmSheetOpen && !isSettleUpOpen && !isIouOpen && !isImportStatementOpen &&
+                enabled = !fullBackupBusy && !fullBackupExportOpen && fullBackupPreview == null && !fullBackupReadError &&
+                    !isConfirmSheetOpen && !isSettleUpOpen && !isIouOpen && !isImportStatementOpen &&
                     !isParsingStatement && !isParsing && !isCreateGroupOpen && !isAddFriendOpen &&
                     !isAccountSheetOpen && !isDeleteAccountOpen && !authUiState.isDeletingAccount &&
                     answeringSettlement == null && splitGroupPrompt == null &&
@@ -801,6 +817,10 @@ fun SplitFlowApp(
         }
     }
     RestoreBackupDialog(backup = restorePreview, onRestore = viewModel::confirmRestore, onDismiss = viewModel::dismissRestore)
+    val createEverythingBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri == null) viewModel.dismissEverythingExport()
+        else viewModel.exportEverything(context, uri)
+    }
 
     var isLicencesOpen by rememberSaveable { mutableStateOf(false) }
     if (isAccountSheetOpen) {
@@ -813,8 +833,8 @@ fun SplitFlowApp(
             aiEnabled = aiEnabled,
             onAiEnabledChange = viewModel::setAiEnabled,
             isLocal = isLocal,
-            onSignInFromLocal = onSignInFromLocal,
-            onUseLocal = onUseLocal,
+            onSignInFromLocal = { if (!fullBackupModalOpen) onSignInFromLocal() },
+            onUseLocal = { if (!fullBackupModalOpen) onUseLocal() },
             upiId = upiPayee?.upiId,
             onOpenUpi = {
                 isAccountSheetOpen = false
@@ -835,19 +855,35 @@ fun SplitFlowApp(
                 viewModel.openExport()
             },
             onBackUp = {
-                isAccountSheetOpen = false
-                viewModel.exportLocalBackup(context)
+                if (!fullBackupBusy && !authUiState.isSigningIn && !authUiState.isDeletingAccount) {
+                    isAccountSheetOpen = false
+                    viewModel.openEverythingExport()
+                }
             },
-            onRestore = { pickBackup.launch(arrayOf("application/json", "text/plain", "*/*")) },
+            onRestore = {
+                if (!fullBackupBusy && !authUiState.isSigningIn && !authUiState.isDeletingAccount) {
+                    try {
+                        pickBackup.launch(arrayOf("application/json", "text/plain", "*/*"))
+                    } catch (_: ActivityNotFoundException) {
+                        viewModel.showMessage(context.getString(R.string.full_backup_ui_picker_unavailable))
+                    } catch (_: SecurityException) {
+                        viewModel.showMessage(context.getString(R.string.full_backup_ui_picker_unavailable))
+                    }
+                }
+            },
             onRetryFailedSync = viewModel::retryFailedSync,
             onRetryProfile = onRetryProfile,
             onSignOut = {
-                isAccountSheetOpen = false
-                onSignOut()
+                if (!fullBackupModalOpen) {
+                    isAccountSheetOpen = false
+                    onSignOut()
+                }
             },
             onDeleteAccount = {
-                isAccountSheetOpen = false
-                isDeleteAccountOpen = true
+                if (!fullBackupModalOpen) {
+                    isAccountSheetOpen = false
+                    isDeleteAccountOpen = true
+                }
             },
             onDismiss = { isAccountSheetOpen = false },
             reminder = reminder,
@@ -902,7 +938,7 @@ fun SplitFlowApp(
         isDeleting = authUiState.isDeletingAccount,
         error = authUiState.deleteAccountError,
         onSyncNow = viewModel::requestSync,
-        onDelete = onDeleteAccount,
+        onDelete = { if (!fullBackupModalOpen) onDeleteAccount(it) },
         onDismiss = {
             isDeleteAccountOpen = false
             onDismissDeleteAccountError()
@@ -1191,6 +1227,34 @@ fun SplitFlowApp(
             prefs = categoryPrefs,
         )
     }
+    // Last windows in the shell: recovery and file operations block every underlying sheet.
+    EverythingBackupDialog(
+        backup = fullBackupPreview,
+        isLocal = isLocal,
+        isEmptyLedger = fullBackupTargetEmpty,
+        isWorking = fullBackupBusy && !fullBackupExportOpen,
+        hasReadError = fullBackupReadError,
+        onRestore = viewModel::confirmEverythingRestore,
+        onDismiss = viewModel::dismissEverythingRestore,
+    )
+    EverythingBackupExportDialog(
+        visible = fullBackupExportOpen,
+        isWorking = fullBackupBusy,
+        onExport = {
+            if (!fullBackupBusy) {
+                try {
+                    createEverythingBackup.launch("kharcha-paani-everything-${java.time.LocalDate.now()}.json")
+                } catch (_: ActivityNotFoundException) {
+                    viewModel.dismissEverythingExport()
+                    viewModel.showMessage(context.getString(R.string.full_backup_ui_picker_unavailable))
+                } catch (_: SecurityException) {
+                    viewModel.dismissEverythingExport()
+                    viewModel.showMessage(context.getString(R.string.full_backup_ui_picker_unavailable))
+                }
+            }
+        },
+        onDismiss = viewModel::dismissEverythingExport,
+    )
 }
 
 internal fun shareInviteLink(context: Context, groupName: String, link: String) {
