@@ -23,13 +23,13 @@ import java.time.LocalDate
 
 private val Context.appSettings: DataStore<Preferences> by preferencesDataStore(
     name = "app_settings",
-    corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+    corruptionHandler = AppSettings.createCorruptionHandler(),
 )
 
 /** Preferences that stay on this phone and aren't part of the ledger. */
-class AppSettings(context: Context) {
+class AppSettings internal constructor(private val store: DataStore<Preferences>) {
 
-    private val store = context.applicationContext.appSettings
+    constructor(context: Context) : this(context.applicationContext.appSettings)
 
     /** Whether closing a sheet with unsaved input asks first (backlog item 2). On unless turned off. */
     val askBeforeDiscarding: Flow<Boolean> = store.data.map { it[ASK_BEFORE_DISCARDING] ?: true }
@@ -173,8 +173,11 @@ class AppSettings(context: Context) {
         }
     }
 
-    private companion object {
-        val json = Json { ignoreUnknownKeys = true }
+    companion object {
+        fun createCorruptionHandler(): ReplaceFileCorruptionHandler<Preferences> =
+            ReplaceFileCorruptionHandler { emptyPreferences() }
+
+        private val json = Json { ignoreUnknownKeys = true }
         val AI_USAGE_DAY = stringPreferencesKey("ai_usage_day")
         val AI_USAGE_COUNT = intPreferencesKey("ai_usage_count")
         fun categoryPrefsKey(userId: String) = stringPreferencesKey("category_prefs_$userId")

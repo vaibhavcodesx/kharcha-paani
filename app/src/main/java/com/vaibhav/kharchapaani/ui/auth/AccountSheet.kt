@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.auth
 
+import com.vaibhav.kharchapaani.R
+import androidx.compose.ui.res.stringResource
 import android.app.TimePickerDialog
 import android.text.format.DateUtils
 import androidx.compose.foundation.BorderStroke
@@ -131,6 +133,8 @@ fun AccountSheet(
     onOpenLicences: () -> Unit = {},
     /** When the phone has no app to open a link or an email with: what to tell the person instead. */
     onNoApp: (String) -> Unit = {},
+    aiEnabled: Boolean = true,
+    onAiEnabledChange: (Boolean) -> Unit = {},
 ) {
     // Read here rather than passed in: the setting lives with crash reporting, which starts before
     // anything else and can't wait for a view model. Null in a build with no Firebase project.
@@ -161,6 +165,8 @@ fun AccountSheet(
             onSaveHue = onSaveHue,
             onOpenLicences = onOpenLicences,
             onNoApp = onNoApp,
+            aiEnabled = aiEnabled,
+            onAiEnabledChange = onAiEnabledChange,
             crashReports = crashReports,
             onCrashReportsChange = {
                 CrashReporting.setEnabled(context, it)
@@ -198,6 +204,8 @@ fun AccountSheetContent(
     onOpenLicences: () -> Unit = {},
     /** When the phone has no app to open a link or an email with: what to tell the person instead. */
     onNoApp: (String) -> Unit = {},
+    aiEnabled: Boolean = true,
+    onAiEnabledChange: (Boolean) -> Unit = {},
     /** Whether crash reports are on; null when this build can't send any, and the switch isn't shown. */
     crashReports: Boolean? = null,
     onCrashReportsChange: (Boolean) -> Unit = {},
@@ -280,8 +288,29 @@ fun AccountSheetContent(
                 modifier = Modifier.padding(bottom = Spacing.m),
             )
         } else {
-            SheetRow(label = "Name", position = RowPosition.Single) {
-                SheetTextInput(value = name, onValueChange = { name = it }, placeholder = "Your name", fieldTestTag = "profile_name_input")
+            // One connected group, like the settings below: three rows that all describe you,
+            // with the helper line once, under them, instead of between the first two.
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                SheetRow(label = "Name", position = RowPosition.First) {
+                    SheetTextInput(value = name, onValueChange = { name = it }, placeholder = "Your name", fieldTestTag = "profile_name_input")
+                }
+                // Collapsed until wanted: open, the grid would push everything else off the sheet.
+                Box(Modifier.testTag("avatar_row")) {
+                    ExpandableDetail(
+                        label = "Avatar",
+                        value = emoji ?: "Initials",
+                        expanded = avatarOpen,
+                        onToggle = { avatarOpen = !avatarOpen },
+                        position = RowPosition.Middle,
+                    ) {
+                        AvatarGrid(
+                            initial = (cleanName ?: state.email)?.firstOrNull()?.uppercase() ?: "?",
+                            selected = emoji,
+                            onSelect = { emoji = it },
+                        )
+                    }
+                }
+                ColourRow(colour = colour, saved = state.hue, onSave = onSaveHue, error = state.hueSaveError)
             }
             Text(
                 text = when {
@@ -292,29 +321,9 @@ fun AccountSheetContent(
                 style = MaterialTheme.typography.bodySmall,
                 color = if (state.profileSaveFailed || (name.isNotBlank() && cleanName == null)) WarmAmberLight else SubMutedWarmGray,
                 modifier = Modifier
-                    .padding(top = Spacing.s, bottom = Spacing.l)
+                    .padding(top = Spacing.s)
                     .semantics { liveRegion = LiveRegionMode.Polite },
             )
-
-            // Collapsed until wanted: open, the grid would push everything else off the sheet.
-            Box(Modifier.testTag("avatar_row")) {
-                ExpandableDetail(
-                    label = "Avatar",
-                    value = emoji ?: "Initials",
-                    expanded = avatarOpen,
-                    onToggle = { avatarOpen = !avatarOpen },
-                    position = RowPosition.Single,
-                ) {
-                    AvatarGrid(
-                        initial = (cleanName ?: state.email)?.firstOrNull()?.uppercase() ?: "?",
-                        selected = emoji,
-                        onSelect = { emoji = it },
-                    )
-                }
-            }
-            if (saved != null) {
-                ColourRow(colour = colour, saved = state.hue, onSave = onSaveHue, error = state.hueSaveError)
-            }
             Spacer(Modifier.height(Spacing.xl))
         }
 
@@ -324,8 +333,9 @@ fun AccountSheetContent(
                 profile = state.profile,
                 isRefreshPending = (state.authState as? AuthState.SignedIn)?.isRefreshPending == true,
                 onRetry = onRetryProfile,
+                position = RowPosition.First,
             )
-            SyncStatusRow(status = syncStatus, onRetryFailed = onRetryFailedSync)
+            SyncStatusRow(status = syncStatus, onRetryFailed = onRetryFailedSync, position = RowPosition.Last)
         }
         Text(
             // Said precisely: before 1.3.0 "your expenses back up" was true only of unsplit ones. Since
@@ -385,6 +395,19 @@ fun AccountSheetContent(
                     ),
                 )
             }
+            SettingRow(
+                title = stringResource(R.string.ai_choice_title),
+                detail = stringResource(if (aiEnabled) R.string.ai_choice_enabled_detail else R.string.ai_choice_disabled_detail),
+                position = RowPosition.Middle,
+                modifier = Modifier.toggleable(value = aiEnabled, role = Role.Switch, onValueChange = onAiEnabledChange)
+                    .testTag("setting_ai_enabled"),
+            ) {
+                Switch(checked = aiEnabled, onCheckedChange = null, colors = SwitchDefaults.colors(
+                    checkedTrackColor = WarmAmberPrimary, checkedThumbColor = CharcoalBg,
+                    uncheckedTrackColor = CharcoalElevated, uncheckedThumbColor = MutedWarmGray,
+                    uncheckedBorderColor = OutlineInteractive,
+                ))
+            }
             val reminderTime = ReminderSchedule.label(reminder.minuteOfDay, android.text.format.DateFormat.is24HourFormat(LocalContext.current))
             SettingRow(
                 title = "Notifications",
@@ -393,15 +416,22 @@ fun AccountSheetContent(
                     reminder.enabled -> "Payments to confirm, and a reminder at $reminderTime"
                     else -> "Payments to confirm"
                 },
-                position = RowPosition.Middle,
+                position = RowPosition.Last,
                 modifier = Modifier.clickable(onClickLabel = "Open notification settings", onClick = onOpenNotifications).testTag("setting_notifications"),
             ) {
                 Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
             }
+        }
+
+        // What leaves or comes back to this phone, apart from the switches above: these are
+        // actions you run now and then, not settings.
+        Spacer(Modifier.height(Spacing.xl))
+        Eyebrow("Your data")
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             SettingRow(
                 title = "Export to a spreadsheet",
                 detail = "A month, dates or everything, as CSV",
-                position = RowPosition.Middle,
+                position = RowPosition.First,
                 modifier = Modifier.clickable(onClickLabel = "Open export", onClick = onOpenExport).testTag("setting_export"),
             ) {
                 Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
@@ -568,13 +598,13 @@ data class ColourChoice(
 private fun ColourRow(colour: ColourChoice, saved: Int?, onSave: (Int) -> Unit, error: String?) {
     var open by rememberSaveable { mutableStateOf(colour.clashWith != null) }
     var picked by rememberSaveable(saved) { mutableStateOf(saved) }
-    Column(Modifier.padding(top = 2.dp).testTag("colour_row")) {
+    Column(Modifier.testTag("colour_row")) {
         ExpandableDetail(
             label = "Colour",
             value = if (saved == null) "Choosing one" else "Yours everywhere",
             expanded = open,
             onToggle = { open = !open },
-            position = RowPosition.Single,
+            position = RowPosition.Last,
         ) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.m)) {
@@ -757,12 +787,13 @@ private fun CloudStatusRow(
     profile: ProfileState,
     isRefreshPending: Boolean,
     onRetry: () -> Unit,
+    position: RowPosition = RowPosition.Single,
 ) {
     val unreachable = isRefreshPending || profile == ProfileState.Unavailable
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(KpShapes.medium)
+            .clip(position.shape)
             .background(CharcoalCard)
             .padding(start = 14.dp, end = 4.dp)
             .heightIn(min = 52.dp)
@@ -811,11 +842,12 @@ private fun CloudStatusRow(
 private fun SyncStatusRow(
     status: SyncStatus,
     onRetryFailed: () -> Unit,
+    position: RowPosition = RowPosition.Single,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(KpShapes.medium)
+            .clip(position.shape)
             .background(CharcoalCard)
             .padding(start = 14.dp, end = 4.dp)
             .heightIn(min = 52.dp)

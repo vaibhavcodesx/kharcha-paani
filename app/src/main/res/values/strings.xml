@@ -28,6 +28,17 @@
     <string name="home_day_spent">%1$s spent</string>
     <string name="home_capture_reading">Reading it…</string>
     <string name="home_capture_prompt">What did you spend on?</string>
+    <string name="home_capture_try">Try: %1$s</string>
+    <!-- Lines the capture field cycles through. Each one must read with an amount (CaptureHintsTest). -->
+    <string-array name="home_capture_examples">
+        <item>chai 40 cash</item>
+        <item>dinner 1200 with Rohan</item>
+        <item>auto 5 sau</item>
+        <item>kal sabzi 180</item>
+        <item>salary 50000 received</item>
+        <item>cab 450 split with Aaru</item>
+        <item>rent 12k</item>
+    </string-array>
     <string name="home_capture_log">Log it</string>
     <string name="home_capture_say">Say it</string>
     <string name="home_capture_bill_photo">Bill photo</string>
@@ -56,6 +67,7 @@
     <string name="splits_log_iou">Log an IOU</string>
     <string name="splits_friends_count">Friends · %1$d</string>
     <string name="splits_groups_count">Groups · %1$d</string>
+    <string name="splits_sort_by">Sort by</string>
     <string name="splits_sort_caption">Sort: %1$s</string>
     <string name="splits_sort_latest">Latest activity</string>
     <string name="splits_sort_name">Name</string>
@@ -390,6 +402,10 @@
     <string name="group_people_former">Former member</string>
     <string name="group_people_paid">Paid by</string>
     <string name="group_people_split">Split with</string>
+    <string name="group_people_description">Paid by %1$s. Split with %2$s.</string>
+    <string name="group_people_description_paid">Paid by %1$s.</string>
+    <string name="group_legend_paid">paid</string>
+    <string name="group_legend_split">split between</string>
     <!-- Additional screen strings. -->
     <string name="create_group_save">Create group</string>
     <string name="create_group_too_long">Name is too long</string>
@@ -958,4 +974,12 @@
     <string name="statement_warning_already_in_ledger">Already in your ledger</string>
     <string name="statement_warning_large">Much bigger than the rest of this statement</string>
     <string name="statement_warning_outside">Outside the statement\'s dates (%1$s)</string>
+    <string name="ai_choice_title">Use AI (Google Gemini)</string>
+    <string name="ai_choice_enabled_detail">AI can read quick-add text, bills and statements, and answer Insights questions</string>
+    <string name="ai_choice_disabled_detail">Off everywhere. Type entries yourself; bill photos can stay as attachments.</string>
+    <string name="ai_choice_off_notice">AI is off. Nothing was sent to Gemini. You can turn it on in Settings.</string>
+    <string name="ai_choice_using_gemini">Using Google Gemini. Check the reading before saving.</string>
+    <string name="ai_choice_voice_off">AI is off, including speech recognition. Type an entry instead.</string>
+    <string name="ai_choice_capture_on">Quick add, bill and statement reads use Google Gemini</string>
+    <string name="ai_choice_capture_off">AI is off · quick add stays on this phone</string>
 </resources>

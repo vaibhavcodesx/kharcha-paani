@@ -2,8 +2,9 @@ package com.vaibhav.kharchapaani.data.settings
 
 import android.content.Context
 import androidx.datastore.core.CorruptionException
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.preferencesDataStoreFile
+import androidx.datastore.preferences.core.Preferences
 import androidx.test.core.app.ApplicationProvider
 import com.vaibhav.kharchapaani.domain.AiUsage
 import com.vaibhav.kharchapaani.domain.CategoryPrefs
@@ -12,81 +13,66 @@ import com.vaibhav.kharchapaani.domain.UpiPayee
 import com.vaibhav.kharchapaani.reminder.ReminderSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.File
 import java.time.LocalDate
+import java.util.UUID
 
 /**
  * Verifies that corrupted preferences files recover cleanly without crashing
  * the app (reliability audit item L14).
+ *
+ * Each test owns an isolated DataStore file and CoroutineScope that is explicitly
+ * cancelled and joined on completion to guarantee lifecycle isolation without
+ * modifying static singletons.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class AppSettingsCorruptionTest {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
-    private val prefsFile: File
-        get() = context.preferencesDataStoreFile("app_settings")
 
-    @Before
-    fun setUp() {
-        cleanUpDataStore()
-    }
-
-    @After
-    fun tearDown() {
-        cleanUpDataStore()
-    }
-
-    private fun cleanUpDataStore() {
-        if (prefsFile.exists()) {
-            prefsFile.delete()
+    private fun withTestStore(
+        useProductionHandler: Boolean = true,
+        block: suspend (DataStore<Preferences>, File) -> Unit,
+    ) = runBlocking {
+        val testFile = File(context.filesDir, "datastore/test_${UUID.randomUUID()}.preferences_pb").apply {
+            parentFile?.mkdirs()
         }
-        resetAppSettingsSingleton()
-    }
-
-    /**
-     * Resets the cached DataStore singleton held by [Context.appSettings] delegate
-     * so that each test accesses the underlying disk file afresh.
-     */
-    private fun resetAppSettingsSingleton() {
+        val job = Job()
+        val scope = CoroutineScope(Dispatchers.IO + job)
+        val store = PreferenceDataStoreFactory.create(
+            corruptionHandler = if (useProductionHandler) AppSettings.createCorruptionHandler() else null,
+            scope = scope,
+            produceFile = { testFile },
+        )
         try {
-            val clazz = Class.forName("com.vaibhav.kharchapaani.data.settings.AppSettingsKt")
-            val delegateField = clazz.getDeclaredField("appSettings\$delegate").apply { isAccessible = true }
-            val delegate = delegateField.get(null) ?: return
-            val instanceField = delegate.javaClass.getDeclaredField("INSTANCE").apply { isAccessible = true }
-            instanceField.set(delegate, null)
-        } catch (_: Throwable) {
-            // Best effort reflection cleanup
+            block(store, testFile)
+        } finally {
+            job.cancel()
+            job.join()
+            if (testFile.exists()) {
+                testFile.delete()
+            }
         }
     }
 
     @Test
-    fun `baseline verification - unhandled corrupted preferences file throws CorruptionException`() = runBlocking {
-        val testCorruptFile = File(context.filesDir, "datastore/test_unhandled_corruption.preferences_pb").apply {
-            parentFile?.mkdirs()
-            writeBytes(byteArrayOf(0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte()))
-        }
-
-        val unhandledStore = PreferenceDataStoreFactory.create(
-            corruptionHandler = null,
-            scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
-            produceFile = { testCorruptFile },
-        )
+    fun `baseline verification - unhandled corrupted preferences file throws CorruptionException`() = withTestStore(useProductionHandler = false) { unhandledStore, testFile ->
+        testFile.writeBytes(byteArrayOf(0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte()))
+        assertTrue(testFile.exists())
 
         try {
             unhandledStore.data.first()
@@ -96,20 +82,17 @@ class AppSettingsCorruptionTest {
                 "Expected CorruptionException, but caught ${e::class.qualifiedName}: ${e.message}",
                 e is CorruptionException,
             )
-        } finally {
-            testCorruptFile.delete()
         }
     }
 
     @Test
-    fun `corrupted preferences file does not throw and recovers defaults cleanly`() = runBlocking {
+    fun `corrupted preferences file does not throw and recovers defaults cleanly`() = withTestStore { store, testFile ->
         // 1. Seed invalid non-protobuf bytes to simulate file corruption on disk
-        prefsFile.parentFile?.mkdirs()
-        prefsFile.writeBytes(byteArrayOf(0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte()))
-        assertTrue("Corrupted file must exist on disk before read", prefsFile.exists())
+        testFile.writeBytes(byteArrayOf(0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte()))
+        assertTrue("Corrupted file must exist on disk before read", testFile.exists())
 
-        // 2. Initialize AppSettings and verify no CorruptionException is thrown on reading flows
-        val settings = AppSettings(context)
+        // 2. Initialize AppSettings via injected store and verify no CorruptionException is thrown on reading flows
+        val settings = AppSettings(store)
 
         // askBeforeDiscarding defaults to true
         assertEquals(true, settings.askBeforeDiscarding.first())
@@ -144,12 +127,11 @@ class AppSettingsCorruptionTest {
     }
 
     @Test
-    fun `preferences can be written and read back normally after corruption recovery`() = runBlocking {
+    fun `preferences can be written and read back normally after corruption recovery`() = withTestStore { store, testFile ->
         // 1. Seed corruption
-        prefsFile.parentFile?.mkdirs()
-        prefsFile.writeBytes(byteArrayOf(0x00, 0x01, 0x02, 0x03, 0xFF.toByte()))
+        testFile.writeBytes(byteArrayOf(0x00, 0x01, 0x02, 0x03, 0xFF.toByte()))
 
-        val settings = AppSettings(context)
+        val settings = AppSettings(store)
 
         // Recover from corruption by reading a flow
         assertEquals(true, settings.askBeforeDiscarding.first())
@@ -198,11 +180,10 @@ class AppSettingsCorruptionTest {
     }
 
     @Test
-    fun `clearAccount removes account specific preferences after corruption recovery`() = runBlocking {
-        prefsFile.parentFile?.mkdirs()
-        prefsFile.writeBytes(byteArrayOf(0xFF.toByte(), 0xFF.toByte()))
+    fun `clearAccount removes account specific preferences after corruption recovery`() = withTestStore { store, testFile ->
+        testFile.writeBytes(byteArrayOf(0xFF.toByte(), 0xFF.toByte()))
 
-        val settings = AppSettings(context)
+        val settings = AppSettings(store)
         settings.setUpiPayee("charlie", UpiPayee("charlie@upi", "Charlie"))
         settings.updateCategoryPrefs("charlie") { it.copy(defaultCategory = "Transport") }
 

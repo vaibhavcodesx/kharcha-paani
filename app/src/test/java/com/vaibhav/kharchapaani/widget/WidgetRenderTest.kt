@@ -10,6 +10,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.vaibhav.kharchapaani.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -70,5 +71,16 @@ class WidgetRenderTest {
 
         assertEquals("Sign in to start logging", bar.text(R.id.quick_hint))
         assertEquals(View.GONE, bar.findViewById<View>(R.id.quick_today_block).visibility)
+    }
+
+    @Test
+    fun `the compact quick add is a labelled button that opens quick add`() {
+        val compact = applied(QuickAddCompactWidgetProvider.render(context))
+        val root = compact.findViewById<android.view.ViewGroup>(R.id.quick_compact_root)
+
+        val labels = (0 until root.childCount).map(root::getChildAt).filterIsInstance<TextView>().map { it.text.toString() }
+        assertEquals(listOf("Quick add"), labels)
+        assertEquals(context.getString(R.string.widget_copy_log_description), root.contentDescription.toString())
+        assertTrue("the whole widget is the tap", root.hasOnClickListeners())
     }
 }
