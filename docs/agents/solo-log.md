@@ -13,6 +13,8 @@ owner or Claude go at the bottom.
 
 ## Log
 
+- 2026-11-04 · #249 · CI test diagnostics · independent actual-script shell review passed failure/success/INT/TERM and bounded inspector tests. Sourcec487ee2 CI41877985849 completed1102tests,0failures/errors/skips (235XML), and lint/release job logs show BUILD SUCCESSFUL; repeated status endpoints lagged as queued despite completed artifacts/logs, so no merge was inferred from those snapshots. Final documentation head still requires exact-head all-three success before squash. Test starts and five bounded worker snapshots preserve full tasks/assertions/30m job; no app behavior change. Local Gradle skipped below4GB free RAM; phone acceptance not claimed.
+
 - 2026-11-04 · #226 · AI choice · in review; six existing-API regressions fail as predicted in CI41841846737 (1080 tests,6 failures). Device-wide setting, HTTP/request cancellation and local capture fallbacks; code head3d7cb0f passed all three jobs in CI41845836878; head6c45720 passed CI41857681967 after grouped-settings/widget integration; normally refreshed main004690e for parser feedback, fresh exact-head merge checks pending. The ca76 unit run timed out and was not counted as passing; phone checks remain pending. Guest/auth and complete backup are separate PRs.
 
 - 2026-10-27 · #125 · X5 / TODOS 8 group settlements view · merged; All activity stays default, payments and IOUs retain confirmation status, archived history is read-only.
@@ -207,7 +209,7 @@ owner or Claude go at the bottom.
 
 - 2026-11-04 · #199 · F3 source review notes · prepared for merge; corrected first-day selector cause, actual minimum text/layout behavior and component/parser/Room evidence boundaries for six merged PRs. PNG generation is not claimed as visual or phone acceptance. Independent review and exact-head current-main CI gate merge; docs only.
 
-- 2026-11-04 · Y16 · LazyColumn for GroupDetailSheet · prepared; sheet body and feed backed by LazySheetScaffold/LazyColumn preserving liquid glass haze sampling, bottom action bar clearance, and stable feed keys; tested with Robolectric unit tests for lazy scroll and action bar clickability. CI gates merge.
+- 2026-11-04 · #250 · Y16 / LazyColumn for GroupDetailSheet · prepared; sheet body and feed backed by LazySheetScaffold/LazyColumn preserving liquid glass haze sampling, bottom action bar clearance, and stable feed keys; tested with Robolectric unit tests for lazy scroll, oldest/newest item assertions, empty state, real Room/ViewModel modal wiring, and action bar clickability. Exact-head CI gates merge.
 
 ## Questions
 
