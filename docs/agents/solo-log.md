@@ -209,7 +209,7 @@ owner or Claude go at the bottom.
 
 - 2026-11-04 · #199 · F3 source review notes · prepared for merge; corrected first-day selector cause, actual minimum text/layout behavior and component/parser/Room evidence boundaries for six merged PRs. PNG generation is not claimed as visual or phone acceptance. Independent review and exact-head current-main CI gate merge; docs only.
 
-- 2026-11-05 · M1 / AccountSheet copy into strings.xml · prepared; moved 17 hardcoded copy strings covering profile, avatar, cloud status and sync status into string and plural resources; unchanged English copy, formatted plurals and exact relative sync time; verified with AccountSheetStringResourcesTest and SyncStatusTextTest. Exact-head CI gates merge.
+- 2026-11-05 · #253 · M1 / AccountSheet copy into strings.xml · prepared; moved 17 hardcoded copy strings covering profile, avatar, cloud status and sync status into string and plural resources; unchanged English copy, formatted plurals and exact relative sync time; verified with AccountSheetStringResourcesTest and SyncStatusTextTest. Exact-head CI gates merge.
 
 ## Questions
 
