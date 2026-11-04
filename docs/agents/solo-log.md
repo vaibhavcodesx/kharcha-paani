@@ -13,7 +13,7 @@ owner or Claude go at the bottom.
 
 ## Log
 
-- 2026-11-04 · #230 · Local mode · owner-review draft, unmerged; three predicted namespace/legacy regressions in CI41844768912 (1080tests). Isolated storage, session/UI and background guards prepared; latest-main integration/full CI/independent review pending. No anonymous auth account or guest upload.
+- 2026-11-04 · #230 · Local mode · implementation prepared, owner-review draft/unmerged. Namespace3-red, local-write/session6-red and shared-close4-red runs verified;9076d82 passed all3jobs CI41855080945. Retention1-red1130tests verified in CI41860289898. Final scoped-background baseline8d36ac1 (5 predicted failures) and repaired-head checks remain queued/unverified; no phone acceptance, anonymous account or guest upload. Never merge without auth owner review.
 
 - 2026-11-04 · #226 · AI choice · squash-merged6b1b189; final current-main head3251078 passed all3jobs CI41860028454, six initial regressions proved red. Manual capture stays available. No phone acceptance; ca76 timeout was not passing evidence.
 
