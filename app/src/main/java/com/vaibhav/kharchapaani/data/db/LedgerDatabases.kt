@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.data.db
 
 import android.content.Context
+import com.vaibhav.kharchapaani.data.settings.GuestSession
 import android.database.sqlite.SQLiteDatabase
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +47,11 @@ object LedgerDatabases {
         open = OpenDatabase(userId, database)
         database
     }
+
+    // API scaffold for the red run: deliberately retains the old account opening behavior.
+    suspend fun openLocal(context: Context, guest: GuestSession): AppDatabase = open(context, guest.id)
+
+    internal fun localDatabaseName(guest: GuestSession): String = "ledger-local-${guest.id}.db"
 
     /** Closes the open database, if any. The file stays on disk (signing out keeps local data). */
     suspend fun close() = lock.withLock {

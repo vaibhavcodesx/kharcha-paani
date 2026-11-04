@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.data.receipts
 
 import android.content.Context
+import com.vaibhav.kharchapaani.data.settings.GuestSession
 import android.graphics.Bitmap
 import android.util.Log
 import com.vaibhav.kharchapaani.data.db.LedgerDatabases
@@ -99,6 +100,9 @@ class ReceiptStore(val dir: File) {
         /** Per account, like the ledger file, so one account never sees another's bills. */
         fun forAccount(context: Context, userId: String): ReceiptStore =
             ReceiptStore(File(File(context.filesDir, "receipts"), LedgerDatabases.databaseName(userId).removeSuffix(".db")))
+
+        // API scaffold: still uses the old account namespace until the fix.
+        fun forLocal(context: Context, guest: GuestSession): ReceiptStore = forAccount(context, guest.id)
 
         internal fun scaledDown(bitmap: Bitmap, maxSide: Int = MAX_SIDE): Bitmap {
             val longest = maxOf(bitmap.width, bitmap.height)
