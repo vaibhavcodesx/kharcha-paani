@@ -118,6 +118,19 @@ fun CaptureCard(
         onMessage = onCaptureFailed,
     )
     fun listen() = voice.listen()
+
+    val focusRequester = remember { FocusRequester() }
+    val bringIntoView = remember { BringIntoViewRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(focusCapture) {
+        if (focusCapture) {
+            // On a short phone the line can start below the fold: scroll it in, then focus.
+            bringIntoView.bringIntoView()
+            focusRequester.requestFocus()
+            keyboard?.show()
+            onCaptureFocused()
+        }
+    }
     LaunchedEffect(startVoiceCapture) {
         if (startVoiceCapture) {
             onVoiceCaptureStarted()
