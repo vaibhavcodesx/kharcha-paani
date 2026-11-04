@@ -358,6 +358,7 @@ fun SplitFlowApp(
     var isAccountSheetOpen by rememberSaveable { mutableStateOf(false) }
     var isDeleteAccountOpen by rememberSaveable { mutableStateOf(false) }
     val askBeforeDiscarding by viewModel.askBeforeDiscarding.collectAsStateWithLifecycle()
+    val aiEnabled by viewModel.aiEnabled.collectAsStateWithLifecycle()
     val upiPayee by viewModel.upiPayee.collectAsStateWithLifecycle()
     val categoryPrefs by viewModel.categoryPrefs.collectAsStateWithLifecycle()
     val isCategoriesOpen by viewModel.isCategoriesOpen.collectAsStateWithLifecycle()
@@ -602,6 +603,7 @@ fun SplitFlowApp(
                             onOpenSimplifyDebts = { viewModel.openSimplifyDebts() },
                             accountAvatar = authUiState.accountAvatar,
                             startVoiceCapture = voiceCaptureRequested,
+                            aiEnabled = aiEnabled,
                             syncStatus = syncStatus,
                             onShowMessage = viewModel::showMessage,
                             onVoiceCaptureStarted = viewModel::onVoiceCaptureStarted,
@@ -642,7 +644,7 @@ fun SplitFlowApp(
                         askBoard = askBoard,
                         onAsk = { viewModel.askInsights(it) },
                         aiAsksLeft = aiAsksLeft,
-                        aiAvailable = viewModel.aiAvailable,
+                        aiAvailable = viewModel.aiAvailable && aiEnabled,
                         onExport = { viewModel.openExport() },
                         onEditTransaction = { viewModel.openEditTransaction(it) },
                         month = insightsMonth,
@@ -702,6 +704,8 @@ fun SplitFlowApp(
             state = authUiState,
             syncStatus = syncStatus,
             askBeforeDiscarding = askBeforeDiscarding,
+            aiEnabled = aiEnabled,
+            onAiEnabledChange = viewModel::setAiEnabled,
             upiId = upiPayee?.upiId,
             onOpenUpi = {
                 isAccountSheetOpen = false
@@ -990,7 +994,7 @@ fun SplitFlowApp(
         onAskTripReview = { groupId -> viewModel.askTripReview(groupId) },
         tripReview = tripReview,
         aiAsksLeft = aiAsksLeft,
-        aiAvailable = viewModel.aiAvailable,
+        aiAvailable = viewModel.aiAvailable && aiEnabled,
         onDismiss = {
             sharedGroups.dismissInvite()
             viewModel.dismissGroupDetail()

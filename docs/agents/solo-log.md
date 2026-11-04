@@ -13,6 +13,8 @@ owner or Claude go at the bottom.
 
 ## Log
 
+- 2026-11-04 · #226 · AI choice · in review; six existing-API regressions fail as predicted in CI41841846737 (1080 tests,6 failures). Device-wide setting, HTTP/request cancellation and local capture fallbacks; final full CI and phone checks pending. Guest/auth and complete backup are separate PRs.
+
 - 2026-10-27 · #125 · X5 / TODOS 8 group settlements view · merged; All activity stays default, payments and IOUs retain confirmation status, archived history is read-only.
 
 - 2026-10-27 · #127 · X5 / TODOS 5 group sorting · merged; device-wide display preference, latest activity includes additions, edits and settlement responses; no ledger maths changed.
