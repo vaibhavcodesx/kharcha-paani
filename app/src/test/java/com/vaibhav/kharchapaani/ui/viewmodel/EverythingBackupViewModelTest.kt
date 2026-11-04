@@ -106,7 +106,11 @@ class EverythingBackupViewModelTest {
     private fun file(text: String = ""): Pair<File, Uri> {
         val directory = File(app.cacheDir, "exports").apply { mkdirs() }
         val path = File(directory, "full-vm-${UUID.randomUUID()}.json").apply { writeText(text) }.also(files::add)
-        return path to FileProvider.getUriForFile(app, "${app.packageName}.fileprovider", path)
+        val authority = "${app.packageName}.fileprovider"
+        // Robolectric gives each method a new cache directory, while FileProvider caches by authority.
+        // Attach the real manifest provider before its static URI lookup, refreshing that strategy.
+        requireNotNull(app.contentResolver.acquireContentProviderClient(authority)).close()
+        return path to FileProvider.getUriForFile(app, authority, path)
     }
 
     private suspend fun seed(database: AppDatabase, photos: ReceiptStore, due: Boolean = false) {

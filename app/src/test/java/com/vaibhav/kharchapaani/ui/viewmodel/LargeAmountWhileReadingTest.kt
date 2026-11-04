@@ -171,7 +171,11 @@ class LargeAmountWhileReadingTest {
     /** [compose.waitUntil], but a timeout says what it was waiting for and what the database held. */
     private fun waitFor(what: String, condition: () -> Boolean) {
         try {
-            compose.waitUntil(10_000, condition)
+            compose.waitUntil(10_000) {
+                // Room sharing resumes on native Main, independently of Compose's frame clock.
+                ShadowLooper.idleMainLooper()
+                condition()
+            }
         } catch (e: androidx.compose.ui.test.ComposeTimeoutException) {
             val inDb = runBlocking { db.personDao().getAllPeopleDirect().map { it.name } }
             throw AssertionError("timed out waiting for $what; people flow=${viewModel.people.value.map { it.name }}, database=$inDb", e)

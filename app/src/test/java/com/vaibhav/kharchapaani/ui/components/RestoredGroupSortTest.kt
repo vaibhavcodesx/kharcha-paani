@@ -78,7 +78,9 @@ class RestoredGroupSortTest {
     private fun awaitOrder(vararg ids: Long) {
         val expected = ids.map { "group_card_$it" }
         compose.waitUntil(10_000) {
+            main.scheduler.runCurrent()
             ShadowLooper.idleMainLooper()
+            main.scheduler.runCurrent()
             order() == expected
         }
         assertEquals(expected, order())
