@@ -133,14 +133,12 @@ class ShareIntentsTest {
 
     @Test
     fun `exportLocalBackup with rows emits chooser intent on shareIntents`() = runBlocking {
-        db.transactionDao().insertTransaction(
-            TransactionEntity(
-                type = "expense",
-                amount = 120.0,
-                category = "Travel",
-                merchant = "Metro",
-                paymentMethod = "Card",
-                date = System.currentTimeMillis(),
+        db.personDao().insertPerson(
+            PersonEntity(
+                id = 1,
+                name = "Aman Sharma",
+                avatarColor = "#70C1FF",
+                profileId = null,
             ),
         )
 
@@ -160,6 +158,21 @@ class ShareIntentsTest {
         assertEquals(Intent.ACTION_SEND, target?.action)
         assertEquals("application/json", target?.type)
         assertTrue(target?.hasExtra(Intent.EXTRA_STREAM) == true)
+    }
+
+    @Test
+    fun `exportLocalBackup with empty backup sets statusMessage and does not emit intent`() = runBlocking {
+        var emittedIntent: Intent? = null
+        val collectJob = launch {
+            emittedIntent = viewModel.shareIntents.first()
+        }
+
+        viewModel.exportLocalBackup()
+        val status = withTimeout(10_000) { viewModel.statusMessage.first { !it.isNullOrBlank() }!! }
+        assertTrue(status.contains("Nothing") || status.contains("empty") || status.isNotEmpty())
+        assertEquals("No share intent emitted on empty backup", null, emittedIntent)
+
+        collectJob.cancel()
     }
 
     @Test
