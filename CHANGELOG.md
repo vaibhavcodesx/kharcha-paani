@@ -15,6 +15,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- LazyColumn for long person ledger sheet lists (Y16, REL M8).
+
 - A device-wide Use AI switch stops Gemini reads everywhere, keeps manual capture available and labels AI-powered capture.
 
 
