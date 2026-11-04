@@ -27,6 +27,14 @@ object SupabaseClientProvider {
             instance ?: create(context.applicationContext).also { instance = it }
         }
 
+    /** Detach atomically; callers already holding the old client are stopped by close(). */
+    suspend fun closeExisting() {
+        val previous = synchronized(this) {
+            instance.also { instance = null }
+        }
+        previous?.close()
+    }
+
     private fun create(appContext: Context): SupabaseClient {
         val authSettings = SharedPreferencesSettings(
             appContext.getSharedPreferences(AUTH_PREFS_NAME, Context.MODE_PRIVATE)

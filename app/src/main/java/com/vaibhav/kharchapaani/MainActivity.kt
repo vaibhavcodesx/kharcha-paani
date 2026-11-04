@@ -31,6 +31,12 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.SnackbarDuration
@@ -87,6 +93,9 @@ import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.repeatOnLifecycle
 import com.vaibhav.kharchapaani.ui.session.AccountSession
+import com.vaibhav.kharchapaani.ui.session.CloudAuthOwner
+import com.vaibhav.kharchapaani.ui.session.LocalSignInState
+import com.vaibhav.kharchapaani.data.settings.LedgerMode
 import com.vaibhav.kharchapaani.ui.session.AccountSessionHolder
 import com.vaibhav.kharchapaani.ui.session.AccountSessionState
 import com.vaibhav.kharchapaani.ui.session.LedgerOpenFailedScreen
@@ -139,7 +148,7 @@ import com.vaibhav.kharchapaani.updates.FlexibleUpdates
 
 class MainActivity : ComponentActivity() {
 
-    private val authViewModel: AuthViewModel by viewModels()
+    private val cloudAuthOwner: CloudAuthOwner by viewModels()
     private val sessionHolder: AccountSessionHolder by viewModels()
 
     // Share/widget intents wait here until the signed-in account's ledger is open.
@@ -172,56 +181,66 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             SplitFlowTheme {
-                val authUiState by authViewModel.uiState.collectAsStateWithLifecycle()
+                // Read the durable choice before obtaining AuthViewModel: local cold starts never
+                // initialize auth merely to discover that this phone uses its own ledger.
+                var choice by remember { mutableStateOf(LedgerMode(this@MainActivity).choice) }
                 val sessionState by sessionHolder.state.collectAsStateWithLifecycle()
-
-                val authState = authUiState.authState
-                LaunchedEffect(authState) {
-                    when (authState) {
-                        AuthState.SignedOut -> sessionHolder.onAccountChanged(null)
-                        is AuthState.SignedIn -> authState.userId?.let(sessionHolder::onAccountChanged)
-                        AuthState.Initializing -> Unit
+                val localSignIn by cloudAuthOwner.localSignIn.collectAsStateWithLifecycle()
+                val useLocal: () -> Unit = {
+                    try {
+                        LedgerMode(this@MainActivity).useLocal()
+                        choice = LedgerMode.Choice.LOCAL
+                    } catch (_: Exception) {
+                        Toast.makeText(this@MainActivity, R.string.guest_choice_failed, Toast.LENGTH_LONG).show()
                     }
                 }
-
-                val gate = when (authState) {
-                    AuthState.Initializing -> AuthGate.Loading
-                    AuthState.SignedOut -> AuthGate.SignIn
-                    is AuthState.SignedIn -> when (sessionState) {
-                        is AccountSessionState.Ready -> AuthGate.App
-                        is AccountSessionState.Failed -> AuthGate.LedgerFailed
-                        AccountSessionState.None, AccountSessionState.Opening -> AuthGate.Loading
+                LaunchedEffect(choice) {
+                    if (choice == LedgerMode.Choice.LOCAL) {
+                        // Remove cloud account ViewModels before closing their HTTP client. The
+                        // holder awaits their scope cleanup before opening the other Room file.
+                        val previous = (sessionHolder.state.value as? AccountSessionState.Ready)?.session
+                        if (previous != null && !previous.isLocal) sessionHolder.onAccountChanged(null)
+                        if (localSignIn == LocalSignInState.Idle || localSignIn == LocalSignInState.Failed) cloudAuthOwner.clearAndClose()
+                        sessionHolder.onLocalMode()
                     }
                 }
-                SideEffect { gateIsLoading = gate == AuthGate.Loading }
-                Crossfade(targetState = gate, label = "AuthGate") { target ->
-                    when (target) {
-                        // Stored sessions and ledger files open in milliseconds; the brand mark
-                        // continues the launch screen and avoids flashing the sign-in screen at
-                        // someone already signed in.
-                        AuthGate.Loading -> LoadingBrandMark()
-                        AuthGate.SignIn -> SignInScreen(
-                            isSigningIn = authUiState.isSigningIn,
-                            failure = authUiState.signInFailure,
-                            onSignInWithGoogle = { authViewModel.signInWithGoogle(this@MainActivity) },
-                            onDismissFailure = authViewModel::dismissSignInFailure,
-                        )
-                        AuthGate.LedgerFailed -> LedgerOpenFailedScreen(
-                            onRetry = sessionHolder::retryOpening,
-                            onSignOut = { authViewModel.signOut(this@MainActivity) },
-                        )
-                        AuthGate.App -> {
-                            val session = (sessionState as? AccountSessionState.Ready)?.session
-                            if (session != null) {
-                                AccountScopedApp(
-                                    session = session,
-                                    authUiState = authUiState,
-                                    queuedIntent = queuedIntent,
-                                    onIntentHandled = { queuedIntent = null },
-                                )
-                            }
+                LaunchedEffect(localSignIn) {
+                    if (localSignIn == LocalSignInState.Succeeded) {
+                        // Only a completed explicit picker, with a matching live session, gets here.
+                        try {
+                            LedgerMode(this@MainActivity).useCloud()
+                            choice = LedgerMode.Choice.CLOUD
+                        } catch (_: Exception) {
+                            cloudAuthOwner.clearAndClose()
+                            Toast.makeText(this@MainActivity, R.string.guest_choice_failed, Toast.LENGTH_LONG).show()
                         }
+                        cloudAuthOwner.consumeLocalSignInResult()
                     }
+                }
+                if (choice == LedgerMode.Choice.LOCAL) {
+                    val session = (sessionState as? AccountSessionState.Ready)?.session?.takeIf { it.isLocal }
+                    SideEffect { gateIsLoading = session == null && sessionState !is AccountSessionState.Failed }
+                    when {
+                        session != null -> AccountScopedApp(
+                            session = session,
+                            authUiState = AuthUiState(authState = AuthState.SignedOut,
+                                isSigningIn = localSignIn == LocalSignInState.SigningIn),
+                            queuedIntent = queuedIntent,
+                            onIntentHandled = { queuedIntent = null },
+                            onSignInFromLocal = { cloudAuthOwner.signInFromLocal(this@MainActivity) },
+                            localSignInFailed = localSignIn == LocalSignInState.Failed,
+                            onLocalSignInFailureShown = cloudAuthOwner::consumeLocalSignInResult,
+                        )
+                        sessionState is AccountSessionState.Failed -> LocalLedgerFailure(
+                            isSigningIn = localSignIn == LocalSignInState.SigningIn,
+                            signInFailed = localSignIn == LocalSignInState.Failed,
+                            onRetry = sessionHolder::retryOpening,
+                            onSignIn = { cloudAuthOwner.signInFromLocal(this@MainActivity) },
+                        )
+                        else -> LoadingBrandMark()
+                    }
+                } else {
+                    CloudAccountGate(sessionState, useLocal)
                 }
             }
         }
@@ -233,32 +252,97 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun CloudAccountGate(sessionState: AccountSessionState, onUseLocal: () -> Unit) {
+        val authViewModel = remember(cloudAuthOwner) { cloudAuthOwner.authViewModel() }
+        val authUiState by authViewModel.uiState.collectAsStateWithLifecycle()
+        val authState = authUiState.authState
+        LaunchedEffect(authState) {
+            // A late auth/profile emission cannot replace a ledger after a Local tap.
+            if (LedgerMode(this@MainActivity).choice == LedgerMode.Choice.CLOUD) {
+                when (authState) {
+                    AuthState.SignedOut -> sessionHolder.onAccountChanged(null)
+                    is AuthState.SignedIn -> authState.userId?.let(sessionHolder::onAccountChanged)
+                    AuthState.Initializing -> Unit
+                }
+            }
+        }
+        val session = (sessionState as? AccountSessionState.Ready)?.session
+            ?.takeIf { !it.isLocal && it.userId == (authState as? AuthState.SignedIn)?.userId }
+        val gate = when (authState) {
+            AuthState.Initializing -> AuthGate.Loading
+            AuthState.SignedOut -> AuthGate.SignIn
+            is AuthState.SignedIn -> when {
+                session != null -> AuthGate.App
+                sessionState is AccountSessionState.Failed -> AuthGate.LedgerFailed
+                else -> AuthGate.Loading
+            }
+        }
+        SideEffect { gateIsLoading = gate == AuthGate.Loading }
+        Crossfade(targetState = gate, label = "AuthGate") { target ->
+            when (target) {
+                AuthGate.Loading -> LoadingBrandMark()
+                AuthGate.SignIn -> SignInScreen(
+                    isSigningIn = authUiState.isSigningIn,
+                    failure = authUiState.signInFailure,
+                    onSignInWithGoogle = { authViewModel.signInWithGoogle(this@MainActivity) },
+                    onDismissFailure = authViewModel::dismissSignInFailure,
+                    onUseLocal = onUseLocal,
+                )
+                AuthGate.LedgerFailed -> LedgerOpenFailedScreen(
+                    onRetry = sessionHolder::retryOpening,
+                    onSignOut = { authViewModel.signOut(this@MainActivity) },
+                )
+                AuthGate.App -> if (session != null) AccountScopedApp(
+                    session = session,
+                    authUiState = authUiState,
+                    queuedIntent = queuedIntent,
+                    onIntentHandled = { queuedIntent = null },
+                    authViewModel = authViewModel,
+                    onUseLocal = onUseLocal,
+                )
+            }
+        }
+    }
+
+    @Composable
     private fun AccountScopedApp(
         session: AccountSession,
         authUiState: AuthUiState,
         queuedIntent: Intent?,
         onIntentHandled: () -> Unit,
+        authViewModel: AuthViewModel? = null,
+        onSignInFromLocal: () -> Unit = {},
+        onUseLocal: () -> Unit = {},
+        localSignInFailed: Boolean = false,
+        onLocalSignInFailureShown: () -> Unit = {},
     ) {
         // key(): saveable UI state (open sheets, tabs) must not carry over to another account.
-        key(session.userId) {
+        key(session.isLocal, session.userId) {
             CompositionLocalProvider(LocalViewModelStoreOwner provides session) {
                 val viewModel: MainViewModel = viewModel(
-                    factory = MainViewModel.factory(application, session.database, session.userId),
+                    factory = MainViewModel.factory(application, session.database, session.userId, isLocal = session.isLocal),
                 )
                 val sharedGroups: SharedGroupsViewModel = viewModel(
-                    factory = SharedGroupsViewModel.factory(application, session.database, session.userId),
+                    factory = SharedGroupsViewModel.factory(application, session.database, session.userId, isLocal = session.isLocal),
                 )
                 // App start and every return to the foreground: push anything queued, pull the rest.
                 LifecycleStartEffect(viewModel) {
-                    viewModel.requestSync()
+                    if (!session.isLocal) viewModel.requestSync()
                     onStopOrDispose { }
                 }
                 // While in the foreground, changes other people or devices make ring for a sync.
                 val lifecycle = LocalLifecycleOwner.current.lifecycle
-                LaunchedEffect(session.userId, lifecycle) {
+                LaunchedEffect(session.isLocal, session.userId, lifecycle) {
+                    if (session.isLocal) return@LaunchedEffect
                     val changes = SupabaseLedgerChanges(SupabaseClientProvider.get(application), session.userId)
                     lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                         SyncDoorbell(changes = changes::changes, ring = viewModel::requestSync).run()
+                    }
+                }
+                LaunchedEffect(localSignInFailed, viewModel) {
+                    if (localSignInFailed) {
+                        viewModel.showMessage(getString(R.string.guest_signin_failed))
+                        onLocalSignInFailureShown()
                     }
                 }
                 LaunchedEffect(viewModel, queuedIntent) {
@@ -276,12 +360,15 @@ class MainActivity : ComponentActivity() {
                     sharedGroups = sharedGroups.controller,
                     selfProfileId = session.userId,
                     authUiState = authUiState,
-                    onRetryProfile = authViewModel::retryProfileLoad,
-                    onSaveProfile = authViewModel::saveProfile,
-                    onSignOut = { authViewModel.signOut(this@MainActivity) },
-                    onSaveHue = authViewModel::saveHue,
-                    onDeleteAccount = { keepName -> authViewModel.deleteAccount(this@MainActivity, keepName) },
-                    onDismissDeleteAccountError = authViewModel::dismissDeleteAccountError,
+                    onRetryProfile = { authViewModel?.retryProfileLoad() },
+                    onSaveProfile = { name, emoji -> authViewModel?.saveProfile(name, emoji) },
+                    onSignOut = { authViewModel?.signOut(this@MainActivity) },
+                    onSaveHue = { hue, automatic -> authViewModel?.saveHue(hue, automatic) },
+                    onDeleteAccount = { keepName -> authViewModel?.deleteAccount(this@MainActivity, keepName) },
+                    onDismissDeleteAccountError = { authViewModel?.dismissDeleteAccountError() },
+                    isLocal = session.isLocal,
+                    onSignInFromLocal = onSignInFromLocal,
+                    onUseLocal = onUseLocal,
                 )
                 }
             }
@@ -331,6 +418,20 @@ private enum class AuthGate { Loading, SignIn, LedgerFailed, App }
 /** The launch screen's longest hold, matching #77's grace period for a session still refreshing. */
 private const val SPLASH_MAX_MILLIS = 1_500L
 
+@Composable
+private fun LocalLedgerFailure(isSigningIn: Boolean, signInFailed: Boolean, onRetry: () -> Unit, onSignIn: () -> Unit) {
+    Box(Modifier.fillMaxSize().background(CharcoalBg), contentAlignment = Alignment.Center) {
+        Column(Modifier.widthIn(max = 480.dp).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text(stringResource(R.string.guest_open_failed))
+            if (signInFailed) Text(stringResource(R.string.guest_signin_failed))
+            Button(onClick = onRetry) { Text(stringResource(R.string.guest_retry_open)) }
+            TextButton(onClick = onSignIn, enabled = !isSigningIn) {
+                Text(stringResource(if (isSigningIn) R.string.guest_signing_in else R.string.guest_sign_in))
+            }
+        }
+    }
+}
+
 /**
  * The launch screen's brand mark, where the launch screen leaves it, for the rare open that takes
  * longer than the launch screen waits. 288dp is the launch screen's own icon box.
@@ -354,6 +455,9 @@ fun SplitFlowApp(
     onSaveHue: (hue: Int, automatic: Boolean) -> Unit = { _, _ -> },
     onDeleteAccount: (keepName: Boolean) -> Unit = {},
     onDismissDeleteAccountError: () -> Unit = {},
+    isLocal: Boolean = false,
+    onSignInFromLocal: () -> Unit = {},
+    onUseLocal: () -> Unit = {},
 ) {
     var isAccountSheetOpen by rememberSaveable { mutableStateOf(false) }
     var isDeleteAccountOpen by rememberSaveable { mutableStateOf(false) }
@@ -603,7 +707,7 @@ fun SplitFlowApp(
                             onOpenSimplifyDebts = { viewModel.openSimplifyDebts() },
                             accountAvatar = authUiState.accountAvatar,
                             startVoiceCapture = voiceCaptureRequested,
-                            aiEnabled = aiEnabled,
+                            aiEnabled = viewModel.aiAvailable && aiEnabled,
                             syncStatus = syncStatus,
                             onShowMessage = viewModel::showMessage,
                             onVoiceCaptureStarted = viewModel::onVoiceCaptureStarted,
@@ -706,6 +810,9 @@ fun SplitFlowApp(
             askBeforeDiscarding = askBeforeDiscarding,
             aiEnabled = aiEnabled,
             onAiEnabledChange = viewModel::setAiEnabled,
+            isLocal = isLocal,
+            onSignInFromLocal = onSignInFromLocal,
+            onUseLocal = onUseLocal,
             upiId = upiPayee?.upiId,
             onOpenUpi = {
                 isAccountSheetOpen = false

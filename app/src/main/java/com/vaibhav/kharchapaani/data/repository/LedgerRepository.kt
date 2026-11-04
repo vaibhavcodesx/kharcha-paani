@@ -71,6 +71,7 @@ class LedgerRepository(
     private val localFriendSync: Boolean = LocalFriendSync.ENABLED,
     /** What "this month" is measured from; ticks over at midnight (see [Today]). */
     private val today: Flow<LocalDate> = Today.dates(),
+    private val localMode: Boolean = false,
 ) {
 
     val allPeople: Flow<List<PersonEntity>> = db.personDao().getAllPeople()
@@ -670,6 +671,15 @@ class LedgerRepository(
                 val tx = db.transactionDao().getTransactionByIdDirect(split.transactionId) ?: return@mapNotNull null
                 FullTransaction(tx, split, db.splitDao().getSharesForSplitDirect(split.id))
             }
+            if (localMode) {
+                val sharedIds = db.groupDao().getAllGroupsDirect().filter { it.isShared }.map { it.id }.toSet()
+                val touchesHistory = affected.any { it.transaction.groupId in sharedIds } ||
+                    db.groupDao().getAllGroupMembersDirect().any { it.personId == personId && it.groupId in sharedIds } ||
+                    db.settlementDao().getAllSettlementsDirect().any {
+                        (it.fromPersonId == personId || it.toPersonId == personId) && it.groupId in sharedIds
+                    }
+                if (touchesHistory) throw OfflineHistoryException()
+            }
             // Their IOUs and payments that went up to this account's private table come down too,
             // as deleteSettlement does one at a time; left there, a reinstall brought them back and
             // recreated the friend from their name (Codex review, 2026-10-23).
@@ -773,6 +783,7 @@ class LedgerRepository(
         emoji: String = "🏖️",
         colorHex: String = "#FF7A3D",
     ): Long = withContext(Dispatchers.IO) {
+        if (localMode) throw OfflineHistoryException()
         val self = checkNotNull(selfProfileId) { "creating a shared group needs a signed-in account" }
         val groupId = db.withTransaction {
             val groupId = db.groupDao().insertGroup(
@@ -796,6 +807,7 @@ class LedgerRepository(
     suspend fun setGroupArchived(groupId: Long, archived: Boolean) = withContext(Dispatchers.IO) {
         val changed = db.withTransaction {
             val group = db.groupDao().getGroupByIdDirect(groupId) ?: return@withTransaction false
+            if (localMode && group.isShared) throw OfflineHistoryException()
             if (!group.isShared || !isCreator(group) || group.isArchived == archived) return@withTransaction false
             db.groupDao().updateGroup(
                 group.copy(
@@ -811,6 +823,7 @@ class LedgerRepository(
 
     suspend fun updateGroup(group: GroupEntity, memberPersonIds: List<Long>) = withContext(Dispatchers.IO) {
         val stored = db.groupDao().getGroupByIdDirect(group.id) ?: return@withContext
+        if (localMode && stored.isShared) throw OfflineHistoryException()
         if (stored.isShared) {
             updateSharedGroupDetails(stored, group)
             return@withContext
@@ -834,6 +847,7 @@ class LedgerRepository(
         db.withTransaction {
             val group = db.groupDao().getGroupByIdDirect(groupId) ?: return@withTransaction
             if (!group.isShared) return@withTransaction
+            if (localMode) throw OfflineHistoryException()
             val dao = db.groupSyncDao()
             dao.deleteTransactionsInGroup(groupId)
             dao.deleteSettlementsInGroup(groupId)
@@ -843,6 +857,7 @@ class LedgerRepository(
 
     /** Name, description, emoji and colour only: membership changes through invites and leaving. */
     private suspend fun updateSharedGroupDetails(stored: GroupEntity, edited: GroupEntity) {
+        if (localMode) throw OfflineHistoryException()
         if (!isCreator(stored)) return
         db.groupDao().updateGroup(
             stored.copy(
@@ -908,6 +923,7 @@ class LedgerRepository(
 
     private suspend fun requireWritableGroup(groupId: Long?) {
         val group = groupId?.let { db.groupDao().getGroupByIdDirect(it) } ?: return
+        if (localMode && group.isShared) throw OfflineHistoryException()
         if (group.isShared && group.isArchived) throw ArchivedGroupException(group.name)
     }
 
@@ -1046,3 +1062,6 @@ class DuplicateFriendException(val existingName: String) : IllegalStateException
 
 /** The other party recorded this settlement: it's theirs to withdraw, mine to answer. */
 class NotYoursToWithdrawException(val settlement: SettlementEntity) : IllegalStateException("only whoever recorded this settlement can withdraw it")
+
+/** A shared-history archive grants no server membership or write permission. */
+class OfflineHistoryException : IllegalStateException("Shared history is read-only in local mode")

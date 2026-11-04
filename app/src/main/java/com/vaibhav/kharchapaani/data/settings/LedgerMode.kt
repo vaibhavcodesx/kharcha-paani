@@ -8,6 +8,9 @@ import java.util.UUID
 
 /** A device ledger identity, never a Supabase account or an identity to upload. */
 data class GuestSession(val id: String) {
+    /** Settings stay isolated even if a cloud account happens to have this UUID. */
+    val settingsId: String get() = "local-$id"
+
     init {
         require(UUID_PATTERN.matches(id)) { "Invalid local ledger id" }
     }

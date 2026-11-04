@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="guest_continue_local">Use without signing in</string>
+    <string name="guest_use_local">Use a local ledger instead</string>
+    <string name="guest_on_this_phone">On this phone</string>
+    <string name="guest_local_explanation">Your ledger stays on this phone. There is no account sync. Save a backup before uninstalling or moving phones.</string>
+    <string name="guest_separate_ledgers">Local and account ledgers stay separate. Signing in never copies or uploads your local entries automatically.</string>
+    <string name="guest_sign_in">Sign in with Google</string>
+    <string name="guest_signing_in">Signing in…</string>
+    <string name="guest_signin_failed">Sign-in did not finish. Your local ledger is unchanged.</string>
+    <string name="guest_ai_needs_account">AI needs a signed-in account. This switch keeps your choice for when you sign in.</string>
+    <string name="guest_choice_failed">Could not save that choice. Please try again.</string>
+    <string name="guest_open_failed">Could not open your local ledger. Your saved data has not been deleted.</string>
+    <string name="guest_retry_open">Try opening again</string>
+</resources>
