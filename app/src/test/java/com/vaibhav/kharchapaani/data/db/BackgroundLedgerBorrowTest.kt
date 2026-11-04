@@ -68,8 +68,10 @@ class BackgroundLedgerBorrowTest {
             WorkManager.getInstance(app).cancelAllWork().result.get()
             files.forEach { app.deleteDatabase(it) }
             app.getSystemService(NotificationManager::class.java).cancelAll()
-            AppSettings(app).setReminderEnabled(previousReminder.enabled)
-            AppSettings(app).setReminderMinute(previousReminder.minuteOfDay)
+            if (::previousReminder.isInitialized) {
+                AppSettings(app).setReminderEnabled(previousReminder.enabled)
+                AppSettings(app).setReminderMinute(previousReminder.minuteOfDay)
+            }
         } finally {
             val edit = prefs.edit().clear()
             previousMode.forEach { (key, value) -> if (value is String) edit.putString(key, value) }
@@ -119,21 +121,23 @@ class BackgroundLedgerBorrowTest {
                 TransactionSyncEngine(held, remote, account).sync()
             }
         }
-        withTimeout(5_000) { reachedAck.await() }
-        var newOwnerStarted = false
-        val opening = withContext(main) {
-            work.async(start = CoroutineStart.UNDISPATCHED) {
-                if (replaceOwner) LedgerDatabases.openOwned(app, account, isLocal = false) {
-                    newOwnerStarted = true
-                    LedgerDatabases.CloseOwner { }
-                } else {
-                    val guest = LedgerMode(app).useLocal()
-                    files += LedgerDatabases.localDatabaseName(guest)
-                    LedgerDatabases.openLocal(app, guest)
+        var pendingOpen: Deferred<AppDatabase>? = null
+        try {
+            withTimeout(5_000) { reachedAck.await() }
+            var newOwnerStarted = false
+            val opening = withContext(main) {
+                work.async(start = CoroutineStart.UNDISPATCHED) {
+                    if (replaceOwner) LedgerDatabases.openOwned(app, account, isLocal = false) {
+                        newOwnerStarted = true
+                        LedgerDatabases.CloseOwner { }
+                    } else {
+                        val guest = LedgerMode(app).useLocal()
+                        files += LedgerDatabases.localDatabaseName(guest)
+                        LedgerDatabases.openLocal(app, guest)
+                    }
                 }
             }
-        }
-        try {
+            pendingOpen = opening
             withContext(main) { }
             assertTrue("A borrowed sync must retain Room through its held acknowledgement", db.isOpen)
             assertFalse("Replacement must await the background operation", opening.isCompleted)
@@ -148,7 +152,7 @@ class BackgroundLedgerBorrowTest {
             if (replaceOwner) assertTrue(newOwnerStarted)
         } finally {
             release.complete(Unit)
-            withTimeout(5_000) { sync.join(); opening.join() }
+            withTimeout(5_000) { sync.join(); pendingOpen?.join() }
         }
     }
 
@@ -173,12 +177,14 @@ class BackgroundLedgerBorrowTest {
                 }
             }
         }
-        withTimeout(5_000) { entered.await() }
-        LedgerMode(app).useCloud()
-        val account = UUID.randomUUID().toString()
-        files += LedgerDatabases.databaseName(account)
-        val opening = withContext(main) { work.async(start = CoroutineStart.UNDISPATCHED) { LedgerDatabases.open(app, account) } }
+        var pendingOpen: Deferred<AppDatabase>? = null
         try {
+            withTimeout(5_000) { entered.await() }
+            LedgerMode(app).useCloud()
+            val account = UUID.randomUUID().toString()
+            files += LedgerDatabases.databaseName(account)
+            val opening = withContext(main) { work.async(start = CoroutineStart.UNDISPATCHED) { LedgerDatabases.open(app, account) } }
+            pendingOpen = opening
             withContext(main) { }
             assertTrue("Widget's captured ledger must survive until its scoped publication finishes", db.isOpen)
             assertFalse(opening.isCompleted)
@@ -187,7 +193,7 @@ class BackgroundLedgerBorrowTest {
             assertNull(readResult.await())
         } finally {
             release.complete(Unit)
-            withTimeout(5_000) { rendering.join(); opening.join() }
+            withTimeout(5_000) { rendering.join(); pendingOpen?.join() }
         }
     }
 

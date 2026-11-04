@@ -44,6 +44,11 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             if (mode.choice == LedgerMode.Choice.LOCAL) return@syncIfSignedIn
             LedgerDatabases.withDatabase(applicationContext, userId, isLocal = false, isCurrent = {
                 mode.choice == LedgerMode.Choice.CLOUD && supabase.auth.currentUserOrNull()?.id == userId
+            }, verifyCurrent = {
+                // A detached old client can still name its previous user after another account signs in.
+                mode.choice == LedgerMode.Choice.CLOUD &&
+                    BackgroundAuth.signedInUserId(applicationContext) == userId &&
+                    mode.choice == LedgerMode.Choice.CLOUD
             }) { database ->
                 try {
                     syncAll(database, supabase, userId)
