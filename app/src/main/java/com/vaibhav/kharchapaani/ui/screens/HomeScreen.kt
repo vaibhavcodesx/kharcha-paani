@@ -118,6 +118,8 @@ fun HomeScreen(
     aiEnabled: Boolean = true,
     startVoiceCapture: Boolean = false,
     onVoiceCaptureStarted: () -> Unit = {},
+    focusCapture: Boolean = false,
+    onCaptureFocused: () -> Unit = {},
     syncStatus: SyncStatus = SyncStatus(),
     onShowMessage: (String) -> Unit = {},
 ) {
@@ -159,6 +161,8 @@ fun HomeScreen(
                 onOpenIou = onOpenIouDialog,
                 startVoiceCapture = startVoiceCapture,
                 aiEnabled = aiEnabled,
+                focusCapture = focusCapture,
+                onCaptureFocused = onCaptureFocused,
                 onCaptureFailed = onShowMessage,
                 onVoiceCaptureStarted = onVoiceCaptureStarted,
                 modifier = Modifier.padding(top = Spacing.xl),

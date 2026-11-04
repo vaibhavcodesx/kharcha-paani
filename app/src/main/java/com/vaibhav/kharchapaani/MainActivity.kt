@@ -301,9 +301,11 @@ class MainActivity : ComponentActivity() {
             is IncomingIntents.Route.SharedPdf -> viewModel.handleSharedPdfUri(this, route.uri)
             // An SMS, a WhatsApp payment message.
             is IncomingIntents.Route.SharedText -> viewModel.parseInputText(route.text)
+            // The bar looks like Home's "What did you spend on?" line, so that is where it lands, with
+            // the keyboard up: type "chai 40" and go. (It used to open the empty New entry form.)
             IncomingIntents.Route.QuickAdd -> {
                 viewModel.setTab(0)
-                viewModel.openManualAdd("expense")
+                viewModel.requestCaptureFocus()
             }
             IncomingIntents.Route.VoiceLog -> {
                 viewModel.setTab(0)
@@ -399,6 +401,7 @@ fun SplitFlowApp(
     val isImprovingWithAi by viewModel.isImprovingWithAi.collectAsState()
     val updatedByAi by viewModel.updatedByAi.collectAsState()
     val voiceCaptureRequested by viewModel.voiceCaptureRequested.collectAsState()
+    val captureFocusRequested by viewModel.captureFocusRequested.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedFilter by viewModel.selectedFilter.collectAsState()
 
@@ -604,6 +607,8 @@ fun SplitFlowApp(
                             accountAvatar = authUiState.accountAvatar,
                             startVoiceCapture = voiceCaptureRequested,
                             aiEnabled = aiEnabled,
+                            focusCapture = captureFocusRequested,
+                            onCaptureFocused = viewModel::onCaptureFocused,
                             syncStatus = syncStatus,
                             onShowMessage = viewModel::showMessage,
                             onVoiceCaptureStarted = viewModel::onVoiceCaptureStarted,
