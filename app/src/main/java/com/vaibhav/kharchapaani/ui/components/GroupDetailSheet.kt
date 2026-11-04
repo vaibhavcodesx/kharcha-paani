@@ -27,6 +27,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.Canvas
@@ -164,8 +165,11 @@ fun GroupDetailContent(
     val shares = remember(groupDetails, myColour, myName, formerName) { GroupInsights.memberShares(groupDetails.transactions, groupDetails.members, myName = myName, myColor = myColour, formerName = formerName) }
     val debts = remember(groupDetails, myName, formerName) { GroupInsights.owesWhom(groupDetails.transactions, groupDetails.settlements, groupDetails.members, myName = myName, formerName = formerName) }
     val categories = remember(groupDetails) { GroupInsights.categoryTotals(groupDetails.transactions) }
+    val feed = remember(groupDetails, settlementsOnly) {
+        GroupFeed.of(if (settlementsOnly) emptyList() else groupDetails.transactions, groupDetails.settlements)
+    }
 
-    SheetScaffold(
+    LazySheetScaffold(
         modifier = modifier,
         actionBar = {
             GlassActionBar(
@@ -177,160 +181,176 @@ fun GroupDetailContent(
             )
         },
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.l)) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.size(52.dp).clip(SquircleShape(16.dp)).background(accent.copy(alpha = 0.18f)),
-            ) {
-                Text(group.emoji, style = MaterialTheme.typography.headlineLarge)
-            }
-            Column(Modifier.weight(1f).padding(start = Spacing.m)) {
-                Text(group.name, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
-                if (group.description.isNotBlank()) {
-                    Text(group.description, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        item(key = "header") {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.l)) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(52.dp).clip(SquircleShape(16.dp)).background(accent.copy(alpha = 0.18f)),
+                ) {
+                    Text(group.emoji, style = MaterialTheme.typography.headlineLarge)
+                }
+                Column(Modifier.weight(1f).padding(start = Spacing.m)) {
+                    Text(group.name, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
+                    if (group.description.isNotBlank()) {
+                        Text(group.description, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
                 }
             }
         }
 
         if (group.isArchived) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(KpShapes.medium)
-                    .background(WarmAmberLight.copy(alpha = 0.12f))
-                    .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
-                    .padding(Spacing.m)
-                    .testTag("group_archived_banner"),
-            ) {
-                Icon(KpIcons.Statement, contentDescription = null, tint = WarmAmberLight, modifier = Modifier.size(18.dp))
-                Text(
-                    stringResource(R.string.group_detail_archived),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = WarmAmberLight,
-                    modifier = Modifier.padding(start = Spacing.s),
-                )
+            item(key = "archived_banner") {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(KpShapes.medium)
+                        .background(WarmAmberLight.copy(alpha = 0.12f))
+                        .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
+                        .padding(Spacing.m)
+                        .testTag("group_archived_banner"),
+                ) {
+                    Icon(KpIcons.Statement, contentDescription = null, tint = WarmAmberLight, modifier = Modifier.size(18.dp))
+                    Text(
+                        stringResource(R.string.group_detail_archived),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = WarmAmberLight,
+                        modifier = Modifier.padding(start = Spacing.s),
+                    )
+                }
+                Spacer(Modifier.height(Spacing.l))
             }
-            Spacer(Modifier.height(Spacing.l))
         }
 
-        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
-            Figure(stringResource(R.string.group_detail_spent), Money.format(groupDetails.totalExpenses), OffWhiteText, Modifier.weight(1f))
-            Divider()
-            Figure(stringResource(R.string.group_detail_share), Money.format(groupDetails.myShare), OffWhiteText, Modifier.weight(1f))
-            Divider()
-            Figure(
-                label = when {
-                    net >= 0.005 -> stringResource(R.string.group_detail_owed)
-                    net <= -0.005 -> stringResource(R.string.group_detail_owe)
-                    else -> stringResource(R.string.group_detail_settled)
-                },
-                value = Money.format(abs(net)),
-                color = if (net >= 0.005) MoneyIn else if (net <= -0.005) MoneyOut else MutedWarmGray,
-                modifier = Modifier.weight(1f),
-            )
+        item(key = "figures") {
+            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+                Figure(stringResource(R.string.group_detail_spent), Money.format(groupDetails.totalExpenses), OffWhiteText, Modifier.weight(1f))
+                Divider()
+                Figure(stringResource(R.string.group_detail_share), Money.format(groupDetails.myShare), OffWhiteText, Modifier.weight(1f))
+                Divider()
+                Figure(
+                    label = when {
+                        net >= 0.005 -> stringResource(R.string.group_detail_owed)
+                        net <= -0.005 -> stringResource(R.string.group_detail_owe)
+                        else -> stringResource(R.string.group_detail_settled)
+                    },
+                    value = Money.format(abs(net)),
+                    color = if (net >= 0.005) MoneyIn else if (net <= -0.005) MoneyOut else MutedWarmGray,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
 
         if (group.isShared) {
-            Box(Modifier.padding(top = Spacing.xl)) { sharedGroupPanel(groupDetails) }
+            item(key = "shared_panel") {
+                Box(Modifier.padding(top = Spacing.xl)) { sharedGroupPanel(groupDetails) }
+            }
         }
 
         if (shares.size > 1) {
-            SectionTitle(stringResource(R.string.group_detail_members), top = Spacing.xxl)
-            MemberShareDonut(shares, Modifier.padding(top = Spacing.s))
+            item(key = "member_shares") {
+                SectionTitle(stringResource(R.string.group_detail_members), top = Spacing.xxl)
+                MemberShareDonut(shares, Modifier.padding(top = Spacing.s))
+            }
         }
 
         // The trip read lives here rather than on Insights: it is about a group, and asking it from
         // Insights would need a group picker for no reason (owner decision, 2026-09-19).
         if (aiAvailable && groupDetails.transactionsCount > 0) {
-            SectionTitle(stringResource(R.string.group_detail_trip), top = Spacing.xxl)
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = Spacing.s)
-                    .clip(KpShapes.large)
-                    .background(CharcoalCard)
-                    .padding(Spacing.l)
-                    .testTag("trip_review_card"),
-            ) {
-                AskAnswer(
-                    asked = AiPrompt.TripReview,
-                    state = tripReview,
-                    hasSpending = true,
-                    asksLeft = aiAsksLeft,
-                    onRetry = { onAskTripReview(group.id) },
-                    // The Insights wording told you to pick a question, above a card with no
-                    // questions on it and a single button.
-                    idleMessage = stringResource(R.string.group_detail_trip_idle),
-                    failure = (tripReview as? AskState.Failed)?.reason,
-                )
-                if (tripReview !is AskState.Answered && tripReview !is AskState.Asking) {
-                    KpButton(
-                        label = stringResource(R.string.group_detail_read),
-                        onClick = { onAskTripReview(group.id) },
-                        // Outline, not Ghost: Ghost's fill is CharcoalElevated, which against the
-                        // CharcoalCard this button sits on is very nearly the same colour, leaving
-                        // it with no visible edge at all. It read as a caption rather than a
-                        // button, which is why it was reported as "not even clickable".
-                        tier = KpButtonTier.Outline,
-                        enabled = aiAsksLeft > 0,
-                        testTag = "trip_review_button",
-                        modifier = Modifier.padding(top = Spacing.m),
+            item(key = "trip_ai") {
+                SectionTitle(stringResource(R.string.group_detail_trip), top = Spacing.xxl)
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = Spacing.s)
+                        .clip(KpShapes.large)
+                        .background(CharcoalCard)
+                        .padding(Spacing.l)
+                        .testTag("trip_review_card"),
+                ) {
+                    AskAnswer(
+                        asked = AiPrompt.TripReview,
+                        state = tripReview,
+                        hasSpending = true,
+                        asksLeft = aiAsksLeft,
+                        onRetry = { onAskTripReview(group.id) },
+                        // The Insights wording told you to pick a question, above a card with no
+                        // questions on it and a single button.
+                        idleMessage = stringResource(R.string.group_detail_trip_idle),
+                        failure = (tripReview as? AskState.Failed)?.reason,
                     )
+                    if (tripReview !is AskState.Answered && tripReview !is AskState.Asking) {
+                        KpButton(
+                            label = stringResource(R.string.group_detail_read),
+                            onClick = { onAskTripReview(group.id) },
+                            // Outline, not Ghost: Ghost's fill is CharcoalElevated, which against the
+                            // CharcoalCard this button sits on is very nearly the same colour, leaving
+                            // it with no visible edge at all. It read as a caption rather than a
+                            // button, which is why it was reported as "not even clickable".
+                            tier = KpButtonTier.Outline,
+                            enabled = aiAsksLeft > 0,
+                            testTag = "trip_review_button",
+                            modifier = Modifier.padding(top = Spacing.m),
+                        )
+                    }
                 }
             }
         }
 
         if (debts.isNotEmpty()) {
-            SectionTitle(stringResource(R.string.group_detail_debts), top = Spacing.xxl)
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                debts.forEachIndexed { index, debt ->
-                    DebtRow(
-                        debt = debt,
-                        position = RowPosition.of(index, debts.size),
-                        // Settling is between this account and one person, so only rows that include me.
-                        onSettleUp = when {
-                            group.isArchived -> null
-                            debt.fromPersonId == GroupInsights.ME -> ({ onSettleUpWith(debt.toPersonId) })
-                            debt.toPersonId == GroupInsights.ME -> ({ onSettleUpWith(debt.fromPersonId) })
-                            else -> null
-                        },
-                    )
+            item(key = "debts") {
+                SectionTitle(stringResource(R.string.group_detail_debts), top = Spacing.xxl)
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    debts.forEachIndexed { index, debt ->
+                        DebtRow(
+                            debt = debt,
+                            position = RowPosition.of(index, debts.size),
+                            // Settling is between this account and one person, so only rows that include me.
+                            onSettleUp = when {
+                                group.isArchived -> null
+                                debt.fromPersonId == GroupInsights.ME -> ({ onSettleUpWith(debt.toPersonId) })
+                                debt.toPersonId == GroupInsights.ME -> ({ onSettleUpWith(debt.fromPersonId) })
+                                else -> null
+                            },
+                        )
+                    }
                 }
             }
         }
 
         if (categories.isNotEmpty()) {
-            SectionTitle(stringResource(R.string.group_detail_categories), top = Spacing.xxl)
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                val largest = categories.maxOf { it.amount }.coerceAtLeast(0.01)
-                categories.forEach { summary ->
-                    val isSelected = selectedCategory == summary.category
-                    GroupCategoryRow(
-                        summary = summary,
-                        fraction = (summary.amount / largest).toFloat(),
-                        isSelected = isSelected,
-                        onClick = { selectedCategory = if (isSelected) null else summary.category },
-                    )
-                    if (isSelected) {
-                        val entries = remember(groupDetails.transactions, summary.category) {
-                            groupDetails.transactions.filter {
-                                !it.transaction.type.equals("income", ignoreCase = true) &&
-                                    it.transaction.category == summary.category
-                            }.sortedByDescending { it.transaction.date }
-                        }
-                        Column(
-                            modifier = Modifier.testTag("group_category_entries_${summary.category}"),
-                            verticalArrangement = Arrangement.spacedBy(2.dp),
-                        ) {
-                            entries.forEachIndexed { index, expense ->
-                                GroupExpenseRow(
-                                    expense = expense,
-                                    people = people,
-                                    date = dateFormat.format(Date(expense.transaction.date)),
-                                    position = RowPosition.of(index, entries.size),
-                                    onClick = if (!group.isArchived && expense.canEdit) ({ onEditTransaction(expense) }) else null,
-                                )
+            item(key = "categories") {
+                SectionTitle(stringResource(R.string.group_detail_categories), top = Spacing.xxl)
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    val largest = categories.maxOf { it.amount }.coerceAtLeast(0.01)
+                    categories.forEach { summary ->
+                        val isSelected = selectedCategory == summary.category
+                        GroupCategoryRow(
+                            summary = summary,
+                            fraction = (summary.amount / largest).toFloat(),
+                            isSelected = isSelected,
+                            onClick = { selectedCategory = if (isSelected) null else summary.category },
+                        )
+                        if (isSelected) {
+                            val entries = remember(groupDetails.transactions, summary.category) {
+                                groupDetails.transactions.filter {
+                                    !it.transaction.type.equals("income", ignoreCase = true) &&
+                                        it.transaction.category == summary.category
+                                }.sortedByDescending { it.transaction.date }
+                            }
+                            Column(
+                                modifier = Modifier.testTag("group_category_entries_${summary.category}"),
+                                verticalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                entries.forEachIndexed { index, expense ->
+                                    GroupExpenseRow(
+                                        expense = expense,
+                                        people = people,
+                                        date = dateFormat.format(Date(expense.transaction.date)),
+                                        position = RowPosition.of(index, entries.size),
+                                        onClick = if (!group.isArchived && expense.canEdit) ({ onEditTransaction(expense) }) else null,
+                                    )
+                                }
                             }
                         }
                     }
@@ -338,46 +358,51 @@ fun GroupDetailContent(
             }
         }
 
-        // Expenses *and* settlements. The list used to render transactions alone, so a settlement
-        // or an IOU recorded in this group appeared nowhere in it — while the balances at the top
-        // counted it, which is the worst of both: the figures moved and the screen didn't say why.
-        val feed = remember(groupDetails, settlementsOnly) {
-            GroupFeed.of(if (settlementsOnly) emptyList() else groupDetails.transactions, groupDetails.settlements)
-        }
-        SegmentedControl(
-            options = listOf(false, true),
-            selected = settlementsOnly,
-            label = { if (it) settlementsLabel else allActivityLabel },
-            onSelect = { settlementsOnly = it },
-            testTagFor = { if (it) "group_history_settlements" else "group_history_all" },
-            modifier = Modifier.fillMaxWidth().padding(top = Spacing.xl),
-        )
-
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = Spacing.xl, bottom = Spacing.s)) {
-            Text(
-                text = stringResource(R.string.group_detail_count, if (settlementsOnly) settlementsLabel else stringResource(R.string.group_detail_activity), feed.size),
-                style = MaterialTheme.typography.titleSmall,
-                color = OffWhiteText,
-                modifier = Modifier.weight(1f).semantics { heading() },
+        item(key = "feed_header") {
+            SegmentedControl(
+                options = listOf(false, true),
+                selected = settlementsOnly,
+                label = { if (it) settlementsLabel else allActivityLabel },
+                onSelect = { settlementsOnly = it },
+                testTagFor = { if (it) "group_history_settlements" else "group_history_all" },
+                modifier = Modifier.fillMaxWidth().padding(top = Spacing.xl),
             )
-            if (groupDetails.transactions.isNotEmpty()) {
-                TextButton(onClick = { onExportGroup(group.id) }, modifier = Modifier.testTag("export_group_button")) {
-                    Text(stringResource(R.string.group_detail_export), style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = Spacing.xl, bottom = Spacing.s)) {
+                Text(
+                    text = stringResource(R.string.group_detail_count, if (settlementsOnly) settlementsLabel else stringResource(R.string.group_detail_activity), feed.size),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = OffWhiteText,
+                    modifier = Modifier.weight(1f).semantics { heading() },
+                )
+                if (groupDetails.transactions.isNotEmpty()) {
+                    TextButton(onClick = { onExportGroup(group.id) }, modifier = Modifier.testTag("export_group_button")) {
+                        Text(stringResource(R.string.group_detail_export), style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+                    }
                 }
             }
+            if (feed.isEmpty()) {
+                Text(
+                    text = if (settlementsOnly) stringResource(R.string.group_detail_empty_settlements) else if (group.isArchived) stringResource(R.string.group_detail_empty_archived) else stringResource(R.string.group_detail_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            if (feed.any { it is GroupFeedEntry.Expense && it.transaction.shares.isNotEmpty() }) {
+                GroupExpenseLegend(Modifier.padding(bottom = Spacing.s))
+            }
         }
-        if (feed.isEmpty()) {
-            Text(
-                text = if (settlementsOnly) stringResource(R.string.group_detail_empty_settlements) else if (group.isArchived) stringResource(R.string.group_detail_empty_archived) else stringResource(R.string.group_detail_empty),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-        if (feed.any { it is GroupFeedEntry.Expense && it.transaction.shares.isNotEmpty() }) {
-            GroupExpenseLegend(Modifier.padding(bottom = Spacing.s))
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            feed.forEachIndexed { index, entry ->
-                val position = RowPosition.of(index, feed.size)
+
+        itemsIndexed(
+            items = feed,
+            key = { _, entry ->
+                when (entry) {
+                    is GroupFeedEntry.Expense -> "tx_${entry.transaction.transaction.id}"
+                    is GroupFeedEntry.Movement -> "st_${entry.settlement.id}"
+                }
+            },
+        ) { index, entry ->
+            val position = RowPosition.of(index, feed.size)
+            Box(Modifier.padding(top = if (index == 0) 0.dp else 2.dp)) {
                 when (entry) {
                     is GroupFeedEntry.Expense -> GroupExpenseRow(
                         expense = entry.transaction,

@@ -41,6 +41,9 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.ui.platform.LocalDensity
@@ -246,6 +249,46 @@ fun SheetScaffold(
                 body()
                 Spacer(Modifier.navigationBarsPadding().height(if (actionBar != null) ActionBarClearance else Spacing.xl))
             }
+        }
+        if (actionBar != null) {
+            CompositionLocalProvider(LocalHazeState provides hazeState) {
+                Box(Modifier.align(Alignment.BottomCenter), content = actionBar)
+            }
+        }
+    }
+}
+
+/**
+ * A sheet's body backed by a [LazyColumn] scrolling under a floating [actionBar].
+ * Uses the same liquid glass haze, bring-into-view handling and action bar clearance as [SheetScaffold].
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun LazySheetScaffold(
+    modifier: Modifier = Modifier,
+    actionBar: (@Composable BoxScope.() -> Unit)? = null,
+    content: LazyListScope.() -> Unit,
+) {
+    val hazeState = rememberHazeState()
+    val density = LocalDensity.current
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val clearOfBar = remember(density, navBarBottom, actionBar != null) {
+        ClearOfBarSpec(if (actionBar != null) with(density) { (ActionBarClearance + navBarBottom).toPx() } else 0f)
+    }
+    val bottomClearance = if (actionBar != null) ActionBarClearance + navBarBottom else Spacing.xl + navBarBottom
+    Box(modifier.fillMaxWidth().imePadding()) {
+        CompositionLocalProvider(LocalBringIntoViewSpec provides clearOfBar) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .hazeSource(hazeState),
+                contentPadding = PaddingValues(
+                    start = Spacing.page,
+                    end = Spacing.page,
+                    bottom = bottomClearance,
+                ),
+                content = content,
+            )
         }
         if (actionBar != null) {
             CompositionLocalProvider(LocalHazeState provides hazeState) {
