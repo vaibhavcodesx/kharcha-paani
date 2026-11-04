@@ -44,8 +44,8 @@ class FrequentPeopleTest {
                 splitId = id,
                 personId = if (isGuest) -1L else pId,
                 guestPersonId = if (isGuest) pId else null,
+                guestName = if (isGuest) "Guest" else null,
                 shareAmount = 50.0,
-                isGuest = isGuest,
             )
         }
         return FullTransaction(tx, split, splitShares)
