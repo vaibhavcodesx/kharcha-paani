@@ -205,6 +205,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-04 · #199 · F3 source review notes · prepared for merge; corrected first-day selector cause, actual minimum text/layout behavior and component/parser/Room evidence boundaries for six merged PRs. PNG generation is not claimed as visual or phone acceptance. Independent review and exact-head current-main CI gate merge; docs only.
 
+- 2026-11-04 · Y1 / DataStore corruption handler · prepared; ReplaceFileCorruptionHandler recovers default emptyPreferences on corrupted prefs without throwing CorruptionException; AppSettingsCorruptionTest verifies baseline exception and recovery/persistence in Robolectric. CI gates merge.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.

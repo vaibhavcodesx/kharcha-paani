@@ -15,6 +15,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Recover cleanly from corrupted app settings with ReplaceFileCorruptionHandler (reliability audit L14, Y1).
+
 - Evidence-scoped source review notes for six merged reliability/accessibility changes (F3).
 
 - Source-pinned architecture map distinguishes checked-in configuration from release and live-service acceptance (O3).
