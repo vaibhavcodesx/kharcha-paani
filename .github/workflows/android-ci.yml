@@ -33,7 +33,66 @@ jobs:
       # Also compiles the on-device tests, which CI can't run (no emulator), so they can't rot
       # unnoticed between the releases they're run for.
       - name: Unit tests
-        run: ./gradlew :app:testDebugUnitTest :app:compileDebugAndroidTestKotlin
+        run: |
+          diagnostics="$PWD/app/build/test-diagnostics"
+          init_script=""
+          watchdog_pid=""
+          init_args=()
+          cleanup() {
+            status=$?
+            trap - EXIT
+            if [[ -n "$watchdog_pid" ]]; then
+              kill "$watchdog_pid" 2>/dev/null || true
+            fi
+            if [[ -n "$init_script" ]]; then
+              rm -f -- "$init_script" || true
+            fi
+            exit "$status"
+          }
+          trap cleanup EXIT
+          trap 'exit 130' INT
+          trap 'exit 143' TERM
+          if init_script="$(mktemp "$RUNNER_TEMP/kp-test-logging.XXXXXX.gradle")"; then
+            if cat > "$init_script" <<'GRADLE'
+          gradle.projectsEvaluated {
+              gradle.rootProject.allprojects { project ->
+                  project.tasks.withType(org.gradle.api.tasks.testing.Test).configureEach { testTask ->
+                      testTask.testLogging.events("started", "failed", "skipped")
+                  }
+              }
+          }
+          GRADLE
+            then
+              init_args=(-I "$init_script")
+            else
+              printf 'Could not write diagnostic init script; running the original Gradle tasks.\n' >&2
+            fi
+          else
+            printf 'Could not create diagnostic init script; running the original Gradle tasks.\n' >&2
+          fi
+          if mkdir -p "$diagnostics"; then
+            (
+              for round in 1 2 3 4 5; do
+                sleep 300
+                printf 'Diagnostic round %s at %s\n' "$round" "$(date -u +%FT%TZ)"
+                listing="$diagnostics/jcmd-list-$round.txt"
+                if ! timeout --kill-after=2s 15s jcmd -l > "$listing" 2>&1; then
+                  printf 'jcmd listing failed or timed out in round %s; see %s\n' "$round" "$listing"
+                  continue
+                fi
+                while read -r pid; do
+                  [[ "$pid" =~ ^[0-9]+$ ]] || continue
+                  if ! timeout --kill-after=2s 15s jcmd "$pid" Thread.print > "$diagnostics/threads-$round-$pid.txt" 2>&1; then
+                    printf 'Thread dump failed or timed out for worker %s in round %s\n' "$pid" "$round"
+                  fi
+                done < <(awk '$1 ~ /^[0-9]+$/ && /GradleWorkerMain/ { print $1 }' "$listing")
+              done
+            ) > "$diagnostics/watchdog.log" 2>&1 &
+            watchdog_pid=$!
+          else
+            printf 'Could not create diagnostic directory; running the original Gradle tasks.\n' >&2
+          fi
+          ./gradlew :app:testDebugUnitTest :app:compileDebugAndroidTestKotlin "${init_args[@]}"
 
       - name: Upload test results
         if: always()
@@ -43,6 +102,7 @@ jobs:
           path: |
             app/build/test-results/testDebugUnitTest/
             app/build/reports/tests/testDebugUnitTest/
+            app/build/test-diagnostics/
           retention-days: 14
 
   # Lint on the variant that ships. Issues already in the code are recorded in

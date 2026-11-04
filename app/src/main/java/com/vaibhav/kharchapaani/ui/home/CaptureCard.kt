@@ -92,6 +92,7 @@ fun CaptureCard(
     onOpenIou: () -> Unit,
     modifier: Modifier = Modifier,
     // The home-screen widget's Speak button: start listening straight away.
+    aiEnabled: Boolean = true,
     startVoiceCapture: Boolean = false,
     onVoiceCaptureStarted: () -> Unit = {},
     // The widget's quick-add bar: put the cursor in the line (keyboard up), then report it.
@@ -117,6 +118,10 @@ fun CaptureCard(
         }
     }
     fun listen() {
+        if (!aiEnabled) {
+            onCaptureFailed(context.getString(R.string.ai_choice_voice_off))
+            return
+        }
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
@@ -216,6 +221,12 @@ fun CaptureCard(
             }
         }
         Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.l).height(1.dp).background(CharcoalBorder))
+        Text(
+            text = stringResource(if (aiEnabled) R.string.ai_choice_capture_on else R.string.ai_choice_capture_off),
+            style = MaterialTheme.typography.bodySmall,
+            color = SubMutedWarmGray,
+            modifier = Modifier.padding(horizontal = Spacing.l, vertical = Spacing.s).testTag("capture_ai_status"),
+        )
         Row(Modifier.padding(Spacing.xs)) {
             CaptureMode(KpIcons.Scan, stringResource(R.string.home_capture_bill_photo), Modifier.testTag("scan_receipt_button")) { imagePicker.launch("image/*") }
             CaptureMode(KpIcons.Statement, stringResource(R.string.home_capture_statement), Modifier.testTag("upload_pdf_statement_button")) { pdfPicker.launch("application/pdf") }
