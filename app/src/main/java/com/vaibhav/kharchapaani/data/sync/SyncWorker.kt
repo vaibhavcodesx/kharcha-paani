@@ -2,6 +2,7 @@ package com.vaibhav.kharchapaani.data.sync
 
 import com.vaibhav.kharchapaani.diagnostics.CrashReporting
 import android.content.Context
+import com.vaibhav.kharchapaani.data.settings.LedgerMode
 import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.ListenableWorker
@@ -17,6 +18,7 @@ import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.reminder.SettlementReminders
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -30,12 +32,19 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
     override suspend fun doWork(): Result {
         val userId = inputData.getString(KEY_USER_ID) ?: return Result.failure()
+        // Persisted account work can outlive a switch to local mode. Do not even initialize auth.
+        val mode = LedgerMode(applicationContext)
+        if (mode.choice == LedgerMode.Choice.LOCAL) return Result.success()
         val supabase = SupabaseClientProvider.get(applicationContext)
         // Not auth.awaitInitialization(): in the background that waits until the app is next opened.
         val signedInUserId = BackgroundAuth.sessionForNetwork(applicationContext)
 
+        if (mode.choice == LedgerMode.Choice.LOCAL) return Result.success()
         return syncIfSignedIn(requestedUserId = userId, signedInUserId = signedInUserId) {
-            val database = LedgerDatabases.open(applicationContext, userId)
+            if (mode.choice == LedgerMode.Choice.LOCAL) return@syncIfSignedIn
+            val database = LedgerDatabases.open(applicationContext, userId, isCurrent = {
+                mode.choice == LedgerMode.Choice.CLOUD && supabase.auth.currentUserOrNull()?.id == userId
+            })
             try {
                 syncAll(database, supabase, userId)
             } finally {

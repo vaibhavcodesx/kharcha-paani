@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.data.db
 
 import android.content.Context
+import com.vaibhav.kharchapaani.data.settings.GuestSession
 import android.database.sqlite.SQLiteDatabase
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -27,23 +28,39 @@ object LedgerDatabases {
     private val lock = Mutex()
     private var open: OpenDatabase? = null
 
-    private class OpenDatabase(val userId: String, val database: AppDatabase)
+    private class OpenDatabase(val name: String, val database: AppDatabase)
 
-    suspend fun open(context: Context, userId: String): AppDatabase = lock.withLock {
-        open?.takeIf { it.userId == userId }?.let { return it.database }
+    suspend fun open(context: Context, userId: String, isCurrent: () -> Boolean = { true }): AppDatabase =
+        openNamed(context, databaseName(userId), legacyOwner = userId, isCurrent = isCurrent)
+
+    /** Local ledgers never claim the pre-accounts database, even on the very first launch. */
+    suspend fun openLocal(context: Context, guest: GuestSession, isCurrent: () -> Boolean = { true }): AppDatabase =
+        openNamed(context, localDatabaseName(guest), legacyOwner = null, isCurrent = isCurrent)
+
+    internal fun localDatabaseName(guest: GuestSession): String = "ledger-local-${guest.id}.db"
+
+    private suspend fun openNamed(
+        context: Context,
+        name: String,
+        legacyOwner: String?,
+        isCurrent: () -> Boolean,
+    ): AppDatabase = lock.withLock {
+        // The caller may have waited behind a mode/account switch. Reject it before even
+        // returning a cached connection, and especially before closing the current ledger.
+        check(isCurrent()) { "Ledger selection changed before opening" }
+        open?.takeIf { it.name == name }?.let { return it.database }
 
         val appContext = context.applicationContext
-        val name = databaseName(userId)
         open?.database?.close()
         open = null
 
         val database = withContext(Dispatchers.IO) {
-            if (claimLegacyDatabase(appContext, userId)) {
+            if (legacyOwner != null && claimLegacyDatabase(appContext, legacyOwner)) {
                 Log.i(TAG, "Moved the pre-accounts ledger into this account's database")
             }
             AppDatabase.builder(appContext, name).build()
         }
-        open = OpenDatabase(userId, database)
+        open = OpenDatabase(name, database)
         database
     }
 

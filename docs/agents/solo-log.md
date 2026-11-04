@@ -14,6 +14,9 @@ owner or Claude go at the bottom.
 ## Log
 
 - 2026-11-04 · #227 · Complete backup · draft integration; full v10 archive with receipt contents, stable identities, nine initial Room tests (CI41842591502 green). Independent review found shared-group balance semantics; additional regression CI41844580943 ran1084tests with exactly1 predicted failure. Shared history retains non-queued shared semantics only inside local sessions; full UI and final CI pending.
+- 2026-11-04 · #230 · Local mode · owner-review draft, unmerged; three predicted namespace/legacy regressions in CI41844768912 (1080tests). Isolated storage, session/UI and background guards prepared; latest-main integration/full CI/independent review pending. No anonymous auth account or guest upload.
+
+- 2026-11-04 · #226 · AI choice · in review; six existing-API regressions fail as predicted in CI41841846737 (1080 tests,6 failures). Device-wide setting, HTTP/request cancellation and local capture fallbacks; final full CI and phone checks pending. Guest/auth and complete backup are separate PRs.
 
 - 2026-10-27 · #125 · X5 / TODOS 8 group settlements view · merged; All activity stays default, payments and IOUs retain confirmation status, archived history is read-only.
 

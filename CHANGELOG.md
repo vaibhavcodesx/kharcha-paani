@@ -14,6 +14,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 ## [Unreleased]
 
 ### Added
+- Local-mode groundwork: isolated on-phone ledger, explicit account choice, blocked shared actions and no local cloud sync (owner review).
+- A device-wide Use AI switch stops Gemini reads everywhere, keeps manual capture available and labels AI-powered capture.
+
+### Added
 
 - Complete portable backup format and empty-local-ledger restore groundwork, including all stored ledger records and bill attachments.
 

@@ -4,9 +4,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.vaibhav.kharchapaani.data.db.LedgerDatabases
 import com.vaibhav.kharchapaani.data.db.entity.PaymentAskEntity
-import com.vaibhav.kharchapaani.data.remote.BackgroundAuth
+import com.vaibhav.kharchapaani.data.settings.BackgroundLedger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -40,19 +39,19 @@ class AskSentReceiver : BroadcastReceiver() {
             context: Context,
             intent: Intent,
             now: Long = System.currentTimeMillis(),
-            signedInUserId: suspend () -> String? = { BackgroundAuth.signedInUserId(context) },
+            signedInUserId: (suspend () -> String?)? = null,
         ): Boolean {
             val personId = intent.getLongExtra(AskShare.EXTRA_PERSON_ID, 0L)
             val amount = intent.getDoubleExtra(AskShare.EXTRA_AMOUNT, 0.0)
             val userId = intent.getStringExtra(AskShare.EXTRA_USER_ID)
             if (personId <= 0L || amount <= 0.0 || userId == null) return false
             return try {
-                if (signedInUserId() != userId) {
-                    Log.i(TAG, "Ask picked after switching accounts; not logged")
-                    return false
-                }
-                // The same instance the app uses when it's open (the ask was made from it a moment ago).
-                LedgerDatabases.open(context, userId).paymentAskDao()
+                // Resolve exactly once. Default suspend lambdas nested through this callback hit
+                // the Kotlin backend's missing-continuation lowering path; explicit resolution
+                // also avoids reading two different account identities around a mode switch.
+                val ledger = BackgroundLedger.current(context, cloudUserId = signedInUserId) ?: return false
+                if (ledger.userId != userId || ledger.isLocal != intent.getBooleanExtra(AskShare.EXTRA_IS_LOCAL, false)) return false
+                ledger.open(context).paymentAskDao()
                     .insert(PaymentAskEntity(personId = personId, amount = amount, sentAt = now))
                 true
             } catch (e: Exception) {

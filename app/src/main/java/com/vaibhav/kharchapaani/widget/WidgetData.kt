@@ -1,8 +1,7 @@
 package com.vaibhav.kharchapaani.widget
 
 import android.content.Context
-import com.vaibhav.kharchapaani.data.db.LedgerDatabases
-import com.vaibhav.kharchapaani.data.remote.BackgroundAuth
+import com.vaibhav.kharchapaani.data.settings.BackgroundLedger
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.domain.DailySpend
 import kotlinx.coroutines.flow.first
@@ -19,9 +18,9 @@ internal object WidgetData {
 
     suspend fun load(context: Context): WidgetSummary {
         // Not auth.awaitInitialization(): in the background that waits until the app is next opened.
-        val userId = BackgroundAuth.signedInUserId(context) ?: return WidgetSummary.signedOut(context)
+        val ledger = BackgroundLedger.current(context) ?: return WidgetSummary.signedOut(context)
 
-        val repository = LedgerRepository(LedgerDatabases.open(context, userId))
+        val repository = LedgerRepository(ledger.open(context))
         val analytics = repository.monthlyAnalytics.first()
         val netOwedToMe = repository.personBalances.first().sumOf { it.netBalance }
 
