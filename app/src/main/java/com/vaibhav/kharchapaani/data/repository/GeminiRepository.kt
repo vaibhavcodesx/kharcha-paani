@@ -168,7 +168,7 @@ class GeminiRepository(
             is CallOutcome.Ok -> {
                 val parsed = outcome.json() ?: return@withContext TextParseOutcome(nothing, AiFailure.Unreadable)
                 val heard = parsed.optString("transcript").trim()
-                val entry = entryFrom(parsed, LocalHeuristicParser.parse(heard, knownFriends), heard, choices, now, zone)
+                val entry = entryFrom(parsed, LocalHeuristicParser.parse(heard, knownFriends, now = now), heard, choices, now, zone)
                 // Silence, or a cough: no money, no place, nothing heard. Not an entry to save.
                 if (entry.amount <= 0 && heard.isEmpty() && parsed.optString("merchant").isBlank()) {
                     TextParseOutcome(nothing, AiFailure.Unreadable)
