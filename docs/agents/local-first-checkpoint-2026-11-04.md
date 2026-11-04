@@ -1,6 +1,6 @@
 # Local-first restart checkpoint, November 4
 
-**AI is merged. Local mode code passed CI. Backup implementation is prepared; inspect its latest integrated checks. Both remaining PRs require owner review and stay unmerged. No 1.7 build was published.** Live PR checks/comments are authoritative if they are newer than this snapshot.
+**AI is merged. Local mode and complete backup have passed their full source test runs. Both remaining PRs require owner review and stay unmerged. No 1.7 build was published.** Live PR checks/comments are authoritative if they are newer than this snapshot.
 
 ## Resume safely
 
@@ -10,7 +10,7 @@ Use `C:/Users/VAIBHAV/.codex/worktrees/x1-store-listing/Kharcha Paani`; never th
 |---|---|---|
 | AI Off everywhere | [#226](https://github.com/vaibhavcodesx/kharcha-paani/pull/226), merged6b1b189 | Final3251078 included current main7916a16; all3green CI41860028454 |
 | Use without an account | `codex/local-mode`, [owner-review #230](https://github.com/vaibhavcodesx/kharcha-paani/pull/230) | Source01fca62e9c53e05db25c2f4bfdf8d2033c9bf659 all3green CI41866338463; final56843a3 all3green CI41869627518 |
-| Export everything / complete recovery | `codex/backup-everything`, [owner-review #227](https://github.com/vaibhavcodesx/kharcha-paani/pull/227), includes #230 | Repaired application sourceec85d6336c99b6cf905b798eb7f891e701fb6f28 plus later documentation/dependency-log commits; final965f9e8 unit run41869890554 timed out at30m; lint/release passed; require all3green on current head |
+| Export everything / complete recovery | `codex/backup-everything`, [owner-review #227](https://github.com/vaibhavcodesx/kharcha-paani/pull/227), includes #230 | Repaired application sourceec85d6336c99b6cf905b798eb7f891e701fb6f28 plus later documentation/dependency-log commits; a0b5cff CI41878133679 completed1180tests,0failures/errors/skips (251XML); all3job logs successful. Latest-main/documentation head checks are on the PR |
 
 Query live heads/status, do not guess the latest documentation SHA:
 
@@ -30,9 +30,11 @@ Fetch main and merge normally if it advances. Inspect every conflict and wait fo
 
 Earlier executed evidence remains in PRs: initial AI6-red, guest namespace3-red, local-write/session6-red then9076d82 all3green, shared-close4-red, completed-owner1-red, core/recovery da98b95 all3green, shared-balance1-red/fix, modal/maintenance/sort3-red1165tests/fixes. Preserve original assertions. Follow the two-unpredicted-failure rule; no blind reruns or timeout increases.
 
-## CI timeout investigation
+## CI timeout investigation and completed diagnostic run
 
-Final integrated965f9e8 timed out after30m in CI41869890554. No assertion verdict or XML was produced. Actual Gradle9.3.1 serializer inspection confirmed partial binary records are completions, not active starts; all AiChoiceLifecycle cases and five AiDisabled cases completed successfully, so the last recorded name does not establish the hang. Earlier ca76 timed out similarly. No root cause is claimed. CI-only [#249](https://github.com/vaibhavcodesx/kharcha-paani/pull/249) adds test-start logging and five bounded worker thread snapshots; its branch is merged normally here for an evidence-gathering run, with application source/assertions/full tasks/30m job unchanged. Inspect that run before proposing a repair. Do not retry frozen baselines or speculate from buffered tails.
+Final integrated965f9e8 timed out after30m in CI41869890554. No assertion verdict or XML was produced. Actual Gradle9.3.1 serializer inspection confirmed partial binary records are completions, not active starts; all AiChoiceLifecycle cases and five AiDisabled cases completed successfully, so the last recorded name does not establish the hang. Earlier ca76 timed out similarly. No root cause is claimed. CI-only [#249](https://github.com/vaibhavcodesx/kharcha-paani/pull/249) adds test-start logging and five bounded worker thread snapshots; its branch is merged normally here for an evidence-gathering run, with application source/assertions/full tasks/30m job unchanged. Diagnostic run41878133679 at a0b5cff finished1180tests with0failures/errors/skips across251XML suites. Unit/lint/release logs show BUILD SUCCESSFUL and final runner cleanup with no post-build error. The normal five-minute sample captured an active worker; no timeout occurred. Actual results establish that run, but do not establish the old intermittent hang cause. Repeated metadata endpoints lagged as queued after completion; never infer a merge from those snapshots. Keep diagnostics; do not retry frozen baselines or speculate from buffered tails.
+
+CI-only #249 final documentation heada45efd0 run41879719382 also has successful steps through Complete job in unit/lint/release and completed logs. Top-level job conclusions lagged as in_progress/null; leave #249 unmerged until authoritative success fields arrive. No blind retries to clear metadata. Its final log-only commit is included here normally. Main remains6b1b189.
 
 ## Implementation boundaries
 
@@ -46,4 +48,4 @@ Local Gradle was skipped: last2.36GB free, below4GB gate. Recheck before running
 
 [Progress report](codex-lead-report-2026-11-06.md) · [1.7 local-first phone checklist](../testing/1.7.0-local-first-device-checks.md). Use test data/a second installation; keep the original unencrypted export private. Published1.6 tag/source5fb95e8 excludes later main changes. Claude received phone UI feedback and merged228/231/232/233/236/238/239; full signed smoke/proxy/deletion acceptance remains unestablished.
 
-Review notes are posted on229 (DataStore lifetime fixtures),234 (foreground share delivery),240 (deterministic search evidence),242 (actual-shell coverage),241 (pre-AI voice integration must preserve Off/guest/stale-callback/cancellation gates). Their authors own fixes. Voice241 remains owner-review, with disclosure/legal/Play copy unresolved. No owner/security/Play gate is silently cleared; #71/Dependabot need signed-phone smoke,139 is deferred. The five audits are not all complete. Continue status/questions on [issue188](https://github.com/vaibhavcodesx/kharcha-paani/issues/188).
+Review notes are also posted on248 (scroll via the actual lazy container before looking up an uncomposed row),225 (exact CSV payload/security-report evidence), and on229 (DataStore lifetime fixtures),234 (foreground share delivery),240 (deterministic search evidence),242 (actual-shell coverage),241 (pre-AI voice integration must preserve Off/guest/stale-callback/cancellation gates). Their authors own fixes. Voice241 remains owner-review, with disclosure/legal/Play copy unresolved. No owner/security/Play gate is silently cleared; #71/Dependabot need signed-phone smoke,139 is deferred. The five audits are not all complete. Continue status/questions on [issue188](https://github.com/vaibhavcodesx/kharcha-paani/issues/188).
