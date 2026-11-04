@@ -660,6 +660,56 @@ class MainViewModel(
         _voiceCaptureRequested.value = false
     }
 
+    /**
+     * Whether spoken audio may be sent to Gemini: there is an AI in this build and the person has
+     * accepted its notice. Before that, voice goes through the phone's own recogniser only, and
+     * nothing leaves the phone until the typed words reach the usual notice.
+     */
+    val voiceToAiAllowed: Boolean get() = aiAvailable && aiNoticeAccepted.value
+
+    /** Friends' names, for the speech recogniser to listen for. */
+    fun friendNames(): List<String> = people.value.map { it.name }
+
+    /**
+     * A spoken line, recorded in the app, sent to Gemini as audio, and the entry that comes back
+     * opened on the sheet in one step. When it can't be made out nothing opens: a message says why,
+     * and the person can say it again or type it.
+     */
+    fun parseVoiceAudio(wav: ByteArray) {
+        if (!aiAvailable) return
+        stopImprovingWithAi()
+        resetBillPhoto()
+        viewModelScope.launch {
+            _isParsing.value = true
+            try {
+                val outcome = geminiRepo.parseAudio(wav, friendNames(), parseChoices())
+                val failure = outcome.failure
+                if (failure != null) {
+                    val app = getApplication<Application>()
+                    showMessage(
+                        app.getString(
+                            when (failure) {
+                                AiFailure.Offline, AiFailure.Timeout -> R.string.voice_failed_offline
+                                else -> R.string.voice_failed
+                            },
+                        ),
+                    )
+                    return@launch
+                }
+                val splitNotice = applyParsedResult(outcome.result, outcome.result.note)
+                if (_paymentMethod.value.isBlank()) _paymentMethod.value = defaultPaymentMethod()
+                // What was heard, so a wrong amount is easy to see where it came from.
+                _parseNotice.value = listOfNotNull(
+                    outcome.result.note.takeIf { it.isNotBlank() }?.let { getApplication<Application>().getString(R.string.voice_heard, it) },
+                    splitNotice,
+                ).joinToString(" ").ifEmpty { null }
+                _isConfirmSheetOpen.value = true
+            } finally {
+                _isParsing.value = false
+            }
+        }
+    }
+
     // Set by the widget's quick-add bar: Home puts the cursor in the capture line (keyboard up),
     // reports it, and this clears.
     private val _captureFocusRequested = MutableStateFlow(false)

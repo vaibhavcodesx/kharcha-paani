@@ -2,11 +2,8 @@ package com.vaibhav.kharchapaani.ui.home
 
 import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.res.stringResource
-import android.app.Activity
-import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
-import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -77,7 +74,6 @@ import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import com.vaibhav.kharchapaani.util.SharedFiles
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 /**
  * The one place to log something: type or say it, and the AI fills in the rest. The other ways in
@@ -91,6 +87,10 @@ fun CaptureCard(
     onParsePdf: (ByteArray, String) -> Unit,
     onOpenIou: () -> Unit,
     modifier: Modifier = Modifier,
+    // Saying it out loud: audio for Gemini once its notice is accepted, else the phone's recogniser.
+    onParseAudio: (ByteArray) -> Unit = {},
+    friendNames: () -> List<String> = { emptyList() },
+    voiceToAiAllowed: () -> Boolean = { false },
     // The home-screen widget's Speak button: start listening straight away.
     startVoiceCapture: Boolean = false,
     onVoiceCaptureStarted: () -> Unit = {},
@@ -110,32 +110,14 @@ fun CaptureCard(
         input = ""
     }
 
-    val speechLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
-            if (!spoken.isNullOrBlank()) onParseText(spoken)
-        }
-    }
-    fun listen() {
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-            .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-            .putExtra(RecognizerIntent.EXTRA_PROMPT, context.getString(R.string.home_capture_voice_prompt))
-        runCatching { speechLauncher.launch(intent) }
-            .onFailure { onCaptureFailed(context.getString(R.string.home_capture_voice_unavailable)) }
-    }
-    val focusRequester = remember { FocusRequester() }
-    val bringIntoView = remember { BringIntoViewRequester() }
-    val keyboard = LocalSoftwareKeyboardController.current
-    LaunchedEffect(focusCapture) {
-        if (focusCapture) {
-            // On a short phone the line can start below the fold: scroll it in, then focus.
-            bringIntoView.bringIntoView()
-            focusRequester.requestFocus()
-            keyboard?.show()
-            onCaptureFocused()
-        }
-    }
+    val voice = rememberVoiceCapture(
+        friendNames = friendNames,
+        voiceToAiAllowed = voiceToAiAllowed,
+        onAudio = onParseAudio,
+        onText = onParseText,
+        onMessage = onCaptureFailed,
+    )
+    fun listen() = voice.listen()
     LaunchedEffect(startVoiceCapture) {
         if (startVoiceCapture) {
             onVoiceCaptureStarted()
@@ -167,7 +149,9 @@ fun CaptureCard(
             .clip(KpShapes.large)
             .background(CharcoalCard),
     ) {
-        Row(
+        if (voice.phase() != VoicePhase.Idle) {
+            VoiceListeningBar(voice)
+        } else Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(start = Spacing.l, end = Spacing.s, top = Spacing.s, bottom = Spacing.s),
         ) {
@@ -274,7 +258,7 @@ object CaptureHints {
 }
 
 @Composable
-private fun CaptureAction(icon: ImageVector, label: String, filled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+internal fun CaptureAction(icon: ImageVector, label: String, filled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier

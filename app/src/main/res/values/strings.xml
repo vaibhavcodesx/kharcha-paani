@@ -28,6 +28,16 @@
     <string name="home_day_spent">%1$s spent</string>
     <string name="home_capture_reading">Reading it…</string>
     <string name="home_capture_prompt">What did you spend on?</string>
+    <string name="voice_listening">Listening…</string>
+    <string name="voice_say_it">Say it like you would to a friend: “chai 40 cash”</string>
+    <string name="voice_done">Done</string>
+    <string name="voice_cancel">Cancel</string>
+    <string name="voice_too_short">That was too short to hear. Hold on a little longer.</string>
+    <string name="voice_failed">Couldn\u2019t make that out. Say it again, or type it.</string>
+    <string name="voice_failed_offline">No connection, so I couldn\u2019t listen. Try again, or type it.</string>
+    <string name="voice_no_mic">The microphone is busy or off. Typing works too.</string>
+    <string name="voice_no_match">Didn\u2019t catch that. Say it again, or type it.</string>
+    <string name="voice_heard">Heard: \u201c%1$s\u201d.</string>
     <string name="home_capture_try">Try: %1$s</string>
     <!-- Lines the capture field cycles through. Each one must read with an amount (CaptureHintsTest). -->
     <string-array name="home_capture_examples">

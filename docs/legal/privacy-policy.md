@@ -1,6 +1,6 @@
 # Kharcha Paani privacy policy
 
-Last updated 25 October 2026.
+Last updated 4 November 2026.
 
 Kharcha Paani is an app for tracking what you spend and splitting it with friends. It's made and
 run by Vaibhav Chauhan ("we", "us"). This page says what the app collects, why, who else handles it,
@@ -29,10 +29,18 @@ name you gave them and what you split with them are stored in your account, visi
 categories, the daily reminder settings and your notification choices. A backup file you export
 contains these too; where you keep that file is up to you.
 
-**Things we don't collect.** We don't read your SMS, contacts, location, microphone or files, and
-the app asks for no permission to do so. Photos and PDFs reach the app only when you pick or share
-them. Voice entry uses your phone's own speech service; the app receives only the words. There are
-no ads and no ad tracking.
+**The microphone.** Only when you tap the mic button to say an entry, and only while the listening
+bar is on screen. If you've accepted the AI notice and you're online, the app records what you say
+(up to 30 seconds) in the phone's memory and sends that audio, once, to Google Gemini through our
+server, which reads it and hands back the entry. The recording is not saved on your phone, and we
+don't keep it. Otherwise (offline, or before you've accepted the notice) your phone's own speech
+service turns your words into text and the app receives only the text. You can always type instead,
+and you can refuse the microphone permission: the mic button then uses your phone's system speech
+dialog. The app never listens in the background.
+
+**Things we don't collect.** We don't read your SMS, contacts, location or files, and the app asks
+for no permission to do so. Photos and PDFs reach the app only when you pick or share them. There
+are no ads and no ad tracking.
 
 ## Who else handles your data
 
@@ -43,7 +51,7 @@ us.
   settlements). Our Supabase project is hosted in **Tokyo, Japan** (AWS region ap-northeast-1). Data
   is sent over encrypted connections, and the database only lets each person read what they're
   allowed to: their own entries, and the groups they're in.
-- **Google Gemini** reads what you choose to have read: a quick-add line you type or speak, a bill
+- **Google Gemini** reads what you choose to have read: a quick-add line you type, or say out loud (sent as audio, see "The microphone" above), a bill
   photo, a bank or UPI statement, or the summary of your spending behind an Insights question or a
   trip read. That's how the app fills in amounts for you. **While Kharcha Paani is free it uses
   Gemini's free tier, so Google may use what's sent to improve its products, and Google's reviewers
