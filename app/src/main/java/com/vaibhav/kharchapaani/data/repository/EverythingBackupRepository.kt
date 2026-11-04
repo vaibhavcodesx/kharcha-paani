@@ -53,7 +53,13 @@ class EverythingBackupRepository(private val db: AppDatabase, private val receip
      * Receipt files precede metadata; failures remove only files created here. A process crash may
      * leave harmless orphan files, never committed metadata pointing at a file not yet written.
      */
-    suspend fun restoreIntoEmptyLocalLedger(backup: EverythingBackup): EverythingSettings = withContext(Dispatchers.IO) {
+    suspend fun restoreIntoEmptyLocalLedger(
+        backup: EverythingBackup,
+        restoreMarker: String? = null,
+        reuseMatchingReceipts: Boolean = false,
+    ): EverythingSettings = withContext(Dispatchers.IO) {
+        require(restoreMarker == null || restoreMarker.matches(Regex("[0-9a-f]{64}"))) { "Invalid restore marker" }
+        require(!reuseMatchingReceipts || restoreMarker != null) { "Receipt recovery requires a restore journal marker" }
         backup.validate()
         val created = mutableListOf<File>()
         var committed = false
@@ -63,9 +69,20 @@ class EverythingBackupRepository(private val db: AppDatabase, private val receip
                 backup.receipts.forEach { receipt ->
                     val file = safeReceipt(receipt.fileName)
                     require(file.parentFile!!.mkdirs() || file.parentFile!!.isDirectory) { "Receipt directory is unavailable" }
-                    require(file.createNewFile()) { "Receipt target already exists" }
-                    created += file
-                    file.outputStream().use { it.write(Base64.decode(receipt.contentBase64, Base64.NO_WRAP)) }
+                    val content = Base64.decode(receipt.contentBase64, Base64.NO_WRAP)
+                    if (file.createNewFile()) {
+                        created += file
+                        file.outputStream().use { it.write(content) }
+                    } else {
+                        // Only a validated pending journal may recover files left before Room commit.
+                        // Adopt exact bytes without rewriting or adding them to rollback cleanup.
+                        require(reuseMatchingReceipts && file.isFile && file.length() == receipt.bytes) {
+                            "Receipt target already exists"
+                        }
+                        require(readReceiptBytes(file, receipt.bytes).contentEquals(content)) {
+                            "Existing receipt differs from restore journal"
+                        }
+                    }
                 }
                 backup.people.forEach { db.personDao().insertPerson(it.entity()) }
                 backup.groups.forEach { db.groupSyncDao().insertGroup(it.entity()) }
@@ -77,6 +94,7 @@ class EverythingBackupRepository(private val db: AppDatabase, private val receip
                 backup.subscriptions.forEach { db.subscriptionDao().insert(it.entity()) }
                 backup.paymentAsks.forEach { db.paymentAskDao().insert(it.entity()) }
                 backup.receipts.forEach { db.receiptDao().insert(it.entity()) }
+                restoreMarker?.let { db.syncDao().putMeta(SyncMetaEntity(EVERYTHING_RESTORE_MARKER, it)) }
             }
             committed = true
             backup.settings
