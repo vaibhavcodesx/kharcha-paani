@@ -194,6 +194,7 @@ class AiDisabledTest {
     }
 
     @Test fun `AI off does not request an Insights answer`(): Unit = runBlocking {
+        assertTrue("Fixture needs available AI quota", settings.aiUsage.first().canAsk(java.time.LocalDate.now()))
         finishAction(ready = { !vm.askBoard.value.isAsking }) {
             vm.askInsights(AiPrompt.MonthInReview)
         }
@@ -201,6 +202,7 @@ class AiDisabledTest {
     }
 
     @Test fun `AI off does not request a real groups trip review`(): Unit = runBlocking {
+        assertTrue("Fixture needs available AI quota", settings.aiUsage.first().canAsk(java.time.LocalDate.now()))
         db.groupDao().insertGroup(GroupEntity(id = 7, name = "Invented trip"))
         db.transactionDao().insertTransaction(TransactionEntity(type = "expense", amount = 50.0,
             category = "Food", merchant = "Test lunch", paymentMethod = "Cash", groupId = 7))
