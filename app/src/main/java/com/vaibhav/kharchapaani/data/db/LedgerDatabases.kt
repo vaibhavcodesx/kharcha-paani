@@ -19,6 +19,11 @@ import java.io.File
  */
 object LedgerDatabases {
 
+    /** A hook must use captured DAOs/files only; it must never call a LedgerDatabases opener or close(). */
+    fun interface CloseOwner {
+        suspend fun beforeClose()
+    }
+
     /** The pre-accounts, unscoped database. Claimed by the first account to sign in. */
     const val LEGACY_DATABASE_NAME = "splitflow.db"
 
@@ -36,6 +41,21 @@ object LedgerDatabases {
     /** Local ledgers never claim the pre-accounts database, even on the very first launch. */
     suspend fun openLocal(context: Context, guest: GuestSession, isCurrent: () -> Boolean = { true }): AppDatabase =
         openNamed(context, localDatabaseName(guest), legacyOwner = null, isCurrent = isCurrent)
+
+    /** Session ownership is established before any competing opener can close this handle. */
+    suspend fun openOwned(
+        context: Context,
+        userId: String,
+        isLocal: Boolean,
+        isCurrent: () -> Boolean = { true },
+        ownerFactory: (AppDatabase) -> CloseOwner,
+    ): AppDatabase {
+        // API scaffold: ownership is not retained by the database record until the barrier fix.
+        val database = if (isLocal) openLocal(context, GuestSession(userId), isCurrent)
+            else open(context, userId, isCurrent)
+        withContext(Dispatchers.Main.immediate) { ownerFactory(database) }
+        return database
+    }
 
     internal fun localDatabaseName(guest: GuestSession): String = "ledger-local-${guest.id}.db"
 

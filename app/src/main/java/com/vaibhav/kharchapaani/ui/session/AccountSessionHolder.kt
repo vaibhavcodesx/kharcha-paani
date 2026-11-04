@@ -15,6 +15,8 @@ import com.vaibhav.kharchapaani.data.db.LedgerDatabases
 import com.vaibhav.kharchapaani.data.sync.SyncScheduler
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,6 +49,16 @@ class AccountSession(val userId: String, val database: AppDatabase, val isLocal:
         scopeJobs.joinAll()
         closingWork.forEach { it.awaitSessionClosingWork() }
     }
+
+    /** Invoked by the database owner barrier, never by joining the holder's own open job. */
+    internal suspend fun beforeDatabaseClose(onRetired: () -> Unit = {}) {
+        withContext(Dispatchers.Main.immediate) {
+            onRetired()
+            viewModelStore.clear()
+        }
+        awaitClosed()
+    }
+
 }
 
 sealed interface AccountSessionState {
@@ -105,13 +117,23 @@ class AccountSessionHolder(application: Application) : AndroidViewModel(applicat
                         activeUserId == userId && activeIsLocal == isLocal &&
                             (if (isLocal) mode.guestOrNull()?.id == userId else mode.choice == LedgerMode.Choice.CLOUD)
                     }
-                    val database = if (isLocal) {
-                        LedgerDatabases.openLocal(getApplication(), GuestSession(userId), isCurrent = isCurrent)
-                    } else {
-                        LedgerDatabases.open(getApplication(), userId, isCurrent = isCurrent)
+                    lateinit var session: AccountSession
+                    LedgerDatabases.openOwned(getApplication(), userId, isLocal, isCurrent = isCurrent) { database ->
+                        // The factory runs on Main while the database mutex still excludes closers.
+                        session = AccountSession(userId, database, isLocal)
+                        val owned = session
+                        LedgerDatabases.CloseOwner {
+                            owned.beforeDatabaseClose {
+                                if ((_state.value as? AccountSessionState.Ready)?.session === owned) {
+                                    // A background opener may retire this session before the next UI frame.
+                                    activeUserId = null
+                                    _state.value = AccountSessionState.None
+                                }
+                            }
+                        }
                     }
                     if (!isLocal) SyncScheduler.schedulePeriodicSync(getApplication(), userId)
-                    AccountSessionState.Ready(AccountSession(userId, database, isLocal))
+                    AccountSessionState.Ready(session)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
