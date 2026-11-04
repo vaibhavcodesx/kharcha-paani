@@ -69,24 +69,24 @@ class SplitEditorTest {
             }
         }
 
-        // Initially all candidates exist
-        composeTestRule.onNodeWithText("Rohan").assertExists()
-        composeTestRule.onNodeWithText("Amit").assertExists()
-        composeTestRule.onNodeWithText("Zara").assertExists()
+        // Initially all candidates exist in both payer chip and split row (2 each)
+        composeTestRule.onAllNodesWithText("Rohan").assertCountEquals(2)
+        composeTestRule.onAllNodesWithText("Amit").assertCountEquals(2)
+        composeTestRule.onAllNodesWithText("Zara").assertCountEquals(2)
 
         // Filter by "Roh"
         composeTestRule.onNodeWithTag("split_search_input").performTextInput("Roh")
 
-        composeTestRule.onNodeWithText("Rohan").assertExists()
-        // Amit is not selected and doesn't match query, so hidden
-        composeTestRule.onNodeWithText("Amit").assertDoesNotExist()
-        // Zara is selected, so stays visible in split rows
-        composeTestRule.onNodeWithText("Zara").assertExists()
+        composeTestRule.onAllNodesWithText("Rohan").assertCountEquals(2)
+        // Amit is not selected and doesn't match query, so hidden completely
+        composeTestRule.onAllNodesWithText("Amit").assertCountEquals(0)
+        // Zara is selected, so stays visible in split rows (1 node)
+        composeTestRule.onAllNodesWithText("Zara").assertCountEquals(1)
 
         // Clear search
         composeTestRule.onNodeWithTag("split_search_clear").performClick()
 
-        // Amit reappears
-        composeTestRule.onNodeWithText("Amit").assertExists()
+        // Amit reappears in both payer chip and split row
+        composeTestRule.onAllNodesWithText("Amit").assertCountEquals(2)
     }
 }
