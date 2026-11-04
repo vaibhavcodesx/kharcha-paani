@@ -124,7 +124,7 @@ class ShareIntentsTest {
         }
 
         viewModel.exportCsv(ExportRange.Everything)
-        val status = withTimeout(10_000) { viewModel.statusMessage.first { it != null } }
+        val status = withTimeout(10_000) { viewModel.statusMessage.first { !it.isNullOrBlank() }!! }
         assertTrue(status.contains("Nothing") || status.contains("empty") || status.isNotEmpty())
         assertEquals("No share intent emitted on empty export", null, emittedIntent)
 
@@ -164,7 +164,7 @@ class ShareIntentsTest {
 
     @Test
     fun `askToPay emits chooser intent with share message`() = runBlocking {
-        val person = PersonEntity(id = 42, name = "Aman Sharma", phone = "9876543210")
+        val person = PersonEntity(id = 42, name = "Aman Sharma", avatarColor = "#70C1FF")
 
         var emittedIntent: Intent? = null
         val collectJob = launch {
