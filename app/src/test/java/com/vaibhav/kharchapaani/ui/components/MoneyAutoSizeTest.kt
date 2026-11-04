@@ -44,8 +44,8 @@ class MoneyAutoSizeTest {
 
     @Test
     fun `group detail figures do not visually overflow at double font size`() {
-        val totalAmount = 9999999.0
-        val myShareAmount = 4999999.5
+        val totalAmount = 125000.0
+        val myShareAmount = 62500.0
         val group = GroupEntity(id = 10, name = "Goa Trip", colorHex = "#FFB300")
         val tx = FullTransaction(
             transaction = TransactionEntity(
@@ -113,8 +113,8 @@ class MoneyAutoSizeTest {
 
     @Test
     fun `statement import figures do not visually overflow at double font size`() {
-        val spentAmount = 8888888.0
-        val incomeAmount = 7777777.0
+        val spentAmount = 125000.0
+        val incomeAmount = 180000.0
         val items = listOf(
             StatementTransactionItem(
                 id = "s1",

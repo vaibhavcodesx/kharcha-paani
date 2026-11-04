@@ -289,7 +289,7 @@ private fun TickBox(checked: Boolean, description: String, onToggle: (Boolean) -
 private fun Figure(label: String, value: String, color: androidx.compose.ui.graphics.Color, style: androidx.compose.ui.text.TextStyle, modifier: Modifier) {
     Column(
         modifier
-            .testTag("import_figure_$label")
+            .testTag("import_figure_${label.uppercase()}")
             .semantics(mergeDescendants = true) {},
     ) {
         Text(label.uppercase(), style = EyebrowText)
