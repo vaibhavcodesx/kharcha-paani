@@ -215,4 +215,41 @@ class EverythingBackupRepositoryTest {
         assertEquals(22L, target.splitDao().getAllSplitSharesDirect().first { it.guestName == "Guest" }.guestPersonId!!)
     }
 
+    @Test fun `shared legacy partial shares keep group totals and member balances after archive restore`() = runBlocking {
+        source.personDao().insertPerson(PersonEntity(id = 11, name = "Registered friend", avatarColor = "#123456", profileId = "profile-a"))
+        source.groupSyncDao().insertGroup(GroupEntity(id = 31, name = "Shared history", syncState = SyncState.SYNCED))
+        source.groupSyncDao().insertMembers(listOf(
+            GroupMemberEntity(id = 41, groupId = 31, personId = -1),
+            GroupMemberEntity(id = 42, groupId = 31, personId = 11),
+        ))
+        source.transactionDao().insertTransaction(TransactionEntity(
+            id = 51, type = "expense", amount = 100.0, category = "Food", merchant = "Dinner",
+            paymentMethod = "Cash", isSplit = true, groupId = 31, syncState = SyncState.SYNCED,
+        ))
+        source.groupSyncDao().insertSplit(SplitEntity(id = 61, transactionId = 51, totalAmount = 100.0, paidByPersonId = -1))
+        // A legacy ledger may retain only surviving shares. Never manufacture the missing Rs 30.
+        source.groupSyncDao().insertShares(listOf(
+            SplitShareEntity(id = 71, splitId = 61, personId = -1, shareAmount = 50.0),
+            SplitShareEntity(id = 72, splitId = 61, personId = 11, shareAmount = 20.0),
+        ))
+        val before = LedgerRepository(source).groupsWithDetails.first().single()
+        val expectedPositions = mapOf(-1L to 20.0, 11L to -20.0)
+        assertEquals(100.0, before.totalExpenses, 0.0)
+        assertEquals(100.0, before.myPaidAmount, 0.0)
+        assertEquals(50.0, before.myShare, 0.0)
+        assertEquals(20.0, before.netBalanceForMe, 0.0)
+        assertEquals(expectedPositions, GroupBalances.netPositions(before.transactions, before.settlements))
+
+        val archive = EverythingBackup.decode(EverythingBackup.encode(exporter.collect("test")))
+        assertEquals(70.0, archive.shares.sumOf { it.shareAmount }, 0.0)
+        importer.restoreIntoEmptyLocalLedger(archive)
+        val after = LedgerRepository(target).groupsWithDetails.first().single()
+        assertEquals(before.totalExpenses, after.totalExpenses, 0.0)
+        assertEquals(before.myPaidAmount, after.myPaidAmount, 0.0)
+        assertEquals(before.myShare, after.myShare, 0.0)
+        assertEquals(expectedPositions, GroupBalances.netPositions(after.transactions, after.settlements))
+        assertEquals(LedgerRepository(source).personBalances.first(), LedgerRepository(target).personBalances.first())
+        assertEquals("Restoring shared history must preserve the displayed group balance", before.netBalanceForMe, after.netBalanceForMe, 0.0)
+    }
+
 }
