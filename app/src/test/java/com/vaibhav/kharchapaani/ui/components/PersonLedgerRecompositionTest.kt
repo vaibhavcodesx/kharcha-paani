@@ -28,7 +28,7 @@ class PersonLedgerRecompositionTest {
             return flowOf(emptyList())
         }
 
-        var personState by mutableStateOf(PersonEntity(id = 1L, name = "Aaru"))
+        var personState by mutableStateOf(PersonEntity(id = 1L, name = "Aaru", avatarColor = "#70C1FF"))
         var unrelatedRecompositionTrigger by mutableStateOf(0)
 
         compose.setContent {
@@ -58,7 +58,7 @@ class PersonLedgerRecompositionTest {
         assertEquals("Further recompositions with same person ID must not create a new flow", 1, flowCreationCount)
 
         // Change person.id
-        personState = PersonEntity(id = 2L, name = "Rohan")
+        personState = PersonEntity(id = 2L, name = "Rohan", avatarColor = "#FF9070")
         compose.waitForIdle()
         assertEquals("Changing person ID must create a new flow for the new person", 2, flowCreationCount)
     }
