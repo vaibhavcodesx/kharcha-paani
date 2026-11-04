@@ -2,7 +2,7 @@ package com.vaibhav.kharchapaani.ui.components
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsOff
-import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -44,7 +44,7 @@ class CaptureAiChoiceTest {
         compose.onNodeWithTag("voice_mic_button").performClick()
         compose.runOnIdle { assertEquals(2, messages.size) }
         assertNull(shadowOf(compose.activity).nextStartedActivityForResult)
-        compose.onNodeWithTag("capture_ai_status").assertTextContains("AI is off")
+        compose.onNodeWithTag("capture_ai_status").assertTextEquals("AI is off · quick add stays on this phone")
     }
 
     @Test fun `capture identifies Gemini while AI is on`() {
@@ -54,7 +54,7 @@ class CaptureAiChoiceTest {
                     onOpenIou = {}, aiEnabled = true)
             }
         }
-        compose.onNodeWithTag("capture_ai_status").assertTextContains("Google Gemini")
+        compose.onNodeWithTag("capture_ai_status").assertTextEquals("Quick add, bill and statement reads use Google Gemini")
     }
 
     @Test fun `settings exposes a labelled off switch and asks to enable it explicitly`() {
