@@ -65,6 +65,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Changed
 
+- Account sheet: Name, Avatar and Colour are one connected group with a single helper line under them; the cloud and sync status rows sit as a pair; the three data actions (export, back up, restore) are their own "Your data" section instead of the tail of Settings, which now ends with Notifications. Wording, switches and what each row does are unchanged.
+
 - Activity shows only the group items you are part of: a settlement between two other people, and a group expense you didn't add, pay or share in (a ₹0 share doesn't count), no longer appear. The group's own screen still lists everything.
 
 - Quick add opens the sheet instantly, on the phone's own reading of the line, with a quiet
