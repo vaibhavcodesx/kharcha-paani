@@ -49,6 +49,7 @@ class EverythingBackupViewModelTest {
     private val main = StandardTestDispatcher()
     private val store = ViewModelStore()
     private val jobs = mutableListOf<Job>()
+    private val ownedVms = mutableListOf<MainViewModel>()
     private val databases = mutableListOf<AppDatabase>()
     private val files = mutableListOf<File>()
     private lateinit var guest: GuestSession
@@ -90,6 +91,7 @@ class EverythingBackupViewModelTest {
         }.build(), configured = true, accessToken = { "test-token" }), isLocal = true).also {
         store.put(UUID.randomUUID().toString(), it)
         jobs += it.viewModelScope.coroutineContext[Job]!!
+        ownedVms += it
     }
 
     private suspend fun until(ready: suspend () -> Boolean) = withTimeout(10_000) {
@@ -210,12 +212,11 @@ class EverythingBackupViewModelTest {
             assertNull(vm.fullBackupPreview.value)
             assertFalse(vm.fullBackupReadError.value)
             val before = vm.viewModelScope.coroutineContext[Job]!!.children.toSet()
-            val started = mutableSetOf<Job>()
             vm.confirmRestore()
-            until {
-                started += vm.viewModelScope.coroutineContext[Job]!!.children.filter { it !in before }
-                started.all { it.isCompleted } && vm.restorePreview.value == null && db.transactionDao().getAllTransactionsDirect().size == 1
-            }
+            // Capture before pumping: v2 already has one row, so row count alone cannot await it.
+            val started = vm.viewModelScope.coroutineContext[Job]!!.children.filter { it !in before }.toList()
+            assertTrue("Legacy confirmation must own an actual launched job", started.isNotEmpty())
+            until { started.all { it.isCompleted } && vm.restorePreview.value == null && db.transactionDao().getAllTransactionsDirect().size == 1 }
             assertEquals(120.0, db.transactionDao().getAllTransactionsDirect().single().amount, 0.0)
         }
     }
@@ -240,7 +241,7 @@ class EverythingBackupViewModelTest {
         main.scheduler.runCurrent()
         assertEquals(2, db.transactionDao().getAllTransactionsDirect().size)
         assertTrue(journal.exists())
-        store.clear(); until { jobs.all { it.isCompleted } }
+        clearOwnedVms()
         journal.writeBytes(original)
         val resumed = vm()
         assertTrue(resumed.fullBackupBusy.value)
@@ -251,6 +252,71 @@ class EverythingBackupViewModelTest {
         assertEquals(1, db.transactionDao().getAllTransactionsDirect().count { it.merchant == "Subscription" })
         assertEquals("Groceries", settings.collectEverythingSettings(guest.settingsId).defaultCategory)
         assertFalse(AiSettings(app).enabledNow)
+    }
+
+    @Test fun `manual confirmation after a blocked startup also runs maintenance once`(): Unit = runBlocking {
+        val backup = archive(due = true)
+        val journal = File(app.filesDir, "backup-recovery/local-${guest.id}.json")
+        val photos = ReceiptStore.forLocal(app, guest)
+        photos.dir.mkdirs()
+        val conflict = photos.file("kept.jpg").apply { writeBytes(byteArrayOf(9)) }
+        try {
+            EverythingRestoreCoordinator(db, EverythingBackupRepository(db, photos), journal) {}.restore(backup, true)
+            fail("Expected a receipt conflict")
+        } catch (expected: IllegalArgumentException) { }
+        val vm = vm()
+        until { !vm.fullBackupBusy.value && vm.fullBackupPreview.value != null }
+        assertEquals(backup, vm.fullBackupPreview.value)
+        assertFalse(vm.fullBackupReadError.value)
+        assertTrue(vm.fullBackupTargetEmpty.value)
+        assertTrue(db.transactionDao().getAllTransactionsDirect().isEmpty())
+        assertTrue(journal.exists())
+        assertTrue(conflict.delete()) // Release the injected fault; retry the retained preview, no import.
+        vm.confirmEverythingRestore()
+        until { !vm.fullBackupBusy.value && vm.fullBackupPreview.value == null }
+        assertEquals(3, db.transactionDao().getAllTransactionsDirect().size)
+        assertEquals(1, db.transactionDao().getAllTransactionsDirect().count { it.merchant == "Subscription" })
+        assertNotNull(db.subscriptionDao().getAllDirect().single().chargedThrough)
+        assertFalse(journal.exists())
+    }
+
+    @Test fun `a pending legacy picker callback cannot hide the private recovery modal`(): Unit = runBlocking {
+        val backup = archive()
+        val journal = File(app.filesDir, "backup-recovery/local-${guest.id}.json")
+        try {
+            EverythingRestoreCoordinator(db, EverythingBackupRepository(db, ReceiptStore.forLocal(app, guest)), journal) {
+                throw IOException("Interrupted settings")
+            }.restore(backup, true)
+            fail("Expected interrupted settings")
+        } catch (expected: IOException) { }
+        journal.writeText("broken journal")
+        val bytes = journal.readBytes()
+        val vm = vm()
+        until { !vm.fullBackupBusy.value && vm.fullBackupReadError.value }
+        val legacy = LocalBackup(exportedAt = 1, appVersion = "legacy",
+            transactions = listOf(BackupTransaction(type = "expense", amount = 120.0, category = "Food", merchant = "Pending picker", paymentMethod = "Cash", date = 2, createdAt = 3)))
+        val before = vm.viewModelScope.coroutineContext[Job]!!.children.toSet()
+        vm.importLocalBackup(app, file(LocalBackup.encode(legacy)).second)
+        val started = vm.viewModelScope.coroutineContext[Job]!!.children.filter { it !in before }.toList()
+        until { !vm.fullBackupBusy.value && started.all { it.isCompleted } }
+        assertTrue("Pending import must preserve the recovery modal", vm.fullBackupReadError.value)
+        assertNull(vm.fullBackupPreview.value)
+        assertNull(vm.restorePreview.value)
+        vm.dismissRestore()
+        assertTrue(vm.fullBackupReadError.value)
+        assertArrayEquals(bytes, journal.readBytes())
+        assertEquals(setOf(11L, 12L), db.transactionDao().getAllTransactionsDirect().map { it.id }.toSet())
+    }
+
+    private suspend fun clearOwnedVms() {
+        store.clear()
+        until { jobs.all { it.isCompleted } }
+        val closingScope = CoroutineScope(SupervisorJob() + main)
+        try {
+            val closing = closingScope.async { ownedVms.forEach { it.awaitSessionClosingWork() } }
+            until { closing.isCompleted }
+            closing.await()
+        } finally { closingScope.cancel() }
     }
 
     private fun restorePreferences(prefs: android.content.SharedPreferences, values: Map<String, *>?) {
@@ -266,7 +332,7 @@ class EverythingBackupViewModelTest {
     }
 
     @After fun close(): Unit = runBlocking {
-        try { store.clear(); until { jobs.all { it.isCompleted } } }
+        try { clearOwnedVms() }
         finally {
             try {
                 databases.forEach { it.close() }
