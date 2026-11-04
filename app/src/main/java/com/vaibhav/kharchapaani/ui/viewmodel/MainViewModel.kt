@@ -2476,11 +2476,16 @@ class MainViewModel(
      */
     fun importLocalBackup(context: Context, uri: Uri) {
         if (_fullBackupBusy.value) return
+        if (recoveryBlocked) {
+            _statusMessage.value = uiText(R.string.fullbackup_vm_recovery_pending)
+            return
+        }
         _fullBackupBusy.value = true
         _fullBackupReadError.value = false
+        val app = context.applicationContext
         viewModelScope.launch {
             try {
-                val bytes = when (val read = SharedFiles.readBytes(context.applicationContext, uri, EverythingBackup.MAX_JSON_BYTES)) {
+                val bytes = when (val read = SharedFiles.readBytes(app, uri, EverythingBackup.MAX_JSON_BYTES)) {
                     is SharedFiles.Read.Bytes -> read.bytes
                     SharedFiles.Read.TooLarge -> throw IllegalArgumentException("Backup exceeds the input limit")
                     SharedFiles.Read.Unreadable -> throw IllegalArgumentException("Backup could not be read")
@@ -2622,7 +2627,7 @@ class MainViewModel(
                 _fullBackupPreview.value = null
                 _fullBackupTargetEmpty.value = false
                 _statusMessage.value = uiText(R.string.fullbackup_vm_restored)
-                ReminderScheduler.apply(getApplication(), settings.reminder.first(), replace = true)
+                runBackupMaintenance(replaceReminder = true)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
@@ -2640,6 +2645,7 @@ class MainViewModel(
         settings.restoreEverythingSettings(settingsId, saved)
         requireCurrentLocalSession()
         aiSettings.setEnabled(saved.aiEnabled && aiSettings.enabledNow)
+        requireCurrentLocalSession()
         saved.groupSort?.let { name -> GroupSort.entries.firstOrNull { it.name == name } }?.let {
             GroupSortPreferences(getApplication()).writeDurably(it)
         }
@@ -2654,12 +2660,16 @@ class MainViewModel(
                 check(it.moveToFirst()); it.getInt(0) == 0
             } }
         }
-        if (empty) true else if (hasRecoveryJournal()) {
-            val hash = MessageDigest.getInstance("SHA-256").digest(EverythingBackup.encode(backup).toByteArray(Charsets.UTF_8))
-                .joinToString("") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
-            db.syncDao().meta(EVERYTHING_RESTORE_MARKER) == hash
-        } else false
+        if (!hasRecoveryJournal()) return@withContext empty
+        val hash = fullArchiveHash(backup)
+        val journalHash = runCatching { fullArchiveHash(readRecoveryPreview()) }.getOrNull()
+        if (journalHash != hash) return@withContext false
+        empty || db.syncDao().meta(EVERYTHING_RESTORE_MARKER) == hash
     }
+
+    private fun fullArchiveHash(backup: EverythingBackup): String =
+        MessageDigest.getInstance("SHA-256").digest(EverythingBackup.encode(backup).toByteArray(Charsets.UTF_8))
+            .joinToString("") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
 
     private suspend fun readRecoveryPreview(): EverythingBackup = withContext(Dispatchers.IO) {
         val bytes = AtomicFile(requireNotNull(recoveryJournal)).openRead().use { input ->
@@ -2678,6 +2688,15 @@ class MainViewModel(
         EverythingBackup.decode(Charsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).toString())
     }
 
+    /** Run after either startup recovery or a successful in-place recovery confirmation. */
+    private suspend fun runBackupMaintenance(replaceReminder: Boolean) {
+        if (ledgerRepo.runDueSubscriptions() > 0) SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
+        ledgerRepo.repairPersonColours()
+        runCatching { receipts.sweepOrphans() }.onFailure { Log.w("MainViewModel", "Bill photo sweep failed", it) }
+        publishUpiIfMissing()
+        ReminderScheduler.apply(getApplication(), settings.reminder.first(), replace = replaceReminder)
+    }
+
     // Last: all state above is initialized before recovery can run, including on Unconfined Main.
     // No automatic charge, colour rewrite or receipt sweep may run before a pending restore resumes.
     init {
@@ -2691,11 +2710,7 @@ class MainViewModel(
                     recoveryBlocked = false
                     _fullBackupPreview.value = null
                 }
-                if (ledgerRepo.runDueSubscriptions() > 0) SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
-                ledgerRepo.repairPersonColours()
-                runCatching { receipts.sweepOrphans() }.onFailure { Log.w("MainViewModel", "Bill photo sweep failed", it) }
-                publishUpiIfMissing()
-                ReminderScheduler.apply(getApplication(), settings.reminder.first(), replace = false)
+                runBackupMaintenance(replaceReminder = false)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
