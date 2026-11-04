@@ -375,9 +375,9 @@ fun SplitFlowApp(
     val billPhotoIds by viewModel.billPhotoIds.collectAsStateWithLifecycle()
     val rawTransactions by viewModel.rawTransactions.collectAsState()
     val homeSnapshot by viewModel.homeSnapshot.collectAsStateWithLifecycle()
-    val insightsAnalytics by viewModel.insightsAnalytics.collectAsState()
-    val insightsMonth by viewModel.insightsMonth.collectAsState()
-    val earliestInsightsMonth by viewModel.earliestInsightsMonth.collectAsState()
+    val insightsAnalytics by viewModel.insightsAnalytics.collectAsStateWithLifecycle()
+    val insightsMonth by viewModel.insightsMonth.collectAsStateWithLifecycle()
+    val earliestInsightsMonth by viewModel.earliestInsightsMonth.collectAsStateWithLifecycle()
     val personBalances by viewModel.personBalances.collectAsState()
     val people by viewModel.people.collectAsState()
 
@@ -444,8 +444,8 @@ fun SplitFlowApp(
     val selectedGroupForDetail by viewModel.selectedGroupForDetail.collectAsState()
 
     // AI Summary
-    val askBoard by viewModel.askBoard.collectAsState()
-    val aiAsksLeft by viewModel.aiAsksLeft.collectAsState()
+    val askBoard by viewModel.askBoard.collectAsStateWithLifecycle()
+    val aiAsksLeft by viewModel.aiAsksLeft.collectAsStateWithLifecycle()
     val tripReview by viewModel.tripReview.collectAsState()
 
     // Statement Import State
