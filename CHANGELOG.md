@@ -15,7 +15,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
-- Local-mode groundwork: isolated on-phone ledger, explicit account choice, blocked shared actions and no local cloud sync (owner review).
+- Use without an account keeps an isolated on-phone ledger, with explicit account switching and no local cloud sync or shared-group writes (owner review).
 
 - A device-wide Use AI switch stops Gemini reads everywhere, keeps manual capture available and labels AI-powered capture.
 

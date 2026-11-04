@@ -51,9 +51,10 @@ class AskSentReceiver : BroadcastReceiver() {
                 // also avoids reading two different account identities around a mode switch.
                 val ledger = BackgroundLedger.current(context, cloudUserId = signedInUserId) ?: return false
                 if (ledger.userId != userId || ledger.isLocal != intent.getBooleanExtra(AskShare.EXTRA_IS_LOCAL, false)) return false
-                ledger.open(context).paymentAskDao()
-                    .insert(PaymentAskEntity(personId = personId, amount = amount, sentAt = now))
-                true
+                ledger.withDatabase(context) { database ->
+                    database.paymentAskDao().insert(PaymentAskEntity(personId = personId, amount = amount, sentAt = now))
+                    true
+                }
             } catch (e: Exception) {
                 // A missing "Asked" line is harmless; a crash in the share sheet's callback is not.
                 Log.w(TAG, "Couldn't log the ask", e)

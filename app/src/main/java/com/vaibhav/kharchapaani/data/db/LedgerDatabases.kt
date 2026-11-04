@@ -4,6 +4,14 @@ import android.content.Context
 import com.vaibhav.kharchapaani.data.settings.GuestSession
 import android.database.sqlite.SQLiteDatabase
 import android.util.Log
+import kotlin.coroutines.AbstractCoroutineContextElement
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -33,7 +41,24 @@ object LedgerDatabases {
     private val lock = Mutex()
     private var open: OpenDatabase? = null
 
+    private class Borrowing : AbstractCoroutineContextElement(Key) {
+        companion object Key : CoroutineContext.Key<Borrowing>
+    }
+
     private class OpenDatabase(val name: String, val database: AppDatabase) {
+        private val borrowers = linkedSetOf<Job>()
+        fun addBorrower(job: Job) {
+            synchronized(borrowers) { borrowers += job }
+            // Completion never takes the registry mutex: a closer may hold it while joining us.
+            job.invokeOnCompletion { synchronized(borrowers) { borrowers.remove(job) } }
+        }
+        suspend fun drainBorrowers() {
+            val jobs = synchronized(borrowers) { borrowers.toList() }
+            val caller = currentCoroutineContext()[Job]
+            check(jobs.none { it === caller }) { "A ledger operation cannot close itself" }
+            jobs.forEach { it.cancel() }
+            jobs.joinAll()
+        }
         val owners = mutableListOf<CloseOwner>()
         suspend fun drainOwners() {
             owners.forEach { it.beforeClose() }
@@ -65,6 +90,31 @@ object LedgerDatabases {
         ownerFactory = ownerFactory,
     )
 
+    /** Scope a background consumer to its database; the result must not expose the handle. */
+    suspend fun <T> withDatabase(
+        context: Context,
+        userId: String,
+        isLocal: Boolean,
+        isCurrent: () -> Boolean = { true },
+        verifyCurrent: (suspend () -> Boolean)? = null,
+        block: suspend (AppDatabase) -> T,
+    ): T = coroutineScope {
+        val operation = async(start = CoroutineStart.LAZY) {
+            val job = currentCoroutineContext()[Job]!!
+            val database = openNamed(
+                context,
+                if (isLocal) localDatabaseName(GuestSession(userId)) else databaseName(userId),
+                legacyOwner = if (isLocal) null else userId,
+                isCurrent = isCurrent,
+                borrower = job,
+                verifyCurrent = verifyCurrent,
+            )
+            withContext(Borrowing()) { block(database) }
+        }
+        operation.start()
+        operation.await()
+    }
+
     internal fun localDatabaseName(guest: GuestSession): String = "ledger-local-${guest.id}.db"
 
     private suspend fun openNamed(
@@ -73,40 +123,55 @@ object LedgerDatabases {
         legacyOwner: String?,
         isCurrent: () -> Boolean,
         ownerFactory: ((AppDatabase) -> CloseOwner)? = null,
-    ): AppDatabase = lock.withLock {
-        // The caller may have waited behind a mode/account switch. Reject it before even
-        // returning a cached connection, and especially before closing the current ledger.
-        check(isCurrent()) { "Ledger selection changed before opening" }
-        open?.takeIf { it.name == name }?.let { current ->
-            if (ownerFactory != null) {
-                // A new session must not initialize over a destroyed owner's canceled restore.
-                // Plain cached background reads retain their fast path and never clear the UI.
-                current.drainOwners()
-                check(isCurrent()) { "Ledger selection changed while replacing its owner" }
+        borrower: Job? = null,
+        verifyCurrent: (suspend () -> Boolean)? = null,
+    ): AppDatabase {
+        checkNoBorrowReentry()
+        return lock.withLock {
+            // The caller may have waited behind a mode/account switch. Reject it before even
+            // returning a cached connection, and especially before closing the current ledger.
+            check(isCurrent() && (verifyCurrent?.invoke() != false) && isCurrent()) { "Ledger selection changed before opening" }
+            open?.takeIf { it.name == name }?.let { current ->
+                if (ownerFactory != null) {
+                    // A new session must not initialize over a destroyed owner's canceled restore.
+                    // Plain cached background reads retain their fast path and never clear the UI.
+                    current.drainBorrowers()
+                    current.drainOwners()
+                    check(isCurrent() && (verifyCurrent?.invoke() != false) && isCurrent()) { "Ledger selection changed while replacing its owner" }
+                }
+                attachOwner(current, ownerFactory)
+                check(isCurrent() && (verifyCurrent?.invoke() != false) && isCurrent()) { "Ledger selection changed while creating its owner" }
+                if (borrower != null) current.addBorrower(borrower)
+                return current.database
             }
+
+            val appContext = context.applicationContext
+            open?.drainBorrowers()
+            open?.drainOwners()
+            // Owner cleanup suspends; an obsolete opener must not close the now-selected ledger.
+            check(isCurrent() && (verifyCurrent?.invoke() != false) && isCurrent()) { "Ledger selection changed while closing its owner" }
+            open?.database?.close()
+            open = null
+
+            val database = withContext(Dispatchers.IO) {
+                if (legacyOwner != null && claimLegacyDatabase(appContext, legacyOwner)) {
+                    Log.i(TAG, "Moved the pre-accounts ledger into this account's database")
+                }
+                AppDatabase.builder(appContext, name).build()
+            }
+            val current = OpenDatabase(name, database)
+            open = current
             attachOwner(current, ownerFactory)
-            check(isCurrent()) { "Ledger selection changed while creating its owner" }
-            return current.database
+            check(isCurrent() && (verifyCurrent?.invoke() != false) && isCurrent()) { "Ledger selection changed while creating its owner" }
+            if (borrower != null) current.addBorrower(borrower)
+            database
         }
+    }
 
-        val appContext = context.applicationContext
-        open?.drainOwners()
-        // Owner cleanup suspends; an obsolete opener must not close the now-selected ledger.
-        check(isCurrent()) { "Ledger selection changed while closing its owner" }
-        open?.database?.close()
-        open = null
-
-        val database = withContext(Dispatchers.IO) {
-            if (legacyOwner != null && claimLegacyDatabase(appContext, legacyOwner)) {
-                Log.i(TAG, "Moved the pre-accounts ledger into this account's database")
-            }
-            AppDatabase.builder(appContext, name).build()
+    private suspend fun checkNoBorrowReentry() {
+        check(currentCoroutineContext()[Borrowing.Key] == null) {
+            "A scoped ledger operation must use its captured DAOs, not reopen or close the registry"
         }
-        val current = OpenDatabase(name, database)
-        open = current
-        attachOwner(current, ownerFactory)
-        check(isCurrent()) { "Ledger selection changed while creating its owner" }
-        database
     }
 
     // Called only while lock is held. Factories create ownership, never ViewModels, DAO work
@@ -116,10 +181,14 @@ object LedgerDatabases {
     }
 
     /** Closes the open database, if any. The file stays on disk (signing out keeps local data). */
-    suspend fun close() = lock.withLock {
-        open?.drainOwners()
-        open?.database?.close()
-        open = null
+    suspend fun close() {
+        checkNoBorrowReentry()
+        lock.withLock {
+            open?.drainBorrowers()
+            open?.drainOwners()
+            open?.database?.close()
+            open = null
+        }
     }
 
     internal fun databaseName(userId: String): String {

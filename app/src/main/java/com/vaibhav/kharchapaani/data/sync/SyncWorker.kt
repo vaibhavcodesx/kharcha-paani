@@ -42,20 +42,26 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         if (mode.choice == LedgerMode.Choice.LOCAL) return Result.success()
         return syncIfSignedIn(requestedUserId = userId, signedInUserId = signedInUserId) {
             if (mode.choice == LedgerMode.Choice.LOCAL) return@syncIfSignedIn
-            val database = LedgerDatabases.open(applicationContext, userId, isCurrent = {
+            LedgerDatabases.withDatabase(applicationContext, userId, isLocal = false, isCurrent = {
                 mode.choice == LedgerMode.Choice.CLOUD && supabase.auth.currentUserOrNull()?.id == userId
-            })
-            try {
-                syncAll(database, supabase, userId)
-            } finally {
-                // Payments a groupmate recorded that wait for my answer: the first nudge, then day
-                // 3, 6… Whatever the pull managed, the ones already on the phone still get theirs:
-                // inside the pass, one failing engine stopped every reminder.
-                runCatching {
-                    val prefs = AppSettings(applicationContext).notificationPrefs.first()
-                    SettlementReminders.remind(applicationContext, database, userId, prefs = prefs)
+            }, verifyCurrent = {
+                // A detached old client can still name its previous user after another account signs in.
+                mode.choice == LedgerMode.Choice.CLOUD &&
+                    BackgroundAuth.signedInUserId(applicationContext) == userId &&
+                    mode.choice == LedgerMode.Choice.CLOUD
+            }) { database ->
+                try {
+                    syncAll(database, supabase, userId)
+                } finally {
+                    // Payments a groupmate recorded that wait for my answer: the first nudge, then day
+                    // 3, 6… Whatever the pull managed, the ones already on the phone still get theirs:
+                    // inside the pass, one failing engine stopped every reminder.
+                    runCatching {
+                        val prefs = AppSettings(applicationContext).notificationPrefs.first()
+                        SettlementReminders.remind(applicationContext, database, userId, prefs = prefs)
+                    }
+                        .onFailure { Log.w(TAG, "Settlement reminders skipped", it) }
                 }
-                    .onFailure { Log.w(TAG, "Settlement reminders skipped", it) }
             }
         }
     }
