@@ -14,7 +14,7 @@ owner or Claude go at the bottom.
 ## Log
 
 - 2026-11-04 · #227 · Complete backup · implementation prepared, draft/unmerged. Core/recovery da98b95 all3green CI41851344306; shared-balance1-red1084tests and modal/maintenance/sort3-red1165tests verified before fixes. Final photo/Undo/missing-person identity baselineee7590d and repaired integration CI queued/unverified. Includes scoped-background dependency #230; auth owner review and phone checks remain mandatory. Checkpoint local-first-checkpoint-2026-11-04.md records replay steps.
-- 2026-11-04 · #230 · Local mode · implementation prepared, owner-review draft/unmerged. Namespace3-red, local-write/session6-red and shared-close4-red runs verified;9076d82 passed all3jobs CI41855080945. Retention1-red1130tests verified in CI41860289898. Final scoped-background baseline8d36ac1 (5 predicted failures) and repaired-head checks remain queued/unverified; no phone acceptance, anonymous account or guest upload. Never merge without auth owner review.
+- 2026-11-04 · #230 · Local mode · source01fca62 passed all3jobs CI41866338463; final scoped-background baseline8d36ac1 ran1137tests with exactly5predicted failures CI41864757240 (XML verified). Prior namespace3-red, local-write/session6-red, shared-close4-red and retention1-red verified too. Implementation source-reviewed; current documentation-head checks available on the PR. Owner-review/unmerged: auth approval and phone acceptance still required; no anonymous account or guest upload.
 
 - 2026-11-04 · #226 · AI choice · squash-merged6b1b189; final current-main head3251078 passed all3jobs CI41860028454, six initial regressions proved red. Manual capture stays available. No phone acceptance; ca76 timeout was not passing evidence.
 
