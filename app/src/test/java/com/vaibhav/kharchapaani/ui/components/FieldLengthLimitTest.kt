@@ -130,7 +130,6 @@ class FieldLengthLimitTest {
         compose.setContent {
             SplitFlowTheme {
                 AddFriendContent(
-                    taken = emptySet(),
                     onAdd = { name, _ -> submittedName = name },
                 )
             }
