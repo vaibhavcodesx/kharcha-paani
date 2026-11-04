@@ -71,7 +71,6 @@ import com.vaibhav.kharchapaani.data.db.entity.SettlementStatus
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.data.model.FullTransaction
 import com.vaibhav.kharchapaani.data.model.GroupWithDetails
-import com.vaibhav.kharchapaani.domain.GroupExpenseCredit
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -328,7 +327,7 @@ fun GroupDetailContent(
                                 GroupExpenseRow(
                                     expense = expense,
                                     people = people,
-                                    detail = stringResource(R.string.group_detail_date_credit, dateFormat.format(Date(expense.transaction.date)), GroupExpenseCredit.line(LocalContext.current, expense, groupDetails.members)),
+                                    date = dateFormat.format(Date(expense.transaction.date)),
                                     position = RowPosition.of(index, entries.size),
                                     onClick = if (!group.isArchived && expense.canEdit) ({ onEditTransaction(expense) }) else null,
                                 )
@@ -373,6 +372,9 @@ fun GroupDetailContent(
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
+        if (feed.any { it is GroupFeedEntry.Expense && it.transaction.shares.isNotEmpty() }) {
+            GroupExpenseLegend(Modifier.padding(bottom = Spacing.s))
+        }
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             feed.forEachIndexed { index, entry ->
                 val position = RowPosition.of(index, feed.size)
@@ -380,7 +382,7 @@ fun GroupDetailContent(
                     is GroupFeedEntry.Expense -> GroupExpenseRow(
                         expense = entry.transaction,
                         people = people,
-                        detail = stringResource(R.string.group_detail_date_credit, dateFormat.format(Date(entry.date)), GroupExpenseCredit.line(LocalContext.current, entry.transaction, groupDetails.members)),
+                        date = dateFormat.format(Date(entry.date)),
                         position = position,
                         // Whoever added it or paid for it can edit it (item 11).
                         onClick = if (entry.transaction.canEdit) ({ onEditTransaction(entry.transaction) }) else null,
@@ -457,25 +459,32 @@ private fun GroupMovementRow(
     }
 }
 
+/**
+ * One expense, in two lines: merchant and amount, then the date and who it involved as dots (see
+ * [GroupExpensePeople]). It used to spell "Paid by ● You / Split with ● You ● Aaru ● Pruthva" under
+ * the date, five lines and about 120 dp a row for what three dots say.
+ */
 @Composable
-private fun GroupExpenseRow(expense: FullTransaction, people: List<PersonEntity>, detail: String, position: RowPosition, onClick: (() -> Unit)?) {
+private fun GroupExpenseRow(expense: FullTransaction, people: List<PersonEntity>, date: String, position: RowPosition, onClick: (() -> Unit)?) {
     val tx = expense.transaction
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 64.dp)
+            .heightIn(min = 56.dp)
             .clip(position.shape)
             .background(CharcoalCard)
             .then(if (onClick != null) Modifier.clickable(onClickLabel = stringResource(R.string.group_detail_edit), onClick = onClick) else Modifier.semantics(mergeDescendants = true) {})
-            .padding(horizontal = Spacing.l, vertical = Spacing.m)
+            .padding(horizontal = Spacing.m, vertical = 10.dp)
             .testTag("group_expense_${tx.id}"),
     ) {
         CategoryBadge(tx.category)
         Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
             Text(tx.merchant.ifBlank { tx.category }, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(detail, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            GroupExpensePeople(expense, people)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                Text(date, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                GroupExpensePeople(expense, people)
+            }
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(Money.format(tx.amount), style = MoneyText.row, color = OffWhiteText)

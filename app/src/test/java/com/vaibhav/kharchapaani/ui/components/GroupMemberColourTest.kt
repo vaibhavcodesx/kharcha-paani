@@ -16,6 +16,8 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -142,7 +144,11 @@ class GroupMemberColourTest {
         assertDot("group_expense_1_payer_2", android.graphics.Color.parseColor("#70C1FF"))
         assertDot("group_expense_1_share_2", android.graphics.Color.parseColor("#70C1FF"))
         assertDot("group_expense_1_share_-1", android.graphics.Color.parseColor("#FF7A3D"))
-        compose.onNode(hasTestTag("group_expense_1") and hasText("Rohan", substring = true)).assertExists()
+        // Dots only: no "Paid by" / "Split with" words and no repeated names on the row. The names are
+        // what a screen reader hears from the cluster, so colour is never the only carrier.
+        compose.onAllNodesWithText("Paid by", substring = true, useUnmergedTree = true).assertCountEquals(0)
+        compose.onAllNodesWithText("Split with", substring = true, useUnmergedTree = true).assertCountEquals(0)
+        compose.onNodeWithContentDescription("Paid by Rohan. Split with You, Rohan.", useUnmergedTree = true).assertExists()
         // Only people who take part in this expense: the other group's row never appears here.
         compose.onNodeWithTag("group_expense_4_payer_-1", useUnmergedTree = true).assertDoesNotExist()
     }

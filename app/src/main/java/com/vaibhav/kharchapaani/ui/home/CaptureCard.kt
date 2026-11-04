@@ -30,6 +30,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.style.TextOverflow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -77,8 +92,12 @@ fun CaptureCard(
     onOpenIou: () -> Unit,
     modifier: Modifier = Modifier,
     // The home-screen widget's Speak button: start listening straight away.
+    aiEnabled: Boolean = true,
     startVoiceCapture: Boolean = false,
     onVoiceCaptureStarted: () -> Unit = {},
+    // The widget's quick-add bar: put the cursor in the line (keyboard up), then report it.
+    focusCapture: Boolean = false,
+    onCaptureFocused: () -> Unit = {},
     onCaptureFailed: (String) -> Unit = {},
 ) {
     var input by rememberSaveable { mutableStateOf("") }
@@ -99,12 +118,28 @@ fun CaptureCard(
         }
     }
     fun listen() {
+        if (!aiEnabled) {
+            onCaptureFailed(context.getString(R.string.ai_choice_voice_off))
+            return
+        }
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
             .putExtra(RecognizerIntent.EXTRA_PROMPT, context.getString(R.string.home_capture_voice_prompt))
         runCatching { speechLauncher.launch(intent) }
             .onFailure { onCaptureFailed(context.getString(R.string.home_capture_voice_unavailable)) }
+    }
+    val focusRequester = remember { FocusRequester() }
+    val bringIntoView = remember { BringIntoViewRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(focusCapture) {
+        if (focusCapture) {
+            // On a short phone the line can start below the fold: scroll it in, then focus.
+            bringIntoView.bringIntoView()
+            focusRequester.requestFocus()
+            keyboard?.show()
+            onCaptureFocused()
+        }
     }
     LaunchedEffect(startVoiceCapture) {
         if (startVoiceCapture) {
@@ -143,11 +178,11 @@ fun CaptureCard(
         ) {
             Box(Modifier.weight(1f).padding(vertical = Spacing.m)) {
                 if (input.isEmpty()) {
-                    Text(
-                        text = if (isParsing) stringResource(R.string.home_capture_reading) else stringResource(R.string.home_capture_prompt),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = SubMutedWarmGray,
-                    )
+                    if (isParsing) {
+                        Text(stringResource(R.string.home_capture_reading), style = MaterialTheme.typography.bodyLarge, color = SubMutedWarmGray)
+                    } else {
+                        RotatingHint()
+                    }
                 }
                 BasicTextField(
                     value = input,
@@ -160,6 +195,8 @@ fun CaptureCard(
                     keyboardActions = KeyboardActions(onDone = { submit() }),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .bringIntoViewRequester(bringIntoView)
+                        .focusRequester(focusRequester)
                         .testTag("quick_capture_input"),
                 )
             }
@@ -184,6 +221,12 @@ fun CaptureCard(
             }
         }
         Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.l).height(1.dp).background(CharcoalBorder))
+        Text(
+            text = stringResource(if (aiEnabled) R.string.ai_choice_capture_on else R.string.ai_choice_capture_off),
+            style = MaterialTheme.typography.bodySmall,
+            color = SubMutedWarmGray,
+            modifier = Modifier.padding(horizontal = Spacing.l, vertical = Spacing.s).testTag("capture_ai_status"),
+        )
         Row(Modifier.padding(Spacing.xs)) {
             CaptureMode(KpIcons.Scan, stringResource(R.string.home_capture_bill_photo), Modifier.testTag("scan_receipt_button")) {
                 runCatching { imagePicker.launch("image/*") }
@@ -196,6 +239,55 @@ fun CaptureCard(
             CaptureMode(KpIcons.Lend, stringResource(R.string.home_capture_iou), Modifier.testTag("home_iou_button"), onOpenIou)
         }
     }
+}
+
+/**
+ * The empty line asks the question, then every few seconds shows a way to answer it ("Try: chai 40
+ * cash"): the examples are the teaching, so they are kept to lines quick add reads (CaptureHintsTest).
+ * A screen reader gets the question only; the rotation is for eyes.
+ */
+@Composable
+private fun RotatingHint() {
+    val prompt = stringResource(R.string.home_capture_prompt)
+    val examples = stringArrayResource(R.array.home_capture_examples).toList()
+    val tryLine = stringResource(R.string.home_capture_try, "%s")
+    val hints = remember(prompt, examples, tryLine) {
+        CaptureHints.sequence(prompt, examples) { tryLine.replace("%s", it) }
+    }
+    var index by remember { mutableIntStateOf(0) }
+    LaunchedEffect(hints) {
+        while (true) {
+            // Real time, off the main clock: this loop never ends, and a delay on the composition's
+            // clock would keep a test (or the idle check) advancing forever.
+            withContext(Dispatchers.Default) { delay(CaptureHints.INTERVAL_MILLIS) }
+            index = CaptureHints.next(index, hints.size)
+        }
+    }
+    Crossfade(
+        targetState = hints[index.coerceIn(hints.indices)],
+        animationSpec = tween(400),
+        label = "capture hint",
+        modifier = Modifier.semantics { contentDescription = prompt },
+    ) { line ->
+        Text(
+            text = line,
+            style = MaterialTheme.typography.bodyLarge,
+            color = SubMutedWarmGray,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.clearAndSetSemantics {},
+        )
+    }
+}
+
+/** The empty capture line's cycle: the question first, then the examples, then round again. */
+object CaptureHints {
+    const val INTERVAL_MILLIS = 3_500L
+
+    fun sequence(prompt: String, examples: List<String>, format: (String) -> String): List<String> =
+        listOf(prompt) + examples.map(format)
+
+    fun next(index: Int, size: Int): Int = if (size <= 0) 0 else (index + 1) % size
 }
 
 @Composable

@@ -1,6 +1,13 @@
 package com.vaibhav.kharchapaani.ui.screens
 
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,7 +34,6 @@ import com.vaibhav.kharchapaani.domain.GroupSort
 import com.vaibhav.kharchapaani.data.settings.GroupSortPreferences
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -345,20 +351,51 @@ private fun SectionActions(actions: @Composable () -> Unit) {
 }
 
 
+/**
+ * The list's own header: what it's sorted by, with the control at the right edge. As a bare text
+ * button hugging the left it floated under "Join" and "New group" with a blank band beside it, not
+ * attached to anything. Here the label anchors the left, the current choice is a quiet pill at the
+ * right, and the whole row is the tap target.
+ */
 @Composable
 private fun GroupSortPicker(sort: GroupSort, onSelect: (GroupSort) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-    Box {
-        TextButton(onClick = { expanded = true }, modifier = Modifier.testTag("group_sort_button")) {
-            Text(stringResource(R.string.splits_sort_caption, sort.localizedLabel()))
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            GroupSort.entries.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option.localizedLabel()) },
-                    modifier = Modifier.semantics { selected = option == sort },
-                    onClick = { expanded = false; onSelect(option) },
-                )
+    val description = stringResource(R.string.splits_sort_caption, sort.localizedLabel())
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.s),
+    ) {
+        Text(
+            stringResource(R.string.splits_sort_by).uppercase(),
+            style = EyebrowText,
+            modifier = Modifier.weight(1f),
+        )
+        Box {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .clip(KpShapes.small)
+                    .clickable(role = Role.Button, onClickLabel = null) { expanded = true }
+                    .semantics { contentDescription = description }
+                    .testTag("group_sort_button")
+                    .padding(horizontal = Spacing.s),
+            ) {
+                Text(sort.localizedLabel(), style = MaterialTheme.typography.labelLarge, color = WarmAmberPrimary)
+                Icon(KpIcons.ChevronDown, contentDescription = null, tint = WarmAmberPrimary, modifier = Modifier.size(16.dp))
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                GroupSort.entries.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option.localizedLabel(), color = if (option == sort) WarmAmberPrimary else OffWhiteText) },
+                        trailingIcon = if (option == sort) {
+                            { Icon(KpIcons.Check, contentDescription = null, tint = WarmAmberPrimary, modifier = Modifier.size(18.dp)) }
+                        } else null,
+                        modifier = Modifier.semantics { selected = option == sort }.testTag("group_sort_${option.name}"),
+                        onClick = { expanded = false; onSelect(option) },
+                    )
+                }
             }
         }
     }

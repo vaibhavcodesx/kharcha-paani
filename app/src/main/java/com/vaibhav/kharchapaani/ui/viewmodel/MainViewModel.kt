@@ -66,6 +66,7 @@ import com.vaibhav.kharchapaani.data.repository.ParseChoices
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.data.db.entity.SettlementStatus
 import com.vaibhav.kharchapaani.data.repository.NotYoursToWithdrawException
+import com.vaibhav.kharchapaani.data.settings.AiSettings
 import com.vaibhav.kharchapaani.data.settings.AppSettings
 import com.vaibhav.kharchapaani.data.sync.SyncScheduler
 import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
@@ -138,6 +139,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -153,6 +155,7 @@ class MainViewModel(
     // Tests pass one whose client answers without a network.
     private val geminiRepo: GeminiRepository = GeminiRepository(
         accessToken = { SupabaseClientProvider.get(application).auth.currentSessionOrNull()?.accessToken },
+        aiAllowed = { AiSettings(application).enabledNow },
     ),
 ) : AndroidViewModel(application) {
 
@@ -217,6 +220,14 @@ class MainViewModel(
     }
 
     private val settings = AppSettings(application)
+    private val aiSettings = AiSettings(application)
+    private val aiChoiceMutex = kotlinx.coroutines.sync.Mutex()
+    private var requestedAiChoice: Boolean? = null
+    private var aiChoiceVersion = 0L
+    private val _aiEnabled = MutableStateFlow(aiSettings.enabledNow)
+    val aiEnabled: StateFlow<Boolean> = _aiEnabled.asStateFlow()
+    private fun canUseAi(): Boolean = _aiEnabled.value && aiSettings.enabledNow
+
 
     init {
         // A subscription is a rule; its charges become real entries when their date has arrived.
@@ -627,6 +638,7 @@ class MainViewModel(
     /** True while the open sheet shows the phone's guess and the AI's reading of the line is on its way. */
     val isImprovingWithAi: StateFlow<Boolean> = _isImprovingWithAi.asStateFlow()
     private var improveJob: Job? = null
+    private var receiptJob: Job? = null
     private val touchedWhileImproving = mutableSetOf<EntryField>()
 
     private val _updatedByAi = MutableStateFlow(false)
@@ -635,6 +647,9 @@ class MainViewModel(
 
     /** The AI's reading isn't wanted any more: the sheet closed, saved, or now holds another entry. */
     private fun stopImprovingWithAi() {
+        receiptJob?.cancel()
+        receiptJob = null
+        _isParsing.value = false
         improveJob?.cancel()
         improveJob = null
         _isImprovingWithAi.value = false
@@ -658,11 +673,28 @@ class MainViewModel(
     val voiceCaptureRequested: StateFlow<Boolean> = _voiceCaptureRequested.asStateFlow()
 
     fun requestVoiceCapture() {
+        if (!canUseAi()) {
+            _statusMessage.value = uiText(R.string.ai_choice_voice_off)
+            return
+        }
         _voiceCaptureRequested.value = true
     }
 
     fun onVoiceCaptureStarted() {
         _voiceCaptureRequested.value = false
+    }
+
+    // Set by the widget's quick-add bar: Home puts the cursor in the capture line (keyboard up),
+    // reports it, and this clears.
+    private val _captureFocusRequested = MutableStateFlow(false)
+    val captureFocusRequested: StateFlow<Boolean> = _captureFocusRequested.asStateFlow()
+
+    fun requestCaptureFocus() {
+        _captureFocusRequested.value = true
+    }
+
+    fun onCaptureFocused() {
+        _captureFocusRequested.value = false
     }
 
     private val _editingTransactionId = MutableStateFlow<Long?>(null)
@@ -1080,7 +1112,7 @@ class MainViewModel(
         stopImprovingWithAi()
         resetBillPhoto()
         val splitNotice = applyParsedResult(
-            LocalHeuristicParser.parse(rawText, people.value.map { it.name }).copy(date = System.currentTimeMillis()),
+            LocalHeuristicParser.parse(rawText, people.value.map { it.name }),
             rawText,
         )
         if (_paymentMethod.value.isBlank()) _paymentMethod.value = defaultPaymentMethod()
@@ -1175,9 +1207,9 @@ class MainViewModel(
         // The picture that was read is kept with the expense by default; one tap on the row drops it.
         resetBillPhoto()
         keepBillPhoto { bitmap }
-        viewModelScope.launch {
-            _isParsing.value = true
-            _isConfirmSheetOpen.value = true
+        _isParsing.value = true
+        _isConfirmSheetOpen.value = true
+        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             try {
                 when (val read = geminiRepo.readReceipt(bitmap, parseChoices())) {
                     is ReceiptReadResult.Read -> {
@@ -1195,9 +1227,14 @@ class MainViewModel(
                     }
                 }
             } finally {
-                _isParsing.value = false
+                if (receiptJob === coroutineContext[Job]) {
+                    receiptJob = null
+                    _isParsing.value = false
+                }
             }
         }
+        receiptJob = job
+        job.start()
     }
 
     /** A picture shared into the app: read off the main thread and at a size the phone can hold. */
@@ -2041,7 +2078,15 @@ class MainViewModel(
      * [insteadOfAi], which never sends anything.
      */
     private fun withAiNotice(insteadOfAi: () -> Unit, withAi: () -> Unit) {
-        if (!aiAvailable || aiNoticeAccepted.value) return withAi()
+        if (!canUseAi()) {
+            insteadOfAi()
+            _statusMessage.value = uiText(R.string.ai_choice_off_notice)
+            return
+        }
+        if (!aiAvailable || aiNoticeAccepted.value) {
+            if (aiAvailable) _statusMessage.value = uiText(R.string.ai_choice_using_gemini)
+            return withAi()
+        }
         afterAiNotice = withAi
         this.insteadOfAi = insteadOfAi
         _isAiNoticeOpen.value = true
@@ -2049,9 +2094,17 @@ class MainViewModel(
 
     fun acceptAiNotice() {
         val next = afterAiNotice
+        val manual = insteadOfAi
         closeAiNotice()
+        if (!canUseAi()) {
+            manual?.invoke()
+            _statusMessage.value = uiText(R.string.ai_choice_off_notice)
+            return
+        }
+        if (next == null) return
         viewModelScope.launch { settings.setAiNoticeAccepted(true) }
-        next?.invoke()
+        _statusMessage.value = uiText(R.string.ai_choice_using_gemini)
+        next.invoke()
     }
 
     fun declineAiNotice() {
@@ -2077,6 +2130,10 @@ class MainViewModel(
      * running — no queue, because a queued answer lands under a chip nobody is looking at.
      */
     fun askInsights(prompt: AiPrompt) {
+        if (!canUseAi()) {
+            _statusMessage.value = uiText(R.string.ai_choice_off_notice)
+            return
+        }
         // Picking an answer already in hand sends nothing, so it needs no notice.
         if (!_askBoard.value.needsAsking(prompt)) return askInsightsNow(prompt)
         withAiNotice(insteadOfAi = {}) { askInsightsNow(prompt) }
@@ -2195,6 +2252,48 @@ class MainViewModel(
                 is AiAskResult.Failed -> AskState.Failed(result.reason)
             }
         }
+    }
+
+    /** The switch takes effect immediately; enabling waits until the preference is durable. */
+    fun setAiEnabled(enabled: Boolean) {
+        requestedAiChoice = enabled
+        val version = ++aiChoiceVersion
+        if (!enabled) applyAiChoice(false)
+        launchAction {
+            aiChoiceMutex.withLock {
+                aiSettings.setEnabled(enabled)
+                if (version == aiChoiceVersion) {
+                    requestedAiChoice = null
+                    applyAiChoice(enabled)
+                }
+            }
+        }
+    }
+
+    private fun applyAiChoice(enabled: Boolean) {
+        // An old preference emission cannot undo a newer Off tap while its write is pending.
+        val allowed = enabled && requestedAiChoice != false
+        _aiEnabled.value = allowed
+        geminiRepo.setAiEnabled(allowed)
+        if (!allowed) {
+            stopImprovingWithAi()
+            statementJob?.cancel()
+            statementJob = null
+            _isParsingStatement.value = false
+            _isImportStatementOpen.value = false
+            askJob?.cancel()
+            tripJob?.cancel()
+            _askBoard.value = _askBoard.value.cleared()
+            _tripReview.value = AskState.Idle
+            _voiceCaptureRequested.value = false
+            closeAiNotice()
+        }
+    }
+
+    // After every job/state declaration: no constructor initializer can see an uninitialized flow.
+    init {
+        geminiRepo.setAiEnabled(aiSettings.enabledNow)
+        viewModelScope.launch { aiSettings.enabled.collect(::applyAiChoice) }
     }
 
     private val _isExportOpen = MutableStateFlow(false)
