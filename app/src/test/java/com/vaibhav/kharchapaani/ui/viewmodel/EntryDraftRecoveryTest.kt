@@ -193,7 +193,8 @@ class EntryDraftRecoveryTest {
         val before = snapshot()
         assertEquals(SplitMode.EXACT, before.splitMode)
         assertTrue(before.shares.all { it.isSelected })
-        assertEquals(listOf(20.0, 35.0, 45.0), before.shares.map { it.amount })
+        assertEquals(mapOf(-1L to 20.0, 1L to 35.0, 2L to 45.0),
+            before.shares.associate { it.personId to it.amount })
         assertTrue(vm.hasUnsavedEntry())
         pump()
         recreate(expectedTransactions = 0)
@@ -210,7 +211,10 @@ class EntryDraftRecoveryTest {
         vm.updateAmount("200.00")
         vm.updateMerchant("percentage draft")
         vm.setIsSplit(true)
-        vm.togglePersonShare(2)
+        // Room orders names alphabetically; select both intended people by identity.
+        listOf(1L, 2L).forEach { id ->
+            if (vm.shares.value.none { it.personId == id && it.isSelected }) vm.togglePersonShare(id)
+        }
         vm.setSplitMode(SplitMode.PERCENTAGE)
         vm.setPaidByPersonId(2)
         vm.updateSharePercentage(-1, 25.0)
@@ -218,7 +222,8 @@ class EntryDraftRecoveryTest {
         vm.updateSharePercentage(2, 40.0)
         val before = snapshot()
         assertTrue(before.shares.all { it.isSelected })
-        assertEquals(listOf(25.0, 35.0, 40.0), before.shares.map { it.percentage })
+        assertEquals(mapOf(-1L to 25.0, 1L to 35.0, 2L to 40.0),
+            before.shares.associate { it.personId to it.percentage })
         pump()
         recreate(expectedTransactions = 0)
         requireRecoveredSheet()
