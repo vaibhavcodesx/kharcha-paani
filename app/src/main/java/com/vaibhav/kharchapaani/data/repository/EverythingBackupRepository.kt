@@ -181,7 +181,10 @@ private fun EverythingGroup.entity() = GroupEntity(
     createdAt = createdAt,
     remoteId = remoteId,
     updatedAt = updatedAt,
-    syncState = SyncState.LOCAL_ONLY,
+    // Shared history must keep shared-group balance semantics (partial historical shares differ
+    // from a local group's spending). SYNCED queues nothing; the local session denies all cloud
+    // membership/writes and never becomes an account session.
+    syncState = if (syncState == SyncState.LOCAL_ONLY.name) SyncState.LOCAL_ONLY else SyncState.SYNCED,
     archivedAt = archivedAt,
     createdByProfileId = createdByProfileId,
 )

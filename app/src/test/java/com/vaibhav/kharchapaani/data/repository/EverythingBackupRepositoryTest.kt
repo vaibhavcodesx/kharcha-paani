@@ -80,7 +80,7 @@ class EverythingBackupRepositoryTest {
         assertEquals(gathered, decoded)
         assertEquals(settings, importer.restoreIntoEmptyLocalLedger(decoded))
         assertEquals(source.personDao().getAllPeopleDirect().sortedBy { it.id }, target.personDao().getAllPeopleDirect().sortedBy { it.id })
-        assertEquals(source.groupDao().getAllGroupsDirect().map { it.copy(syncState = SyncState.LOCAL_ONLY) }.sortedBy { it.id }, target.groupDao().getAllGroupsDirect().sortedBy { it.id })
+        assertEquals(source.groupDao().getAllGroupsDirect().map { it.copy(syncState = if (it.id == 31L) SyncState.SYNCED else SyncState.LOCAL_ONLY) }.sortedBy { it.id }, target.groupDao().getAllGroupsDirect().sortedBy { it.id })
         assertEquals(source.groupDao().getAllGroupMembersDirect().sortedBy { it.id }, target.groupDao().getAllGroupMembersDirect().sortedBy { it.id })
         assertEquals(source.transactionDao().getAllTransactionsDirect().map { it.copy(syncState = SyncState.LOCAL_ONLY) }.sortedBy { it.id }, target.transactionDao().getAllTransactionsDirect().sortedBy { it.id })
         assertEquals(source.splitDao().getAllSplitsDirect().sortedBy { it.id }, target.splitDao().getAllSplitsDirect().sortedBy { it.id })
@@ -94,7 +94,7 @@ class EverythingBackupRepositoryTest {
         assertEquals(0, target.syncDao().observeUnsyncedChangeCount().first())
         assertNull(target.syncDao().meta("cursor"))
         assertTrue(target.syncDao().pendingDeletes(100).isEmpty())
-        assertFalse(target.groupDao().getAllGroupsDirect().any { it.isShared })
+        assertEquals(listOf(31L), target.groupDao().getAllGroupsDirect().filter { it.isShared }.map { it.id })
         // IDs, not names or purchase shapes, retain two legitimate equal-looking rows.
         assertEquals(listOf(11L, 22L), target.personDao().getAllPeopleDirect().map { it.id }.sorted())
         assertEquals(3, target.transactionDao().getAllTransactionsDirect().size)
