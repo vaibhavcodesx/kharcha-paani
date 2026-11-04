@@ -16,6 +16,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 ### Added
 
 - Debug-only StrictMode to log main-thread I/O, network calls, and resource leaks during development without interrupting execution (Y11).
+- CI records test starts and bounded worker thread snapshots so stalled unit runs can be diagnosed without skipping tests.
 
 - A device-wide Use AI switch stops Gemini reads everywhere, keeps manual capture available and labels AI-powered capture.
 
