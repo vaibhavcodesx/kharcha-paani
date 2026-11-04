@@ -197,9 +197,11 @@ class GroupDetailLazyTest {
                     SplitShareEntity(splitId = 10L, personId = 3L, shareAmount = 400.0),
                 ))
 
-                // Wait until ViewModel's groups flow gathers details from Room
-                val groups = vm.groups.first { it.isNotEmpty() }
-                val goaDetails = groups.single { it.group.id == 7L }
+                // Wait until ViewModel's groups flow gathers seeded transactions and figures from Room
+                val goaDetails = vm.groups.first { list ->
+                    val g = list.firstOrNull { it.group.id == 7L }
+                    g != null && g.transactions.isNotEmpty() && g.totalExpenses == 1200.0
+                }.single { it.group.id == 7L }
                 vm.selectGroupForDetail(goaDetails)
             }
 
