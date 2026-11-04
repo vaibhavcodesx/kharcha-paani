@@ -39,18 +39,16 @@ class AskSentReceiver : BroadcastReceiver() {
             context: Context,
             intent: Intent,
             now: Long = System.currentTimeMillis(),
-            signedInUserId: suspend () -> String? = { BackgroundLedger.current(context)?.userId },
+            signedInUserId: (suspend () -> String?)? = null,
         ): Boolean {
             val personId = intent.getLongExtra(AskShare.EXTRA_PERSON_ID, 0L)
             val amount = intent.getDoubleExtra(AskShare.EXTRA_AMOUNT, 0.0)
             val userId = intent.getStringExtra(AskShare.EXTRA_USER_ID)
             if (personId <= 0L || amount <= 0.0 || userId == null) return false
             return try {
-                if (signedInUserId() != userId) {
-                    Log.i(TAG, "Ask picked after switching accounts; not logged")
-                    return false
-                }
-                // The same instance the app uses when it's open (the ask was made from it a moment ago).
+                // Resolve exactly once. Default suspend lambdas nested through this callback hit
+                // the Kotlin backend's missing-continuation lowering path; explicit resolution
+                // also avoids reading two different account identities around a mode switch.
                 val ledger = BackgroundLedger.current(context, cloudUserId = signedInUserId) ?: return false
                 if (ledger.userId != userId || ledger.isLocal != intent.getBooleanExtra(AskShare.EXTRA_IS_LOCAL, false)) return false
                 ledger.open(context).paymentAskDao()

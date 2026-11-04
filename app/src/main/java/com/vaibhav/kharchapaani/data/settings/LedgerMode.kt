@@ -72,11 +72,11 @@ data class BackgroundLedger(val userId: String, val isLocal: Boolean) {
     companion object {
         suspend fun current(
             context: Context,
-            cloudUserId: suspend () -> String? = { BackgroundAuth.signedInUserId(context) },
+            cloudUserId: (suspend () -> String?)? = null,
         ): BackgroundLedger? {
             val mode = LedgerMode(context)
             mode.guestOrNull()?.let { return BackgroundLedger(it.id, true) }
-            val userId = cloudUserId() ?: return null
+            val userId = (if (cloudUserId == null) BackgroundAuth.signedInUserId(context) else cloudUserId()) ?: return null
             // A mode switch while cloud identity was loading must not open the previous ledger.
             if (mode.choice == LedgerMode.Choice.LOCAL) return null
             return BackgroundLedger(userId, false)
