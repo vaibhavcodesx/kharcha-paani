@@ -24,22 +24,24 @@ object LocalHeuristicParser {
     )
 
     private val categories = listOf(
-        listOf("burger", "pizza", "mcd", "mcdonalds", "kfc", "starbucks", "coffee", "tea", "chai", "lunch", "dinner", "breakfast", "swiggy", "zomato", "restaurant", "food", "snack", "subway", "dominos", "biryani") to "Food",
+        listOf("burger", "pizza", "mcd", "mcdonalds", "kfc", "starbucks", "coffee", "tea", "chai", "lunch", "dinner", "breakfast", "swiggy", "zomato", "restaurant", "food", "snack", "subway", "dominos", "biryani",
+            "samosa", "nashta", "khana", "paratha", "dosa", "idli", "thali", "vada", "pav", "bhaji", "momos", "sandwich", "pani puri", "golgappe", "chaat") to "Food",
+        listOf("sabzi", "sabji", "doodh", "kirana", "fruits", "vegetables", "atta", "dal") to "Groceries",
         listOf("juice", "coke", "pepsi", "soda", "cold drink", "lassi", "shake", "smoothie", "energy drink", "water bottle") to "Beverages",
         listOf("chips", "biscuit", "biscuits", "namkeen", "kurkure", "lays", "maggi", "chocolate", "packaged") to "Packaged goods",
         listOf("haircut", "hair cut", "salon", "barber", "parlour", "spa", "massage", "manicure", "pedicure", "grooming", "gym", "fitness", "yoga") to "Self-care",
         listOf("uber", "ola", "rapido", "cab", "auto", "metro", "bus", "train", "flight", "petrol", "diesel", "fuel", "toll", "parking", "transport", "travel") to "Transport",
         listOf("amazon", "flipkart", "myntra", "zara", "h&m", "nike", "clothes", "shoes", "shopping", "mall", "electronics", "blinkit", "zepto", "instamart", "grocery", "groceries") to "Shopping",
-        listOf("wifi", "broadband", "electricity", "water", "bill", "recharge", "airtel", "jio", "vi", "subscription", "netflix", "spotify", "youtube", "cloud", "aws", "gcp") to "Bills",
+        listOf("wifi", "broadband", "electricity", "bijli", "water", "bill", "recharge", "airtel", "jio", "vi", "subscription", "netflix", "spotify", "youtube", "cloud", "aws", "gcp") to "Bills",
         listOf("movie", "cinema", "pvr", "game", "gaming", "steam", "party", "club", "drinks", "beer", "entertainment", "concert") to "Entertainment",
         listOf("pharmacy", "medicine", "doctor", "hospital", "supplement", "health", "dental", "clinic") to "Health",
-        listOf("rent", "maintenance", "flat", "apartment", "pg", "hostel", "landlord") to "Rent",
+        listOf("rent", "kiraya", "maintenance", "flat", "apartment", "pg", "hostel", "landlord") to "Rent",
         listOf("project", "freelance", "salary", "client", "payout", "dividend", "interest", "refund", "cashback", "stipend") to "Income (Client)",
         listOf("teammate", "team", "hackathon", "bounty", "domain", "hosting", "tool") to "Team Payment"
     )
 
     private val incomeKeywords = listOf(
-        "received", "got paid", "credited", "income", "salary", "freelance", "client payment",
+        "received", "got paid", "credited", "mila", "mili", "mile", "income", "salary", "freelance", "client payment",
         "client paid", "refund", "cashback", "dividend", "stipend", "got money"
     )
 
@@ -47,7 +49,18 @@ object LocalHeuristicParser {
         "lent", "gave to", "loaned", "paid for"
     )
 
-    fun parse(rawText: String, knownFriends: List<String> = emptyList()): ParsedTransactionResult {
+    private val DAY_BEFORE = Regex("""day\s+before\s+yesterday""", RegexOption.IGNORE_CASE)
+    private const val DAY_MILLIS = 24L * 60 * 60 * 1000
+
+    /** "yesterday" / "kal" (an expense being logged is past, so never tomorrow) and "parso", in days back. */
+    private fun daysBack(lower: String): Int = when {
+        containsWord(lower, "day before yesterday") || containsWord(lower, "parso") -> 2
+        containsWord(lower, "yesterday") || containsWord(lower, "kal") -> 1
+        else -> 0
+    }
+
+    /** [now] is when the line was typed: a day word moves the date back from it. */
+    fun parse(rawText: String, knownFriends: List<String> = emptyList(), now: Long = System.currentTimeMillis()): ParsedTransactionResult {
         val text = rawText.trim()
         val lower = text.lowercase(Locale.getDefault())
 
@@ -110,9 +123,12 @@ object LocalHeuristicParser {
         var merchant = ""
         val commonWords = setOf(
             "split", "with", "gpay", "phonepe", "paytm", "cash", "card", "paid",
-            "received", "rs", "inr", "for", "to", "at", "the", "and", "lent", "a"
+            "received", "rs", "inr", "for", "to", "at", "the", "and", "lent", "a",
+            // Hinglish and day words: said around the amount, never the merchant.
+            "ka", "ke", "ki", "ko", "se", "me", "mein", "par", "rupaye", "rupee", "rupees", "rupya", "kal", "aaj", "parso", "today",
+            "yesterday", "mila", "mili", "mile", "saath", "sau", "hazaar", "hazar", "thousand", "dedh", "dhai"
         )
-        val tokens = text.split(Regex("""\s+""")).filter { token ->
+        val tokens = text.replace(DAY_BEFORE, " ").trim().split(Regex("""\s+""")).filter { token ->
             val clean = token.lowercase(Locale.getDefault()).replace(Regex("[^a-z0-9]"), "")
             clean.isNotBlank() && !commonWords.contains(clean) && !clean.matches(Regex("""\d+(\.\d+)?""")) &&
                 !clean.matches(Regex("""\d+k""")) && !clean.matches(Regex("""(rs|inr)?\d+"""))
@@ -130,15 +146,19 @@ object LocalHeuristicParser {
             merchant = merchant,
             category = category,
             paymentMethod = paymentMethod,
-            date = System.currentTimeMillis(),
+            date = now - daysBack(lower) * DAY_MILLIS,
             note = text,
             splitWithPersonNames = splitFriends.distinct(),
             confidence = if (amount > 0) 0.85f else 0.4f
         )
     }
 
+    // Each keyword's pattern is built once: parse() runs on every line typed, and used to compile
+    // a fresh Regex for each of ~200 keywords every time.
+    private val wordPatterns = java.util.concurrent.ConcurrentHashMap<String, Regex>()
+
     private fun containsWord(text: String, word: String): Boolean =
-        Regex("""(?<![\p{L}\p{N}])${Regex.escape(word)}(?![\p{L}\p{N}])""").containsMatchIn(text)
+        wordPatterns.getOrPut(word) { Regex("""(?<![\p{L}\p{N}])${Regex.escape(word)}(?![\p{L}\p{N}])""") }.containsMatchIn(text)
 
     private fun String.capitalizeWord(): String {
         return this.split(" ").joinToString(" ") { word ->
@@ -154,7 +174,9 @@ object LocalHeuristicParser {
 object AiParse {
 
     private val DIGIT_GROUPING = Regex("""(?<=\d),(?=\d)""")
-    private val SHORTHAND = Regex("""(\d+(?:\.\d+)?)\s*(k|lakh|lac)(?![\p{L}])""", RegexOption.IGNORE_CASE)
+    private val SHORTHAND = Regex("""(\d+(?:\.\d+)?)\s*(k|lakh|lac|sau|hazaar|hazar|hajar|thousand)(?![\p{L}])""", RegexOption.IGNORE_CASE)
+    /** "dedh sau" (150) and "dhai sau" (250): said, not written with a digit. */
+    private val SAID_HUNDREDS = Regex("""\b(dedh|dhai)\s+sau\b""", RegexOption.IGNORE_CASE)
     private val WITH_CURRENCY = Regex("""(?:₹|\brs\.?|\binr)\s*(\d+(?:\.\d{1,2})?)""", RegexOption.IGNORE_CASE)
     private val ANY_NUMBER = Regex("""(?<![\d.])(\d+(?:\.\d{1,2})?)(?![\d])""")
 
@@ -171,9 +193,14 @@ object AiParse {
         val clean = text.replace(DIGIT_GROUPING, "")
         SHORTHAND.find(clean)?.let { m ->
             val n = m.groupValues[1].toDoubleOrNull() ?: return@let
-            val scale = if (m.groupValues[2].equals("k", ignoreCase = true)) 1_000.0 else 100_000.0
+            val scale = when (m.groupValues[2].lowercase()) {
+                "sau" -> 100.0
+                "lakh", "lac" -> 100_000.0
+                else -> 1_000.0 // k, thousand, hazaar and its spellings
+            }
             return roundPaisa(n * scale).takeIf { it > 0 }
         }
+        SAID_HUNDREDS.find(clean)?.let { return if (it.groupValues[1].equals("dedh", ignoreCase = true)) 150.0 else 250.0 }
         WITH_CURRENCY.find(clean)?.groupValues?.get(1)?.toDoubleOrNull()?.takeIf { it > 0 }?.let { return it }
         return ANY_NUMBER.findAll(clean).mapNotNull { it.groupValues[1].toDoubleOrNull() }.filter { it > 0 }.maxOrNull()
     }
