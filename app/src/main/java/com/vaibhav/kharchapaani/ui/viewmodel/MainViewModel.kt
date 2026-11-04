@@ -2382,6 +2382,9 @@ class MainViewModel(
         /** A year of a busy ledger is well under 1 MB of JSON; this is generous and still bounded. */
         const val BACKUP_MAX_BYTES = 16 * 1024 * 1024
 
+        /** Debounce window for search input so rapid keystrokes don't re-build the feed synchronously. */
+        const val SEARCH_DEBOUNCE_MS = 150L
+
         fun factory(application: Application, db: AppDatabase, userId: String): ViewModelProvider.Factory =
             viewModelFactory { initializer { MainViewModel(application, db, userId) } }
     }
@@ -2390,8 +2393,6 @@ class MainViewModel(
 /** Two readings' times this close are the same moment ("now" on the phone, "now" from the AI). */
 private const val SAME_MOMENT_MS = 60_000L
 
-/** Debounce window for search input so rapid keystrokes don't re-build the feed synchronously. */
-internal const val SEARCH_DEBOUNCE_MS = 150L
 
 /** A part of the quick-add sheet the person can change; see [MainViewModel.isImprovingWithAi]. */
 private enum class EntryField { Type, Amount, Merchant, Category, Payment, Note, Date, Split }
