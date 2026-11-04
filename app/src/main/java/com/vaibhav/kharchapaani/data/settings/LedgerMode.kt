@@ -63,10 +63,18 @@ class LedgerMode(context: Context) {
 
 /** Shared by widgets, reminders and share callbacks; local resolution never touches auth. */
 data class BackgroundLedger(val userId: String, val isLocal: Boolean) {
-    suspend fun open(context: Context): AppDatabase = if (isLocal) {
-        LedgerDatabases.openLocal(context, GuestSession(userId))
-    } else {
-        LedgerDatabases.open(context, userId)
+    suspend fun open(context: Context): AppDatabase {
+        val mode = LedgerMode(context)
+        return if (isLocal) {
+            LedgerDatabases.openLocal(context, GuestSession(userId), isCurrent = {
+                mode.guestOrNull()?.id == userId
+            })
+        } else {
+            // Re-check mode without constructing an SDK; callers already resolved the cloud identity.
+            LedgerDatabases.open(context, userId, isCurrent = {
+                mode.choice == LedgerMode.Choice.CLOUD
+            })
+        }
     }
 
     companion object {

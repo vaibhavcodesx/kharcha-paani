@@ -673,7 +673,14 @@ class LedgerRepository(
             }
             if (localMode) {
                 val sharedIds = db.groupDao().getAllGroupsDirect().filter { it.isShared }.map { it.id }.toSet()
-                val touchesHistory = affected.any { it.transaction.groupId in sharedIds } ||
+                val sharedTransactionIds = db.transactionDao().getAllTransactionsDirect()
+                    .filter { it.groupId in sharedIds }.map { it.id }.toSet()
+                val sharedSplitIds = db.splitDao().getAllSplitsDirect()
+                    .filter { it.transactionId in sharedTransactionIds }.map { it.id }.toSet()
+                val isSharedGuestOrParticipant = db.splitDao().getAllSplitSharesDirect().any {
+                    it.splitId in sharedSplitIds && (it.personId == personId || it.guestPersonId == personId)
+                }
+                val touchesHistory = isSharedGuestOrParticipant || affected.any { it.transaction.groupId in sharedIds } ||
                     db.groupDao().getAllGroupMembersDirect().any { it.personId == personId && it.groupId in sharedIds } ||
                     db.settlementDao().getAllSettlementsDirect().any {
                         (it.fromPersonId == personId || it.toPersonId == personId) && it.groupId in sharedIds
@@ -735,6 +742,7 @@ class LedgerRepository(
      * still a split, it's re-sent as it now is (and fails visibly if what's left doesn't add up).
      */
     private suspend fun resendPrivateSplit(before: FullTransaction) {
+        if (localMode) return
         val old = before.transaction
         if (old.groupId != null || old.syncState == SyncState.LOCAL_ONLY) return
         val now = db.transactionDao().getTransactionByIdDirect(old.id)
@@ -895,6 +903,7 @@ class LedgerRepository(
         participants: Collection<Long> = emptyList(),
         keepLocal: Boolean = false,
     ): SyncState = when {
+        localMode -> SyncState.LOCAL_ONLY
         isSharedGroup(groupId) -> SyncState.PENDING
         groupId == null && !isSplit -> SyncState.PENDING
         // A personal split syncs to this account's private tables when everyone in it is a friend
@@ -904,10 +913,11 @@ class LedgerRepository(
     }
 
     private suspend fun canSyncPrivately(personIds: Collection<Long>): Boolean =
-        localFriendSync && personIds.all { id -> id == -1L || db.personDao().getPersonById(id)?.let { it.profileId == null } == true }
+        !localMode && localFriendSync && personIds.all { id -> id == -1L || db.personDao().getPersonById(id)?.let { it.profileId == null } == true }
 
     /** Keyed apart from the expense's own tombstone, which a later edit clears on purpose. */
     private suspend fun queueSplitRetraction(transactionRemoteId: String) {
+        if (localMode) return
         db.syncDao().insertPendingDelete(
             PendingRemoteDeleteEntity(localSplitTombstone(transactionRemoteId), entityType = PendingRemoteDeleteEntity.TYPE_LOCAL_SPLIT)
         )
@@ -946,7 +956,7 @@ class LedgerRepository(
         shares: List<SplitShareEntity>,
     ): List<SplitShareEntity> {
         // Shared-group and private splits both have to add up to the paisa for the server.
-        if (syncState != SyncState.PENDING || shares.isEmpty()) return shares
+        if ((syncState != SyncState.PENDING && !localMode) || shares.isEmpty()) return shares
         // One key per row, so a host's guests (rows under the host, design item 9) round too.
         val members = shares.filterNot { it.isGuest }
         if (members.map { it.personId }.toSet().size != members.size) return shares

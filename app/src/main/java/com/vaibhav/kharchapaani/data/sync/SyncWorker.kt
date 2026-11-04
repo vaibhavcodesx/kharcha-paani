@@ -18,6 +18,7 @@ import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.reminder.SettlementReminders
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -41,7 +42,9 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         if (mode.choice == LedgerMode.Choice.LOCAL) return Result.success()
         return syncIfSignedIn(requestedUserId = userId, signedInUserId = signedInUserId) {
             if (mode.choice == LedgerMode.Choice.LOCAL) return@syncIfSignedIn
-            val database = LedgerDatabases.open(applicationContext, userId)
+            val database = LedgerDatabases.open(applicationContext, userId, isCurrent = {
+                mode.choice == LedgerMode.Choice.CLOUD && supabase.auth.currentUserOrNull()?.id == userId
+            })
             try {
                 syncAll(database, supabase, userId)
             } finally {

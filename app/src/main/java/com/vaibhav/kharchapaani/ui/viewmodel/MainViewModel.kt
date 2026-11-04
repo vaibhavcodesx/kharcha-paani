@@ -1844,7 +1844,9 @@ class MainViewModel(
 
     /** The Undo deletion scope outlives viewModelScope, but never this ledger's open lifetime. */
     override suspend fun awaitSessionClosingWork() {
-        // API scaffold for the deterministic held-delete red test; no new drain behavior yet.
+        pendingDeletes.commitAll()
+        deleteScope.coroutineContext[Job]?.children?.toList()?.joinAll()
+        deleteScope.cancel()
     }
 
     // Groups Management

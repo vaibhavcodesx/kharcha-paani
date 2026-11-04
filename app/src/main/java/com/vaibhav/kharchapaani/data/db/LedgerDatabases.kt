@@ -30,16 +30,24 @@ object LedgerDatabases {
 
     private class OpenDatabase(val name: String, val database: AppDatabase)
 
-    suspend fun open(context: Context, userId: String): AppDatabase =
-        openNamed(context, databaseName(userId), legacyOwner = userId)
+    suspend fun open(context: Context, userId: String, isCurrent: () -> Boolean = { true }): AppDatabase =
+        openNamed(context, databaseName(userId), legacyOwner = userId, isCurrent = isCurrent)
 
     /** Local ledgers never claim the pre-accounts database, even on the very first launch. */
-    suspend fun openLocal(context: Context, guest: GuestSession): AppDatabase =
-        openNamed(context, localDatabaseName(guest), legacyOwner = null)
+    suspend fun openLocal(context: Context, guest: GuestSession, isCurrent: () -> Boolean = { true }): AppDatabase =
+        openNamed(context, localDatabaseName(guest), legacyOwner = null, isCurrent = isCurrent)
 
     internal fun localDatabaseName(guest: GuestSession): String = "ledger-local-${guest.id}.db"
 
-    private suspend fun openNamed(context: Context, name: String, legacyOwner: String?): AppDatabase = lock.withLock {
+    private suspend fun openNamed(
+        context: Context,
+        name: String,
+        legacyOwner: String?,
+        isCurrent: () -> Boolean,
+    ): AppDatabase = lock.withLock {
+        // The caller may have waited behind a mode/account switch. Reject it before even
+        // returning a cached connection, and especially before closing the current ledger.
+        check(isCurrent()) { "Ledger selection changed before opening" }
         open?.takeIf { it.name == name }?.let { return it.database }
 
         val appContext = context.applicationContext

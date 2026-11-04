@@ -131,6 +131,7 @@ class GuestSessionHolderTest {
             }
             files += LedgerDatabases.localDatabaseName(LedgerMode(app).guestOrNull()!!)
             withTimeout(5_000) { started.await() }
+            withContext(main) { } // Process the queued switch before releasing the held deletion.
             assertTrue("Room must stay open while the deletion is held", old.database.isOpen)
             assertTrue("The next ledger must wait for deletion cleanup", holder.state.value !is AccountSessionState.Ready)
             release.complete(Unit)
@@ -145,6 +146,35 @@ class GuestSessionHolderTest {
             release.complete(Unit)
             withTimeout(5_000) { withContext(main) { vm.awaitSessionClosingWork() } }
         }
+    }
+
+    @Test fun `actual MainViewModel pending delete commits before a switch closes its local ledger`() = runBlocking {
+        withContext(main) { holder.onLocalMode() }
+        val local = ready { it.isLocal }
+        val guest = LedgerMode(app).guestOrNull()!!
+        files += LedgerDatabases.localDatabaseName(guest)
+        files += LedgerDatabases.databaseName(account)
+        val deleted = local.database.transactionDao().insertTransaction(TransactionEntity(type = "expense", amount = 125.50,
+            category = "Food", merchant = "Deleted on close", paymentMethod = "Cash", syncState = SyncState.LOCAL_ONLY))
+        local.database.transactionDao().insertTransaction(TransactionEntity(type = "expense", amount = 14.25,
+            category = "Food", merchant = "Still here", paymentMethod = "Cash", syncState = SyncState.LOCAL_ONLY))
+        lateinit var vm: MainViewModel
+        lateinit var vmJob: Job
+        withContext(main) {
+            vm = MainViewModel(app, local.database, guest.id, isLocal = true)
+            vmJob = vm.viewModelScope.coroutineContext[Job]!!
+            local.register(vm)
+            local.viewModelStore.put("main", vm)
+            vm.deleteTransaction(deleted)
+            LedgerMode(app).useCloud()
+            holder.onAccountChanged(account)
+        }
+        ready { !it.isLocal && it.userId == account }
+        assertTrue(vmJob.isCompleted)
+        assertFalse(local.database.isOpen)
+        val rows = LedgerDatabases.openLocal(app, guest).transactionDao().getAllTransactionsDirect()
+        assertEquals(listOf("Still here"), rows.map { it.merchant })
+        assertEquals(14.25, rows.single().amount, 0.0)
     }
 
     private class HeldDeletionViewModel(

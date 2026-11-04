@@ -45,6 +45,7 @@ class AccountSession(val userId: String, val database: AppDatabase, val isLocal:
 
     internal suspend fun awaitClosed() {
         scopeJobs.joinAll()
+        closingWork.forEach { it.awaitSessionClosingWork() }
     }
 }
 
@@ -99,10 +100,15 @@ class AccountSessionHolder(application: Application) : AndroidViewModel(applicat
             } else {
                 _state.value = AccountSessionState.Opening
                 _state.value = try {
+                    val mode = LedgerMode(getApplication())
+                    val isCurrent = {
+                        activeUserId == userId && activeIsLocal == isLocal &&
+                            (if (isLocal) mode.guestOrNull()?.id == userId else mode.choice == LedgerMode.Choice.CLOUD)
+                    }
                     val database = if (isLocal) {
-                        LedgerDatabases.openLocal(getApplication(), GuestSession(userId))
+                        LedgerDatabases.openLocal(getApplication(), GuestSession(userId), isCurrent = isCurrent)
                     } else {
-                        LedgerDatabases.open(getApplication(), userId)
+                        LedgerDatabases.open(getApplication(), userId, isCurrent = isCurrent)
                     }
                     if (!isLocal) SyncScheduler.schedulePeriodicSync(getApplication(), userId)
                     AccountSessionState.Ready(AccountSession(userId, database, isLocal))
