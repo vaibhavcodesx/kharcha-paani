@@ -9,8 +9,8 @@ Use `C:/Users/VAIBHAV/.codex/worktrees/x1-store-listing/Kharcha Paani`; never th
 | Feature | Branch / PR | Verified evidence |
 |---|---|---|
 | AI Off everywhere | [#226](https://github.com/vaibhavcodesx/kharcha-paani/pull/226), merged6b1b189 | Final3251078 included current main7916a16; all3green CI41860028454 |
-| Use without an account | `codex/local-mode`, [owner-review #230](https://github.com/vaibhavcodesx/kharcha-paani/pull/230) | Source01fca62e9c53e05db25c2f4bfdf8d2033c9bf659 all3green CI41866338463; later56843a3 changes its log only |
-| Export everything / complete recovery | `codex/backup-everything`, [owner-review #227](https://github.com/vaibhavcodesx/kharcha-paani/pull/227), includes #230 | Repaired application sourceec85d6336c99b6cf905b798eb7f891e701fb6f28 plus later documentation/dependency-log commits; require all3green on current head |
+| Use without an account | `codex/local-mode`, [owner-review #230](https://github.com/vaibhavcodesx/kharcha-paani/pull/230) | Source01fca62e9c53e05db25c2f4bfdf8d2033c9bf659 all3green CI41866338463; final56843a3 all3green CI41869627518 |
+| Export everything / complete recovery | `codex/backup-everything`, [owner-review #227](https://github.com/vaibhavcodesx/kharcha-paani/pull/227), includes #230 | Repaired application sourceec85d6336c99b6cf905b798eb7f891e701fb6f28 plus later documentation/dependency-log commits; final965f9e8 unit run41869890554 timed out at30m; lint/release passed; require all3green on current head |
 
 Query live heads/status, do not guess the latest documentation SHA:
 
@@ -30,13 +30,17 @@ Fetch main and merge normally if it advances. Inspect every conflict and wait fo
 
 Earlier executed evidence remains in PRs: initial AI6-red, guest namespace3-red, local-write/session6-red then9076d82 all3green, shared-close4-red, completed-owner1-red, core/recovery da98b95 all3green, shared-balance1-red/fix, modal/maintenance/sort3-red1165tests/fixes. Preserve original assertions. Follow the two-unpredicted-failure rule; no blind reruns or timeout increases.
 
+## CI timeout investigation
+
+Final integrated965f9e8 timed out after30m in CI41869890554. No assertion verdict or XML was produced. Actual Gradle9.3.1 serializer inspection confirmed partial binary records are completions, not active starts; all AiChoiceLifecycle cases and five AiDisabled cases completed successfully, so the last recorded name does not establish the hang. Earlier ca76 timed out similarly. No root cause is claimed. CI-only [#249](https://github.com/vaibhavcodesx/kharcha-paani/pull/249) adds test-start logging and five bounded worker thread snapshots; its branch is merged normally here for an evidence-gathering run, with application source/assertions/full tasks/30m job unchanged. Inspect that run before proposing a repair. Do not retry frozen baselines or speculate from buffered tails.
+
 ## Implementation boundaries
 
 Guest IDs/settings/photos/Room are separate from accounts, even equal UUIDs; no anonymous account or silent upload. Local money writes stay LOCAL_ONLY with exact paisa rounding. Existing proxy authentication means Gemini also needs sign-in. Shared restored history is read-only. Scoped background child jobs are registered under the DB mutex, cancelled/joined before owner replacement/close, and removed without reentering the mutex. Context markers reject self-reentry. Owner hooks survive destroyed holders and are pruned only after successful drain. Publication may finish during selection before target open, but cannot outlive target open/Ready; no atomic preference/publication promise.
 
 Backups cover all10v10 entities/columns, latest edits, references, settings/defaults/UPI/sort and photos. No credential/consent/OS-permission or queued-network replay. Private journal + same-transaction completion hash permits idempotent cross-store recovery. Startup maintenance waits for recovery; unrelated file callbacks cannot hide it. AI restore uses saved-enabled AND current-enabled. Restoring refuses pending Undo or unfinished deletion work without force-committing it. Historical missing-person IDs reserve SQLite's existing people sequence transactionally, avoiding inherited debt. No dummy rows/remapping/schema change.
 
-Local Gradle was skipped: last2.24GB free, below4GB gate. Recheck before running it; don't kill another agent's Java. Static936base resources/XML, changed Kotlin imports/conflict markers and diff checks passed. Actual SDK/network/Google picker/microphone and phone behavior remain separate from Room/engine/VM fixture tests.
+Local Gradle was skipped: last2.36GB free, below4GB gate. Recheck before running it; don't kill another agent's Java. Static936base resources/XML, changed Kotlin imports/conflict markers and diff checks passed. Actual SDK/network/Google picker/microphone and phone behavior remain separate from Room/engine/VM fixture tests.
 
 ## Owner material and other work
 

@@ -17,6 +17,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - Use without an account keeps an isolated on-phone ledger, with explicit account switching and no local cloud sync or shared-group writes (owner review).
 
+- CI records test starts and bounded worker thread snapshots so stalled unit runs can be diagnosed without skipping tests.
+
 - A device-wide Use AI switch stops Gemini reads everywhere, keeps manual capture available and labels AI-powered capture.
 
 - Export everything to a portable file and restore into an empty local ledger, including stored records, settings and bill photos, with interrupted-restore recovery.
