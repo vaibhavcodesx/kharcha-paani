@@ -87,16 +87,25 @@ class IouDetailsTest {
     }
 
     private fun show(recorder: Long? = 3, to: Long = -1, status: SettlementStatus = SettlementStatus.CONFIRMED) {
+        val entity = SettlementEntity(
+            id = 5, fromPersonId = 2, toPersonId = to, amount = 250.0, date = 1_792_925_400_000L,
+            note = note, isIou = true, groupId = 7, recordedByPersonId = recorder, status = status,
+        )
         val item = runBlocking {
-            db.settlementDao().insertSettlement(SettlementEntity(
-                id = 5, fromPersonId = 2, toPersonId = to, amount = 250.0, date = 1_792_925_400_000L,
-                note = note, isIou = true, groupId = 7, recordedByPersonId = recorder, status = status,
-            ))
+            db.settlementDao().insertSettlement(entity)
             val repository = LedgerRepository(db)
-            ActivityFeed.build(application,
+            val inFeed = ActivityFeed.build(application,
                 repository.fullTransactions.first(), repository.allSettlements.first(),
                 repository.allPeople.first(), repository.allGroups.first(), "", ActivityFeed.ALL,
-            ).filterIsInstance<ActivityItem.Settlement>().single()
+            ).filterIsInstance<ActivityItem.Settlement>()
+            if (to == -1L || entity.fromPersonId == -1L) {
+                inFeed.single()
+            } else {
+                // What two other people settled isn't in my Activity at all. The card must still be
+                // safe if it is ever handed one: readable, with no delete or answer action.
+                assertTrue("a groupmates IOU is not in my Activity", inFeed.isEmpty())
+                ActivityItem.Settlement(entity, fromName = "Rohan", toName = "Ankit", groupName = "Flat", recordedByName = "Rohan")
+            }
         }
         compose.setContent {
             SplitFlowTheme {
