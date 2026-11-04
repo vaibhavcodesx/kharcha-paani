@@ -15,6 +15,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- CI records test starts and bounded worker thread snapshots so stalled unit runs can be diagnosed without skipping tests.
 - A plain text warning in the export spreadsheet sheet advising to share exports only with trusted recipients (Y12, SEC L-10).
 
 - A device-wide Use AI switch stops Gemini reads everywhere, keeps manual capture available and labels AI-powered capture.
