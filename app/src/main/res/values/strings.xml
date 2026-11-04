@@ -56,6 +56,7 @@
     <string name="splits_log_iou">Log an IOU</string>
     <string name="splits_friends_count">Friends · %1$d</string>
     <string name="splits_groups_count">Groups · %1$d</string>
+    <string name="splits_sort_by">Sort by</string>
     <string name="splits_sort_caption">Sort: %1$s</string>
     <string name="splits_sort_latest">Latest activity</string>
     <string name="splits_sort_name">Name</string>
@@ -390,6 +391,10 @@
     <string name="group_people_former">Former member</string>
     <string name="group_people_paid">Paid by</string>
     <string name="group_people_split">Split with</string>
+    <string name="group_people_description">Paid by %1$s. Split with %2$s.</string>
+    <string name="group_people_description_paid">Paid by %1$s.</string>
+    <string name="group_legend_paid">paid</string>
+    <string name="group_legend_split">split between</string>
     <!-- Additional screen strings. -->
     <string name="create_group_save">Create group</string>
     <string name="create_group_too_long">Name is too long</string>

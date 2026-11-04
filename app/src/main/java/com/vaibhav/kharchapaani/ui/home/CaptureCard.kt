@@ -30,6 +30,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -80,6 +86,9 @@ fun CaptureCard(
     aiEnabled: Boolean = true,
     startVoiceCapture: Boolean = false,
     onVoiceCaptureStarted: () -> Unit = {},
+    // The widget's quick-add bar: put the cursor in the line (keyboard up), then report it.
+    focusCapture: Boolean = false,
+    onCaptureFocused: () -> Unit = {},
     onCaptureFailed: (String) -> Unit = {},
 ) {
     var input by rememberSaveable { mutableStateOf("") }
@@ -110,6 +119,18 @@ fun CaptureCard(
             .putExtra(RecognizerIntent.EXTRA_PROMPT, context.getString(R.string.home_capture_voice_prompt))
         runCatching { speechLauncher.launch(intent) }
             .onFailure { onCaptureFailed(context.getString(R.string.home_capture_voice_unavailable)) }
+    }
+    val focusRequester = remember { FocusRequester() }
+    val bringIntoView = remember { BringIntoViewRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(focusCapture) {
+        if (focusCapture) {
+            // On a short phone the line can start below the fold: scroll it in, then focus.
+            bringIntoView.bringIntoView()
+            focusRequester.requestFocus()
+            keyboard?.show()
+            onCaptureFocused()
+        }
     }
     LaunchedEffect(startVoiceCapture) {
         if (startVoiceCapture) {
@@ -165,6 +186,8 @@ fun CaptureCard(
                     keyboardActions = KeyboardActions(onDone = { submit() }),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .bringIntoViewRequester(bringIntoView)
+                        .focusRequester(focusRequester)
                         .testTag("quick_capture_input"),
                 )
             }
