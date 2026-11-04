@@ -69,6 +69,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Changed
 
+- Quick add reads more of how people type, on the phone and before the AI answers: "5 sau", "2 hazaar", "dedh sau" and "dhai sau" are amounts; "kal" and "yesterday" log it a day back, "parso" two; "rupaye", "ka", "ke" and day words no longer end up in the merchant; and everyday words (sabzi, doodh, samosa, nashta, kiraya, bijli, "mila" for money in) find their category. The keyword patterns are built once instead of on every line.
 - The quick-add widget's tap opens Home's "What did you spend on?" line with the cursor in it and the keyboard up, instead of the empty New entry form. Its mic button still starts voice.
 
 - Account sheet: Name, Avatar and Colour are one connected group with a single helper line under them; the cloud and sync status rows sit as a pair; the three data actions (export, back up, restore) are their own "Your data" section instead of the tail of Settings, which now ends with Notifications. Wording, switches and what each row does are unchanged.
