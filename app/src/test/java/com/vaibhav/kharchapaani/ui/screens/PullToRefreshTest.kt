@@ -25,7 +25,7 @@ class PullToRefreshTest {
                 HomeScreen(
                     activity = emptyList(),
                     totalNetOwed = 0.0,
-                    monthlyAnalytics = MonthlyAnalytics(0.0, 0.0, 0.0, emptyList()),
+                    monthlyAnalytics = MonthlyAnalytics(0.0, 0.0, 0.0, emptyList(), topMerchant = "", dailyStreak = 0),
                     isParsing = false,
                     searchQuery = "",
                     selectedFilter = "ALL",
