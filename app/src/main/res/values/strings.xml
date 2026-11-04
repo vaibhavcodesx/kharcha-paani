@@ -390,6 +390,10 @@
     <string name="group_people_former">Former member</string>
     <string name="group_people_paid">Paid by</string>
     <string name="group_people_split">Split with</string>
+    <string name="group_people_description">Paid by %1$s. Split with %2$s.</string>
+    <string name="group_people_description_paid">Paid by %1$s.</string>
+    <string name="group_legend_paid">paid</string>
+    <string name="group_legend_split">split between</string>
     <!-- Additional screen strings. -->
     <string name="create_group_save">Create group</string>
     <string name="create_group_too_long">Name is too long</string>
