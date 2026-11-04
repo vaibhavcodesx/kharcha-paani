@@ -16,10 +16,12 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 ### Added
 
 - Local-mode groundwork: isolated on-phone ledger, explicit account choice, blocked shared actions and no local cloud sync (owner review).
+
 - A device-wide Use AI switch stops Gemini reads everywhere, keeps manual capture available and labels AI-powered capture.
 
 - Export everything to a portable file and restore into an empty local ledger, including stored records, settings and bill photos, with interrupted-restore recovery.
 
+- A compact 2x1 "Quick add" widget (the brand button and a label) with the same tap, for a home screen with no room for the bar.
 - Evidence-scoped source review notes for six merged reliability/accessibility changes (F3).
 
 - Source-pinned architecture map distinguishes checked-in configuration from release and live-service acceptance (O3).
@@ -69,6 +71,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 
 ### Changed
+
+- The quick-add widget's tap opens Home's "What did you spend on?" line with the cursor in it and the keyboard up, instead of the empty New entry form. Its mic button still starts voice.
+
+- Account sheet: Name, Avatar and Colour are one connected group with a single helper line under them; the cloud and sync status rows sit as a pair; the three data actions (export, back up, restore) are their own "Your data" section instead of the tail of Settings, which now ends with Notifications. Wording, switches and what each row does are unchanged.
+- Group screen: expenses are two compact lines (merchant and amount, then the date and who it involved) instead of five. Who paid and who it was split with are colour dots only: a ringed dot for the payer, then a dot per person it was split with (four, then "+N"), with a one-line legend above the list. The names are no longer repeated on every row; a screen reader still hears "Paid by Aaru. Split with You, Aaru, Pruthva." The "added by" wording that was in the second line is gone from the row.
 
 - Splits > Groups: the sort control is a header row of its own, "Sort by" on the left and the current choice as a quiet pill with a chevron at the right edge (the menu ticks the active option), instead of a text button floating under "Join" with empty space beside it. Layout only; the sort options and the remembered choice are unchanged.
 - Activity shows only the group items you are part of: a settlement between two other people, and a group expense you didn't add, pay or share in (a ₹0 share doesn't count), no longer appear. The group's own screen still lists everything.
