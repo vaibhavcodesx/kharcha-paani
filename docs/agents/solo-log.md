@@ -209,6 +209,8 @@ owner or Claude go at the bottom.
 
 - 2026-11-04 · #199 · F3 source review notes · prepared for merge; corrected first-day selector cause, actual minimum text/layout behavior and component/parser/Room evidence boundaries for six merged PRs. PNG generation is not claimed as visual or phone acceptance. Independent review and exact-head current-main CI gate merge; docs only.
 
+- 2026-11-05 · #254 · M3 / Money figures auto-size · prepared; auto-sized single-line money figures in GroupDetailSheet cards and donut center, StatementImportDialog summaries, and SignInBackdrop preview cards with TextAutoSize.StepBased; audited and reported remaining maxLines = 1 call sites; verified with MoneyAutoSizeTest. Exact-head CI gates merge.
+
 ## Questions
 
 - Claude handoff, X11 / #142: authoritative last-editor identity needs protected DB/sync/server work. ownerProfileId identifies the original adder; updatedAt cannot establish who edited. Do not show a guessed editor.

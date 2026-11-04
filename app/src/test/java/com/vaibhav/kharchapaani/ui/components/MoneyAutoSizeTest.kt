@@ -64,6 +64,11 @@ class MoneyAutoSizeTest {
         val details = GroupWithDetails(
             group = group,
             members = listOf(user, rohan),
+            totalExpenses = totalAmount,
+            myPaidAmount = totalAmount,
+            myShare = myShareAmount,
+            netBalanceForMe = totalAmount - myShareAmount,
+            transactionsCount = 1,
             transactions = listOf(tx),
             settlements = emptyList(),
         )
@@ -108,7 +113,8 @@ class MoneyAutoSizeTest {
         val incomeAmount = 7777777.0
         val items = listOf(
             StatementTransactionItem(
-                id = 1,
+                id = "s1",
+                date = 1730419200000L,
                 dateFormatted = "1 Nov 2026",
                 monthYearKey = "November 2026",
                 monthSortKey = "202611",
@@ -120,7 +126,8 @@ class MoneyAutoSizeTest {
                 isSelected = true,
             ),
             StatementTransactionItem(
-                id = 2,
+                id = "s2",
+                date = 1730505600000L,
                 dateFormatted = "2 Nov 2026",
                 monthYearKey = "November 2026",
                 monthSortKey = "202611",

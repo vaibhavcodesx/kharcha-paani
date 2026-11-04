@@ -9,6 +9,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -286,7 +289,13 @@ private fun TickBox(checked: Boolean, description: String, onToggle: (Boolean) -
 private fun Figure(label: String, value: String, color: androidx.compose.ui.graphics.Color, style: androidx.compose.ui.text.TextStyle, modifier: Modifier) {
     Column(modifier.semantics(mergeDescendants = true) {}) {
         Text(label.uppercase(), style = EyebrowText)
-        Text(value, style = style, color = color, maxLines = 1)
+        BasicText(
+            text = value,
+            style = style.copy(color = color, lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified),
+            maxLines = 1,
+            softWrap = false,
+            autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = style.fontSize),
+        )
     }
 }
 
