@@ -3,6 +3,7 @@ package com.vaibhav.kharchapaani.ui.components
 import android.app.Application
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.SemanticsMatcher
@@ -137,12 +138,14 @@ class GroupSortingTest {
     fun `resource labels preserve the real group count and current sort caption`() {
         show()
         compose.onNodeWithText("Groups · 3").assertExists()
-        compose.onNodeWithTag("group_sort_button").assertTextEquals("Sort: Latest activity")
+        // The pill shows the current choice; the full phrase is what a screen reader hears.
+        compose.onNodeWithTag("group_sort_button").assertTextEquals("Latest activity")
+        compose.onNodeWithTag("group_sort_button").assertContentDescriptionEquals("Sort: Latest activity")
     }
 
-    private fun sort(label: String) {
+    private fun sort(option: String) {
         compose.onNodeWithTag("group_sort_button").performScrollTo().performClick()
-        compose.onNodeWithText(label, useUnmergedTree = true).performClick()
+        compose.onNodeWithTag("group_sort_$option", useUnmergedTree = true).performClick()
         compose.waitForIdle()
     }
 
@@ -157,13 +160,13 @@ class GroupSortingTest {
     fun `group sort options order real balances names and activity`() {
         show()
         // Opening the picker also proves the default mode is available.
-        sort("Latest activity")
+        sort("LatestActivity")
         assertOrder(7, 8, 9)
         sort("Name")
         assertOrder(9, 8, 7)
-        sort("Owed to you")
+        sort("OwedToYou")
         assertOrder(7, 9, 8)
-        sort("You owe")
+        sort("YouOwe")
         assertOrder(8, 9, 7)
         sort("Newest")
         assertOrder(9, 8, 7)
