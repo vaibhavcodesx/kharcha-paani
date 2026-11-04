@@ -28,7 +28,7 @@ class ReceiptRepository(private val db: AppDatabase, val store: ReceiptStore) {
     }
 
     /** Makes [photo] the expense's one photo, replacing any it had. False if it couldn't be kept. */
-    suspend fun attach(transactionId: Long, photo: ReceiptStore.Staged): Boolean = withContext(Dispatchers.IO) {
+    suspend fun attach(transactionId: Long, photo: ReceiptStore.Staged, preserveForDraftRecovery: Boolean = false): Boolean = withContext(Dispatchers.IO) {
         val fileName = store.commit(photo) ?: return@withContext false.also { store.discard(photo) }
         val replaced = try {
             db.withTransaction {

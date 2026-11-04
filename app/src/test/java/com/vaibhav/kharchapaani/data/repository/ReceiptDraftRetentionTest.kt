@@ -1,0 +1,83 @@
+package com.vaibhav.kharchapaani.data.repository
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Color
+import androidx.room.Room
+import androidx.test.core.app.ApplicationProvider
+import com.vaibhav.kharchapaani.data.db.AppDatabase
+import com.vaibhav.kharchapaani.data.db.entity.SyncState
+import com.vaibhav.kharchapaani.data.receipts.ReceiptStore
+import com.vaibhav.kharchapaani.data.sync.personalTransaction
+import kotlinx.coroutines.runBlocking
+import org.junit.After
+import org.junit.Assert.*
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import java.io.File
+import java.security.MessageDigest
+import java.util.UUID
+
+/** Opt-in draft recovery keeps the only photo bytes when real Room metadata insertion fails. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36])
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class ReceiptDraftRetentionTest {
+    private val context = ApplicationProvider.getApplicationContext<Context>()
+    private val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+        .allowMainThreadQueries().build()
+    private val store = ReceiptStore(File(context.filesDir, "draft-receipt-test-${UUID.randomUUID()}"))
+    private val receipts = ReceiptRepository(db, store)
+
+    @After fun cleanup() {
+        try { db.close() } finally { store.dir.deleteRecursively() }
+    }
+
+    @Test fun `durable draft photo survives receipt insertion failure and retry attaches it once to its expense`(): Unit = runBlocking {
+        val ledger = LedgerRepository(db)
+        val id = ledger.saveTransactionWithSplits(personalTransaction("Photo target",
+            syncState = SyncState.LOCAL_ONLY, amount = 125.50))
+        val otherId = ledger.saveTransactionWithSplits(personalTransaction("Unrelated expense",
+            syncState = SyncState.LOCAL_ONLY, amount = 70.0))
+        val originalRows = db.transactionDao().getAllTransactionsDirect()
+        val bitmap = Bitmap.createBitmap(32, 48, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.WHITE) }
+        val photo = try { requireNotNull(store.stage(bitmap)) } finally { bitmap.recycle() }
+        val originalBytes = photo.file.readBytes()
+        val sha = MessageDigest.getInstance("SHA-256").digest(originalBytes)
+            .joinToString("") { "%02x".format(it.toInt() and 255) }
+        val leaf = photo.file.name
+        db.openHelper.writableDatabase.execSQL(
+            "CREATE TRIGGER reject_draft_receipt BEFORE INSERT ON receipts BEGIN SELECT RAISE(ABORT, 'synthetic receipt refusal'); END")
+        try {
+            assertFalse(receipts.attach(id, photo, preserveForDraftRecovery = true))
+            assertTrue("Metadata failure must roll back the receipt row", db.receiptDao().forTransaction(id).isEmpty())
+            assertTrue(db.receiptDao().forTransaction(otherId).isEmpty())
+            assertEquals(originalRows, db.transactionDao().getAllTransactionsDirect())
+            val retained = listOf(photo.file, store.file(leaf)).distinctBy { it.canonicalPath }.filter { it.isFile }
+            assertEquals("The durable draft must retain exactly one copy of its photo", 1, retained.size)
+            assertArrayEquals(originalBytes, retained.single().readBytes())
+            assertEquals(sha, MessageDigest.getInstance("SHA-256").digest(retained.single().readBytes())
+                .joinToString("") { "%02x".format(it.toInt() and 255) })
+            val recovered = requireNotNull(store.recoverStaged(leaf, photo.width, photo.height,
+                originalBytes.size.toLong(), sha)) { "The exact durable photo reference must remain recoverable" }
+            db.openHelper.writableDatabase.execSQL("DROP TRIGGER reject_draft_receipt")
+            assertTrue(receipts.attach(id, recovered, preserveForDraftRecovery = true))
+            val (receipt, file) = requireNotNull(receipts.photoOf(id))
+            assertEquals(id, receipt.transactionId)
+            assertEquals(leaf, receipt.fileName)
+            assertEquals(photo.width, receipt.width)
+            assertEquals(photo.height, receipt.height)
+            assertEquals(originalBytes.size.toLong(), receipt.bytes)
+            assertArrayEquals(originalBytes, file.readBytes())
+            assertEquals(1, db.receiptDao().forTransaction(id).size)
+            assertTrue(db.receiptDao().forTransaction(otherId).isEmpty())
+            assertEquals(originalRows, db.transactionDao().getAllTransactionsDirect())
+            assertEquals(2, db.transactionDao().getAllTransactionsDirect().size)
+        } finally {
+            db.openHelper.writableDatabase.execSQL("DROP TRIGGER IF EXISTS reject_draft_receipt")
+        }
+    }
+}

@@ -56,6 +56,9 @@ class ReceiptStore(val dir: File) {
         return if (photo.file.renameTo(target)) target.name else null
     }
 
+    /** API scaffold only: recovery is deliberately not implemented in the red stage. */
+    suspend fun recoverStaged(fileName: String, width: Int, height: Int, bytes: Long, sha256: String): Staged? = null
+
     fun discard(photo: Staged) {
         photo.file.delete()
     }
