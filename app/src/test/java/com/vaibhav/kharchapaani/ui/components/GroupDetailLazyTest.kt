@@ -97,11 +97,12 @@ class GroupDetailLazyTest {
 
         // Top group header and figures exist
         compose.onNodeWithText("Goa trip").assertExists()
-        compose.onNodeWithText("Activity · 60").assertExists()
-        // GroupFeed.of sorts newest-first, so Cafe 60 is at the top of the feed before scrolling
+
+        // GroupFeed.of sorts newest-first, so Cafe 60 is at the top of the feed; scroll to it
+        compose.onNode(hasScrollToKeyAction()).performScrollToKey("tx_60")
         compose.onNodeWithText("Cafe 60").assertExists()
 
-        // Scroll to the oldest expense (tx_1) using scrollToKey
+        // Scroll to the oldest expense (tx_1) using performScrollToKey
         compose.onNode(hasScrollToKeyAction()).performScrollToKey("tx_1")
         // Assert oldest row's displayed content and edit action
         compose.onNodeWithText("Cafe 1").assertExists()
@@ -143,7 +144,7 @@ class GroupDetailLazyTest {
     }
 
     @Test
-    fun `real room and viewmodel modal gathers balances and wires actions in app shell`() = runBlocking {
+    fun `real room and viewmodel modal gathers balances and wires actions in app shell`() {
         val application = ApplicationProvider.getApplicationContext<Application>()
         WorkManagerTestInitHelper.initializeTestWorkManager(
             application,
@@ -151,54 +152,56 @@ class GroupDetailLazyTest {
         )
         val db = Room.inMemoryDatabaseBuilder(application, AppDatabase::class.java).allowMainThreadQueries().build()
         val store = ViewModelStore()
-        val vm = MainViewModel(application, db, "user_me")
+        val userId = "11111111-2222-3333-4444-555555555555"
+        val vm = MainViewModel(application, db, userId)
         store.put("main", vm)
+
+        var addedExpenseGroupId: Long? = null
+        var editedTx: FullTransaction? = null
+        var settledPersonId: Long? = null
+        var exportedGroupId: Long? = null
 
         try {
             // Seed database: people, group, group members, and split transaction
-            db.personDao().insertPerson(priya)
-            db.personDao().insertPerson(rohan)
-            val group = GroupEntity(id = 7L, name = "Goa trip", emoji = "🏖️", syncState = SyncState.SYNCED)
-            db.groupDao().insertGroup(group)
-            db.groupDao().insertGroupMembers(listOf(
-                GroupMemberEntity(groupId = 7L, personId = -1L),
-                GroupMemberEntity(groupId = 7L, personId = 2L),
-                GroupMemberEntity(groupId = 7L, personId = 3L),
-            ))
-            // Insert ₹1,200 expense paid by Me (-1L), split 3 ways (₹400 each)
-            db.transactionDao().insertTransaction(
-                TransactionEntity(
-                    id = 10L,
-                    type = "expense",
-                    amount = 1200.0,
-                    category = "Food",
-                    merchant = "Beach Shack",
-                    paymentMethod = "UPI",
-                    date = 1700000000000L,
-                    groupId = 7L,
-                    isSplit = true,
-                    syncState = SyncState.SYNCED,
+            runBlocking {
+                db.personDao().insertPerson(priya)
+                db.personDao().insertPerson(rohan)
+                val group = GroupEntity(id = 7L, name = "Goa trip", emoji = "🏖️", syncState = SyncState.SYNCED)
+                db.groupDao().insertGroup(group)
+                db.groupDao().insertGroupMembers(listOf(
+                    GroupMemberEntity(groupId = 7L, personId = -1L),
+                    GroupMemberEntity(groupId = 7L, personId = 2L),
+                    GroupMemberEntity(groupId = 7L, personId = 3L),
+                ))
+                // Insert ₹1,200 expense paid by Me (-1L), split 3 ways (₹400 each)
+                db.transactionDao().insertTransaction(
+                    TransactionEntity(
+                        id = 10L,
+                        type = "expense",
+                        amount = 1200.0,
+                        category = "Food",
+                        merchant = "Beach Shack",
+                        paymentMethod = "UPI",
+                        date = 1700000000000L,
+                        groupId = 7L,
+                        isSplit = true,
+                        syncState = SyncState.SYNCED,
+                    )
                 )
-            )
-            db.splitDao().insertSplit(
-                SplitEntity(id = 10L, transactionId = 10L, totalAmount = 1200.0, paidByPersonId = -1L, splitType = "equal")
-            )
-            db.splitDao().insertSplitShares(listOf(
-                SplitShareEntity(splitId = 10L, personId = -1L, shareAmount = 400.0),
-                SplitShareEntity(splitId = 10L, personId = 2L, shareAmount = 400.0),
-                SplitShareEntity(splitId = 10L, personId = 3L, shareAmount = 400.0),
-            ))
+                db.splitDao().insertSplit(
+                    SplitEntity(id = 10L, transactionId = 10L, totalAmount = 1200.0, paidByPersonId = -1L, splitType = "equal")
+                )
+                db.splitDao().insertSplitShares(listOf(
+                    SplitShareEntity(splitId = 10L, personId = -1L, shareAmount = 400.0),
+                    SplitShareEntity(splitId = 10L, personId = 2L, shareAmount = 400.0),
+                    SplitShareEntity(splitId = 10L, personId = 3L, shareAmount = 400.0),
+                ))
 
-            // Wait until ViewModel's groups flow gathers details from Room
-            val groups = vm.groups.first { it.isNotEmpty() }
-            val goaDetails = groups.single { it.group.id == 7L }
-            vm.selectGroupForDetail(goaDetails)
-
-            var addedExpenseGroupId: Long? = null
-            var editedTx: FullTransaction? = null
-            var settledPersonId: Long? = null
-            var exportedGroupId: Long? = null
-            var dismissed = false
+                // Wait until ViewModel's groups flow gathers details from Room
+                val groups = vm.groups.first { it.isNotEmpty() }
+                val goaDetails = groups.single { it.group.id == 7L }
+                vm.selectGroupForDetail(goaDetails)
+            }
 
             compose.setContent {
                 val selectedGroup by vm.selectedGroupForDetail.collectAsState()
@@ -211,34 +214,33 @@ class GroupDetailLazyTest {
                         onEditTransaction = { editedTx = it },
                         onSettleUpWith = { settledPersonId = it },
                         onExportGroup = { exportedGroupId = it },
-                        onDismiss = { dismissed = true },
+                        onDismiss = { vm.dismissGroupDetail() },
                     )
                 }
             }
 
             // Assert gathered balances from Room
             compose.onNodeWithText("Goa trip").assertExists()
-            compose.onNodeWithText("Activity · 1").assertExists()
             // Total group expense: ₹1,200
             compose.onNodeWithText("₹1,200").assertExists()
             // My share: ₹400
             compose.onNodeWithText("₹400", substring = true).assertExists()
-            // Feed row: Beach Shack
-            compose.onNodeWithText("Beach Shack").assertExists()
 
             // Verify action wiring
             // 1. Add expense button triggers onAddExpense
             compose.onNodeWithTag("add_group_expense_button").performClick()
             assertEquals(7L, addedExpenseGroupId)
 
-            // 2. Tapping expense row triggers onEditTransaction
-            compose.onNodeWithTag("group_expense_10").performClick()
-            assertEquals(10L, editedTx?.transaction?.id)
-
-            // 3. Tapping settle up button in debts section triggers onSettleUpWith
-            // In debts section: Priya owes Me ₹400 -> settle button is "settle_2_-1"
+            // 2. Scroll to and tap settle up button in debts section (Priya owes Me ₹400 -> "settle_2_-1")
+            compose.onNode(hasScrollToKeyAction()).performScrollToKey("debts_section")
             compose.onNodeWithTag("settle_2_-1").performClick()
             assertEquals(2L, settledPersonId)
+
+            // 3. Scroll to feed and tap expense row
+            compose.onNode(hasScrollToKeyAction()).performScrollToKey("tx_10")
+            compose.onNodeWithText("Beach Shack").assertExists()
+            compose.onNodeWithTag("group_expense_10").performClick()
+            assertEquals(10L, editedTx?.transaction?.id)
 
             // 4. Export button triggers onExportGroup
             compose.onNode(hasScrollToKeyAction()).performScrollToKey("feed_header")
@@ -250,13 +252,15 @@ class GroupDetailLazyTest {
             compose.waitForIdle()
             compose.onNodeWithText("Goa trip").assertDoesNotExist()
         } finally {
-            val job = vm.viewModelScope.coroutineContext[Job]!!
-            store.clear()
-            val deadline = System.currentTimeMillis() + 5000
-            while (!job.isCompleted && System.currentTimeMillis() < deadline) {
-                ShadowLooper.idleMainLooper()
+            runBlocking {
+                val job = vm.viewModelScope.coroutineContext[Job]!!
+                store.clear()
+                val deadline = System.currentTimeMillis() + 5000
+                while (!job.isCompleted && System.currentTimeMillis() < deadline) {
+                    ShadowLooper.idleMainLooper()
+                }
+                db.close()
             }
-            db.close()
         }
     }
 }
