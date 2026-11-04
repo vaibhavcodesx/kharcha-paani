@@ -98,7 +98,7 @@ class GeminiRepository(
         now: Long = System.currentTimeMillis(),
         zone: ZoneId = ZoneId.systemDefault(),
     ): TextParseOutcome = withContext(Dispatchers.IO) {
-        val onPhone = LocalHeuristicParser.parse(rawText, knownFriends).copy(date = now)
+        val onPhone = LocalHeuristicParser.parse(rawText, knownFriends, now = now)
         // No proxy is this build's normal, not a failure, so no notice.
         if (!configured) return@withContext TextParseOutcome(onPhone, failure = null)
 
