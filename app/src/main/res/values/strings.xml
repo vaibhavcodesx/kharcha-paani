@@ -28,6 +28,17 @@
     <string name="home_day_spent">%1$s spent</string>
     <string name="home_capture_reading">Reading it…</string>
     <string name="home_capture_prompt">What did you spend on?</string>
+    <string name="home_capture_try">Try: %1$s</string>
+    <!-- Lines the capture field cycles through. Each one must read with an amount (CaptureHintsTest). -->
+    <string-array name="home_capture_examples">
+        <item>chai 40 cash</item>
+        <item>dinner 1200 with Rohan</item>
+        <item>auto 5 sau</item>
+        <item>kal sabzi 180</item>
+        <item>salary 50000 received</item>
+        <item>cab 450 split with Aaru</item>
+        <item>rent 12k</item>
+    </string-array>
     <string name="home_capture_log">Log it</string>
     <string name="home_capture_say">Say it</string>
     <string name="home_capture_bill_photo">Bill photo</string>

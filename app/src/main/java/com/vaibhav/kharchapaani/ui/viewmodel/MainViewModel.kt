@@ -1149,7 +1149,7 @@ class MainViewModel(
         stopImprovingWithAi()
         resetBillPhoto()
         val splitNotice = applyParsedResult(
-            LocalHeuristicParser.parse(rawText, people.value.map { it.name }).copy(date = System.currentTimeMillis()),
+            LocalHeuristicParser.parse(rawText, people.value.map { it.name }),
             rawText,
         )
         if (_paymentMethod.value.isBlank()) _paymentMethod.value = defaultPaymentMethod()
