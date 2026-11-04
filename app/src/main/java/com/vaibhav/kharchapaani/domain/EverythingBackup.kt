@@ -55,6 +55,8 @@ data class EverythingSettings(
     val hiddenCategories: List<String> = emptyList(),
     val customPaymentMethods: List<String> = emptyList(),
     val hiddenPaymentMethods: List<String> = emptyList(),
+    val defaultCategory: String? = null,
+    val defaultPaymentMethod: String? = null,
     val askBeforeDiscarding: Boolean = true,
     val reminderEnabled: Boolean = true,
     val reminderMinute: Int = 21 * 60,

@@ -31,6 +31,7 @@ class EverythingBackupRepositoryTest {
     private val settings = EverythingSettings(
         customExpenseCategories = listOf("Groceries"), customIncomeCategories = listOf("Freelance"),
         hiddenCategories = listOf("Food"), customPaymentMethods = listOf("My card"), hiddenPaymentMethods = listOf("Cash"),
+        defaultCategory = "Groceries", defaultPaymentMethod = "My card",
         askBeforeDiscarding = false, reminderEnabled = false, reminderMinute = 720,
         paymentsToConfirm = false, quietHoursEnabled = false, quietHoursStart = 100, quietHoursEnd = 200,
         groupSort = "Name", upiId = "sample@upi", upiName = "Sample", aiEnabled = false,

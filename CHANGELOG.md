@@ -14,9 +14,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 ## [Unreleased]
 
 ### Added
-- Complete portable backup format and empty-local-ledger restore groundwork, including all stored ledger records and bill attachments.
 
-### Added
+- Complete portable backup format and empty-local-ledger restore groundwork, including all stored ledger records and bill attachments.
 
 - Evidence-scoped source review notes for six merged reliability/accessibility changes (F3).
 
