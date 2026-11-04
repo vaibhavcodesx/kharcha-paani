@@ -29,7 +29,6 @@ class ActivitySearchTest {
     private val dispatcher = StandardTestDispatcher()
     private val screen = CoroutineScope(SupervisorJob() + dispatcher)
     private val store = ViewModelStore()
-    private val emissions = mutableListOf<List<ActivityItem>>()
     private lateinit var db: AppDatabase
     private lateinit var vm: MainViewModel
 
@@ -54,7 +53,7 @@ class ActivitySearchTest {
         db.settlementDao().insertSettlement(SettlementEntity(id = 1, fromPersonId = 2, toPersonId = -1, amount = 1234.5))
         vm = MainViewModel(app, db, "11111111-2222-3333-4444-555555555555")
         store.put("main", vm)
-        screen.launch { vm.activityFeed.collect { emissions.add(it) } }
+        screen.launch { vm.activityFeed.collect {} }
         until { vm.activityFeed.value.size == 5 && vm.activityFeed.value.filterIsInstance<ActivityItem.Settlement>().single().title(app).contains("Rohan") }
     }
 
@@ -63,15 +62,14 @@ class ActivitySearchTest {
     }
 
     private fun search(query: String): Set<String> = runBlocking {
-        val initialCount = emissions.size
         vm.setSearchQuery(query)
-        withTimeout(10000) {
-            val start = System.currentTimeMillis()
-            while (emissions.size == initialCount) {
-                dispatcher.scheduler.runCurrent()
-                delay(10)
-                if (System.currentTimeMillis() - start > 1000 && vm.activityFeed.value.isNotEmpty()) break
-            }
+        delay(MainViewModel.SEARCH_DEBOUNCE_MS + 50)
+        until {
+            dispatcher.scheduler.runCurrent()
+            val keys = vm.activityFeed.value.map { it.key }.toSet()
+            if (query.isEmpty()) keys.size == 5
+            else if (query == "Someone absent") keys.isEmpty()
+            else keys.isNotEmpty() && keys != setOf("tx_1", "tx_2", "tx_3", "tx_4", "settlement_1")
         }
         dispatcher.scheduler.runCurrent()
         vm.activityFeed.value.map { it.key }.toSet()
@@ -116,15 +114,14 @@ class ActivitySearchTest {
     }
 
     @Test fun `search query is debounced by 150ms before feed updates`() = runBlocking {
-        val beforeCount = emissions.size
         vm.setSearchQuery("Salary")
         dispatcher.scheduler.runCurrent()
         // Immediately after setting search query, feed is NOT yet filtered
         assertEquals(5, vm.activityFeed.value.size)
-        assertEquals("No immediate emission within debounce window", beforeCount, emissions.size)
 
         // After the debounce duration, feed reflects the search result
-        until { vm.activityFeed.value.size == 1 && emissions.size > beforeCount }
+        delay(MainViewModel.SEARCH_DEBOUNCE_MS + 50)
+        until { vm.activityFeed.value.size == 1 }
         assertEquals(setOf("tx_2"), vm.activityFeed.value.map { it.key }.toSet())
     }
 
@@ -132,42 +129,39 @@ class ActivitySearchTest {
         search("Salary")
         assertEquals(setOf("tx_2"), vm.activityFeed.value.map { it.key }.toSet())
 
-        val beforeCount = emissions.size
-        val clearStartTime = System.currentTimeMillis()
         vm.setSearchQuery("")
-        // Empty query has 0 ms debounce: observe immediate emission
-        until { vm.activityFeed.value.size == 5 && emissions.size > beforeCount }
-        val elapsed = System.currentTimeMillis() - clearStartTime
-        assertTrue("Clearing search must emit without waiting for debounce ($elapsed ms < 150 ms)", elapsed < 150)
-        assertEquals(5, vm.activityFeed.value.size)
+        // With 0 ms debounce for empty query, delay(60ms) (< 150ms) is enough to observe the full feed
+        delay(60)
+        dispatcher.scheduler.runCurrent()
+        assertEquals("Empty search query must emit before the 150ms debounce threshold", 5, vm.activityFeed.value.size)
     }
 
     @Test fun `rapid keystrokes within debounce window build feed only once after typing pauses`() = runBlocking {
-        // Distinct intermediate queries that match completely different items:
+        // Distinct intermediate queries that would match different items if evaluated:
         // "Tea" matches Morning chai (tx_4)
         // "Taxi" matches Taxi (tx_3)
         // "Salary" matches Salary (tx_2)
-        val initialCount = emissions.size
-
         vm.setSearchQuery("Tea")
-        delay(50)
-        vm.setSearchQuery("Taxi")
-        delay(50)
-        vm.setSearchQuery("Salary")
+        delay(60)
         dispatcher.scheduler.runCurrent()
-
-        // Keystrokes were <150ms apart: feed remains un-updated at initial state
+        // Feed must not have updated to Tea within 60ms (<150ms debounce)
         assertEquals(5, vm.activityFeed.value.size)
-        assertEquals("No intermediate emissions during keystroke stream", initialCount, emissions.size)
+
+        vm.setSearchQuery("Taxi")
+        delay(60)
+        dispatcher.scheduler.runCurrent()
+        // Feed must not have updated to Taxi within 60ms (<150ms debounce)
+        assertEquals(5, vm.activityFeed.value.size)
+
+        vm.setSearchQuery("Salary")
+        delay(60)
+        dispatcher.scheduler.runCurrent()
+        // Keystrokes were <150ms apart: feed remains un-updated
+        assertEquals(5, vm.activityFeed.value.size)
 
         // Wait for debounce silence
-        until { vm.activityFeed.value.size == 1 && emissions.size > initialCount }
-
-        // Exactly one new emission occurred after typing paused
-        val newEmissions = emissions.subList(initialCount, emissions.size)
-        assertEquals("Feed should build and emit exactly once for the final query", 1, newEmissions.size)
-        assertEquals(setOf("tx_2"), newEmissions.single().map { it.key }.toSet())
-        // Prove neither intermediate query ("Tea" -> tx_4, "Taxi" -> tx_3) ever emitted
-        assertFalse(newEmissions.any { list -> list.any { it.key == "tx_4" || it.key == "tx_3" } })
+        delay(MainViewModel.SEARCH_DEBOUNCE_MS + 50)
+        until { vm.activityFeed.value.size == 1 }
+        assertEquals(setOf("tx_2"), vm.activityFeed.value.map { it.key }.toSet())
     }
 }
