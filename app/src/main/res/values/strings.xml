@@ -1000,7 +1000,7 @@
     <string name="delete_account_keep_name_title">My name, as it is now</string>
     <string name="delete_account_keep_name_detail">Only the name; nothing else about you</string>
     <plurals name="delete_account_unsynced_warning">
-        <item quantity="one">1 change hasn\'t synced yet. Sync first, or it\'s lost with the account.</item>
+        <item quantity="one">%1$d change hasn\'t synced yet. Sync first, or it\'s lost with the account.</item>
         <item quantity="other">%1$d changes haven\'t synced yet. Sync first, or they\'re lost with the account.</item>
     </plurals>
     <string name="delete_account_sync_now">Sync now</string>
