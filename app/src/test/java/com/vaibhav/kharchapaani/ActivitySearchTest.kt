@@ -103,17 +103,14 @@ class ActivitySearchTest {
 
     @Test fun `friend and amount searches still respect the selected filter`() = runBlocking {
         vm.setSelectedFilter(ActivityFeed.INCOME)
-        until { vm.activityFeed.value.all { it is ActivityItem.Transaction && it.transaction.type == "income" } }
-        assertTrue(search("Rohan", emptySet()).isEmpty())
-        assertEquals(setOf("tx_2"), search("123456.78", setOf("tx_2")))
+        assertTrue(search("Rohan", expectedKeys = emptySet()).isEmpty())
+        assertEquals(setOf("tx_2"), search("123456.78", expectedKeys = setOf("tx_2")))
 
         vm.setSelectedFilter(ActivityFeed.SPLITS)
-        until { vm.activityFeed.value.all { (it is ActivityItem.Transaction && it.transaction.isSplit) || it is ActivityItem.Settlement } }
-        assertEquals(setOf("tx_1"), search("2469", setOf("tx_1")))
+        assertEquals(setOf("tx_1"), search("2469", expectedKeys = setOf("tx_1")))
 
         vm.setSelectedFilter(ActivityFeed.EXPENSES)
-        until { vm.activityFeed.value.all { it is ActivityItem.Transaction && it.transaction.type == "expense" } }
-        assertTrue(search("2469", emptySet()).isEmpty())
+        assertTrue(search("2469", expectedKeys = emptySet()).isEmpty())
     }
 
     @Test fun `merchant category note and clearing search still work`() {
