@@ -15,6 +15,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+
+- A compact 2x1 "Quick add" widget (the brand button and a label) with the same tap, for a home screen with no room for the bar.
 - Evidence-scoped source review notes for six merged reliability/accessibility changes (F3).
 
 - Source-pinned architecture map distinguishes checked-in configuration from release and live-service acceptance (O3).
@@ -66,6 +68,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 ### Changed
 
 - Quick add reads more of how people type, on the phone and before the AI answers: "5 sau", "2 hazaar", "dedh sau" and "dhai sau" are amounts; "kal" and "yesterday" log it a day back, "parso" two; "rupaye", "ka", "ke" and day words no longer end up in the merchant; and everyday words (sabzi, doodh, samosa, nashta, kiraya, bijli, "mila" for money in) find their category. The keyword patterns are built once instead of on every line.
+- The quick-add widget's tap opens Home's "What did you spend on?" line with the cursor in it and the keyboard up, instead of the empty New entry form. Its mic button still starts voice.
 
 - Account sheet: Name, Avatar and Colour are one connected group with a single helper line under them; the cloud and sync status rows sit as a pair; the three data actions (export, back up, restore) are their own "Your data" section instead of the tail of Settings, which now ends with Notifications. Wording, switches and what each row does are unchanged.
 - Group screen: expenses are two compact lines (merchant and amount, then the date and who it involved) instead of five. Who paid and who it was split with are colour dots only: a ringed dot for the payer, then a dot per person it was split with (four, then "+N"), with a one-line legend above the list. The names are no longer repeated on every row; a screen reader still hears "Paid by Aaru. Split with You, Aaru, Pruthva." The "added by" wording that was in the second line is gone from the row.
