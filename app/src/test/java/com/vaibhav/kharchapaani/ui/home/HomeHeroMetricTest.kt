@@ -69,7 +69,8 @@ class HomeHeroMetricTest {
 
         composeTestRule.onNodeWithTag("hero_month_spend_card").assertIsDisplayed()
         composeTestRule.onNodeWithText("SPENT THIS MONTH").assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription("₹5,265.34").assertIsDisplayed()
+        // Whole rupees on the hero (U27, #270): ₹5,265.34 reads ₹5,265.
+        composeTestRule.onNodeWithContentDescription("₹5,265").assertIsDisplayed()
     }
 
     @Test
