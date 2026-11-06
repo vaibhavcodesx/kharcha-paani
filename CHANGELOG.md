@@ -15,6 +15,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Eliminate flaky test patterns across unit tests by removing wall-clock elapsed timing checks, unbounded busy-spin polling, and undated test clocks (W5).
 - Recover cleanly from corrupted app settings with ReplaceFileCorruptionHandler (reliability audit L14, Y1).
 - Search and frequent-people-first in split and payer pickers (Y15, TODOS 6).
 - LazyColumn for long person ledger sheet lists (Y16, REL M8).

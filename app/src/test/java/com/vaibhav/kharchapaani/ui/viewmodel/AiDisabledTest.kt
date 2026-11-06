@@ -24,6 +24,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -108,7 +109,7 @@ class AiDisabledTest {
         while (true) {
             main.scheduler.runCurrent()
             if (condition()) break
-            yield()
+            delay(10)
         }
     }
 
