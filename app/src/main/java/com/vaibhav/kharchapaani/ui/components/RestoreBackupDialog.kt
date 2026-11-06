@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import com.vaibhav.kharchapaani.R
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import com.vaibhav.kharchapaani.domain.LocalBackup
 import com.vaibhav.kharchapaani.ui.theme.CharcoalSurface
@@ -36,7 +37,9 @@ fun RestoreBackupDialog(
     zone: ZoneId = ZoneId.systemDefault(),
 ) {
     if (backup == null) return
-    val taken = DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a", Locale.getDefault())
+    // The configuration's locale, so a language change recomposes this (lint NonObservableLocale).
+    val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+    val taken = DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a", locale)
         .format(Instant.ofEpochMilli(backup.exportedAt).atZone(zone))
     val parts = listOfNotNull(
         backup.people.size.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.backup_preview_friends, it, it) },
