@@ -17,6 +17,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - Recover cleanly from corrupted app settings with ReplaceFileCorruptionHandler (reliability audit L14, Y1).
 
+- Debug-only StrictMode to log main-thread I/O, network calls, and resource leaks during development without interrupting execution (Y11).
 - CI records test starts and bounded worker thread snapshots so stalled unit runs can be diagnosed without skipping tests.
 - Comprehensive CSV export formula injection test suite and vulnerability report covering formula triggers, composite fields, and bypass edge cases (T14).
 
