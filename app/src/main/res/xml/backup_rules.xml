@@ -10,4 +10,6 @@
     <!-- Bill photos: the 25 MB quota would otherwise stop the ledger itself being backed up
          (see data_extraction_rules.xml). -->
     <exclude domain="file" path="receipts/" />
+    <!-- A restore in progress keeps a full plaintext copy of the archive here; never back it up. -->
+    <exclude domain="file" path="backup-recovery/" />
 </full-backup-content>

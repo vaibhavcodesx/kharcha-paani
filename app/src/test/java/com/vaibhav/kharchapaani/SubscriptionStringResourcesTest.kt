@@ -63,7 +63,7 @@ class SubscriptionStringResourcesTest {
         screen.launch { vm.subscriptions.collect {} }
         compose.setContent { SplitFlowTheme {
             SubscriptionsContent(emptyList(), CategoryPrefs(), vm::addSubscription, vm::cancelSubscription,
-                vm::deleteSubscription, today = LocalDate.now())
+                vm::deleteSubscription, today = LocalDate.of(2026, 11, 6))
         } }
         compose.onNodeWithText("Subscriptions").assertExists()
         compose.onNodeWithTag("add_subscription_button").assertIsNotEnabled()

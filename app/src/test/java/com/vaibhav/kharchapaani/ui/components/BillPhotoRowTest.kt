@@ -15,6 +15,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import java.io.File
 
 /** The add sheet's bill photo row, in each of its states. */
@@ -55,7 +57,7 @@ class BillPhotoRowTest {
         show(BillPhoto.Kept(File("bill.jpg"), staged = null))
 
         compose.onNodeWithTag("bill_photo_thumbnail").assertIsDisplayed()
-        compose.onNodeWithText("On this phone only").assertIsDisplayed()
+        compose.onNodeWithText("Kept with this expense").assertIsDisplayed()
         compose.onNodeWithContentDescription("Remove bill photo").performClick()
 
         assertEquals(1, removed)
@@ -80,5 +82,18 @@ class BillPhotoRowTest {
         compose.onNodeWithTag("bill_photo_forget").performClick()
 
         assertTrue(removed == 1)
+    }
+    @Test
+    fun `a photo only in the cloud offers Load, and shows it loading`() {
+        var loads = 0
+        var photo by androidx.compose.runtime.mutableStateOf<BillPhoto>(BillPhoto.InCloud())
+        compose.setContent {
+            SplitFlowTheme { BillPhotoRow(photo = photo, onAdd = {}, onRemove = {}, onLoad = { loads++ }) }
+        }
+        compose.onNodeWithText("Bill photo saved in the cloud").assertIsDisplayed()
+        compose.onNodeWithTag("bill_photo_load").performClick()
+        compose.runOnIdle { assertEquals(1, loads) }
+        photo = BillPhoto.InCloud(loading = true)
+        compose.onNodeWithText("Loading the photo…").assertIsDisplayed()
     }
 }

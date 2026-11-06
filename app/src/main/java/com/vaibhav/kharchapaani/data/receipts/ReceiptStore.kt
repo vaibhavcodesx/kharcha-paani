@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.data.receipts
 
 import android.content.Context
+import com.vaibhav.kharchapaani.data.settings.GuestSession
 import android.graphics.Bitmap
 import android.util.Log
 import com.vaibhav.kharchapaani.data.db.LedgerDatabases
@@ -99,6 +100,10 @@ class ReceiptStore(val dir: File) {
         /** Per account, like the ledger file, so one account never sees another's bills. */
         fun forAccount(context: Context, userId: String): ReceiptStore =
             ReceiptStore(File(File(context.filesDir, "receipts"), LedgerDatabases.databaseName(userId).removeSuffix(".db")))
+
+        /** The local identity uses the same separate namespace as its database. */
+        fun forLocal(context: Context, guest: GuestSession): ReceiptStore =
+            ReceiptStore(File(File(context.filesDir, "receipts"), LedgerDatabases.localDatabaseName(guest).removeSuffix(".db")))
 
         internal fun scaledDown(bitmap: Bitmap, maxSide: Int = MAX_SIDE): Bitmap {
             val longest = maxOf(bitmap.width, bitmap.height)

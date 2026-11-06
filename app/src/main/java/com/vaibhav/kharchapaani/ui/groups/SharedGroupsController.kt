@@ -60,7 +60,7 @@ data class SharedGroupsUiState(
 class SharedGroupsController(
     private val scope: CoroutineScope,
     private val repository: LedgerRepository,
-    private val remote: GroupMembershipRemote,
+    private val remote: GroupMembershipRemote?,
     private val selfProfileId: String,
     private val requestSync: () -> Unit,
     private val resolveText: (Int, Array<out Any>) -> String,
@@ -72,6 +72,7 @@ class SharedGroupsController(
     private var previewJob: Job? = null
 
     fun openJoin(prefill: String = "") {
+        if (blockWithoutAccount()) return
         _state.update { it.copy(join = JoinGroupState(input = prefill)) }
         if (InviteLink.parse(prefill) != null) loadPreview()
     }
@@ -82,16 +83,18 @@ class SharedGroupsController(
     }
 
     fun onJoinInputChange(input: String) {
+        if (blockWithoutAccount()) return
         previewJob?.cancel()
         _state.update { it.copy(join = it.join?.copy(input = input, preview = null, isLoadingPreview = false, error = null)) }
         if (InviteLink.parse(input) != null) loadPreview()
     }
 
     private fun loadPreview() {
+        val network = remote ?: run { blockWithoutAccount(); return }
         val code = _state.value.join?.code ?: return
         previewJob = scope.launch {
             _state.update { it.copy(join = it.join?.copy(isLoadingPreview = true, error = null)) }
-            val result = runRemote { remote.previewInvite(code) }
+            val result = runRemote { network.previewInvite(code) }
             _state.update { state ->
                 val join = state.join?.takeIf { it.code == code } ?: return@update state
                 state.copy(
@@ -111,12 +114,13 @@ class SharedGroupsController(
     }
 
     fun confirmJoin() {
+        val network = remote ?: run { blockWithoutAccount(); return }
         val join = _state.value.join ?: return
         val code = join.code ?: return
         if (!join.canJoin) return
         scope.launch {
             _state.update { it.copy(join = it.join?.copy(isJoining = true, error = null)) }
-            runRemote { remote.joinGroup(code) }.fold(
+            runRemote { network.joinGroup(code) }.fold(
                 onSuccess = {
                     requestSync()
                     val name = join.preview?.groupName ?: copyText(R.string.shared_group_notice_default_name)
@@ -132,6 +136,7 @@ class SharedGroupsController(
     /** A group created offline has to reach the server before anyone can be invited to it. */
     @OptIn(ExperimentalTime::class)
     fun createInvite(group: GroupEntity) {
+        val network = remote ?: run { blockWithoutAccount(); return }
         if (group.syncState != SyncState.SYNCED) {
             requestSync()
             _state.update {
@@ -141,7 +146,7 @@ class SharedGroupsController(
         }
         scope.launch {
             _state.update { it.copy(invite = GroupInviteState(group.id, isLoading = true)) }
-            runRemote { remote.createInvite(group.remoteId) }.fold(
+            runRemote { network.createInvite(group.remoteId) }.fold(
                 onSuccess = { invite ->
                     _state.update {
                         it.copy(
@@ -159,10 +164,11 @@ class SharedGroupsController(
     }
 
     fun revokeInvite() {
+        val network = remote ?: run { blockWithoutAccount(); return }
         val invite = _state.value.invite ?: return
         val code = invite.code ?: return
         scope.launch {
-            runRemote { remote.revokeInvite(code) }.fold(
+            runRemote { network.revokeInvite(code) }.fold(
                 onSuccess = { _state.update { it.copy(invite = null, message = copyText(R.string.shared_group_notice_revoked)) } },
                 onFailure = { error -> _state.update { it.copy(invite = invite.copy(error = error.message)) } },
             )
@@ -174,11 +180,12 @@ class SharedGroupsController(
     }
 
     fun leaveGroup(group: GroupEntity, onLeft: () -> Unit) {
+        val network = remote ?: run { blockWithoutAccount(); return }
         if (!group.isShared || _state.value.leavingGroupId != null) return
         scope.launch {
             _state.update { it.copy(leavingGroupId = group.id) }
             val result = if (group.syncState == SyncState.SYNCED || group.syncState == SyncState.PENDING) {
-                runRemote { remote.leaveGroup(group.remoteId, selfProfileId) }
+                runRemote { network.leaveGroup(group.remoteId, selfProfileId) }
             } else {
                 // Never reached the server (creation was refused): there is no membership to end.
                 Result.success(Unit)
@@ -196,6 +203,7 @@ class SharedGroupsController(
     }
 
     fun setArchived(group: GroupEntity, archived: Boolean) {
+        if (group.isShared && blockWithoutAccount()) return
         scope.launch {
             repository.setGroupArchived(group.id, archived)
             _state.update { it.copy(message = if (archived) "${group.name} archived." else "${group.name} restored.") }
@@ -208,6 +216,14 @@ class SharedGroupsController(
 
     fun clearJustJoined() {
         _state.update { it.copy(justJoined = false) }
+    }
+
+    private fun blockWithoutAccount(): Boolean {
+        if (remote != null) return false
+        previewJob?.cancel()
+        _state.update { it.copy(join = null, invite = null, justJoined = false,
+            message = copyText(R.string.local_mode_shared_requires_account)) }
+        return true
     }
 
     private suspend fun <T> runRemote(block: suspend () -> T): Result<T> = try {

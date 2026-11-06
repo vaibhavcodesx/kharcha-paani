@@ -75,6 +75,8 @@ fun BillPhotoRow(
     onAdd: (BillPhotoSource) -> Unit,
     onRemove: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Fetch a photo that's only in the cloud ([BillPhoto.InCloud]). */
+    onLoad: () -> Unit = {},
 ) {
     var choosing by remember { mutableStateOf(false) }
     var viewing by rememberSaveable { mutableStateOf(false) }
@@ -117,6 +119,17 @@ fun BillPhotoRow(
                     modifier = Modifier.padding(start = Spacing.m).weight(1f),
                 )
                 RemoveButton(onRemove)
+            }
+            is BillPhoto.InCloud -> {
+                if (photo.loading) {
+                    Box(Modifier.size(Thumbnail).clip(KpShapes.small).background(CharcoalElevated).shimmerLoading())
+                    Text(stringResource(R.string.bill_photo_cloud_loading), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = Spacing.m).weight(1f))
+                } else {
+                    Text(stringResource(R.string.bill_photo_cloud_waiting), style = MaterialTheme.typography.bodyMedium, color = MutedWarmGray, modifier = Modifier.weight(1f))
+                    TextButton(onClick = onLoad, modifier = Modifier.testTag("bill_photo_load")) {
+                        Text(stringResource(R.string.bill_photo_cloud_load), style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
+                    }
+                }
             }
             BillPhoto.Missing -> {
                 Text(stringResource(R.string.bill_photo_copy_missing), style = MaterialTheme.typography.bodyMedium, color = MutedWarmGray, modifier = Modifier.weight(1f))

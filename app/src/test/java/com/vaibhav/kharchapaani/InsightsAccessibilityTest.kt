@@ -26,6 +26,7 @@ import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.ui.screens.InsightsScreen
 import com.vaibhav.kharchapaani.ui.format.Money
 import java.time.LocalDate
+import java.time.ZoneId
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
 import com.vaibhav.kharchapaani.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.*
@@ -66,10 +67,13 @@ class InsightsAccessibilityTest {
     }
     @Test fun `Insights per day keeps the whole amount at double text size`() = runBlocking {
         val amount = 9999999.99
+        val now = LocalDate.now()
+        val zone = ZoneId.systemDefault()
+        val txDate = now.atStartOfDay(zone).toInstant().toEpochMilli()
         db.transactionDao().insertTransaction(TransactionEntity(type = "expense", amount = amount,
-            category = "Food", merchant = "A large month", paymentMethod = "Cash"))
+            category = "Food", merchant = "A large month", paymentMethod = "Cash", date = txDate))
         // The first day makes the daily average equal the total: keep that collision covered.
-        val today = LocalDate.now().withDayOfMonth(1)
+        val today = now.withDayOfMonth(1)
         compose.setContent {
             root = LocalView.current.rootView
             val density = LocalDensity.current
