@@ -229,6 +229,7 @@ owner or Claude go at the bottom.
 - 2026-11-04 · Y9 remember around getPersonLedgerFlow · prepared; MainActivity.kt wraps getPersonLedgerFlow in remember(person.id), preventing redundant Room queries on recomposition. PersonLedgerRecompositionTest verifies stabilization.
 - 2026-11-04 · Y8 feed building off Main & debounced search · prepared; ActivityFeed.build moved to Dispatchers.Default via flowOn in activityFeedSource, and searchQuery is debounced by ~150 ms (0 ms on empty query). ActivitySearchTest updated and extended with debounce verification tests.
 - 2026-11-04 · Y4 statement rotation survival · prepared; StatementImportContent preserves user selection ticks and category overrides across screen rotation and activity recreation using rememberSaveable with custom Bundle-backed Savers (statementItemListSaver and statementExpandedSaver). Robolectric test StatementImportRotationTest verifies field round-trip and StateRestorationTester restoration.
+- 2026-11-04 · Y3 · REL L9 maxLength matching supabase limits · in progress / PR opened; added maxLength parameter to SheetTextInput in Sheets.kt, capped friend names at 64 chars in AddFriendSheet.kt and LedgerRepository.kt, and capped settlement dispute notes at 200 chars in SettlementAnswerSheet.kt, matching Supabase column constraints. Added FieldLengthLimitTest.
 
 ## Questions
 

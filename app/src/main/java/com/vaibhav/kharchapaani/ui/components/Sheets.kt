@@ -426,12 +426,19 @@ fun RowScope.SheetTextInput(
     modifier: Modifier = Modifier,
     keyboardType: KeyboardType = KeyboardType.Text,
     fieldTestTag: String? = null,
+    maxLength: Int? = null,
 ) {
     Box(modifier.weight(1f)) {
         if (value.isEmpty()) Text(placeholder, style = MaterialTheme.typography.bodyLarge, color = SubMutedWarmGray, maxLines = 1)
         BasicTextField(
             value = value,
-            onValueChange = onValueChange,
+            onValueChange = { input ->
+                if (maxLength == null || input.length <= maxLength) {
+                    onValueChange(input)
+                } else if (value.length < maxLength) {
+                    onValueChange(input.take(maxLength))
+                }
+            },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = OffWhiteText),
