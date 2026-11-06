@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeDown
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
@@ -23,7 +23,10 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** The pull asks for one sync and then says what actually happened, not a fixed spinner. */
+/**
+ * The pull asks for one sync and then says what actually happened, not a fixed spinner. The line is
+ * read through the indicator's description, which is what TalkBack announces (a polite live region).
+ */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class PaaniPullRefreshTest {
@@ -61,21 +64,21 @@ class PaaniPullRefreshTest {
         show()
         pull()
         assertEquals(1, requests)
-        compose.onNodeWithText("Syncing…").assertExists()
+        compose.onNodeWithContentDescription("Syncing…").assertExists()
 
         status = status.copy(isSyncing = true)
         compose.mainClock.advanceTimeBy(300)
         status = status.copy(isSyncing = false, lastSyncedAt = 1L)
         compose.mainClock.advanceTimeBy(300)
 
-        compose.onNodeWithText("All caught up").assertExists()
+        compose.onNodeWithContentDescription("All caught up").assertExists()
     }
 
     @Test fun `a sync that never starts says the entries are safe on the phone`() {
         show()
         pull()
         compose.mainClock.advanceTimeBy(SYNC_START_WAIT_MS + 200)
-        compose.onNodeWithText("Saved on this phone. It'll sync when it can.").assertExists()
+        compose.onNodeWithContentDescription("Saved on this phone. It'll sync when it can.").assertExists()
     }
 
     @Test fun `changes that were refused are counted, not hidden`() {
@@ -85,7 +88,7 @@ class PaaniPullRefreshTest {
         compose.mainClock.advanceTimeBy(300)
         status = status.copy(isSyncing = false, failedChanges = 2)
         compose.mainClock.advanceTimeBy(300)
-        compose.onNodeWithText("2 changes couldn't sync").assertExists()
+        compose.onNodeWithContentDescription("2 changes couldn't sync").assertExists()
     }
 
     @Test fun `the result line goes away after a moment`() {
