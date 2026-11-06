@@ -13,6 +13,8 @@ owner or Claude go at the bottom.
 
 ## Log
 
+- 2026-11-06 · #269 · W2 Activity involved rule test matrix · in review; real Room DB test matrix covering all combinations of group, payer, share presence/zero/guest, adder, settlements and IOUs with ActivityFeed.build integration.
+- 2026-11-06 · #265 · W1 hardcoded strings extraction & Compose Text literals guard · in review; extracted remaining user-visible hardcoded strings from AccountSheet into strings.xml without wording changes, added NoHardcodedTextLiteralsTest safety net.
 - 2026-11-04 · #225 · T14 CSV formula injection test & security report · in review; characterized CsvExport quoting behavior with exact payload preservation examples across 17 test cases, source-confirmed leading whitespace and LF starter omissions, and corrected report claims to distinguish serialized output from unverified downstream spreadsheet execution.
 - 2026-11-04 · #229 · Y1 / DataStore corruption handler · in review; ReplaceFileCorruptionHandler recovers default emptyPreferences on corrupted prefs without throwing CorruptionException; AppSettingsCorruptionTest verifies baseline exception and recovery/persistence with isolated scopes. CI gates merge.
 
