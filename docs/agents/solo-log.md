@@ -237,6 +237,7 @@ owner or Claude go at the bottom.
 - 2026-11-04 · Y2 · REL L3 guarded startActivity & one-shot share events · in progress / PR opened; guarded imagePicker, pdfPicker, pickBackup, and pickBillPhoto against ActivityNotFoundException; refactored askToPay, exportCsv, exportGroupCsv, and exportLocalBackup in MainViewModel to emit one-shot share chooser intents via buffered channel collected by UI in MainActivity instead of capturing Activity across suspensions. Added ShareIntentsTest unit test suite.
 - 2026-11-04 · #250 · Y16 / LazyColumn for GroupDetailSheet · prepared; sheet body and feed backed by LazySheetScaffold/LazyColumn preserving liquid glass haze sampling, bottom action bar clearance, and stable feed keys; tested with Robolectric unit tests for lazy scroll, oldest/newest item assertions, empty state, real Room/ViewModel modal wiring, and action bar clickability. Exact-head CI gates merge.
 - 2026-11-05 · #254 · M3 / Money figures auto-size · prepared; auto-sized single-line money figures in GroupDetailSheet cards and donut center, StatementImportDialog summaries, and SignInBackdrop preview cards with TextAutoSize.StepBased; audited and reported remaining maxLines = 1 call sites; verified with MoneyAutoSizeTest. Exact-head CI gates merge.
+- 2026-11-06 · #275 · W5 / Fix flaky test timing & polling · opened PR; fixed wall-clock assertions, unpinned test dates, and busy-spinning loops across ActivitySearchTest, AiDisabledTest, InsightsAccessibilityTest, SubscriptionStringResourcesTest, and LateAiAnswerTest; tests only.
 
 ## Questions
 
