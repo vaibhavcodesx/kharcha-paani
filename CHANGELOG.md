@@ -16,6 +16,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 ### Added
 
 - Recover cleanly from corrupted app settings with ReplaceFileCorruptionHandler (reliability audit L14, Y1).
+- Search and frequent-people-first in split and payer pickers (Y15, TODOS 6).
+
+- A device-wide Use AI switch stops Gemini reads everywhere, keeps manual capture available and labels AI-powered capture.
 
 - Debug-only StrictMode to log main-thread I/O, network calls, and resource leaks during development without interrupting execution (Y11).
 - Personal data breach incident response plan with 72-hour DPDP Board notification lifecycle and communication templates (D3).

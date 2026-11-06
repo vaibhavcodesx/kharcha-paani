@@ -107,6 +107,7 @@ import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.domain.SplitTargets
 import com.vaibhav.kharchapaani.ui.format.displayNotice
+import com.vaibhav.kharchapaani.domain.FrequentPeople
 import com.vaibhav.kharchapaani.domain.recentSplitGroup
 import com.vaibhav.kharchapaani.ui.components.NewSubscription
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
@@ -1400,7 +1401,7 @@ class MainViewModel(
             sharesForGroup(groupId, only = target.personIds)
         } else {
             listOf(ShareInput(personId = -1L, personName = "You", isSelected = true)) +
-                people.value.map { ShareInput(personId = it.id, personName = it.name, isSelected = it.id in target.personIds) }
+                candidatesFor(null).map { ShareInput(personId = it.id, personName = it.name, isSelected = it.id in target.personIds) }
         }
         _isSplit.value = _shares.value.any { it.personId != -1L && it.isSelected }
         _splitMode.value = SplitMode.EQUAL
@@ -1415,11 +1416,11 @@ class MainViewModel(
     }
 
     private fun initSharesForCurrentPeople() {
-        val currentPeople = people.value
+        val currentPeople = candidatesFor(_groupId.value)
         val shareInputs = mutableListOf<ShareInput>()
         shareInputs.add(ShareInput(personId = -1L, personName = "You", isSelected = true))
         currentPeople.forEach { person ->
-            shareInputs.add(ShareInput(personId = person.id, personName = person.name, isSelected = false))
+            shareInputs.add(ShareInput(personId = person.id, personName = person.name, isSelected = false, isGuest = isGuestIn(_groupId.value, person)))
         }
         _shares.value = shareInputs
     }
@@ -1497,11 +1498,13 @@ class MainViewModel(
      * be a member (decision 1); otherwise everyone, as before.
      */
     private fun candidatesFor(groupId: Long?, includeGuests: Boolean = true): List<PersonEntity> {
-        if (!isSharedGroup(groupId)) return people.value
+        if (!isSharedGroup(groupId)) return FrequentPeople.sortByFrequency(people.value, rawTransactions.value)
         val memberIds = groups.value.firstOrNull { it.group.id == groupId }?.members?.map { it.id }?.toSet().orEmpty()
         // Friends who aren't on the app can come along as my guests (design item 9), after the members.
         val guests = if (includeGuests) people.value.filter { it.profileId == null && it.id !in memberIds } else emptyList()
-        return people.value.filter { it.id in memberIds } + guests
+        val members = people.value.filter { it.id in memberIds }
+        return FrequentPeople.sortByFrequency(members, rawTransactions.value) +
+            FrequentPeople.sortByFrequency(guests, rawTransactions.value)
     }
 
     /** A friend with no account, in a shared group's expense: my guest. */

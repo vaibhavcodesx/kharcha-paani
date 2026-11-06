@@ -19,6 +19,7 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.platform.testTag
 import androidx.compose.material3.Text
@@ -28,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,6 +83,17 @@ fun SplitEditor(
     val equalLabel = stringResource(R.string.entry_equally)
     val exactLabel = stringResource(R.string.entry_by_amount)
     val percentLabel = stringResource(R.string.entry_by_percent)
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    val query = searchQuery.trim()
+    val payerCandidates = remember(shares, paidByPersonId, query) {
+        shares.filter { it.personId != ME && !it.isGuest }
+            .filter { query.isEmpty() || it.personId == paidByPersonId || it.personName.contains(query, ignoreCase = true) }
+    }
+    val splitCandidates = remember(shares, query) {
+        shares.filter {
+            it.personId == ME || it.isSelected || query.isEmpty() || it.personName.contains(query, ignoreCase = true)
+        }
+    }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -89,6 +102,50 @@ fun SplitEditor(
             .padding(Spacing.l),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
+        if (shares.any { it.personId != ME }) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 40.dp)
+                    .clip(KpShapes.small)
+                    .background(CharcoalBg)
+                    .border(1.dp, OutlineInteractive, KpShapes.small)
+                    .padding(horizontal = Spacing.m),
+            ) {
+                Icon(KpIcons.Search, contentDescription = null, tint = SubMutedWarmGray, modifier = Modifier.size(16.dp))
+                BasicTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = OffWhiteText),
+                    cursorBrush = SolidColor(WarmAmberPrimary),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = Spacing.s)
+                        .testTag("split_search_input"),
+                    decorationBox = { field ->
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (searchQuery.isEmpty()) {
+                                Text(
+                                    stringResource(R.string.entry_search_people_hint),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = SubMutedWarmGray,
+                                    maxLines = 1,
+                                )
+                            }
+                            field()
+                        }
+                    },
+                )
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { searchQuery = "" }, modifier = Modifier.size(24.dp).testTag("split_search_clear")) {
+                        Icon(KpIcons.Close, contentDescription = stringResource(R.string.home_search_close), tint = SubMutedWarmGray, modifier = Modifier.size(14.dp))
+                    }
+                }
+            }
+        }
+
         Text(stringResource(R.string.entry_paid_by), style = EyebrowText)
         if (payerLockedBy != null) {
             Text(
@@ -100,7 +157,7 @@ fun SplitEditor(
             FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 ChoiceChip(label = stringResource(R.string.entry_you), selected = paidByPersonId == ME, onClick = { onPaidByPersonIdChange(ME) })
                 // A guest has no account and can't be anyone's payer in a shared group.
-                shares.filter { it.personId != ME && !it.isGuest }.forEach { share ->
+                payerCandidates.forEach { share ->
                     ChoiceChip(label = share.personName, selected = paidByPersonId == share.personId, onClick = { onPaidByPersonIdChange(share.personId) })
                 }
             }
@@ -146,7 +203,7 @@ fun SplitEditor(
         }
 
         Column {
-            shares.forEach { share ->
+            splitCandidates.forEach { share ->
                 ShareRow(
                     share = share,
                     splitMode = splitMode,
