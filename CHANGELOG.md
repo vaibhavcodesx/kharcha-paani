@@ -13,6 +13,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Fixed
+- Quick-add heuristic parser keeps split friend names (e.g. "with Rohan and Ankit") and multi-word payment method words ("google pay", "bank transfer", "credit card", "debit card") out of merchant titles (W11).
+
 ### Added
 - Bill photos back up to your account and, on a split, the others in it see them (a smaller copy; your original stays on your phone). Settings has a switch to stop sharing. A photo someone shared shows as "Bill photo saved in the cloud · Load". Deleting the expense, the photo or your account deletes the cloud copy.
 

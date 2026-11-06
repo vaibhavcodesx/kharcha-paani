@@ -32,7 +32,7 @@ class QuickAddGoldenTest {
         TestCase("kal", "expense", 0.0, "Expense", "Other", "", expectedDaysBack = 1),
         TestCase("parso", "expense", 0.0, "Expense", "Other", "", expectedDaysBack = 2),
         TestCase("chai 40 cash", "expense", 40.0, "Chai", "Food", "Cash", expectedDaysBack = 0),
-        TestCase("dinner 1200 with Rohan", "expense", 1200.0, "Dinner Rohan", "Food", "", expectedDaysBack = 0, knownFriends = listOf("Rohan"), expectedSplits = listOf("Rohan")),
+        TestCase("dinner 1200 with Rohan", "expense", 1200.0, "Dinner", "Food", "", expectedDaysBack = 0, knownFriends = listOf("Rohan"), expectedSplits = listOf("Rohan")),
 
         // Hinglish numbers & shorthands
         TestCase("auto 5 sau", "expense", 500.0, "Auto", "Transport", "", expectedDaysBack = 0),
@@ -56,11 +56,11 @@ class QuickAddGoldenTest {
         TestCase("sabzi 120 cash", "expense", 120.0, "Sabzi", "Groceries", "Cash", expectedDaysBack = 0),
         TestCase("doodh 54 paytm", "expense", 54.0, "Doodh", "Groceries", "Paytm", expectedDaysBack = 0),
         TestCase("samosa 30 cash", "expense", 30.0, "Samosa", "Food", "Cash", expectedDaysBack = 0),
-        TestCase("kiraya 12000 bank transfer", "expense", 12000.0, "Kiraya Bank Transfer", "Rent", "Bank Transfer", expectedDaysBack = 0),
+        TestCase("kiraya 12000 bank transfer", "expense", 12000.0, "Kiraya", "Rent", "Bank Transfer", expectedDaysBack = 0),
         TestCase("bijli bill 900 gpay", "expense", 900.0, "Bijli Bill", "Bills", "GPay", expectedDaysBack = 0),
         TestCase("pani puri 50 cash", "expense", 50.0, "Pani Puri", "Food", "Cash", expectedDaysBack = 0),
         TestCase("golgappe 40", "expense", 40.0, "Golgappe", "Food", "", expectedDaysBack = 0),
-        TestCase("thali 150 google pay", "expense", 150.0, "Thali Google Pay", "Food", "GPay", expectedDaysBack = 0),
+        TestCase("thali 150 google pay", "expense", 150.0, "Thali", "Food", "GPay", expectedDaysBack = 0),
         TestCase("dosa 80 phonepe", "expense", 80.0, "Dosa", "Food", "PhonePe", expectedDaysBack = 0),
 
         // Income keywords & mila
@@ -70,10 +70,10 @@ class QuickAddGoldenTest {
         TestCase("freelance payment received 15k", "income", 15000.0, "Freelance Payment", "Income (Client)", "", expectedDaysBack = 0),
 
         // Splits and friend recognition
-        TestCase("biryani 800 with Rohan and Priya", "expense", 800.0, "Biryani Rohan Priya", "Food", "", expectedDaysBack = 0, knownFriends = listOf("Rohan", "Priya"), expectedSplits = listOf("Rohan", "Priya")),
-        TestCase("pizza 600 split with Vikram and Anjali", "expense", 600.0, "Pizza Vikram Anjali", "Food", "", expectedDaysBack = 0, expectedSplits = listOf("Vikram", "Anjali")),
-        TestCase("lunch 1500 with Anand", "expense", 1500.0, "Lunch Anand", "Food", "", expectedDaysBack = 0, knownFriends = listOf("Anand"), expectedSplits = listOf("Anand")),
-        TestCase("cab 450 split with Ankit", "expense", 450.0, "Cab Ankit", "Transport", "", expectedDaysBack = 0, knownFriends = listOf("Ankit Shah"), expectedSplits = listOf("Ankit")),
+        TestCase("biryani 800 with Rohan and Priya", "expense", 800.0, "Biryani", "Food", "", expectedDaysBack = 0, knownFriends = listOf("Rohan", "Priya"), expectedSplits = listOf("Rohan", "Priya")),
+        TestCase("pizza 600 split with Vikram and Anjali", "expense", 600.0, "Pizza", "Food", "", expectedDaysBack = 0, expectedSplits = listOf("Vikram", "Anjali")),
+        TestCase("lunch 1500 with Anand", "expense", 1500.0, "Lunch", "Food", "", expectedDaysBack = 0, knownFriends = listOf("Anand"), expectedSplits = listOf("Anand")),
+        TestCase("cab 450 split with Ankit", "expense", 450.0, "Cab", "Transport", "", expectedDaysBack = 0, knownFriends = listOf("Ankit Shah"), expectedSplits = listOf("Ankit")),
 
         // Multi-item categories & everyday purchases
         TestCase("kurkure and chips 30 cash", "expense", 30.0, "Kurkure Chips", "Packaged goods", "Cash", expectedDaysBack = 0),
@@ -96,5 +96,22 @@ class QuickAddGoldenTest {
             assertEquals("Date mismatch for '${tc.input}'", fixedNow - tc.expectedDaysBack * dayMillis, result.date)
             assertEquals("Split names mismatch for '${tc.input}'", tc.expectedSplits, result.splitWithPersonNames)
         }
+    }
+
+    @Test
+    fun `quick-add merchant stays clean of split friend names and multi-word payment methods (W11)`() {
+        // Multi-word payment methods stay out of merchant
+        assertEquals("Thali", LocalHeuristicParser.parse("thali 150 google pay").merchant)
+        assertEquals("Kiraya", LocalHeuristicParser.parse("kiraya 12000 bank transfer").merchant)
+        assertEquals("Shoes", LocalHeuristicParser.parse("shoes 2999 credit card").merchant)
+        assertEquals("Groceries", LocalHeuristicParser.parse("groceries 850 debit card").merchant)
+
+        // Split friend names stay out of merchant
+        assertEquals("Dinner", LocalHeuristicParser.parse("dinner 1200 with Rohan", knownFriends = listOf("Rohan")).merchant)
+        assertEquals("Dinner", LocalHeuristicParser.parse("dinner 1200 with Rohan and Ankit", knownFriends = listOf("Rohan", "Ankit")).merchant)
+        assertEquals("Biryani", LocalHeuristicParser.parse("biryani 800 with Rohan and Priya", knownFriends = listOf("Rohan", "Priya")).merchant)
+        assertEquals("Pizza", LocalHeuristicParser.parse("pizza 600 split with Vikram and Anjali").merchant)
+        assertEquals("Lunch", LocalHeuristicParser.parse("lunch 1500 with Anand", knownFriends = listOf("Anand")).merchant)
+        assertEquals("Cab", LocalHeuristicParser.parse("cab 450 split with Ankit", knownFriends = listOf("Ankit Shah")).merchant)
     }
 }

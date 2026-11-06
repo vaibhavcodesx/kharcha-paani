@@ -124,13 +124,37 @@ object LocalHeuristicParser {
         val commonWords = setOf(
             "split", "with", "gpay", "phonepe", "paytm", "cash", "card", "paid",
             "received", "rs", "inr", "for", "to", "at", "the", "and", "lent", "a",
+            // Multi-word payment method words: stay out of the merchant (W11).
+            "google", "pay", "bank", "transfer", "credit", "debit",
             // Hinglish and day words: said around the amount, never the merchant.
             "ka", "ke", "ki", "ko", "se", "me", "mein", "par", "rupaye", "rupee", "rupees", "rupya", "kal", "aaj", "parso", "today",
             "yesterday", "mila", "mili", "mile", "saath", "sau", "hazaar", "hazar", "thousand", "dedh", "dhai"
         )
+        val splitNamesWords = buildSet {
+            splitFriends.forEach { friend ->
+                friend.lowercase(Locale.getDefault()).split(Regex("""\s+""")).forEach { w ->
+                    val clean = w.replace(Regex("[^a-z0-9]"), "")
+                    if (clean.isNotBlank()) add(clean)
+                }
+            }
+            knownFriends.forEach { friend ->
+                if (containsWord(lower, friend.trim().lowercase(Locale.getDefault()))) {
+                    friend.lowercase(Locale.getDefault()).split(Regex("""\s+""")).forEach { w ->
+                        val clean = w.replace(Regex("[^a-z0-9]"), "")
+                        if (clean.isNotBlank()) add(clean)
+                    }
+                }
+            }
+            Regex("""\b(?:split\s+(?:with\s+)?|with\s+)([a-zA-Z\s,&]+)""", RegexOption.IGNORE_CASE).find(lower)?.let { match ->
+                match.groupValues[1].split(Regex("""\s+|,|&|\band\b""")).forEach { w ->
+                    val clean = w.replace(Regex("[^a-z0-9]"), "")
+                    if (clean.isNotBlank()) add(clean)
+                }
+            }
+        }
         val tokens = text.replace(DAY_BEFORE, " ").trim().split(Regex("""\s+""")).filter { token ->
             val clean = token.lowercase(Locale.getDefault()).replace(Regex("[^a-z0-9]"), "")
-            clean.isNotBlank() && !commonWords.contains(clean) && !clean.matches(Regex("""\d+(\.\d+)?""")) &&
+            clean.isNotBlank() && !commonWords.contains(clean) && !splitNamesWords.contains(clean) && !clean.matches(Regex("""\d+(\.\d+)?""")) &&
                 !clean.matches(Regex("""\d+k""")) && !clean.matches(Regex("""(rs|inr)?\d+"""))
         }
 
