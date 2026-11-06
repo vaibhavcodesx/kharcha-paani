@@ -10,6 +10,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
@@ -89,7 +90,13 @@ abstract class UiAuditCapture(private val device: String, private val seeded: Bo
                 )
             }
         }
-        if (seeded) waitForText("Chai stall", tab = tab) else compose.waitForIdle()
+        if (seeded) {
+            waitForText("Chai stall", tab = tab)
+        } else {
+            // A new user has no data to wait for; the account button is on every tab once it's drawn.
+            compose.waitUntil(10_000) { compose.onAllNodesWithTag("home_account_button").fetchSemanticsNodes().isNotEmpty() }
+            compose.waitForIdle()
+        }
     }
 
     @After
