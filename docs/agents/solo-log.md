@@ -228,6 +228,7 @@ owner or Claude go at the bottom.
 - 2026-11-05 · #253 · M1 / AccountSheet copy into strings.xml · prepared; moved 17 hardcoded copy strings covering profile, avatar, cloud status and sync status into string and plural resources; unchanged English copy, formatted plurals and exact relative sync time; verified with AccountSheetStringResourcesTest and SyncStatusTextTest. Exact-head CI gates merge.
 - 2026-11-04 · Y9 remember around getPersonLedgerFlow · prepared; MainActivity.kt wraps getPersonLedgerFlow in remember(person.id), preventing redundant Room queries on recomposition. PersonLedgerRecompositionTest verifies stabilization.
 - 2026-11-04 · Y8 feed building off Main & debounced search · prepared; ActivityFeed.build moved to Dispatchers.Default via flowOn in activityFeedSource, and searchQuery is debounced by ~150 ms (0 ms on empty query). ActivitySearchTest updated and extended with debounce verification tests.
+- 2026-11-04 · Y4 statement rotation survival · prepared; StatementImportContent preserves user selection ticks and category overrides across screen rotation and activity recreation using rememberSaveable with custom Bundle-backed Savers (statementItemListSaver and statementExpandedSaver). Robolectric test StatementImportRotationTest verifies field round-trip and StateRestorationTester restoration.
 
 ## Questions
 
