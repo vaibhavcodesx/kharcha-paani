@@ -221,6 +221,7 @@ owner or Claude go at the bottom.
 - 2026-11-05 · #255 · D3 / incident response plan · prepared; documented personal data breach response procedures under DPDP Act 2023 / DPDP Rules 2025 (Rule 7) with 72-hour DPBI reporting timeline, user notification requirements, severity classification, containment workflows, and communication templates. Docs only; exact-head CI gates merge.
 - 2026-11-05 · #256 · M1 / Auth messages string resources · prepared; moved AuthViewModel colour conflict/offline and account deletion error strings into strings.xml resources; verified with AuthMessagesStringResourcesTest. Exact-head CI gates merge.
 - 2026-11-04 · M1 DeleteAccountSheet copy · opened PR; user-facing copy, confirmations, and pluralized sync warnings moved into string and plural resources with parity assertions; account deletion behavior, test tags and semantics are unchanged.
+- 2026-11-05 · #253 · M1 / AccountSheet copy into strings.xml · prepared; moved 17 hardcoded copy strings covering profile, avatar, cloud status and sync status into string and plural resources; unchanged English copy, formatted plurals and exact relative sync time; verified with AccountSheetStringResourcesTest and SyncStatusTextTest. Exact-head CI gates merge.
 
 ## Questions
 

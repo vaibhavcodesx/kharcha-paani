@@ -1011,4 +1011,35 @@
     </plurals>
     <string name="delete_account_sync_now">Sync now</string>
     <string name="delete_account_keep_account">Keep my account</string>
+    <!-- Additional screen strings (AccountSheet M1). -->
+    <string name="account_avatar_content_description">Your avatar</string>
+    <string name="account_title_fallback">Your account</string>
+    <string name="account_eyebrow_profile">Profile</string>
+    <string name="account_profile_unreachable">Your name and avatar can be changed once your cloud profile is reachable.</string>
+    <string name="account_name_label">Name</string>
+    <string name="account_name_placeholder">Your name</string>
+    <string name="account_avatar_label">Avatar</string>
+    <string name="account_avatar_initials">Initials</string>
+    <string name="account_profile_save_failed">Couldn\'t save your profile. Check your connection and try again.</string>
+    <string name="account_name_too_long">Keep it to %1$d characters.</string>
+    <string name="account_name_helper">Groupmates see your name and avatar.</string>
+    <string name="account_eyebrow_account">Account</string>
+    <string name="account_cloud_offline">Offline. Your account reconnects on its own.</string>
+    <string name="account_cloud_unavailable">Can\'t reach your cloud account right now</string>
+    <string name="account_cloud_ready">Cloud profile ready</string>
+    <string name="account_cloud_missing">Cloud profile not found</string>
+    <string name="account_cloud_checking">Checking your cloud profile…</string>
+    <string name="account_retry">Retry</string>
+    <plurals name="account_sync_failed">
+        <item quantity="one">%1$d change couldn\'t sync</item>
+        <item quantity="other">%1$d changes couldn\'t sync</item>
+    </plurals>
+    <string name="account_sync_syncing">Syncing…</string>
+    <plurals name="account_sync_unsynced">
+        <item quantity="one">%1$d change waiting to sync</item>
+        <item quantity="other">%1$d changes waiting to sync</item>
+    </plurals>
+    <string name="account_sync_synced_just_now">All changes synced</string>
+    <string name="account_sync_synced_relative">All changes synced · %1$s</string>
+    <string name="account_sync_not_synced">Not synced yet</string>
 </resources>
