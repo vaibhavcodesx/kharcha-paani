@@ -97,7 +97,7 @@ class ReceiptSyncSafetyTest {
         remoteId: String,
         groupId: Long? = null,
         syncState: SyncState = SyncState.SYNCED,
-        isOwnedByMe: Boolean = true
+        ownerProfileId: String? = null
     ) {
         db.transactionDao().insertTransaction(
             TransactionEntity(
@@ -110,7 +110,7 @@ class ReceiptSyncSafetyTest {
                 groupId = groupId,
                 remoteId = remoteId,
                 syncState = syncState,
-                isOwnedByMe = isOwnedByMe
+                ownerProfileId = ownerProfileId
             )
         )
     }
@@ -223,7 +223,7 @@ class ReceiptSyncSafetyTest {
     fun `turning Share bill photos off clears the shared path on the next run of ReceiptSyncEngine`() = runBlocking {
         db.groupDao().insertGroup(GroupEntity(id = 10L, name = "Trip"))
         val remoteTxId = "tx-remote-group-5"
-        insertExpense(5L, remoteTxId, groupId = 10L, isOwnedByMe = true, syncState = SyncState.SYNCED)
+        insertExpense(5L, remoteTxId, groupId = 10L, syncState = SyncState.SYNCED)
 
         val photo = stagePhoto()
         val repo = ReceiptRepository(db, store)
