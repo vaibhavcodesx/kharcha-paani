@@ -102,7 +102,7 @@ class GuestActivityLaunchTest {
                 compose.onAllNodesWithTag("capture_ai_status").fetchSemanticsNodes().isNotEmpty()
             }
             compose.onNodeWithText("Guest lunch").assertExists()
-            compose.onNodeWithTag("capture_ai_status").assertTextEquals("AI is off · quick add stays on this phone")
+            compose.onNodeWithTag("capture_ai_status").assertTextEquals("AI is off · quick add stays on this phone  See what AI adds")
             val holder = ViewModelProvider(compose.activity)[AccountSessionHolder::class.java]
             val session = (holder.state.value as AccountSessionState.Ready).session
             assertTrue(session.isLocal)
