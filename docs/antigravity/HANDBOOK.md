@@ -168,6 +168,7 @@ Commit subjects are plain English about what changed for a user. **Tags:** GREEN
 - **W8** GREEN. The legal and store lines for #241 (voice audio to Gemini), #230 (use without an account) and #227 (full backup). Do this only after they merge: check with `gh pr view <n> --json state`. Draft the changes to `docs/legal/privacy-policy.md` and `docs/legal/play-console-answers.md`, and say "for owner review" in the PR. Not legal advice.
 - **W9** GREEN. Do this last. Write `docs/testing/1.7.0-device-checks.md` in 1.6.0's format, from the "Check on the phone" section of every PR in `git log v1.6.0..main`. Section 0 is install and sign-in on the signed release build. Then group the checks by screen, numbered, with `[ ]` boxes. Re-run it when Claude asks on #188.
 
+- **W10** YELLOW. Do this after #262 (dependencies) merges. Compose 1.12's lint flags `LocalContext.current.getString(...)`, `context.resources` and `Locale.getDefault()` inside composables, and #262 turns those three checks down to warnings in `app/build.gradle.kts`. Move each call site to `LocalResources.current` (strings), or to `LocalConfiguration.current.locales[0]` (locale), with no wording change. Make one PR per file or two, then delete the `warning += setOf(...)` line once lint shows none. The call sites are in `MainActivity`, `CaptureCard`, `VoiceCapture`, `UpiQr`, `AccountSheet`, `DeleteAccountSheet`, `RestoreBackupDialog` and `SettlementAnswerSheet`.
 If Wave 2 runs out, comment on #188 and stop.
 
 ### Wave 1 (2026-11-03 to 11-05, done)

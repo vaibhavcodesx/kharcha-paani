@@ -147,6 +147,7 @@ fun ConfirmBottomSheet(
     billPhoto: BillPhoto = BillPhoto.None,
     onAddBillPhoto: (BillPhotoSource) -> Unit = {},
     onRemoveBillPhoto: () -> Unit = {},
+    onLoadBillPhoto: () -> Unit = {},
     // True while the save is still writing: Save shows a spinner and takes no second tap.
     isSaving: Boolean = false,
     // True while the sheet shows the phone's guess and the AI's reading is on its way.
@@ -176,7 +177,7 @@ fun ConfirmBottomSheet(
             onTogglePersonShare = onTogglePersonShare, onExactAmountChange = onExactAmountChange,
             onPercentageChange = onPercentageChange, onOpenAddFriend = onOpenAddFriend, addedBy = addedBy,
             splitLocked = splitLocked, categories = categories, paymentMethods = paymentMethods,
-            billPhoto = billPhoto, onAddBillPhoto = onAddBillPhoto, onRemoveBillPhoto = onRemoveBillPhoto,
+            billPhoto = billPhoto, onAddBillPhoto = onAddBillPhoto, onRemoveBillPhoto = onRemoveBillPhoto, onLoadBillPhoto = onLoadBillPhoto,
             isSaving = isSaving,
             isImprovingWithAi = isImprovingWithAi,
             updatedByAi = updatedByAi,
@@ -245,6 +246,7 @@ fun ConfirmSheetContent(
     billPhoto: BillPhoto = BillPhoto.None,
     onAddBillPhoto: (BillPhotoSource) -> Unit = {},
     onRemoveBillPhoto: () -> Unit = {},
+    onLoadBillPhoto: () -> Unit = {},
     // True while the save is still writing: Save shows a spinner and takes no second tap.
     isSaving: Boolean = false,
     // The sheet opened on the phone's guess and the AI's reading is on its way: said quietly beside
@@ -369,6 +371,7 @@ fun ConfirmSheetContent(
                     onValueChange = onMerchantChange,
                     placeholder = if (isIncome) stringResource(R.string.entry_who_paid_you) else stringResource(R.string.entry_where_what),
                     fieldTestTag = "confirm_merchant_input",
+                    maxLength = com.vaibhav.kharchapaani.domain.TextLimits.MERCHANT,
                 )
             }
             ExpandableDetail(
@@ -490,10 +493,10 @@ fun ConfirmSheetContent(
         }
 
         SheetRow(label = stringResource(R.string.entry_note), position = RowPosition.Single, modifier = Modifier.padding(top = Spacing.xl)) {
-            SheetTextInput(value = note, onValueChange = onNoteChange, placeholder = stringResource(R.string.entry_optional))
+            SheetTextInput(value = note, onValueChange = onNoteChange, placeholder = stringResource(R.string.entry_optional), maxLength = com.vaibhav.kharchapaani.domain.TextLimits.NOTE)
         }
 
-        BillPhotoRow(photo = billPhoto, onAdd = onAddBillPhoto, onRemove = onRemoveBillPhoto, modifier = Modifier.padding(top = Spacing.s))
+        BillPhotoRow(photo = billPhoto, onAdd = onAddBillPhoto, onRemove = onRemoveBillPhoto, onLoad = onLoadBillPhoto, modifier = Modifier.padding(top = Spacing.s))
     }
 }
 

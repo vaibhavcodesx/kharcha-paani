@@ -14,8 +14,16 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 ## [Unreleased]
 
 ### Added
+- Bill photos back up to your account and, on a split, the others in it see them (a smaller copy; your original stays on your phone). Settings has a switch to stop sharing. A photo someone shared shows as "Bill photo saved in the cloud · Load". Deleting the expense, the photo or your account deletes the cloud copy.
 
 - Move remaining hardcoded copy in AccountSheet into strings.xml and add safety net test preventing hardcoded Compose Text string literals (W1, T3.11).
+- Use without an account keeps an isolated on-phone ledger, with explicit account switching and no local cloud sync or shared-group writes (owner review).
+- Signing out asks first, and can also remove the account's data from this phone (its ledger, bill photos and settings). That's offered only once everything has synced, so nothing is lost.
+
+- Test matrix for the Activity "involved" rule covering all combinations of group, payer, shares, adder, settlements and IOUs on real Room DB (W2, #228).
+- Golden test suite pinning quick-add parser behavior across 40 Hinglish, relative date, category, and split combinations (W3, #238).
+- Sync entity mapping safety net tests verifying round-trip persistence and documenting server-driven/local-only fields across all syncable Room entities (W4).
+- Eliminate flaky test patterns across unit tests by removing wall-clock elapsed timing checks, unbounded busy-spin polling, and undated test clocks (W5).
 - Recover cleanly from corrupted app settings with ReplaceFileCorruptionHandler (reliability audit L14, Y1).
 - Search and frequent-people-first in split and payer pickers (Y15, TODOS 6).
 - LazyColumn for long person ledger sheet lists (Y16, REL M8).
@@ -23,6 +31,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Pull-to-refresh on Home and Splits triggering sync via requestSync and stopping when isSyncing is false (Y14, REL M11).
 
 - A device-wide Use AI switch stops Gemini reads everywhere, keeps manual capture available and labels AI-powered capture.
+
+- Export everything to a portable file and restore into an empty local ledger, including stored records, settings and bill photos, with interrupted-restore recovery.
 
 - Debug-only StrictMode to log main-thread I/O, network calls, and resource leaks during development without interrupting execution (Y11).
 - Personal data breach incident response plan with 72-hour DPDP Board notification lifecycle and communication templates (D3).
@@ -85,6 +95,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 
 ### Changed
+- Pull to sync on Home and Splits is now a small glass that fills as you pull and ripples while it syncs, then says what happened: all caught up, saved on this phone, or how many changes couldn't sync. It used to spin for five seconds whatever happened.
+- With AI off, tapping something that needs it (a bill, a statement, the mic, an Insights question, a trip review) opens a short sheet instead of a passing line: what stayed on the phone, what AI would do, "Turn on AI and continue", or the feature's own way without AI. The "AI is off" line under quick add leads to it too.
+- The place is capped at 120 characters and the note at 1,000, matching new server limits, so a very long note can never become an entry that won't sync.
+- The release build is shrunk with R8, so the app downloads and installs smaller. Crash reports stay readable through the mapping attached to each release.
+- Home's month total shows whole rupees (₹12,346, not ₹12,345.50). Entries and sheets still show paise.
 
 - Move AuthViewModel colour and account deletion error messages into string resources (M1).
 - DeleteAccountSheet user-facing text, confirmations, and pluralized sync warnings moved into string and plural resources (M1).

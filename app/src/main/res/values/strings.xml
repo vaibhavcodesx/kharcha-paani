@@ -648,7 +648,7 @@
     <string name="bill_photo_copy_saving">Saving photo…</string>
     <string name="bill_photo_copy_thumbnail">Bill photo. Opens it full screen</string>
     <string name="bill_photo_copy_open">Open the bill photo</string>
-    <string name="bill_photo_copy_local">On this phone only</string>
+    <string name="bill_photo_copy_local">Kept with this expense</string>
     <string name="bill_photo_copy_missing">Photo not on this phone</string>
     <string name="bill_photo_copy_remove">Remove</string>
     <string name="bill_photo_copy_take">Take photo</string>
@@ -1077,12 +1077,6 @@
     <string name="account_setting_export_title">Export to a spreadsheet</string>
     <string name="account_setting_export_detail">A month, dates or everything, as CSV</string>
     <string name="account_setting_export_click_label">Open export</string>
-    <string name="account_setting_backup_title">Back up what\'s only on this phone</string>
-    <string name="account_setting_backup_detail">Local friends, subscriptions and your own categories, as a file</string>
-    <string name="account_setting_backup_click_label">Back up local data</string>
-    <string name="account_setting_restore_title">Restore from a backup</string>
-    <string name="account_setting_restore_detail">Adds back anything missing; never overwrites what\'s here</string>
-    <string name="account_setting_restore_click_label">Restore from a backup</string>
     <string name="account_help_no_browser">No browser on this phone. The page is at %1$s</string>
     <string name="account_eyebrow_help">Help &amp; about</string>
     <string name="account_help_feedback_title">Send feedback</string>
@@ -1115,4 +1109,16 @@
     <string name="account_setting_daily_reminder_allow">Allow</string>
     <string name="account_setting_reminder_time_title">Reminder time</string>
     <string name="account_setting_reminder_time_click_label">Change the reminder time</string>
+    <!-- Pull to sync on Home and Splits (RupeePullRefresh). -->
+    <string name="pull_sync_pull">Pull to sync</string>
+    <string name="pull_sync_release">Let go to sync</string>
+    <string name="pull_sync_syncing">Syncing…</string>
+    <string name="pull_sync_caught_up">All caught up</string>
+    <string name="pull_sync_on_this_phone">Saved on this phone. It\'ll sync when it can.</string>
+    <string name="pull_sync_local_only">Everything\'s on this phone. Nothing to sync.</string>
+    <string name="pull_sync_still_going">Still syncing. Carry on, it\'ll finish on its own.</string>
+    <plurals name="pull_sync_could_not">
+        <item quantity="one">%d change couldn\'t sync</item>
+        <item quantity="other">%d changes couldn\'t sync</item>
+    </plurals>
 </resources>

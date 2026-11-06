@@ -62,7 +62,7 @@ val releaseSigning: ReleaseSigning? = run {
 
 android {
   namespace = "com.vaibhav.kharchapaani"
-  compileSdk { version = release(36) { minorApiLevel = 1 } }
+  compileSdk { version = release(37) }
 
   defaultConfig {
     applicationId = "com.vaibhav.kharchapaani"
@@ -101,7 +101,15 @@ android {
   buildTypes {
     release {
       isCrunchPngs = false
-      isMinifyEnabled = false
+      // R8: shrinks, optimises and obfuscates the release build (plan, #71). Its mapping.txt turns a
+      // release stack trace back into names; release.yml attaches it to every GitHub Release.
+      isMinifyEnabled = true
+      isShrinkResources = true
+      // No automatic upload to Crashlytics: builds without the Firebase project would fail on it,
+      // and the mapping is attached to the GitHub Release instead.
+      configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
+        mappingFileUploadEnabled = false
+      }
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       // Null leaves the APK unsigned rather than failing the build. An unsigned APK will not
       // install on a phone, which is the right outcome: a release build with no key is for
@@ -196,6 +204,8 @@ dependencies {
   implementation(libs.supabase.auth)
   implementation(libs.supabase.postgrest)
   implementation(libs.supabase.realtime)
+    // Bill photos in the cloud (docs/designs/bill-photo-sync.md).
+    implementation(libs.supabase.storage)
   implementation(libs.haze)
   implementation(libs.ktor.client.okhttp)
   implementation(libs.multiplatform.settings)

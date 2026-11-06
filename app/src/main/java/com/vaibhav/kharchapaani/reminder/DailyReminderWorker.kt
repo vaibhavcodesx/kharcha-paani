@@ -7,8 +7,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.vaibhav.kharchapaani.data.db.LedgerDatabases
-import com.vaibhav.kharchapaani.data.remote.BackgroundAuth
+import com.vaibhav.kharchapaani.data.settings.BackgroundLedger
 import com.vaibhav.kharchapaani.data.settings.AppSettings
 import com.vaibhav.kharchapaani.util.NotificationHelper
 import kotlinx.coroutines.CancellationException
@@ -48,13 +47,14 @@ class DailyReminderWorker(context: Context, params: WorkerParameters) : Coroutin
         if (!NotificationHelper.canNotify(applicationContext, NotificationHelper.CHANNEL_DAILY_REMINDER)) return
         // Signed out: there's no one's day to remind about. Not auth.awaitInitialization(): in the
         // background that waits until the app is next opened, which is exactly when this isn't needed.
-        val userId = BackgroundAuth.signedInUserId(applicationContext) ?: return
+        val ledger = BackgroundLedger.current(applicationContext) ?: return
         // The same instance the app uses when it's open; never closed here.
-        val database = LedgerDatabases.open(applicationContext, userId)
-        val zone = ZoneId.systemDefault()
-        val transactions = database.transactionDao().getAllTransactionsDirect()
-        if (ReminderRule.nothingLoggedToday(transactions, LocalDate.now(zone), zone)) {
-            NotificationHelper.showDailyReminder(applicationContext)
+        ledger.withDatabase(applicationContext) { database ->
+            val zone = ZoneId.systemDefault()
+            val transactions = database.transactionDao().getAllTransactionsDirect()
+            if (ReminderRule.nothingLoggedToday(transactions, LocalDate.now(zone), zone)) {
+                NotificationHelper.showDailyReminder(applicationContext)
+            }
         }
     }
 

@@ -133,8 +133,8 @@ class LateAiAnswerTest {
 
     /** Fails as soon as [wrong] is seen within [windowMs]; a late answer would show up at once. */
     private suspend fun neverSees(message: String, windowMs: Long = 250, wrong: () -> Boolean) {
-        val end = System.currentTimeMillis() + windowMs
-        while (System.currentTimeMillis() < end) {
+        val steps = (windowMs / 10).coerceAtLeast(1)
+        repeat(steps.toInt()) {
             assertFalse(message, wrong())
             delay(10)
         }

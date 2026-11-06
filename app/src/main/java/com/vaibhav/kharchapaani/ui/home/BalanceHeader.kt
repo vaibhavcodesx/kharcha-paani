@@ -76,6 +76,8 @@ fun BalanceHeader(
             prefix = "₹",
             style = MoneyText.hero,
             brush = BrandGradient.horizontal(),
+            // Whole rupees: at a glance the month is "₹12,345", not "₹12,345.50" (U27). Rows keep paise.
+            wholeRupees = true,
         )
         if (dailyStreak >= 2) {
             Text(

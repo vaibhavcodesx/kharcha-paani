@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.ClipData
 import android.content.ComponentName
 import android.content.Context
+import com.vaibhav.kharchapaani.data.settings.LedgerMode
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
@@ -26,6 +27,8 @@ object AskShare {
     const val EXTRA_PERSON_ID = "com.vaibhav.kharchapaani.ask.PERSON_ID"
     const val EXTRA_AMOUNT = "com.vaibhav.kharchapaani.ask.AMOUNT"
     const val EXTRA_USER_ID = "com.vaibhav.kharchapaani.ask.USER_ID"
+
+    const val EXTRA_IS_LOCAL = "com.vaibhav.kharchapaani.ask.IS_LOCAL"
 
     private const val TAG = "AskShare"
 
@@ -80,6 +83,7 @@ object AskShare {
             putExtra(EXTRA_PERSON_ID, personId)
             putExtra(EXTRA_AMOUNT, amount)
             putExtra(EXTRA_USER_ID, userId)
+            putExtra(EXTRA_IS_LOCAL, LedgerMode(context).choice == LedgerMode.Choice.LOCAL)
         }
         // Mutable so the system can add which app was picked; it's explicit, so nothing else can
         // fill it in. (Android 12+ requires saying so; before that every PendingIntent was mutable.)

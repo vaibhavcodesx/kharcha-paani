@@ -33,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -105,6 +106,7 @@ fun SignInScreen(
     onSignInWithGoogle: () -> Unit,
     onDismissFailure: () -> Unit,
     modifier: Modifier = Modifier,
+    onUseLocal: () -> Unit = {},
 ) {
     val reducedMotion = rememberReducedMotion()
     val progress = rememberEntranceProgress(reducedMotion)
@@ -140,6 +142,7 @@ fun SignInScreen(
                     failure = failure,
                     onSignInWithGoogle = onSignInWithGoogle,
                     onDismissFailure = onDismissFailure,
+                    onUseLocal = onUseLocal,
                     modifier = Modifier
                         .padding(top = 40.dp, bottom = Spacing.l)
                         .entrance(progress, EntranceDelay.ACTIONS),
@@ -191,6 +194,7 @@ private fun SignInActions(
     onSignInWithGoogle: () -> Unit,
     onDismissFailure: () -> Unit,
     modifier: Modifier = Modifier,
+    onUseLocal: () -> Unit = {},
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     Column(
@@ -247,6 +251,14 @@ private fun SignInActions(
                 ),
             )
         }
+        TextButton(
+            onClick = onUseLocal,
+            enabled = !isSigningIn,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("sign_in_use_local"),
+        ) {
+            Text(stringResource(R.string.guest_continue_local))
+        }
+        Text(stringResource(R.string.guest_separate_ledgers), style = MaterialTheme.typography.bodySmall)
         AgreementLine()
     }
 }

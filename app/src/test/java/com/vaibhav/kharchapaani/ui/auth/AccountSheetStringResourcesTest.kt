@@ -116,8 +116,8 @@ class AccountSheetStringResourcesTest {
         assertEquals("Your data", resources.getString(R.string.account_eyebrow_data))
         assertEquals("Export to a spreadsheet", resources.getString(R.string.account_setting_export_title))
         assertEquals("A month, dates or everything, as CSV", resources.getString(R.string.account_setting_export_detail))
-        assertEquals("Back up what's only on this phone", resources.getString(R.string.account_setting_backup_title))
-        assertEquals("Restore from a backup", resources.getString(R.string.account_setting_restore_title))
+        assertEquals("Export everything", resources.getString(R.string.full_backup_ui_export_title))
+        assertEquals("Restore from a backup", resources.getString(R.string.full_backup_ui_restore_title))
     }
 
     @Test
