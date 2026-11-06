@@ -1,5 +1,10 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import android.os.Bundle
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.SnapshotStateMap
+
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.vaibhav.kharchapaani.R
@@ -9,6 +14,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -99,8 +107,10 @@ fun StatementImportContent(
     modifier: Modifier = Modifier,
     prefs: CategoryPrefs = CategoryPrefs(),
 ) {
-    var items by remember(parseResult) { mutableStateOf(parseResult.allItems) }
-    val expanded = remember(parseResult) {
+    var items by rememberSaveable(parseResult, stateSaver = statementItemListSaver()) {
+        mutableStateOf(parseResult.allItems)
+    }
+    val expanded = rememberSaveable(parseResult, saver = statementExpandedSaver()) {
         mutableStateMapOf<String, Boolean>().apply { parseResult.monthGroups.forEachIndexed { i, g -> put(g.monthSortKey, i == 0) } }
     }
     val selected = items.filter { it.isSelected }
@@ -284,9 +294,19 @@ private fun TickBox(checked: Boolean, description: String, onToggle: (Boolean) -
 
 @Composable
 private fun Figure(label: String, value: String, color: androidx.compose.ui.graphics.Color, style: androidx.compose.ui.text.TextStyle, modifier: Modifier) {
-    Column(modifier.semantics(mergeDescendants = true) {}) {
+    Column(
+        modifier
+            .testTag("import_figure_${label.uppercase()}")
+            .semantics(mergeDescendants = true) {},
+    ) {
         Text(label.uppercase(), style = EyebrowText)
-        Text(value, style = style, color = color, maxLines = 1)
+        BasicText(
+            text = value,
+            style = style.copy(color = color, lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified),
+            maxLines = 1,
+            softWrap = false,
+            autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = style.fontSize),
+        )
     }
 }
 
@@ -333,3 +353,61 @@ fun StatementParsingLoadingDialog(onCancel: () -> Unit) {
 private const val LONG_READ_MILLIS = 20_000L
 
 private val TickShape = SquircleShape(7.dp)
+
+internal fun statementItemListSaver(): Saver<List<StatementTransactionItem>, Bundle> = Saver(
+    save = { list ->
+        Bundle().apply {
+            putInt("count", list.size)
+            list.forEachIndexed { i, item ->
+                putString("id_$i", item.id)
+                putLong("date_$i", item.date)
+                putString("dateFormatted_$i", item.dateFormatted)
+                putString("monthYearKey_$i", item.monthYearKey)
+                putString("monthSortKey_$i", item.monthSortKey)
+                putString("type_$i", item.type)
+                putDouble("amount_$i", item.amount)
+                putString("merchant_$i", item.merchant)
+                putString("category_$i", item.category)
+                putString("paymentMethod_$i", item.paymentMethod)
+                putString("note_$i", item.note)
+                putBoolean("isSelected_$i", item.isSelected)
+                item.flag?.let { putString("flag_$i", it) }
+            }
+        }
+    },
+    restore = { b ->
+        val count = b.getInt("count", 0)
+        (0 until count).map { i ->
+            StatementTransactionItem(
+                id = b.getString("id_$i").orEmpty(),
+                date = b.getLong("date_$i"),
+                dateFormatted = b.getString("dateFormatted_$i").orEmpty(),
+                monthYearKey = b.getString("monthYearKey_$i").orEmpty(),
+                monthSortKey = b.getString("monthSortKey_$i").orEmpty(),
+                type = b.getString("type_$i") ?: "expense",
+                amount = b.getDouble("amount_$i"),
+                merchant = b.getString("merchant_$i").orEmpty(),
+                category = b.getString("category_$i") ?: "Food",
+                paymentMethod = b.getString("paymentMethod_$i") ?: "PopUPI",
+                note = b.getString("note_$i").orEmpty(),
+                isSelected = b.getBoolean("isSelected_$i"),
+                flag = b.getString("flag_$i"),
+            )
+        }
+    },
+)
+
+internal fun statementExpandedSaver(): Saver<SnapshotStateMap<String, Boolean>, Bundle> = Saver(
+    save = { map ->
+        Bundle().apply {
+            map.forEach { (k, v) -> putBoolean(k, v) }
+        }
+    },
+    restore = { b ->
+        mutableStateMapOf<String, Boolean>().apply {
+            for (key in b.keySet()) {
+                put(key, b.getBoolean(key))
+            }
+        }
+    },
+)

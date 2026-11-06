@@ -2,6 +2,7 @@ package com.vaibhav.kharchapaani.ui.auth
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
@@ -61,5 +62,20 @@ class DeleteAccountContentTest {
         compose.onNodeWithTag("delete_account_confirm").performClick()
 
         assertEquals(listOf(false), deletes)
+    }
+
+    @Test
+    fun `shows localized copy from string resources`() {
+        show(unsynced = 1)
+
+        compose.onNodeWithText("Delete your account?").assertExists()
+        compose.onNodeWithText("Here's what happens.").assertExists()
+        compose.onNodeWithText("GOES").assertExists()
+        compose.onNodeWithText("STAYS").assertExists()
+        compose.onNodeWithText("ON PAST GROUP EXPENSES, SHOW ME AS").performScrollTo().assertExists()
+        compose.onNodeWithText("Former member").performScrollTo().assertExists()
+        compose.onNodeWithText("My name, as it is now").performScrollTo().assertExists()
+        compose.onNodeWithText("1 change hasn't synced yet. Sync first, or it's lost with the account.").performScrollTo().assertExists()
+        compose.onNodeWithText("Keep my account").performScrollTo().assertExists()
     }
 }

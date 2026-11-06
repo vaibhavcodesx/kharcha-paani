@@ -202,6 +202,7 @@
     <string name="entry_person_amount">%1$s\'s amount</string>
     <string name="entry_person_percentage">%1$s\'s percentage</string>
     <string name="entry_pick_split_people">Pick who\'s in the split</string>
+    <string name="entry_search_people_hint">Search friends</string>
     <string name="entry_still_to_assign">%1$s still to assign</string>
     <string name="entry_over_total">%1$s more than the total</string>
     <string name="entry_percent_problem">Percentages add up to %1$s%%, not 100%%</string>
@@ -256,6 +257,7 @@
     <string name="export_to">To</string>
     <string name="export_change_end">Change end date</string>
     <string name="export_everything_body">Every entry on this phone, from the first you logged.</string>
+    <string name="export_warning">This file contains your ledger in plain text. Share it only with yourself or people you trust.</string>
     <plurals name="export_entry_count">
         <item quantity="one">%1$d entry</item>
         <item quantity="other">%1$d entries</item>
@@ -982,4 +984,63 @@
     <string name="ai_choice_voice_off">AI is off, including speech recognition. Type an entry instead.</string>
     <string name="ai_choice_capture_on">Quick add, bill and statement reads use Google Gemini</string>
     <string name="ai_choice_capture_off">AI is off · quick add stays on this phone</string>
+    <!-- Auth messages: hue conflict/offline, account deletion errors -->
+    <string name="auth_hue_error_offline">You\'re offline, so your colour wasn\'t saved. Try again when you\'re connected.</string>
+    <string name="auth_hue_error_conflict">Someone in your groups has a colour too close to that one. Pick one further away.</string>
+    <string name="auth_delete_account_error_offline">You\'re offline. Connect and try again; nothing was deleted.</string>
+    <string name="auth_delete_account_error_server">Couldn\'t delete your account just now. Nothing was deleted; try again in a minute.</string>
+    <!-- Delete account (M1 / D1) -->
+    <string name="delete_account_dialog_title">Delete your account for good?</string>
+    <string name="delete_account_dialog_body">This can\'t be undone. You\'ll be signed out, and this phone keeps nothing of the account.</string>
+    <string name="delete_account_action_delete">Delete my account</string>
+    <string name="delete_account_dialog_keep">Keep it</string>
+    <string name="delete_account_action_discard_continue">Discard them and continue</string>
+    <string name="delete_account_action_continue">Continue</string>
+    <string name="delete_account_title">Delete your account?</string>
+    <string name="delete_account_supporting">Here\'s what happens.</string>
+    <string name="delete_account_section_goes">GOES</string>
+    <string name="delete_account_goes_body">Your sign-in, your own expenses and income, splits and IOUs with friends who aren\'t on the app, and your profile: picture, emoji, colour and UPI ID. Bill photos and everything else on this phone go too.</string>
+    <string name="delete_account_section_stays">STAYS</string>
+    <string name="delete_account_stays_body">Shared expenses and payments stay in your groups, so nobody\'s balance changes. Groups you made pass to the person who\'s been in them longest.</string>
+    <string name="delete_account_section_show_me_as">ON PAST GROUP EXPENSES, SHOW ME AS</string>
+    <string name="delete_account_former_member_detail">Nothing of you stays but that</string>
+    <string name="delete_account_keep_name_title">My name, as it is now</string>
+    <string name="delete_account_keep_name_detail">Only the name; nothing else about you</string>
+    <plurals name="delete_account_unsynced_warning">
+        <item quantity="one">%1$d change hasn\'t synced yet. Sync first, or it\'s lost with the account.</item>
+        <item quantity="other">%1$d changes haven\'t synced yet. Sync first, or they\'re lost with the account.</item>
+    </plurals>
+    <string name="delete_account_sync_now">Sync now</string>
+    <string name="delete_account_keep_account">Keep my account</string>
+    <!-- Additional screen strings (AccountSheet M1). -->
+    <string name="account_avatar_content_description">Your avatar</string>
+    <string name="account_title_fallback">Your account</string>
+    <string name="account_eyebrow_profile">Profile</string>
+    <string name="account_profile_unreachable">Your name and avatar can be changed once your cloud profile is reachable.</string>
+    <string name="account_name_label">Name</string>
+    <string name="account_name_placeholder">Your name</string>
+    <string name="account_avatar_label">Avatar</string>
+    <string name="account_avatar_initials">Initials</string>
+    <string name="account_profile_save_failed">Couldn\'t save your profile. Check your connection and try again.</string>
+    <string name="account_name_too_long">Keep it to %1$d characters.</string>
+    <string name="account_name_helper">Groupmates see your name and avatar.</string>
+    <string name="account_eyebrow_account">Account</string>
+    <string name="account_cloud_offline">Offline. Your account reconnects on its own.</string>
+    <string name="account_cloud_unavailable">Can\'t reach your cloud account right now</string>
+    <string name="account_cloud_ready">Cloud profile ready</string>
+    <string name="account_cloud_missing">Cloud profile not found</string>
+    <string name="account_cloud_checking">Checking your cloud profile…</string>
+    <string name="account_retry">Retry</string>
+    <plurals name="account_sync_failed">
+        <item quantity="one">%1$d change couldn\'t sync</item>
+        <item quantity="other">%1$d changes couldn\'t sync</item>
+    </plurals>
+    <string name="account_sync_syncing">Syncing…</string>
+    <plurals name="account_sync_unsynced">
+        <item quantity="one">%1$d change waiting to sync</item>
+        <item quantity="other">%1$d changes waiting to sync</item>
+    </plurals>
+    <string name="account_sync_synced_just_now">All changes synced</string>
+    <string name="account_sync_synced_relative">All changes synced · %1$s</string>
+    <string name="account_sync_not_synced">Not synced yet</string>
 </resources>

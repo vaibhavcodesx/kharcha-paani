@@ -38,6 +38,9 @@ import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.SquircleShape
 
+/** Server caps local_name at 64 characters (supabase/migrations/20260923000000_owner_private_local_ledger.sql). */
+const val MAX_FRIEND_NAME_LENGTH = 64
+
 /**
  * Eight hues spread right around the wheel, so no two people can draw near-neighbours. The old set
  * had Sky next to Ice and Lime next to Pistachio, and Rose next to Coral, which is how a group of
@@ -83,7 +86,7 @@ fun AddFriendContent(
                 label = stringResource(R.string.friend_form_add),
                 disabledLabel = stringResource(R.string.friend_form_disabled),
                 enabled = name.isNotBlank(),
-                onClick = { onAdd(name.trim(), colour) },
+                onClick = { onAdd(name.trim().take(MAX_FRIEND_NAME_LENGTH), colour) },
                 buttonTestTag = "confirm_add_friend_button",
             )
         },
@@ -95,7 +98,7 @@ fun AddFriendContent(
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
             PersonAvatar(name = name.ifBlank { "?" }, colorHex = colour, size = 56.dp)
             SheetRow(label = stringResource(R.string.friend_form_name), modifier = Modifier.weight(1f)) {
-                SheetTextInput(value = name, onValueChange = { name = it }, placeholder = stringResource(R.string.friend_form_placeholder), fieldTestTag = "add_friend_name_input")
+                SheetTextInput(value = name, onValueChange = { name = it }, placeholder = stringResource(R.string.friend_form_placeholder), fieldTestTag = "add_friend_name_input", maxLength = MAX_FRIEND_NAME_LENGTH)
             }
         }
         Text(stringResource(R.string.friend_form_colour), style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl, bottom = Spacing.s))
