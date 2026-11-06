@@ -36,8 +36,9 @@ object CloudCopy {
         try {
             val scaled = ReceiptStore.scaledDown(bitmap, MAX_SIDE)
             val out = ByteArrayOutputStream()
-            // Lossy WebP needs API 30; below that, JPEG at about the same visual quality.
-            val encoded = if (sdk >= Build.VERSION_CODES.R) {
+            // Lossy WebP needs API 30; below that, JPEG at about the same visual quality. [sdk] lets
+            // a test ask for the JPEG path; lint needs to see the real SDK_INT check as well.
+            val encoded = if (sdk >= Build.VERSION_CODES.R && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 scaled.compress(Bitmap.CompressFormat.WEBP_LOSSY, WEBP_QUALITY, out)
                 Encoded(out.toByteArray(), "webp", "image/webp")
             } else {
