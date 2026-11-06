@@ -684,7 +684,7 @@ class SyncEntityMappingSafetyTest {
             assertEquals(localSettlement.isIou, remoteSettlement.isIou)
 
             // Bob responds to confirm on server
-            remote.respondToSettlement(settlementRemoteId, confirm = true, note = "Received on UPI")
+            remote.answeredBy(settlementRemoteId, confirm = true, note = "Received on UPI")
 
             // Alice pulls updated settlement
             groupEngine.pullSettlements()
