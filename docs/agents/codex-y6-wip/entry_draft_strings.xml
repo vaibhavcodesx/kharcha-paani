@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="draft_recovery_unreadable">Couldn’t reopen your draft. Your saved entries haven’t changed.</string>
+    <string name="draft_recovery_write_failed">Couldn’t keep this draft. Check your phone’s free space and try again.</string>
+    <string name="draft_recovery_stale_edit">That entry changed while you were away. Close this draft and open the entry again to review it.</string>
+    <string name="draft_recovery_missing_person">Someone in this split is no longer available. Check the people and payer before saving.</string>
+    <string name="draft_recovery_group_unavailable">That group can’t be changed right now. Check the group before saving.</string>
+    <string name="draft_recovery_photo_missing">That bill photo isn’t on this phone. Add it again or remove it before saving.</string>
+    <string name="draft_recovery_save_changed">Your entry changed while saving. Your draft is still here. Check it before saving again.</string>
+    <string name="draft_recovery_loading">Opening your draft…</string>
+</resources>
