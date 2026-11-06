@@ -13,6 +13,8 @@ owner or Claude go at the bottom.
 
 ## Log
 
+- 2026-11-06 · W12 · Bill photo sync safety net tests (#266) · in review; tests under data/sync verifying replacement delete queuing, expense deletion queue transactions, deduplication, and split unsharing with fake remote.
+
 - 2026-11-06 · #265 · W1 / Finish T3.11 move remaining strings to strings.xml & guard Compose text literals · in review; extracted remaining AccountSheet copy to strings.xml, added NoHardcodedTextLiteralsTest scanning app/src/main/java with brand allow-list and extended AccountSheetStringResourcesTest. CI gates merge.
 
 - 2026-11-04 · #249 · CI test diagnostics · squash-merged9b46565 after formal exact-head allthree success at a45efd0 CI41879719382 (1102tests,0failures/errors/skips). Full diff and independent shell/YAML/execution reviews passed; original task list, assertions and30m job preserved. Metadata lagged before formal success; no merge was inferred early. Worker inspectors bounded15s+2s kill grace; no Java worker kill or app behavior change. Local Gradle skipped below4GB free RAM; no phone acceptance claimed.

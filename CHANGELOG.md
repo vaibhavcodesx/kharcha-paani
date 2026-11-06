@@ -14,6 +14,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 ## [Unreleased]
 
 ### Added
+- Bill photo sync safety net tests verifying replacement delete queuing, expense deletion queue transactions, deduplication, and split unsharing (W12, #266).
 - Bill photos back up to your account and, on a split, the others in it see them (a smaller copy; your original stays on your phone). Settings has a switch to stop sharing. A photo someone shared shows as "Bill photo saved in the cloud · Load". Deleting the expense, the photo or your account deletes the cloud copy.
 
 - Move remaining hardcoded copy in AccountSheet into strings.xml and add safety net test preventing hardcoded Compose Text string literals (W1, T3.11).
