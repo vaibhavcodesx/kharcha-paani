@@ -15,6 +15,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Move remaining hardcoded copy in AccountSheet into strings.xml and add safety net test preventing hardcoded Compose Text string literals (W1, T3.11).
 - Recover cleanly from corrupted app settings with ReplaceFileCorruptionHandler (reliability audit L14, Y1).
 - Search and frequent-people-first in split and payer pickers (Y15, TODOS 6).
 - LazyColumn for long person ledger sheet lists (Y16, REL M8).

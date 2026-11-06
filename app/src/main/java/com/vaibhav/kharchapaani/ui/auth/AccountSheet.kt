@@ -344,42 +344,40 @@ fun AccountSheetContent(
             // then new splits and IOUs with friends who aren't on the app back up too; the ones recorded
             // before that stay on this phone (owner rule), so the backup still matters. The second
             // sentence is the remedy.
-            text = "Your expenses back up to your account and keep working offline, including splits and " +
-                "IOUs with friends who aren't on the app. Ones from before version 1.3 stay on this " +
-                "phone only, so back those up below. Shared groups sync with everyone in them.",
+            text = stringResource(R.string.account_backup_explanation),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = Spacing.s, bottom = Spacing.xl),
         )
 
-        Eyebrow("Settings")
+        Eyebrow(stringResource(R.string.account_eyebrow_settings))
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             SettingRow(
-                title = "UPI ID for getting paid",
-                detail = upiId ?: "Add yours so friends can scan to pay you",
+                title = stringResource(R.string.account_setting_upi_title),
+                detail = upiId ?: stringResource(R.string.account_setting_upi_empty),
                 position = RowPosition.First,
-                modifier = Modifier.clickable(onClickLabel = "Set up UPI", onClick = onOpenUpi).testTag("setting_upi"),
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.account_setting_upi_click_label), onClick = onOpenUpi).testTag("setting_upi"),
             ) {
                 Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
             }
             SettingRow(
-                title = "Subscriptions",
-                detail = "Charges that repeat, added when they're due",
+                title = stringResource(R.string.account_setting_subscriptions_title),
+                detail = stringResource(R.string.account_setting_subscriptions_detail),
                 position = RowPosition.Middle,
-                modifier = Modifier.clickable(onClickLabel = "Open subscriptions", onClick = onOpenSubscriptions).testTag("setting_subscriptions"),
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.account_setting_subscriptions_click_label), onClick = onOpenSubscriptions).testTag("setting_subscriptions"),
             ) {
                 Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
             }
             SettingRow(
-                title = "Categories & payment methods",
-                detail = "Hide defaults, add your own",
+                title = stringResource(R.string.account_setting_categories_title),
+                detail = stringResource(R.string.account_setting_categories_detail),
                 position = RowPosition.Middle,
-                modifier = Modifier.clickable(onClickLabel = "Edit categories", onClick = onOpenCategories).testTag("setting_categories"),
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.account_setting_categories_click_label), onClick = onOpenCategories).testTag("setting_categories"),
             ) {
                 Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
             }
             SettingRow(
-                title = "Ask before discarding an entry",
-                detail = "When you close a half-filled expense",
+                title = stringResource(R.string.account_setting_discard_prompt_title),
+                detail = stringResource(R.string.account_setting_discard_prompt_detail),
                 position = RowPosition.Middle,
                 modifier = Modifier
                     .toggleable(value = askBeforeDiscarding, role = Role.Switch, onValueChange = onAskBeforeDiscardingChange)
@@ -412,14 +410,14 @@ fun AccountSheetContent(
             }
             val reminderTime = ReminderSchedule.label(reminder.minuteOfDay, android.text.format.DateFormat.is24HourFormat(LocalContext.current))
             SettingRow(
-                title = "Notifications",
+                title = stringResource(R.string.account_setting_notifications_title),
                 detail = when {
-                    !notificationsAllowed -> "Off for Kharcha Paani"
-                    reminder.enabled -> "Payments to confirm, and a reminder at $reminderTime"
-                    else -> "Payments to confirm"
+                    !notificationsAllowed -> stringResource(R.string.account_setting_notifications_off)
+                    reminder.enabled -> stringResource(R.string.account_setting_notifications_reminder_and_payments, reminderTime)
+                    else -> stringResource(R.string.account_setting_notifications_payments_only)
                 },
                 position = RowPosition.Last,
-                modifier = Modifier.clickable(onClickLabel = "Open notification settings", onClick = onOpenNotifications).testTag("setting_notifications"),
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.account_setting_notifications_click_label), onClick = onOpenNotifications).testTag("setting_notifications"),
             ) {
                 Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
             }
@@ -428,13 +426,13 @@ fun AccountSheetContent(
         // What leaves or comes back to this phone, apart from the switches above: these are
         // actions you run now and then, not settings.
         Spacer(Modifier.height(Spacing.xl))
-        Eyebrow("Your data")
+        Eyebrow(stringResource(R.string.account_eyebrow_data))
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             SettingRow(
-                title = "Export to a spreadsheet",
-                detail = "A month, dates or everything, as CSV",
+                title = stringResource(R.string.account_setting_export_title),
+                detail = stringResource(R.string.account_setting_export_detail),
                 position = RowPosition.First,
-                modifier = Modifier.clickable(onClickLabel = "Open export", onClick = onOpenExport).testTag("setting_export"),
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.account_setting_export_click_label), onClick = onOpenExport).testTag("setting_export"),
             ) {
                 Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
             }
@@ -443,18 +441,18 @@ fun AccountSheetContent(
             // subscription and a custom category come through. What loses it is uninstalling, a
             // new phone, or a change of signing key.
             SettingRow(
-                title = "Back up what's only on this phone",
-                detail = "Local friends, subscriptions and your own categories, as a file",
+                title = stringResource(R.string.account_setting_backup_title),
+                detail = stringResource(R.string.account_setting_backup_detail),
                 position = RowPosition.Middle,
-                modifier = Modifier.clickable(onClickLabel = "Back up local data", onClick = onBackUp).testTag("setting_backup"),
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.account_setting_backup_click_label), onClick = onBackUp).testTag("setting_backup"),
             ) {
                 Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
             }
             SettingRow(
-                title = "Restore from a backup",
-                detail = "Adds back anything missing; never overwrites what's here",
+                title = stringResource(R.string.account_setting_restore_title),
+                detail = stringResource(R.string.account_setting_restore_detail),
                 position = RowPosition.Last,
-                modifier = Modifier.clickable(onClickLabel = "Restore from a backup", onClick = onRestore).testTag("setting_restore"),
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.account_setting_restore_click_label), onClick = onRestore).testTag("setting_restore"),
             ) {
                 Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
             }
@@ -479,14 +477,14 @@ fun AccountSheetContent(
                 .heightIn(min = 52.dp)
                 .testTag("account_sign_out"),
         ) {
-            Text(text = "Sign out", style = MaterialTheme.typography.titleMedium.copy(color = OffWhiteText))
+            Text(text = stringResource(R.string.shell_copy_ledger_sign_out), style = MaterialTheme.typography.titleMedium.copy(color = OffWhiteText))
         }
         // Play requires deleting an account to be easy to find in the app (plan T1.1).
         TextButton(
             onClick = onDeleteAccount,
             modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("account_delete"),
         ) {
-            Text("Delete my account", style = MaterialTheme.typography.labelLarge, color = DestructiveText)
+            Text(stringResource(R.string.delete_account_action_delete), style = MaterialTheme.typography.labelLarge, color = DestructiveText)
         }
     }
 }
@@ -505,40 +503,40 @@ private fun HelpAndAbout(
 ) {
     val context = LocalContext.current
     fun openPage(url: String) {
-        if (!LegalLinks.open(context, url)) onNoApp("No browser on this phone. The page is at $url")
+        if (!LegalLinks.open(context, url)) onNoApp(context.getString(R.string.account_help_no_browser, url))
     }
     Column(modifier) {
-        Eyebrow("Help & about")
+        Eyebrow(stringResource(R.string.account_eyebrow_help))
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             SettingRow(
-                title = "Send feedback",
-                detail = "Something wrong, or an idea? It goes to the person who makes the app",
+                title = stringResource(R.string.account_help_feedback_title),
+                detail = stringResource(R.string.account_help_feedback_detail),
                 position = RowPosition.First,
                 modifier = Modifier
-                    .clickable(onClickLabel = "Write feedback by email") {
-                        if (!Support.email(context, subject = "Kharcha Paani feedback", body = "")) {
-                            onNoApp("No email app on this phone. Write to ${Support.EMAIL}")
+                    .clickable(onClickLabel = stringResource(R.string.account_help_feedback_click_label)) {
+                        if (!Support.email(context, subject = context.getString(R.string.account_help_feedback_subject), body = "")) {
+                            onNoApp(context.getString(R.string.account_help_no_email, Support.EMAIL))
                         }
                     }
                     .testTag("help_feedback"),
             ) { HelpChevron() }
             SettingRow(
-                title = "Privacy policy",
-                detail = "What the app collects, who handles it, and your choices",
+                title = stringResource(R.string.account_help_privacy_title),
+                detail = stringResource(R.string.account_help_privacy_detail),
                 position = RowPosition.Middle,
-                modifier = Modifier.clickable(onClickLabel = "Open the privacy policy") { openPage(LegalLinks.PRIVACY_POLICY) }.testTag("help_privacy"),
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.account_help_privacy_click_label)) { openPage(LegalLinks.PRIVACY_POLICY) }.testTag("help_privacy"),
             ) { HelpChevron() }
             SettingRow(
-                title = "Terms of use",
-                detail = "The short version of the rules",
+                title = stringResource(R.string.account_help_terms_title),
+                detail = stringResource(R.string.account_help_terms_detail),
                 position = RowPosition.Middle,
-                modifier = Modifier.clickable(onClickLabel = "Open the terms of use") { openPage(LegalLinks.TERMS) }.testTag("help_terms"),
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.account_help_terms_click_label)) { openPage(LegalLinks.TERMS) }.testTag("help_terms"),
             ) { HelpChevron() }
             if (crashReports != null) {
                 // On unless turned off, as the privacy policy says.
                 SettingRow(
-                    title = "Send crash reports",
-                    detail = "What broke and where, never amounts, names or notes",
+                    title = stringResource(R.string.account_help_crash_title),
+                    detail = stringResource(R.string.account_help_crash_detail),
                     position = RowPosition.Middle,
                     modifier = Modifier
                         .toggleable(value = crashReports, role = Role.Switch, onValueChange = onCrashReportsChange)
@@ -558,14 +556,14 @@ private fun HelpAndAbout(
                 }
             }
             SettingRow(
-                title = "Open-source licences",
-                detail = "What the app is built on",
+                title = stringResource(R.string.account_help_licences_title),
+                detail = stringResource(R.string.account_help_licences_detail),
                 position = RowPosition.Last,
-                modifier = Modifier.clickable(onClickLabel = "Open the licences", onClick = onOpenLicences).testTag("help_licences"),
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.account_help_licences_click_label), onClick = onOpenLicences).testTag("help_licences"),
             ) { HelpChevron() }
         }
         Text(
-            "Kharcha Paani ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+            stringResource(R.string.account_help_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
             style = MaterialTheme.typography.bodySmall,
             color = SubMutedWarmGray,
             modifier = Modifier.padding(top = Spacing.s).testTag("help_version"),
@@ -602,8 +600,8 @@ private fun ColourRow(colour: ColourChoice, saved: Int?, onSave: (Int) -> Unit, 
     var picked by rememberSaveable(saved) { mutableStateOf(saved) }
     Column(Modifier.testTag("colour_row")) {
         ExpandableDetail(
-            label = "Colour",
-            value = if (saved == null) "Choosing one" else "Yours everywhere",
+            label = stringResource(R.string.account_colour_label),
+            value = if (saved == null) stringResource(R.string.account_colour_choosing) else stringResource(R.string.account_colour_yours),
             expanded = open,
             onToggle = { open = !open },
             position = RowPosition.Last,
@@ -612,7 +610,7 @@ private fun ColourRow(colour: ColourChoice, saved: Int?, onSave: (Int) -> Unit, 
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.m)) {
                     Box(Modifier.size(28.dp).clip(KpShapes.small).background(picked?.let(::hueColour) ?: CharcoalElevated))
                     Text(
-                        "You wear this colour everywhere: on your phone and on every groupmate's.",
+                        stringResource(R.string.account_colour_wear_description),
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(start = Spacing.m),
                     )
@@ -621,12 +619,12 @@ private fun ColourRow(colour: ColourChoice, saved: Int?, onSave: (Int) -> Unit, 
                 val current = picked
                 if (current != null && current != saved) {
                     TextButton(onClick = { onSave(current) }, modifier = Modifier.testTag("colour_save")) {
-                        Text("Save colour", style = MaterialTheme.typography.labelLarge.copy(color = WarmAmberPrimary, fontWeight = FontWeight.Bold))
+                        Text(stringResource(R.string.account_colour_save), style = MaterialTheme.typography.labelLarge.copy(color = WarmAmberPrimary, fontWeight = FontWeight.Bold))
                     }
                 }
             }
         }
-        val note = error ?: colour.clashWith?.let { "Your colour is close to $it's. Pick another so you're easy to tell apart." }
+        val note = error ?: colour.clashWith?.let { stringResource(R.string.account_colour_clash, it) }
         if (note != null) {
             Text(note, style = MaterialTheme.typography.bodySmall, color = WarmAmberLight, modifier = Modifier.padding(top = Spacing.s).testTag("colour_note"))
         }
@@ -731,11 +729,11 @@ internal fun ReminderRows(
     val is24Hour = remember(context) { android.text.format.DateFormat.is24HourFormat(context) }
     val time = ReminderSchedule.label(reminder.minuteOfDay, is24Hour)
     SettingRow(
-        title = "Daily reminder",
+        title = stringResource(R.string.account_setting_daily_reminder_title),
         detail = when {
-            !reminder.enabled -> "Off"
-            !notificationsAllowed -> "Notifications are off for Kharcha Paani, so it can't appear"
-            else -> "At $time if nothing's logged that day"
+            !reminder.enabled -> stringResource(R.string.account_setting_daily_reminder_off)
+            !notificationsAllowed -> stringResource(R.string.account_setting_daily_reminder_blocked)
+            else -> stringResource(R.string.account_setting_daily_reminder_scheduled, time)
         },
         position = RowPosition.Middle,
         modifier = Modifier
@@ -745,7 +743,7 @@ internal fun ReminderRows(
         if (reminder.enabled && !notificationsAllowed) {
             TextButton(onClick = onAllowNotifications, modifier = Modifier.testTag("setting_reminder_allow")) {
                 Text(
-                    "Allow",
+                    stringResource(R.string.account_setting_daily_reminder_allow),
                     style = MaterialTheme.typography.labelLarge.copy(color = WarmAmberPrimary, fontWeight = FontWeight.Bold),
                 )
             }
@@ -764,11 +762,11 @@ internal fun ReminderRows(
     }
     if (reminder.enabled) {
         SettingRow(
-            title = "Reminder time",
+            title = stringResource(R.string.account_setting_reminder_time_title),
             detail = time,
             position = RowPosition.Middle,
             modifier = Modifier
-                .clickable(onClickLabel = "Change the reminder time") {
+                .clickable(onClickLabel = stringResource(R.string.account_setting_reminder_time_click_label)) {
                     TimePickerDialog(
                         context,
                         { _, hour, minute -> onTimeChange(hour * 60 + minute) },
