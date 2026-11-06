@@ -15,6 +15,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Golden test suite pinning quick-add parser behavior across 40 Hinglish, relative date, category, and split combinations (W3, #238).
 - Recover cleanly from corrupted app settings with ReplaceFileCorruptionHandler (reliability audit L14, Y1).
 - Search and frequent-people-first in split and payer pickers (Y15, TODOS 6).
 - LazyColumn for long person ledger sheet lists (Y16, REL M8).
