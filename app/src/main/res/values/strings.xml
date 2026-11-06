@@ -256,6 +256,7 @@
     <string name="export_to">To</string>
     <string name="export_change_end">Change end date</string>
     <string name="export_everything_body">Every entry on this phone, from the first you logged.</string>
+    <string name="export_warning">This file contains your ledger in plain text. Share it only with yourself or people you trust.</string>
     <plurals name="export_entry_count">
         <item quantity="one">%1$d entry</item>
         <item quantity="other">%1$d entries</item>
