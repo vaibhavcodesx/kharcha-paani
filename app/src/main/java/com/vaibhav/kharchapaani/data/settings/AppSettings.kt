@@ -36,6 +36,13 @@ class AppSettings internal constructor(private val store: DataStore<Preferences>
     /** Whether closing a sheet with unsaved input asks first (backlog item 2). On unless turned off. */
     val askBeforeDiscarding: Flow<Boolean> = store.data.map { it[ASK_BEFORE_DISCARDING] ?: true }
 
+    /** Whether the people in a split see this account's bill photos (docs/designs/bill-photo-sync.md). On by default. */
+    val shareBillPhotos: Flow<Boolean> = store.data.map { it[SHARE_BILL_PHOTOS] ?: true }
+
+    suspend fun setShareBillPhotos(share: Boolean) {
+        store.edit { it[SHARE_BILL_PHOTOS] = share }
+    }
+
     suspend fun setAskBeforeDiscarding(ask: Boolean) {
         store.edit { it[ASK_BEFORE_DISCARDING] = ask }
     }
@@ -240,6 +247,7 @@ class AppSettings internal constructor(private val store: DataStore<Preferences>
         val AI_USAGE_COUNT = intPreferencesKey("ai_usage_count")
         fun categoryPrefsKey(userId: String) = stringPreferencesKey("category_prefs_$userId")
         val ASK_BEFORE_DISCARDING = booleanPreferencesKey("ask_before_discarding")
+        val SHARE_BILL_PHOTOS = booleanPreferencesKey("share_bill_photos")
         val AI_NOTICE_ACCEPTED = booleanPreferencesKey("ai_notice_accepted")
         val REMINDER_ENABLED = booleanPreferencesKey("reminder_enabled")
         val REMINDER_MINUTE = intPreferencesKey("reminder_minute_of_day")

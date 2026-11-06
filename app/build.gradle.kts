@@ -204,6 +204,8 @@ dependencies {
   implementation(libs.supabase.auth)
   implementation(libs.supabase.postgrest)
   implementation(libs.supabase.realtime)
+    // Bill photos in the cloud (docs/designs/bill-photo-sync.md).
+    implementation(libs.supabase.storage)
   implementation(libs.haze)
   implementation(libs.ktor.client.okhttp)
   implementation(libs.multiplatform.settings)

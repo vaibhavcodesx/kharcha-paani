@@ -10,6 +10,7 @@ import io.github.jan.supabase.auth.SettingsSessionManager
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
+import io.github.jan.supabase.storage.Storage
 import io.ktor.client.engine.okhttp.OkHttp
 
 object SupabaseClientProvider {
@@ -51,6 +52,8 @@ object SupabaseClientProvider {
             install(Postgrest)
             // Used only as a sync doorbell (SyncDoorbell); rows still arrive through pulls.
             install(Realtime)
+            // Bill photos: the private `receipts` bucket (docs/designs/bill-photo-sync.md).
+            install(Storage)
         }
     }
 }

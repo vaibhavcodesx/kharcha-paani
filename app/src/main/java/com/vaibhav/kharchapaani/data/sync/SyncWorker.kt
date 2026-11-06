@@ -77,6 +77,17 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         if (LocalFriendSync.ENABLED) LocalLedgerSyncEngine(database, SupabaseLocalLedgerRemote(supabase, userId)).sync()
         // Only a pass that got through both engines counts as "last synced".
         database.syncDao().putMeta(SyncMetaEntity(TransactionSyncEngine.LAST_SYNCED_AT, System.currentTimeMillis().toString()))
+        // Bill photos last: they need the expenses' server rows, and a photo problem must never
+        // stop the ledger itself from syncing (docs/designs/bill-photo-sync.md).
+        ReceiptSyncEngine.runQuietly(
+            ReceiptSyncEngine(
+                db = database,
+                store = com.vaibhav.kharchapaani.data.receipts.ReceiptStore.forAccount(applicationContext, userId),
+                remote = com.vaibhav.kharchapaani.data.receipts.SupabaseReceiptRemote(supabase),
+                selfId = userId,
+                shareInSplits = AppSettings(applicationContext).shareBillPhotos.first(),
+            )
+        )
         // A pull can change the figures (a groupmate's expense, a restore after reinstalling),
         // and nothing else would tell the home-screen widgets: they'd keep the old numbers.
         SplitFlowWidgetProvider.notifyWidgetUpdate(applicationContext)

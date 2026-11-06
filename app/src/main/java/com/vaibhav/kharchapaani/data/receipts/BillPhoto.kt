@@ -17,4 +17,10 @@ sealed interface BillPhoto {
 
     /** The expense has a photo row, but its file isn't on this phone (cleared data, a restore). */
     data object Missing : BillPhoto
+
+    /**
+     * The photo is in the cloud and not on this phone yet: someone in the split shared it, or this
+     * account's own backup after a new phone. Fetched only when someone asks ([loading] while it is).
+     */
+    data class InCloud(val loading: Boolean = false) : BillPhoto
 }
