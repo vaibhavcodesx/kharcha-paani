@@ -2,6 +2,9 @@ package com.vaibhav.kharchapaani.ui.components
 
 import com.vaibhav.kharchapaani.ui.theme.LocalMyColour
 import androidx.compose.foundation.background
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import com.vaibhav.kharchapaani.ui.theme.BarTrack
@@ -520,9 +523,19 @@ private fun GroupExpenseRow(expense: FullTransaction, people: List<PersonEntity>
 
 @Composable
 private fun Figure(label: String, value: String, color: androidx.compose.ui.graphics.Color, modifier: Modifier) {
-    Column(modifier.semantics(mergeDescendants = true) {}) {
+    Column(
+        modifier
+            .testTag("group_figure_${label.uppercase()}")
+            .semantics(mergeDescendants = true) {},
+    ) {
         Text(label.uppercase(), style = EyebrowText, maxLines = 1)
-        Text(value, style = MoneyText.title, color = color, maxLines = 1)
+        BasicText(
+            text = value,
+            style = MoneyText.title.copy(color = color, lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified),
+            maxLines = 1,
+            softWrap = false,
+            autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = MoneyText.title.fontSize),
+        )
     }
 }
 
@@ -592,7 +605,13 @@ private fun MemberShareDonut(shares: List<MemberShare>, modifier: Modifier = Mod
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(stringResource(R.string.group_detail_spent_upper), style = EyebrowText, maxLines = 1)
-                Text(Money.format(total), style = MoneyText.small, color = OffWhiteText, maxLines = 1)
+                BasicText(
+                    text = Money.format(total),
+                    style = MoneyText.small.copy(color = OffWhiteText, lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified),
+                    maxLines = 1,
+                    softWrap = false,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = MoneyText.small.fontSize),
+                )
             }
         }
         Column(Modifier.weight(1f).padding(start = Spacing.l), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
