@@ -94,6 +94,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 
 ### Changed
+- Daily flow chart callout and axis containers in SpendCharts use heightIn(min = ...) so tap hints, amounts, and dates expand gracefully without visual clipping at 200% font scale while preserving exact heights at normal scale (REL M7, W6).
+
 - Pull to sync on Home and Splits is now a small glass that fills as you pull and ripples while it syncs, then says what happened: all caught up, saved on this phone, or how many changes couldn't sync. It used to spin for five seconds whatever happened.
 - With AI off, tapping something that needs it (a bill, a statement, the mic, an Insights question, a trip review) opens a short sheet instead of a passing line: what stayed on the phone, what AI would do, "Turn on AI and continue", or the feature's own way without AI. The "AI is off" line under quick add leads to it too.
 - The place is capped at 120 characters and the note at 1,000, matching new server limits, so a very long note can never become an entry that won't sync.
