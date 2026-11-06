@@ -88,6 +88,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 
 ### Changed
+- Pull to sync on Home and Splits is now a small glass that fills as you pull and ripples while it syncs, then says what happened: all caught up, saved on this phone, or how many changes couldn't sync. It used to spin for five seconds whatever happened.
 
 - Move AuthViewModel colour and account deletion error messages into string resources (M1).
 - DeleteAccountSheet user-facing text, confirmations, and pluralized sync warnings moved into string and plural resources (M1).
