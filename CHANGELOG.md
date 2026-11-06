@@ -94,6 +94,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - With AI off, tapping something that needs it (a bill, a statement, the mic, an Insights question, a trip review) opens a short sheet instead of a passing line: what stayed on the phone, what AI would do, "Turn on AI and continue", or the feature's own way without AI. The "AI is off" line under quick add leads to it too.
 - The place is capped at 120 characters and the note at 1,000, matching new server limits, so a very long note can never become an entry that won't sync.
 - The release build is shrunk with R8, so the app downloads and installs smaller. Crash reports stay readable through the mapping attached to each release.
+- Home's month total shows whole rupees (₹12,346, not ₹12,345.50). Entries and sheets still show paise.
 
 - Move AuthViewModel colour and account deletion error messages into string resources (M1).
 - DeleteAccountSheet user-facing text, confirmations, and pluralized sync warnings moved into string and plural resources (M1).
