@@ -9,7 +9,7 @@
     <string name="fullbackup_vm_delete_wait">Please wait for the current deletion to finish before restoring.</string>
     <string name="fullbackup_vm_delete_wait_export">Give it a second: the entry you just deleted is still on its Undo. Then save the backup again.</string>
     <plurals name="fullbackup_vm_exported_missing_photos">
-        <item quantity="one">Complete backup saved. %d bill photo wasn't on this phone, so it isn't in the backup. Its entry is.</item>
-        <item quantity="other">Complete backup saved. %d bill photos weren't on this phone, so they aren't in the backup. Their entries are.</item>
+        <item quantity="one">Complete backup saved. %d bill photo wasn\'t on this phone, so it isn\'t in the backup. Its entry is.</item>
+        <item quantity="other">Complete backup saved. %d bill photos weren\'t on this phone, so they aren\'t in the backup. Their entries are.</item>
     </plurals>
 </resources>
