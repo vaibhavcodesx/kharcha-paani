@@ -14,6 +14,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 ## [Unreleased]
 
 ### Added
+- Update privacy policy and Play Console Data safety answers for 1.7.0 covering voice audio, no-account mode, full backup, bill photo cloud storage, sign-out data removal, and Groq quick add (W8, owner review).
 - Typed quick adds are read by Groq: in testing it got more lines right and answered faster than Gemini (about 1.3 s). If Groq can't answer, Gemini does, on the same daily read. Voice, bills, statements and Insights stay with Gemini, which now uses Gemini 3.1 Flash Lite (its free tier isn't limited to about 20 reads a day). The AI notice names Groq, and everyone sees it once more before anything reaches Groq.
 - Bill photos back up to your account and, on a split, the others in it see them (a smaller copy; your original stays on your phone). Settings has a switch to stop sharing. A photo someone shared shows as "Bill photo saved in the cloud · Load". Deleting the expense, the photo or your account deletes the cloud copy.
 

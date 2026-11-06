@@ -1,6 +1,6 @@
 # Kharcha Paani privacy policy
 
-Last updated 4 November 2026.
+Last updated 6 November 2026.
 
 Kharcha Paani is an app for tracking what you spend and splitting it with friends. It's made and
 run by Vaibhav Chauhan ("we", "us"). This page says what the app collects, why, who else handles it,
@@ -11,7 +11,12 @@ Kharcha Paani is for people who are **18 or older**. Please don't use it if you'
 
 ## What the app collects, and why
 
-**Your account.** You sign in with Google. We receive your name, your email address and the link to
+**Using Kharcha Paani without an account.** You can use the app without signing in. Everything you log
+stays on your phone only; nothing is sent to our servers, and shared groups are unavailable. You can
+export a backup of your local records at any time. If you later sign in with Google, your offline data
+remains stored locally in its own separate offline profile on this device.
+
+**Your account.** When you sign in with Google, we receive your name, your email address and the link to
 your Google profile picture, and keep them with your account so you can sign in again and so your
 friends in shared groups can see who you are. We never see your Google password.
 
@@ -22,12 +27,26 @@ share a group with can see these, so they know who paid and can pay you back by 
 note), splits, IOUs, settlements and the groups you create or join. These are stored on your phone
 and, so they're safe if you lose it and so your groups stay in step, in your account in the cloud.
 
+**Bill photos.** When you attach a photo of a bill, the app re-encodes it on your phone, removing all
+EXIF metadata (such as GPS location, camera model and timestamps) and resizing it to at most 1 MB.
+When you are signed in, this image is backed up to your account on our cloud server so you can restore
+it on another device. On a split in a shared group, members of that split can see the bill photo
+unless you turn off "Share bill photos" in Settings. Deleting the expense, replacing or removing the
+photo, or deleting your account deletes the cloud copy.
+
 **Friends who aren't on the app.** When you split with someone who doesn't use Kharcha Paani, the
 name you gave them and what you split with them are stored in your account, visible only to you.
 
-**What stays on your phone only.** Bill photos you attach, your subscriptions list, your own
-categories, the daily reminder settings and your notification choices. A backup file you export
-contains these too; where you keep that file is up to you.
+**What stays on your phone only.** When you use the app without an account, everything stays on your
+phone only. When signed in, your subscriptions list, custom categories, daily reminder settings and
+notification choices remain on your phone only. A backup file you export ("Export everything") contains
+your complete ledger, settings and bill photos saved directly to your device; where you store or share
+that file is up to you.
+
+**Signing out and removing data.** When you sign out of an account, you can choose whether to keep your
+synced data on the phone or remove it (its ledger, downloaded bill photos, and settings). The app offers
+data removal only after all pending local changes have finished syncing, so nothing in your cloud
+account is lost.
 
 **The microphone.** Only when you tap the mic button to say an entry, and only while the listening
 bar is on screen. If you've accepted the AI notice and you're online, the app records what you say
@@ -38,26 +57,28 @@ service turns your words into text and the app receives only the text. You can a
 and you can refuse the microphone permission: the mic button then uses your phone's system speech
 dialog. The app never listens in the background.
 
-**Things we don't collect.** We don't read your SMS, contacts, location or files, and the app asks
-for no permission to do so. Photos and PDFs reach the app only when you pick or share them. There
-are no ads and no ad tracking.
+**Things we don't collect.** We don't read your SMS, contacts, location or device files, and the app
+asks for no permission to do so. Photos and PDFs reach the app only when you explicitly pick or share
+them. There are no ads and no ad tracking.
 
 ## Who else handles your data
 
 We use a small number of services to run the app. Each one handles your data only to do its job for
 us.
 
-- **Supabase** stores your account and everything that syncs (your profile, entries, groups,
-  settlements). Our Supabase project is hosted in **Tokyo, Japan** (AWS region ap-northeast-1). Data
-  is sent over encrypted connections, and the database only lets each person read what they're
-  allowed to: their own entries, and the groups they're in.
-- **Google Gemini** reads what you choose to have read: a quick-add line you type, or say out loud (sent as audio, see "The microphone" above), a bill
-  photo, a bank or UPI statement, or the summary of your spending behind an Insights question or a
-  trip read. That's how the app fills in amounts for you. **While Kharcha Paani is free it uses
-  Gemini's free tier, so Google may use what's sent to improve its products, and Google's reviewers
-  may see it.** The app tells you this once, before the first time anything is sent, and you can
-  always type entries yourself instead: everything else works the same. What Gemini reads is never
-  shown to other users.
+- **Supabase** stores your account, database records (profile, entries, groups, settlements), and
+  cloud bill photo backups. Our Supabase project is hosted in **Tokyo, Japan** (AWS region ap-northeast-1).
+  Data is sent over encrypted connections, and access rules ensure each person reads only their own
+  data and the groups and shared splits they belong to.
+- **Groq** processes typed quick-add lines through our proxy to quickly extract amounts and details.
+  Groq processes requests ephemerally and does not retain submitted text or use it to train models.
+- **Google Gemini** reads what you choose to have read: spoken voice audio (sent as audio, see
+  "The microphone" above), a bill photo, a bank or UPI statement, or spending summaries behind an
+  Insights question or trip read. That's how the app fills in amounts for you. **While Kharcha Paani
+  is free it uses Gemini's free tier, so Google may use what's sent to improve its products, and
+  Google's reviewers may see it.** The app tells you this once, before the first time anything is sent,
+  and you can always type entries yourself instead: everything else works the same. You can also turn
+  off AI entirely in Settings. What Gemini reads is never shown to other users.
 - **Google Sign-In** confirms who you are when you sign in.
 - **Firebase Crashlytics** (Google) receives a report when the app crashes or hits a serious error:
   what went wrong in the code, the app version and the phone model and Android version. It never
@@ -65,18 +86,18 @@ us.
   Help & about.
 
 **Your friends.** In a shared group, the other members see your profile (name, emoji, colour, UPI ID
-if you added one) and the group's expenses, splits and payments. When you send an "ask to pay"
-message, you send it yourself, through WhatsApp or whichever app you pick; we don't send anything to
-your friends on your behalf.
+if you added one), group expenses, splits, payments, and bill photos (unless photo sharing is turned
+off). When you send an "ask to pay" message, you send it yourself, through WhatsApp or whichever app
+you pick; we don't send anything to your friends on your behalf.
 
 **We never sell your data**, and we don't share it with anyone for advertising.
 
 ## How long we keep it
 
 Your data stays in your account while you have one. When you delete your account, everything of
-yours is removed from our systems straight away, except what's needed to keep your groups' history
-correct for the other members (see below), and copies in Supabase's backups, which are overwritten
-within 30 days.
+yours is removed from our systems straight away (including personal entries, private splits, and cloud
+bill photos), except what's needed to keep your groups' history correct for the other members (see
+below), and copies in Supabase's backups, which are overwritten within 30 days.
 
 ## Deleting your account
 
@@ -84,15 +105,17 @@ You can delete your account in the app (account sheet → Delete my account) or,
 the app, by following the steps at the account deletion page linked from the app's store listing.
 
 When you delete your account:
-- Your personal entries, private splits, friends who aren't on the app, and your profile details
-  (email, UPI ID, picture, emoji, colour) are deleted, and you can't sign in to that account again.
+- Your personal entries, private splits, friends who aren't on the app, cloud bill photos, and your
+  profile details (email, UPI ID, picture, emoji, colour) are deleted, and you can't sign in to that
+  account again.
 - Shared expenses and payments stay in your groups, because your groupmates' balances depend on
   them. On those, you choose how you appear: **under your name as it is now**, or as **"Former
   member"**. If you don't choose, it's "Former member". A kept name is only the name, nothing else
   about you.
 - Groups you created pass to the member who has been in them longest; a group with nobody left is
   deleted.
-- Data on your phone is deleted when the app is removed or when you delete the account from it.
+- Data on your phone is deleted when the app is removed, when you choose to remove data at sign-out,
+  or when you delete the account from it.
 
 ## Your choices and rights
 
