@@ -56,7 +56,6 @@ import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 
 /** What a new subscription needs; the sheet hands this back when it's complete. */
 data class NewSubscription(val name: String, val amount: Double, val category: String, val paymentMethod: String, val cycle: SubscriptionCycle, val start: LocalDate)
@@ -164,6 +163,7 @@ fun SubscriptionsContent(
                     placeholder = "649",
                     keyboardType = KeyboardType.Decimal,
                     fieldTestTag = "subscription_amount_input",
+                    prefix = "₹",
                 )
             }
             SheetRow(label = stringResource(R.string.subscription_copy_every), position = RowPosition.Middle) {
@@ -374,4 +374,6 @@ private fun cycleLabel(cycle: SubscriptionCycle) = when (cycle) {
     SubscriptionCycle.YEARLY -> stringResource(R.string.subscription_copy_yearly)
 }
 
-private val DayFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+// "5 Nov 2026", as a friend's history and the rest of the app write a date; the phone's own medium
+// style said "Nov 5, 2026" on English (US) phones.
+private val DayFormat = DateTimeFormatter.ofPattern("d MMM yyyy", java.util.Locale.getDefault())

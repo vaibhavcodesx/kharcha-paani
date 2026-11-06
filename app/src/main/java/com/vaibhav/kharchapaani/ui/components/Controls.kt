@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
+import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.OutlineInteractive
@@ -61,7 +62,9 @@ fun ChoiceChip(
             .minimumInteractiveComponentSize()
             .clip(KpShapes.small)
             .background(if (selected) accent.copy(alpha = 0.16f) else Color.Transparent)
-            .border(BorderStroke(1.dp, if (selected) accent else OutlineInteractive), KpShapes.small)
+            // Disabled: the outline dims with the text, or the chip still looked tappable (the Ask
+            // chips before anything was logged).
+            .border(BorderStroke(1.dp, if (selected) accent else if (enabled) OutlineInteractive else CharcoalBorder), KpShapes.small)
             .selectable(selected = selected, enabled = enabled, role = role, onClick = onClick)
             .heightIn(min = 36.dp)
             .padding(horizontal = Spacing.m),

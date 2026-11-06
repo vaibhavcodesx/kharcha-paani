@@ -109,7 +109,7 @@ fun CategoryRing(
     val largeText = LocalDensity.current.fontScale > 1.5f
     val centreSlice = focused?.let { slices[it] }
     val spentLabel = stringResource(R.string.insights_spent)
-    val sliceLabels = slices.map { stringResource(R.string.insights_slice_percent, it.category, it.percentage.roundToInt()) }
+    val sliceLabels = slices.map { stringResource(R.string.insights_slice_percent, it.category, spokenPercent(it.percentage)) }
     val description = stringResource(R.string.insights_ring_description, centreSlice?.category ?: spentLabel,
         Money.format(centreSlice?.amount ?: total), sliceLabels.joinToString(", "))
 
@@ -261,7 +261,7 @@ private fun RingLegendRow(slice: CategorySummary, selected: Boolean, onClick: ()
             modifier = Modifier.weight(1f).padding(start = Spacing.s),
         )
         Text(
-            text = stringResource(R.string.insights_percent, slice.percentage.roundToInt()),
+            text = stringResource(R.string.insights_percent, shownPercent(slice.percentage)),
             style = MoneyText.small,
             color = if (selected) OffWhiteText else MutedWarmGray,
         )
@@ -491,10 +491,23 @@ private fun DayCell(day: DaySpend, selected: Boolean, onClick: () -> Unit) {
             color = if (selected) OffWhiteText else SubMutedWarmGray,
         )
         Text(
-            text = if (day.amount > 0.0) Money.digits(day.amount) else "—",
+            // Compact, never cut: the cell is a fixed width, and the exact figure is its spoken label.
+            text = if (day.amount > 0.0) Money.compactDigits(day.amount) else "—",
             style = MoneyText.small,
             color = if (selected) OffWhiteText else MutedWarmGray,
             maxLines = 1,
         )
     }
 }
+
+/**
+ * A share of spending as shown: "<1" for one that isn't nothing but rounds to it (₹580 of a month
+ * with a ₹1.25 lakh laptop read "0%"), otherwise the rounded percent.
+ */
+internal fun shownPercent(percentage: Float): String =
+    if (percentage > 0f && percentage < 0.5f) "<1" else percentage.roundToInt().toString()
+
+/** The same share for a screen reader, which says "<1" badly. */
+@Composable
+internal fun spokenPercent(percentage: Float): String =
+    if (percentage > 0f && percentage < 0.5f) stringResource(R.string.insights_less_than_one) else percentage.roundToInt().toString()

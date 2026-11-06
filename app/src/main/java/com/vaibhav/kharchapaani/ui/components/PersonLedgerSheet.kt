@@ -34,6 +34,7 @@ import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
+import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import java.text.SimpleDateFormat
@@ -135,10 +136,18 @@ fun PersonLedgerContent(
                     Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(stringResource(R.string.person_ledger_detail, dateFormat.format(Date(item.date)), item.subtitle), style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
+                // A payment waiting for an answer, or turned down, doesn't move the balance, so its
+                // change is nothing; "They paid you ₹0" read as if they'd paid nothing. Its own
+                // amount instead, muted, beside the line that says why it doesn't count yet.
+                val notCounted = item.isSettlement && abs(item.netChange) < 0.005 && item.amount >= 0.005
                 Text(
-                    text = Money.format(item.netChange, showPlus = true),
+                    text = if (notCounted) Money.format(item.amount) else Money.format(item.netChange, showPlus = true),
                     style = MoneyText.row,
-                    color = if (item.netChange > 0) ChartreuseSecondary else OffWhiteText,
+                    color = when {
+                        notCounted -> SubMutedWarmGray
+                        item.netChange > 0 -> ChartreuseSecondary
+                        else -> OffWhiteText
+                    },
                 )
             }
         }
