@@ -13,6 +13,13 @@ owner or Claude go at the bottom.
 
 ## Log
 
+- 2026-11-06 · #276 · W6 / REL M7 large-font safety for SpendCharts containers · in review; replaced fixed height(34.dp) and height(16.dp) with heightIn(min = ...) on daily flow callout and axis containers in SpendCharts.kt; added SpendChartsAccessibilityTest verifying unclipped display at fontScale = 2f without visual overflow.
+- 2026-11-06 · #275 · W5 / fix flaky test timing, polling, and clock dependencies · in review; eliminated busy-spinning yield() in AiDisabledTest, pinned transaction date in InsightsAccessibilityTest to prevent month-boundary race, pinned fixed test date in SubscriptionStringResourcesTest, replaced wall-clock sampling with virtual step delay in LateAiAnswerTest, and bounded search timing assertion in ActivitySearchTest.
+- 2026-11-06 · #274 · W4 / sync entity mapping safety net · in review; added SyncEntityMappingSafetyTest covering round-trip survival of all syncable Room entities (Transaction, Group, GroupMember, Person, Split, SplitShare, Settlement) and non-syncable boundary assertions; characterized and documented 6 mapping behaviors on #188.
+- 2026-11-06 · #273 · W3 / golden tests for quick-add parser · in review; added QuickAddGoldenTest with 40 table-driven test cases asserting current parser behavior across Hinglish, currency, time offsets, and split names; findings documented on #188.
+- 2026-11-06 · #269 · W2 / Activity involved rule test matrix · in review; added ActivityInvolvedMatrixTest with real Room DB queries validating FullTransaction.involvesMe and ActivityFeed across all 23 group, share, payer, creator, settlement, and IOU combinations.
+- 2026-11-06 · #265 · W1 / hardcoded strings extraction & text literals guard · in review; moved remaining user-visible hardcoded strings to strings.xml and added NoHardcodedTextLiteralsTest; held for #264 integration.
+
 - 2026-11-04 · #225 · T14 CSV formula injection test & security report · in review; characterized CsvExport quoting behavior with exact payload preservation examples across 17 test cases, source-confirmed leading whitespace and LF starter omissions, and corrected report claims to distinguish serialized output from unverified downstream spreadsheet execution.
 - 2026-11-04 · #229 · Y1 / DataStore corruption handler · in review; ReplaceFileCorruptionHandler recovers default emptyPreferences on corrupted prefs without throwing CorruptionException; AppSettingsCorruptionTest verifies baseline exception and recovery/persistence with isolated scopes. CI gates merge.
 
