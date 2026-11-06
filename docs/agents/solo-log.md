@@ -13,6 +13,8 @@ owner or Claude go at the bottom.
 
 ## Log
 
+- 2026-11-04 · #225 · T14 CSV formula injection test & security report · in review; characterized CsvExport quoting behavior with exact payload preservation examples across 17 test cases, source-confirmed leading whitespace and LF starter omissions, and corrected report claims to distinguish serialized output from unverified downstream spreadsheet execution.
+
 - 2026-11-04 · #249 · CI test diagnostics · independent actual-script shell review passed failure/success/INT/TERM and bounded inspector tests. Sourcec487ee2 CI41877985849 completed1102tests,0failures/errors/skips (235XML), and lint/release job logs show BUILD SUCCESSFUL; repeated status endpoints lagged as queued despite completed artifacts/logs, so no merge was inferred from those snapshots. Final documentation head still requires exact-head all-three success before squash. Test starts and five bounded worker snapshots preserve full tasks/assertions/30m job; no app behavior change. Local Gradle skipped below4GB free RAM; phone acceptance not claimed.
 
 - 2026-11-04 · #226 · AI choice · in review; six existing-API regressions fail as predicted in CI41841846737 (1080 tests,6 failures). Device-wide setting, HTTP/request cancellation and local capture fallbacks; code head3d7cb0f passed all three jobs in CI41845836878; head6c45720 passed CI41857681967 after grouped-settings/widget integration; normally refreshed main004690e for parser feedback, fresh exact-head merge checks pending. The ca76 unit run timed out and was not counted as passing; phone checks remain pending. Guest/auth and complete backup are separate PRs.
@@ -208,6 +210,8 @@ owner or Claude go at the bottom.
 - 2026-11-04 · #197 · O3 architecture map · merged in 371c964; exact-head three-job CI and independent review passed; corrected configured models, receipt/mode identifiers, account lifecycle, actual widget/navigation/sync mechanisms and source/release boundaries against pinned ebfc2b6. Documents checked-in configuration only; no phone or live service acceptance claimed, no server operations performed. Independent review and exact-head current-main CI gate merge; docs only.
 
 - 2026-11-04 · #199 · F3 source review notes · prepared for merge; corrected first-day selector cause, actual minimum text/layout behavior and component/parser/Room evidence boundaries for six merged PRs. PNG generation is not claimed as visual or phone acceptance. Independent review and exact-head current-main CI gate merge; docs only.
+
+- 2026-11-04 · T14 / CSV formula injection coverage · prepared; comprehensive security analysis and property/boundary tests in CsvFormulaInjectionTest check formula starters (=, +, -, @, \t, \r), bypass edge cases (leading whitespace, Unix LF \n, composite fields), and numeric formatting. Full report added in docs/reports/csv-export-formula-injection.md. No production code changes; CI gates merge.
 
 ## Questions
 
