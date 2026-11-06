@@ -12,23 +12,13 @@ activityCompose = "1.10.1"
 kotlin = "2.4.21"
 # Compose 1.9.0: lifecycle-viewmodel-compose 2.10 (resolved via other AndroidX libraries) needs it at
 # runtime, so an older BOM compiled against 1.7 APIs that 1.9 removed (FlowRow crashed).
-<<<<<<< HEAD
 composeBom = "2026.09.00"
-googleDevtoolsKsp = "2.3.5"
-navigationCompose = "2.8.9"
-roomRuntime = "2.7.0"
-roomKtx = "2.7.0"
-roomCompiler = "2.7.0"
-kotlinxCoroutinesTest = "1.10.2"
-=======
-composeBom = "2025.08.00"
 googleDevtoolsKsp = "2.3.13"
 navigationCompose = "2.10.2"
 roomRuntime = "2.8.5"
 roomKtx = "2.8.5"
 roomCompiler = "2.8.5"
 kotlinxCoroutinesTest = "1.11.0"
->>>>>>> origin/dependabot/gradle/minor-and-patch-3ed3f00cab
 core = "1.6.1"
 runner = "1.6.2"
 coilCompose = "2.7.0"
