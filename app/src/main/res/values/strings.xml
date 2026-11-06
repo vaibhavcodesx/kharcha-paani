@@ -66,7 +66,7 @@
     <string name="splits_waiting_others">WAITING ON OTHERS</string>
     <string name="splits_add_friend">Add a friend</string>
     <string name="splits_no_friends">No friends yet</string>
-    <string name="splits_friends_empty_body">Add anyone you split with — a name and a colour is all it takes, and they don\'t need the app. Splits, IOUs and settling up all work the same. Share a group only when you want them to see it on their own phone.</string>
+    <string name="splits_friends_empty_body">Add anyone you split with. A name and a colour is all it takes, and they don\'t need the app. Share a group when you want them to see it on their phone.</string>
     <string name="splits_join">Join</string>
     <string name="splits_new_group">New group</string>
     <string name="splits_no_groups">No groups yet</string>
@@ -351,7 +351,7 @@
     <string name="friend_form_add">Add friend</string>
     <string name="friend_form_disabled">Type their name</string>
     <string name="friend_form_title">Add a friend</string>
-    <string name="friend_form_supporting">A name and a colour is all it takes — they don\'t need the app. You can split with them, log IOUs and settle up exactly as with anyone else; it stays your record. Share a group later if you want them to see it too.</string>
+    <string name="friend_form_supporting">A name and a colour is all it takes, and they don\'t need the app. Split with them, log IOUs and settle up like with anyone else. It stays your record unless you share a group with them.</string>
     <string name="friend_form_name">Name</string>
     <string name="friend_form_placeholder">Rohan</string>
     <string name="friend_form_colour">COLOUR</string>
@@ -689,8 +689,8 @@
     <string name="ai_display_answermessageresource_needssignin">Sign out and back in to use AI answers again.</string>
     <string name="ai_display_notice_got_it">Got it</string>
     <string name="ai_display_notice_manual">Type it myself</string>
-    <string name="ai_display_notice_title">Bills, statements and quick-add text are read by Google Gemini</string>
-    <string name="ai_display_notice_body">That\'s how the app fills in amounts for you. While Kharcha Paani is free, Google may use what\'s sent to improve Gemini, and its reviewers may see it. It\'s never shown to other users, and we never sell your data. Prefer not to? Type entries yourself: everything else works the same.</string>
+    <string name="ai_display_notice_title">Groq reads typed quick adds, and Google Gemini reads bills, statements and voice</string>
+    <string name="ai_display_notice_body">That\'s how the app fills in amounts for you. Groq doesn\'t use what it reads to train its models. While Kharcha Paani is free, Google may use what\'s sent to improve Gemini, and its reviewers may see it. It\'s never shown to other users, and we never sell your data. Prefer not to? Type entries yourself: everything else works the same.</string>
     <string name="ai_display_quickadd_offline">You\'re offline, so this is a best guess from your words. Check it before saving.</string>
     <string name="ai_display_quickadd_ratelimited">The AI is busy right now, so this is a best guess from your words. Check it before saving.</string>
     <string name="ai_display_quickadd_keyrefused">The AI isn\'t available in this copy, so this is a best guess from your words. Check it before saving.</string>
@@ -843,7 +843,7 @@
     <string name="signin_copy_failure_googleunavailable">If you\'re offline, connect and try again. Otherwise, check that Google Play services is up to date.</string>
     <string name="signin_copy_failure_network">You\'re offline. Connect once to sign in.</string>
     <string name="signin_copy_failure_rejected">Sign-in didn\'t go through on our end. Try again in a moment.</string>
-    <string name="signin_copy_failure_pickerblocked">Google didn\'t open the account picker. It holds it back for a few minutes after it\'s been closed several times — wait a moment and try again.</string>
+    <string name="signin_copy_failure_pickerblocked">Google didn\'t open the account picker. It holds it back for a few minutes after it\'s been closed a few times, so wait a moment and try again.</string>
     <string name="signin_copy_failure_appnotaccepted">Google didn\'t accept this copy of the app for sign-in. That\'s a setup problem on our side, not your account. Try again later, or ask whoever sent you the app.</string>
     <string name="signin_copy_failure_dismissed">No account picked. Tap Continue with Google when you\'re ready.</string>
     <string name="signin_copy_demo_meal">Friday dinner</string>
@@ -986,13 +986,13 @@
     <string name="statement_warning_already_in_ledger">Already in your ledger</string>
     <string name="statement_warning_large">Much bigger than the rest of this statement</string>
     <string name="statement_warning_outside">Outside the statement\'s dates (%1$s)</string>
-    <string name="ai_choice_title">Use AI (Google Gemini)</string>
-    <string name="ai_choice_enabled_detail">AI can read quick-add text, bills and statements, and answer Insights questions</string>
-    <string name="ai_choice_disabled_detail">Off everywhere. Type entries yourself; bill photos can stay as attachments.</string>
-    <string name="ai_choice_off_notice">AI is off. Nothing was sent to Gemini. You can turn it on in Settings.</string>
-    <string name="ai_choice_using_gemini">Using Google Gemini. Check the reading before saving.</string>
+    <string name="ai_choice_title">Use AI (Groq and Google Gemini)</string>
+    <string name="ai_choice_enabled_detail">Reads quick adds, bills and statements, and answers questions in Insights</string>
+    <string name="ai_choice_disabled_detail">Off everywhere. You type entries, and bill photos still attach.</string>
+    <string name="ai_choice_off_notice">AI is off. Nothing was sent to Groq or Gemini. You can turn it on in Settings.</string>
+    <string name="ai_choice_using_gemini">Reading it with AI. Check the reading before saving.</string>
     <string name="ai_choice_voice_off">AI is off, including speech recognition. Type an entry instead.</string>
-    <string name="ai_choice_capture_on">Quick add, bill and statement reads use Google Gemini</string>
+    <string name="ai_choice_capture_on">Typed lines use Groq · bills, statements and voice use Google Gemini</string>
     <string name="ai_choice_capture_off">AI is off · quick add stays on this phone</string>
     <!-- Auth messages: hue conflict/offline, account deletion errors -->
     <string name="auth_hue_error_offline">You\'re offline, so your colour wasn\'t saved. Try again when you\'re connected.</string>
@@ -1026,7 +1026,7 @@
     <string name="account_avatar_content_description">Your avatar</string>
     <string name="account_title_fallback">Your account</string>
     <string name="account_eyebrow_profile">Profile</string>
-    <string name="account_profile_unreachable">Your name and avatar can be changed once your cloud profile is reachable.</string>
+    <string name="account_profile_unreachable">You can change your name and avatar once your account is reachable.</string>
     <string name="account_name_label">Name</string>
     <string name="account_name_placeholder">Your name</string>
     <string name="account_avatar_label">Avatar</string>
@@ -1036,10 +1036,10 @@
     <string name="account_name_helper">Groupmates see your name and avatar.</string>
     <string name="account_eyebrow_account">Account</string>
     <string name="account_cloud_offline">Offline. Your account reconnects on its own.</string>
-    <string name="account_cloud_unavailable">Can\'t reach your cloud account right now</string>
-    <string name="account_cloud_ready">Cloud profile ready</string>
-    <string name="account_cloud_missing">Cloud profile not found</string>
-    <string name="account_cloud_checking">Checking your cloud profile…</string>
+    <string name="account_cloud_unavailable">Can\'t reach your account right now</string>
+    <string name="account_cloud_ready">Signed in</string>
+    <string name="account_cloud_missing">Couldn\'t find your profile</string>
+    <string name="account_cloud_checking">Checking your account…</string>
     <string name="account_retry">Retry</string>
     <plurals name="account_sync_failed">
         <item quantity="one">%1$d change couldn\'t sync</item>
@@ -1055,7 +1055,7 @@
     <string name="account_sync_not_synced">Not synced yet</string>
 
     <!-- Account Settings, Data, Colour & Help -->
-    <string name="account_backup_explanation">Your expenses back up to your account and keep working offline, including splits and IOUs with friends who aren\'t on the app. Ones from before version 1.3 stay on this phone only, so back those up below. Shared groups sync with everyone in them.</string>
+    <string name="account_backup_explanation">Your expenses back up to your account and work offline, splits and IOUs included. Shared groups sync with everyone in them.</string>
     <string name="account_eyebrow_settings">Settings</string>
     <string name="account_setting_upi_title">UPI ID for getting paid</string>
     <string name="account_setting_upi_empty">Add yours so friends can scan to pay you</string>

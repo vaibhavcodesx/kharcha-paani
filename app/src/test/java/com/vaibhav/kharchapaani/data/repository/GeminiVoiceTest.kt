@@ -45,13 +45,17 @@ class GeminiVoiceTest {
     fun `the audio goes as inline WAV data with the quick add feature, and the entry comes back in one step`() = runTest {
         var body: JSONObject? = null
         var feature: String? = null
+        var model: String? = null
         val outcome = repo({ chain ->
             feature = chain.request().header(GeminiRepository.FEATURE_HEADER)
+            model = chain.request().url.encodedPath.substringAfter("models/").substringBefore(":")
             body = JSONObject(okio.Buffer().also { chain.request().body!!.writeTo(it) }.readUtf8())
             ok(chain, """{"type":"expense","amount":1200,"merchant":"Dinner","category":"Food","paymentMethod":"GPay","date":"","splitWith":["Rohan"],"transcript":"dinner twelve hundred with Rohan","note":""}""")
         }).parseAudio(wav, knownFriends = listOf("Rohan"), now = now, zone = zone)
 
         assertEquals("quick_add", feature)
+        // Voice stays on Gemini: Groq only reads typed lines (owner decision 2026-11-06).
+        assertEquals("gemini-3.1-flash-lite", model)
         val parts = body!!.getJSONArray("contents").getJSONObject(0).getJSONArray("parts")
         val inline = (0 until parts.length()).map(parts::getJSONObject).single { it.has("inlineData") }.getJSONObject("inlineData")
         assertEquals("audio/wav", inline.getString("mimeType"))

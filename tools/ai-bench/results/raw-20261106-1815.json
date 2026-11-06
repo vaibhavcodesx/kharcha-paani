@@ -1,0 +1,4307 @@
+[
+ {
+  "provider": "gemini",
+  "model": "gemini-2.5-flash",
+  "task": "voice",
+  "rows": [
+   {
+    "case": "Chai forty rupees cash",
+    "ms": 1611,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Dinner twelve hundred with Rohan and Ankit",
+    "ms": 1610,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Uber to office two hundred and thirty six",
+    "ms": 1606,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Swiggy three forty nine on G Pay",
+    "ms": 1591,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Petrol five hundred yesterday",
+    "ms": 1534,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Movie tickets six forty with Priya",
+    "ms": 2789,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Medicines four hundred and twenty at Apollo",
+    "ms": 2528,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Salary eighty five thousand credited",
+    "ms": 4096,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-2.5-pro",
+  "task": "voice",
+  "rows": [
+   {
+    "case": "Chai forty rupees cash",
+    "ms": 1597,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Dinner twelve hundred with Rohan and Ankit",
+    "ms": 1576,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Uber to office two hundred and thirty six",
+    "ms": 1626,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Swiggy three forty nine on G Pay",
+    "ms": 1539,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Petrol five hundred yesterday",
+    "ms": 1484,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Movie tickets six forty with Priya",
+    "ms": 2748,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Medicines four hundred and twenty at Apollo",
+    "ms": 2544,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Salary eighty five thousand credited",
+    "ms": 4049,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-2.5-flash-lite",
+  "task": "bill",
+  "rows": [
+   {
+    "case": "restaurant_gst",
+    "ms": 1583,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "grocery_discount",
+    "ms": 1571,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "cafe_tip",
+    "ms": 1620,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "upi_screenshot",
+    "ms": 1647,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "fuel",
+    "ms": 1408,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "pharmacy",
+    "ms": 2773,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "restaurant_blurry",
+    "ms": 2323,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "grocery_rotated",
+    "ms": 4080,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "upi_received",
+    "ms": 2716,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "electricity",
+    "ms": 2143,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-2.5-flash",
+  "task": "bill",
+  "rows": [
+   {
+    "case": "restaurant_gst",
+    "ms": 1456,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "grocery_discount",
+    "ms": 1611,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "cafe_tip",
+    "ms": 1911,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "upi_screenshot",
+    "ms": 1548,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "fuel",
+    "ms": 1453,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "pharmacy",
+    "ms": 2825,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "restaurant_blurry",
+    "ms": 2495,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "grocery_rotated",
+    "ms": 3966,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "upi_received",
+    "ms": 2686,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "electricity",
+    "ms": 2205,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-2.5-pro",
+  "task": "bill",
+  "rows": [
+   {
+    "case": "restaurant_gst",
+    "ms": 1598,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "grocery_discount",
+    "ms": 1473,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "cafe_tip",
+    "ms": 1559,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "upi_screenshot",
+    "ms": 1547,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "fuel",
+    "ms": 1568,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "pharmacy",
+    "ms": 2762,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "restaurant_blurry",
+    "ms": 2493,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "grocery_rotated",
+    "ms": 4168,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "upi_received",
+    "ms": 2603,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "electricity",
+    "ms": 2305,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-2.5-flash-lite",
+  "task": "voice",
+  "rows": [
+   {
+    "case": "Chai forty rupees cash",
+    "ms": 1830,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Dinner twelve hundred with Rohan and Ankit",
+    "ms": 1718,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Uber to office two hundred and thirty six",
+    "ms": 2069,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Swiggy three forty nine on G Pay",
+    "ms": 1654,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Petrol five hundred yesterday",
+    "ms": 1675,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Movie tickets six forty with Priya",
+    "ms": 1507,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Medicines four hundred and twenty at Apollo",
+    "ms": 1676,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Salary eighty five thousand credited",
+    "ms": 1651,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-3-flash-preview",
+  "task": "voice",
+  "rows": [
+   {
+    "case": "Chai forty rupees cash",
+    "ms": 3594,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 40,
+     "merchant": "Chai",
+     "category": "Beverages",
+     "paymentMethod": "Cash",
+     "date": "",
+     "splitWith": [],
+     "note": "Chai 40 rupees cash",
+     "transcript": "Chai 40 rupees cash"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Dinner twelve hundred with Rohan and Ankit",
+    "ms": 3780,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1200,
+     "merchant": "Dinner",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Rohan",
+      "Ankit"
+     ],
+     "note": "Dinner 1200 with Rohan and Ankit",
+     "transcript": "Dinner 1200 with Rohan and Ankit"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Uber to office two hundred and thirty six",
+    "ms": 1755,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Swiggy three forty nine on G Pay",
+    "ms": 1750,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Petrol five hundred yesterday",
+    "ms": 1725,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Movie tickets six forty with Priya",
+    "ms": 1511,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Medicines four hundred and twenty at Apollo",
+    "ms": 1522,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Salary eighty five thousand credited",
+    "ms": 1567,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-3-flash-preview",
+  "task": "bill",
+  "rows": [
+   {
+    "case": "restaurant_gst",
+    "ms": 3578,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1092.0,
+     "merchant": "PUNJAB GRILL",
+     "category": "Food",
+     "paymentMethod": "Credit Card",
+     "date": "2026-11-03T13:05",
+     "note": "Bill No: 6305"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "grocery_discount",
+    "ms": 1974,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "cafe_tip",
+    "ms": 1779,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "upi_screenshot",
+    "ms": 1612,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "fuel",
+    "ms": 1676,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "pharmacy",
+    "ms": 1476,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "restaurant_blurry",
+    "ms": 1582,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "grocery_rotated",
+    "ms": 1496,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "upi_received",
+    "ms": 3641,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 750,
+     "merchant": "Priya Sharma",
+     "category": "Income (Other)",
+     "paymentMethod": "UPI",
+     "date": "2026-11-05T19:42",
+     "note": "UPI transaction ID: 603159081935"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "electricity",
+    "ms": 3659,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1920.0,
+     "merchant": "TATA POWER",
+     "category": "Bills",
+     "paymentMethod": "UPI",
+     "date": "2026-11-02T13:05",
+     "note": "Bill No: 1950, Consumer No: 9000123456"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-3.1-pro-preview",
+  "task": "voice",
+  "rows": [
+   {
+    "case": "Chai forty rupees cash",
+    "ms": 1861,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Dinner twelve hundred with Rohan and Ankit",
+    "ms": 2022,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Uber to office two hundred and thirty six",
+    "ms": 1704,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Swiggy three forty nine on G Pay",
+    "ms": 1795,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Petrol five hundred yesterday",
+    "ms": 1792,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Movie tickets six forty with Priya",
+    "ms": 1412,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Medicines four hundred and twenty at Apollo",
+    "ms": 1146,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Salary eighty five thousand credited",
+    "ms": 1011,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-3.1-pro-preview",
+  "task": "bill",
+  "rows": [
+   {
+    "case": "restaurant_gst",
+    "ms": 1663,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "grocery_discount",
+    "ms": 1577,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "cafe_tip",
+    "ms": 1489,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "upi_screenshot",
+    "ms": 1504,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "fuel",
+    "ms": 1634,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "pharmacy",
+    "ms": 1561,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "restaurant_blurry",
+    "ms": 1447,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "grocery_rotated",
+    "ms": 1629,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "upi_received",
+    "ms": 1012,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "electricity",
+    "ms": 1076,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-2.5-flash",
+  "task": "text",
+  "rows": [
+   {
+    "case": "chai 40 cash",
+    "ms": 1409,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "dinner 1200 with Rohan and Ankit",
+    "ms": 1192,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "kal 5 sau ka petrol",
+    "ms": 1118,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "swiggy 349 gpay",
+    "ms": 1156,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "uber to office 236",
+    "ms": 1149,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "1.2k groceries dmart card",
+    "ms": 2245,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "salary 85000 credited",
+    "ms": 2201,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "movie tickets 2 for 640 with priya",
+    "ms": 3061,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "rent 18000 bank transfer",
+    "ms": 2458,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "dedh sau ka auto",
+    "ms": 1747,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "paid 999 for netflix credit card",
+    "ms": 1514,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "medicines 420 apollo",
+    "ms": 1704,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "electricity bill 2,340 paytm",
+    "ms": 1483,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "haircut 300 cash yesterday",
+    "ms": 1573,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "client paid 25000 for the logo",
+    "ms": 1379,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "zomato 560 split with aaru",
+    "ms": 1339,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "2 coffees 380 starbucks",
+    "ms": 1494,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "amazon order 1499",
+    "ms": 1415,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "goa trip hotel 9600 with rohan ankit priya",
+    "ms": 1507,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "biscuits and maggi 120",
+    "ms": 1292,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "metro recharge 500 phonepe",
+    "ms": 1589,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "sip 5000 on 1 nov",
+    "ms": 1485,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "refund from myntra 799",
+    "ms": 1225,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "parso pizza 650 with mayank",
+    "ms": 871,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "gym fees 1500 last friday",
+    "ms": 880,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "bhai ko 2000 diye",
+    "ms": 903,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "lunch 270 office canteen",
+    "ms": 918,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "recharge jio 299",
+    "ms": 979,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "2 lakh gold",
+    "ms": 887,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "doodh 64 sabzi 90",
+    "ms": 933,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/ge",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-2.5-pro",
+  "task": "text",
+  "rows": [
+   {
+    "case": "chai 40 cash",
+    "ms": 1103,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "dinner 1200 with Rohan and Ankit",
+    "ms": 1113,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "kal 5 sau ka petrol",
+    "ms": 1092,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "swiggy 349 gpay",
+    "ms": 1049,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "uber to office 236",
+    "ms": 1086,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "1.2k groceries dmart card",
+    "ms": 2263,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "salary 85000 credited",
+    "ms": 2069,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "movie tickets 2 for 640 with priya",
+    "ms": 3105,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "rent 18000 bank transfer",
+    "ms": 2304,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "dedh sau ka auto",
+    "ms": 1845,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "paid 999 for netflix credit card",
+    "ms": 1505,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "medicines 420 apollo",
+    "ms": 1706,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "electricity bill 2,340 paytm",
+    "ms": 1480,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "haircut 300 cash yesterday",
+    "ms": 1584,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "client paid 25000 for the logo",
+    "ms": 1397,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "zomato 560 split with aaru",
+    "ms": 1340,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "2 coffees 380 starbucks",
+    "ms": 1519,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "amazon order 1499",
+    "ms": 1312,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "goa trip hotel 9600 with rohan ankit priya",
+    "ms": 1529,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "biscuits and maggi 120",
+    "ms": 1303,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "metro recharge 500 phonepe",
+    "ms": 1609,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "sip 5000 on 1 nov",
+    "ms": 1506,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "refund from myntra 799",
+    "ms": 1240,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "parso pizza 650 with mayank",
+    "ms": 875,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "gym fees 1500 last friday",
+    "ms": 881,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "bhai ko 2000 diye",
+    "ms": 933,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "lunch 270 office canteen",
+    "ms": 929,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "recharge jio 299",
+    "ms": 996,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "2 lakh gold",
+    "ms": 891,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "doodh 64 sabzi 90",
+    "ms": 958,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemi",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-2.5-flash-lite",
+  "task": "text",
+  "rows": [
+   {
+    "case": "chai 40 cash",
+    "ms": 1100,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "dinner 1200 with Rohan and Ankit",
+    "ms": 1091,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "kal 5 sau ka petrol",
+    "ms": 1117,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "swiggy 349 gpay",
+    "ms": 1155,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "uber to office 236",
+    "ms": 1130,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "1.2k groceries dmart card",
+    "ms": 2212,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "salary 85000 credited",
+    "ms": 2111,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "movie tickets 2 for 640 with priya",
+    "ms": 3091,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "rent 18000 bank transfer",
+    "ms": 2283,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "dedh sau ka auto",
+    "ms": 2011,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "paid 999 for netflix credit card",
+    "ms": 1493,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "medicines 420 apollo",
+    "ms": 1705,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "electricity bill 2,340 paytm",
+    "ms": 1473,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "haircut 300 cash yesterday",
+    "ms": 1566,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "client paid 25000 for the logo",
+    "ms": 1377,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "zomato 560 split with aaru",
+    "ms": 1275,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "2 coffees 380 starbucks",
+    "ms": 1397,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "amazon order 1499",
+    "ms": 1395,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "goa trip hotel 9600 with rohan ankit priya",
+    "ms": 1496,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "biscuits and maggi 120",
+    "ms": 1272,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "metro recharge 500 phonepe",
+    "ms": 1578,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "sip 5000 on 1 nov",
+    "ms": 1475,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "refund from myntra 799",
+    "ms": 1339,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "parso pizza 650 with mayank",
+    "ms": 847,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "gym fees 1500 last friday",
+    "ms": 849,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "bhai ko 2000 diye",
+    "ms": 872,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "lunch 270 office canteen",
+    "ms": 888,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "recharge jio 299",
+    "ms": 964,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "2 lakh gold",
+    "ms": 859,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "doodh 64 sabzi 90",
+    "ms": 929,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 404: {\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use mode",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-lite-preview",
+  "task": "voice",
+  "rows": [
+   {
+    "case": "Chai forty rupees cash",
+    "ms": 5942,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 40,
+     "merchant": "Chai",
+     "category": "Beverages",
+     "paymentMethod": "Cash",
+     "date": "",
+     "splitWith": [],
+     "note": "chai 40 rupees cash",
+     "transcript": "chai 40 rupees cash"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Dinner twelve hundred with Rohan and Ankit",
+    "ms": 5345,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1200,
+     "merchant": "Dinner",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Rohan",
+      "Ankit"
+     ],
+     "note": "dinner 1200 with Rohan and Ankit",
+     "transcript": "dinner 1200 with Rohan and Ankit"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Uber to office two hundred and thirty six",
+    "ms": 8573,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 236,
+     "merchant": "Uber",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "Uber to office 236",
+     "transcript": "Uber to office 236"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Swiggy three forty nine on G Pay",
+    "ms": 949,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "Petrol five hundred yesterday",
+    "ms": 3910,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 500,
+     "merchant": "Petrol",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "2026-11-05",
+     "splitWith": [],
+     "note": "Petrol 500 yesterday",
+     "transcript": "Petrol 500 yesterday"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Movie tickets six forty with Priya",
+    "ms": 3544,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 640,
+     "merchant": "Movie tickets",
+     "category": "Entertainment",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Priya"
+     ],
+     "note": "Movie tickets 640 with Priya",
+     "transcript": "Movie tickets 640 with Priya"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Medicines four hundred and twenty at Apollo",
+    "ms": 3089,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 420,
+     "merchant": "Apollo",
+     "category": "Health",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "Medicines 420 at Apollo",
+     "transcript": "Medicines 420 at Apollo"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Salary eighty five thousand credited",
+    "ms": 3669,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 85000,
+     "merchant": "Salary",
+     "category": "Income (Salary)",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "Salary 85000 credited",
+     "transcript": "Salary 85000 credited"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-lite-preview",
+  "task": "bill",
+  "rows": [
+   {
+    "case": "restaurant_gst",
+    "ms": 3285,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1092,
+     "merchant": "Punjab Grill",
+     "category": "Food",
+     "paymentMethod": "Credit Card",
+     "date": "2026-11-03T13:05",
+     "note": "Bill No: 6305"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "grocery_discount",
+    "ms": 3986,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 900,
+     "merchant": "DMART",
+     "category": "Groceries",
+     "paymentMethod": "UPI",
+     "date": "2026-11-02T13:05",
+     "note": "Bill No: 3471"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "cafe_tip",
+    "ms": 6839,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 491.5,
+     "merchant": "Blue Tokai",
+     "category": "Beverages",
+     "paymentMethod": "Cash",
+     "date": "2026-11-05T13:05",
+     "note": "Bill No: 7468"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "upi_screenshot",
+    "ms": 4915,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1500,
+     "merchant": "Ramesh Kumar",
+     "category": "Other",
+     "paymentMethod": "UPI",
+     "date": "2026-11-04T19:42",
+     "note": "UPI transaction ID: 603197366946"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "fuel",
+    "ms": 908,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "pharmacy",
+    "ms": 3965,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 417,
+     "merchant": "Apollo Pharmacy",
+     "category": "Health",
+     "paymentMethod": "Debit Card",
+     "date": "2026-10-28T13:05",
+     "note": "Bill No: 2186"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "restaurant_blurry",
+    "ms": 4290,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 2934.76,
+     "merchant": "Barbeque Nation",
+     "category": "Food",
+     "paymentMethod": "Credit Card",
+     "date": "2026-10-31T13:05",
+     "note": "Bill No: 9779"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "grocery_rotated",
+    "ms": 3115,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 234,
+     "merchant": "Reliance Fresh",
+     "category": "Groceries",
+     "paymentMethod": "Cash",
+     "date": "2026-11-06T13:05",
+     "note": "Bill No: 2542"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "upi_received",
+    "ms": 9169,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 750,
+     "merchant": "Priya Sharma",
+     "category": "Income (Other)",
+     "paymentMethod": "UPI",
+     "date": "2026-11-05T19:42",
+     "note": "UPI transaction ID: 603159081935"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "electricity",
+    "ms": 1181,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-3-flash-preview",
+  "task": "text",
+  "rows": [
+   {
+    "case": "chai 40 cash",
+    "ms": 2842,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 40,
+     "merchant": "Chai",
+     "category": "Beverages",
+     "paymentMethod": "Cash",
+     "date": "",
+     "splitWith": [],
+     "note": "chai 40 cash"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "dinner 1200 with Rohan and Ankit",
+    "ms": 2140,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1200,
+     "merchant": "Dinner",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Rohan",
+      "Ankit"
+     ],
+     "note": "dinner 1200 with Rohan and Ankit"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "kal 5 sau ka petrol",
+    "ms": 2597,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 500,
+     "merchant": "Petrol",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "2026-11-05",
+     "splitWith": [],
+     "note": "kal 5 sau ka petrol"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "swiggy 349 gpay",
+    "ms": 1408,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "uber to office 236",
+    "ms": 1502,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "1.2k groceries dmart card",
+    "ms": 1201,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "salary 85000 credited",
+    "ms": 1261,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "movie tickets 2 for 640 with priya",
+    "ms": 1176,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "rent 18000 bank transfer",
+    "ms": 1403,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "dedh sau ka auto",
+    "ms": 1561,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "paid 999 for netflix credit card",
+    "ms": 2260,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 999,
+     "merchant": "Netflix",
+     "category": "Entertainment",
+     "paymentMethod": "Credit Card",
+     "date": "",
+     "splitWith": [],
+     "note": "paid 999 for netflix credit card"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "medicines 420 apollo",
+    "ms": 1944,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 420,
+     "merchant": "Apollo",
+     "category": "Health",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "medicines 420 apollo"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "electricity bill 2,340 paytm",
+    "ms": 2259,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 2340,
+     "merchant": "Electricity Bill",
+     "category": "Bills",
+     "paymentMethod": "Paytm",
+     "date": "",
+     "splitWith": [],
+     "note": "electricity bill 2,340 paytm"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "haircut 300 cash yesterday",
+    "ms": 2139,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 300,
+     "merchant": "Haircut",
+     "category": "Self-care",
+     "paymentMethod": "Cash",
+     "date": "2026-11-05",
+     "splitWith": [],
+     "note": "haircut 300 cash yesterday"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "client paid 25000 for the logo",
+    "ms": 1261,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "zomato 560 split with aaru",
+    "ms": 893,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "2 coffees 380 starbucks",
+    "ms": 775,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "amazon order 1499",
+    "ms": 779,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "goa trip hotel 9600 with rohan ankit priya",
+    "ms": 793,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "biscuits and maggi 120",
+    "ms": 1494,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 120,
+     "merchant": "Biscuits and Maggi",
+     "category": "Packaged goods",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "biscuits and maggi 120"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "metro recharge 500 phonepe",
+    "ms": 1464,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 500,
+     "merchant": "Metro Recharge",
+     "category": "Transport",
+     "paymentMethod": "PhonePe",
+     "date": "",
+     "splitWith": [],
+     "note": "metro recharge 500 phonepe"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "sip 5000 on 1 nov",
+    "ms": 1550,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 5000,
+     "merchant": "SIP",
+     "category": "Investment",
+     "paymentMethod": "UPI",
+     "date": "2026-11-01",
+     "splitWith": [],
+     "note": "sip 5000 on 1 nov"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "refund from myntra 799",
+    "ms": 1509,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 799,
+     "merchant": "Myntra",
+     "category": "Income (Other)",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "refund from myntra 799"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "parso pizza 650 with mayank",
+    "ms": 1549,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 650,
+     "merchant": "Pizza",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "2026-11-04",
+     "splitWith": [
+      "Mayank"
+     ],
+     "note": "parso pizza 650 with mayank"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "gym fees 1500 last friday",
+    "ms": 1704,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1500,
+     "merchant": "Gym Fees",
+     "category": "Self-care",
+     "paymentMethod": "UPI",
+     "date": "2026-10-30",
+     "splitWith": [],
+     "note": "gym fees 1500 last friday"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "bhai ko 2000 diye",
+    "ms": 817,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "lunch 270 office canteen",
+    "ms": 853,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "recharge jio 299",
+    "ms": 764,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "2 lakh gold",
+    "ms": 1969,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 200000,
+     "merchant": "Gold",
+     "category": "Investment",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "2 lakh gold"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "doodh 64 sabzi 90",
+    "ms": 1859,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 154,
+     "merchant": "Doodh and Sabzi",
+     "category": "Groceries",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "doodh 64 sabzi 90"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": 

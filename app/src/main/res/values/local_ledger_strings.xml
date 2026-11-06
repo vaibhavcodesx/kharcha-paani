@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="local_mode_history_read_only">Shared history is read-only in local mode.</string>
+    <string name="local_mode_history_read_only">Shared history can\'t be changed without signing in.</string>
     <string name="local_mode_shared_requires_account">Sign in to create or join a shared group.</string>
     <string name="local_mode_ai_requires_account">Sign in to use AI. You can still add entries on this phone.</string>
     <string name="local_mode_upi_saved">UPI details saved on this phone.</string>

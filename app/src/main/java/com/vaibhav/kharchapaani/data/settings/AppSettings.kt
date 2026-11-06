@@ -248,7 +248,9 @@ class AppSettings internal constructor(private val store: DataStore<Preferences>
         fun categoryPrefsKey(userId: String) = stringPreferencesKey("category_prefs_$userId")
         val ASK_BEFORE_DISCARDING = booleanPreferencesKey("ask_before_discarding")
         val SHARE_BILL_PHOTOS = booleanPreferencesKey("share_bill_photos")
-        val AI_NOTICE_ACCEPTED = booleanPreferencesKey("ai_notice_accepted")
+        // "_groq": 1.7 added Groq for typed lines, so everyone who accepted the Gemini-only notice
+        // sees the new one once before anything reaches Groq. The old key is left unread.
+        val AI_NOTICE_ACCEPTED = booleanPreferencesKey("ai_notice_accepted_groq")
         val REMINDER_ENABLED = booleanPreferencesKey("reminder_enabled")
         val REMINDER_MINUTE = intPreferencesKey("reminder_minute_of_day")
         /** The old single flag; read only to carry it over into [NOTIFICATION_PERMISSION_ASKS]. */

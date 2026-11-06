@@ -65,7 +65,7 @@ class GuestUiTest {
         assertEquals(1, signIn)
         assertEquals(0, savedProfile)
         compose.onNodeWithTag("setting_ai_enabled").performScrollTo()
-        compose.onNodeWithText("AI needs a signed-in account. This switch keeps your choice for when you sign in.").assertExists()
+        compose.onNodeWithText("AI needs you signed in. This keeps your choice for when you are.").assertExists()
         compose.onNodeWithTag("setting_backup").performScrollTo().assertExists()
         compose.onNodeWithTag("setting_restore").performScrollTo().assertExists()
     }

@@ -1,0 +1,669 @@
+[
+ {
+  "provider": "gemini",
+  "model": "gemini-3.5-flash-lite",
+  "task": "voice",
+  "rows": [
+   {
+    "case": "Chai forty rupees cash",
+    "ms": 7581,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 40,
+     "merchant": "Tea",
+     "category": "Beverages",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "40 rupees cash",
+     "transcript": "chai 40 rupees cash"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": false,
+     "category": true,
+     "payment": false,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Dinner twelve hundred with Rohan and Ankit",
+    "ms": 4245,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1200,
+     "merchant": "Dinner",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Rohan",
+      "Ankit"
+     ],
+     "note": "dinner 1200 with rohan and ankit",
+     "transcript": "dinner 1200 with rohan and ankit"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Uber to office two hundred and thirty six",
+    "ms": 4669,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 236,
+     "merchant": "Office",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "Uber to office 236",
+     "transcript": "Uber to office 236"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": false,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Swiggy three forty nine on G Pay",
+    "ms": 4805,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 349,
+     "merchant": "Swiggy",
+     "category": "Food",
+     "paymentMethod": "GPay",
+     "date": "",
+     "splitWith": [],
+     "note": "Swiggy 349 on GPay",
+     "transcript": "Swiggy 349 on GPay"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Petrol five hundred yesterday",
+    "ms": 3316,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 500,
+     "merchant": "Petrol",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "2026-11-05",
+     "splitWith": [],
+     "note": "petrol 500 yesterday",
+     "transcript": "petrol 500 yesterday"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Movie tickets six forty with Priya",
+    "ms": 3678,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 640,
+     "merchant": "Movie tickets",
+     "category": "Entertainment",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Priya"
+     ],
+     "note": "Movie tickets 640 with priya",
+     "transcript": "movie tickets 640 with priya"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Medicines four hundred and twenty at Apollo",
+    "ms": 2992,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 420,
+     "merchant": "Apollo",
+     "category": "Health",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "medicines 420 at apollo",
+     "transcript": "medicines four twenty at apollo"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Salary eighty five thousand credited",
+    "ms": 5720,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 85000,
+     "merchant": "Salary",
+     "category": "Income (Salary)",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "salary 85,000 credited",
+     "transcript": "salary 85,000 credited"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   }
+  ]
+ },
+ {
+  "provider": "groq",
+  "model": "whisper-large-v3-turbo",
+  "task": "voice",
+  "rows": [
+   {
+    "case": "Chai forty rupees cash",
+    "ms": 8465,
+    "stt_ms": 5989,
+    "heard": " Chai 40 rupees cash.",
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 40,
+     "merchant": "Chai",
+     "category": "Beverages",
+     "paymentMethod": "Cash",
+     "date": "",
+     "splitWith": [],
+     "note": " Chai 40 rupees cash."
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Dinner twelve hundred with Rohan and Ankit",
+    "ms": 3794,
+    "stt_ms": 2765,
+    "heard": " Dinner 1200 with Rohan and Unket",
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1200,
+     "merchant": "Dinner",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Rohan",
+      "Unket"
+     ],
+     "note": " Dinner 1200 with Rohan and Unket"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": false
+    }
+   },
+   {
+    "case": "Uber to office two hundred and thirty six",
+    "ms": 4129,
+    "stt_ms": 3100,
+    "heard": " Uber to Office 236",
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 236,
+     "merchant": "Uber to Office",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": " Uber to Office 236"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Swiggy three forty nine on G Pay",
+    "ms": 4048,
+    "stt_ms": 1439,
+    "heard": " Swiggy 349 on GPay",
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 349,
+     "merchant": "Swiggy",
+     "category": "Food",
+     "paymentMethod": "GPay",
+     "date": "",
+     "splitWith": [],
+     "note": " Swiggy 349 on GPay"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Petrol five hundred yesterday",
+    "ms": 3431,
+    "stt_ms": 2278,
+    "heard": " Petrol 500 yesterday",
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 500,
+     "merchant": "Petrol",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "2026-11-05",
+     "splitWith": [],
+     "note": " Petrol 500 yesterday"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Movie tickets six forty with Priya",
+    "ms": 6164,
+    "stt_ms": 5011,
+    "heard": " Movie ticket 6.40 with Priya.",
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 6.4,
+     "merchant": "Movie ticket",
+     "category": "Entertainment",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Priya"
+     ],
+     "note": " Movie ticket 6.40 with Priya."
+    },
+    "fields": {
+     "amount": false,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Medicines four hundred and twenty at Apollo",
+    "ms": 2785,
+    "stt_ms": 1746,
+    "heard": " Medicines 420 at Apollo",
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 420,
+     "merchant": "Apollo",
+     "category": "Health",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "Medicines 420 at Apollo"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Salary eighty five thousand credited",
+    "ms": 7907,
+    "stt_ms": 1763,
+    "heard": " Salary 85,000 credited.",
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 85000,
+     "merchant": "Salary",
+     "category": "Income (Salary)",
+     "paymentMethod": "Bank Transfer",
+     "date": "",
+     "splitWith": [],
+     "note": " Salary 85,000 credited."
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   }
+  ]
+ },
+ {
+  "provider": "groq",
+  "model": "whisper-large-v3",
+  "task": "voice",
+  "rows": [
+   {
+    "case": "Chai forty rupees cash",
+    "ms": 8774,
+    "stt_ms": 6337,
+    "heard": " Chai 40 Rupees Cash",
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 40,
+     "merchant": "Chai",
+     "category": "Beverages",
+     "paymentMethod": "Cash",
+     "date": "",
+     "splitWith": [],
+     "note": " Chai 40 Rupees Cash"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Dinner twelve hundred with Rohan and Ankit",
+    "ms": 3958,
+    "stt_ms": 2824,
+    "heard": " Dinner 1200 with Rohan and Unkit.",
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1200,
+     "merchant": "Dinner",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Rohan"
+     ],
+     "note": " Dinner 1200 with Rohan and Unkit."
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": false
+    }
+   },
+   {
+    "case": "Uber to office two hundred and thirty six",
+    "ms": 4259,
+    "stt_ms": 3155,
+    "heard": " Uber to Office 236.",
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 236,
+     "merchant": "Uber to Office",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "Uber to Office 236."
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Swiggy three forty nine on G Pay",
+    "ms": 4277,
+    "stt_ms": 1605,
+    "heard": " Swiggy349 on Jipe",
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 349,
+     "merchant": "Swiggy",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "Swiggy349 on Jipe"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": false,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Petrol five hundred yesterday",
+    "ms": 3318,
+    "stt_ms": 2082,
+    "heard": " Petrol 500 yesterday.",
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 500,
+     "merchant": "Petrol",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "2026-11-05",
+     "splitWith": [],
+     "note": "Petrol 500 yesterday."
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Movie tickets six forty with Priya",
+    "ms": 6344,
+    "stt_ms": 5089,
+    "heard": " Movie Tickets 6.40 with Priya",
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 640,
+     "merchant": "Movie Tickets",
+     "category": "Entertainment",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Priya"
+     ],
+     "note": " Movie Tickets 6.40 with Priya"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Medicines four hundred and twenty at Apollo",
+    "ms": 2978,
+    "stt_ms": 1866,
+    "heard": " Medicines 420 at Apollo",
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 420,
+     "merchant": "Apollo",
+     "category": "Health",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "Medicines 420 at Apollo"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "Salary eighty five thousand credited",
+    "ms": 7867,
+    "stt_ms": 1650,
+    "heard": " Salary 85,000 credited.",
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 85000,
+     "merchant": "Salary",
+     "category": "Income (Salary)",
+     "paymentMethod": "Bank Transfer",
+     "date": "",
+     "splitWith": [],
+     "note": " Salary 85,000 credited."
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   }
+  ]
+ }
+]
