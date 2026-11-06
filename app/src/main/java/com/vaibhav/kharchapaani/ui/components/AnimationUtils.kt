@@ -149,8 +149,11 @@ fun AnimatedRollingNumber(
     color: Color = Color.Unspecified,
     modifier: Modifier = Modifier,
     brush: Brush? = null,
+    /** Rounded to the nearest rupee, no paise: for Home's hero only (owner decision U27, 2026-11-03). */
+    wholeRupees: Boolean = false,
 ) {
-    val text = prefix + Money.digits(targetValue)
+    val shown = if (wholeRupees) wholeRupeesOf(targetValue) else targetValue
+    val text = prefix + Money.digits(shown)
     val lastValue = remember { mutableDoubleStateOf(targetValue) }
     val goingUp = targetValue >= lastValue.doubleValue
     LaunchedEffect(targetValue) { lastValue.doubleValue = targetValue }
@@ -277,3 +280,8 @@ fun PulsingAudioWaveform(
         }
     }
 }
+
+/** The nearest whole rupee, half up (₹1,234.50 is ₹1,235); non-finite stays as it is for [Money.digits]. */
+internal fun wholeRupeesOf(amount: Double): Double =
+    if (!amount.isFinite()) amount
+    else java.math.BigDecimal.valueOf(amount).setScale(0, java.math.RoundingMode.HALF_UP).toDouble()
