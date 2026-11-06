@@ -13,6 +13,7 @@ import com.vaibhav.kharchapaani.ui.auth.AuthUiState
 import com.vaibhav.kharchapaani.ui.home.CaptureCard
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
+import com.vaibhav.kharchapaani.ui.viewmodel.AiFeature
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
@@ -27,24 +28,27 @@ import org.robolectric.annotation.Config
 class CaptureAiChoiceTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
-    @Test fun `AI off stops microphone and widget speech before launching another app`() {
-        val messages = mutableListOf<String>()
+    @Test fun `AI off stops microphone and widget speech before launching another app, and nudges instead`() {
+        val nudges = mutableListOf<AiFeature>()
         var consumed = 0
         compose.setContent {
             SplitFlowTheme {
                 CaptureCard(isParsing = false, onParseText = {}, onParseImage = {}, onParsePdf = { _, _ -> },
                     onOpenIou = {}, aiEnabled = false, startVoiceCapture = true,
-                    onVoiceCaptureStarted = { consumed++ }, onCaptureFailed = { messages += it })
+                    onVoiceCaptureStarted = { consumed++ }, onAiOff = { nudges += it })
             }
         }
         compose.waitForIdle()
         assertEquals(1, consumed)
-        assertEquals(1, messages.size)
+        assertEquals(listOf(AiFeature.Voice), nudges)
         assertNull(shadowOf(compose.activity).nextStartedActivityForResult)
         compose.onNodeWithTag("voice_mic_button").performClick()
-        compose.runOnIdle { assertEquals(2, messages.size) }
+        compose.runOnIdle { assertEquals(listOf(AiFeature.Voice, AiFeature.Voice), nudges) }
         assertNull(shadowOf(compose.activity).nextStartedActivityForResult)
-        compose.onNodeWithTag("capture_ai_status").assertTextEquals("AI is off · quick add stays on this phone")
+        compose.onNodeWithTag("capture_ai_status").assertTextEquals("AI is off · quick add stays on this phone  See what AI adds")
+        compose.onNodeWithTag("capture_ai_status").performClick()
+        compose.runOnIdle { assertEquals(AiFeature.General, nudges.last()) }
+        assertNull(shadowOf(compose.activity).nextStartedActivityForResult)
     }
 
     @Test fun `capture identifies Gemini while AI is on`() {

@@ -82,6 +82,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 
 ### Changed
+- With AI off, tapping something that needs it (a bill, a statement, the mic, an Insights question, a trip review) opens a short sheet instead of a passing line: what stayed on the phone, what AI would do, "Turn on AI and continue", or the feature's own way without AI. The "AI is off" line under quick add leads to it too.
 
 - Move AuthViewModel colour and account deletion error messages into string resources (M1).
 - DeleteAccountSheet user-facing text, confirmations, and pluralized sync warnings moved into string and plural resources (M1).

@@ -1,5 +1,10 @@
 package com.vaibhav.kharchapaani.ui.home
 
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import com.vaibhav.kharchapaani.ui.viewmodel.AiFeature
+
 import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.res.stringResource
 import android.app.Activity
@@ -93,6 +98,8 @@ fun CaptureCard(
     modifier: Modifier = Modifier,
     // The home-screen widget's Speak button: start listening straight away.
     aiEnabled: Boolean = true,
+    /** AI is off and the person reached for it: the mic, or the "AI is off" line. */
+    onAiOff: (AiFeature) -> Unit = {},
     startVoiceCapture: Boolean = false,
     onVoiceCaptureStarted: () -> Unit = {},
     // The widget's quick-add bar: put the cursor in the line (keyboard up), then report it.
@@ -119,7 +126,7 @@ fun CaptureCard(
     }
     fun listen() {
         if (!aiEnabled) {
-            onCaptureFailed(context.getString(R.string.ai_choice_voice_off))
+            onAiOff(AiFeature.Voice)
             return
         }
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
@@ -221,12 +228,31 @@ fun CaptureCard(
             }
         }
         Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.l).height(1.dp).background(CharcoalBorder))
-        Text(
-            text = stringResource(if (aiEnabled) R.string.ai_choice_capture_on else R.string.ai_choice_capture_off),
-            style = MaterialTheme.typography.bodySmall,
-            color = SubMutedWarmGray,
-            modifier = Modifier.padding(horizontal = Spacing.l, vertical = Spacing.s).testTag("capture_ai_status"),
-        )
+        if (aiEnabled) {
+            Text(
+                text = stringResource(R.string.ai_choice_capture_on),
+                style = MaterialTheme.typography.bodySmall,
+                color = SubMutedWarmGray,
+                modifier = Modifier.padding(horizontal = Spacing.l, vertical = Spacing.s).testTag("capture_ai_status"),
+            )
+        } else {
+            // AI off is a choice, so the line stays quiet; it just leads to what AI would add.
+            val whatAiAdds = stringResource(R.string.ai_off_nudge_capture_action)
+            Text(
+                text = buildAnnotatedString {
+                    append(stringResource(R.string.ai_choice_capture_off))
+                    append("  ")
+                    withStyle(SpanStyle(color = WarmAmberPrimary)) { append(whatAiAdds) }
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = SubMutedWarmGray,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClickLabel = whatAiAdds) { onAiOff(AiFeature.General) }
+                    .padding(horizontal = Spacing.l, vertical = Spacing.s)
+                    .testTag("capture_ai_status"),
+            )
+        }
         Row(Modifier.padding(Spacing.xs)) {
             CaptureMode(KpIcons.Scan, stringResource(R.string.home_capture_bill_photo), Modifier.testTag("scan_receipt_button")) {
                 runCatching { imagePicker.launch("image/*") }

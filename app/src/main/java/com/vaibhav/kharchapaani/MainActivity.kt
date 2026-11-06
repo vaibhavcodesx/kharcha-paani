@@ -624,6 +624,7 @@ fun SplitFlowApp(
                             onCaptureFocused = viewModel::onCaptureFocused,
                             syncStatus = syncStatus,
                             onShowMessage = viewModel::showMessage,
+                            onAiOff = viewModel::showAiOffNudge,
                             onVoiceCaptureStarted = viewModel::onVoiceCaptureStarted,
                             onOpenAccount = { isAccountSheetOpen = true },
                             onRequestSync = { viewModel.requestSync() }
@@ -1094,6 +1095,14 @@ fun SplitFlowApp(
     // Once, before the first thing goes to Gemini (plan T1.10).
     val isAiNoticeOpen by viewModel.isAiNoticeOpen.collectAsStateWithLifecycle()
     if (isAiNoticeOpen) AiNoticeSheet(onGotIt = viewModel::acceptAiNotice, onTypeMyself = viewModel::declineAiNotice)
+    val aiOffNudge by viewModel.aiOffNudge.collectAsStateWithLifecycle()
+    aiOffNudge?.let { feature ->
+        com.vaibhav.kharchapaani.ui.components.AiOffNudgeSheet(
+            feature = feature,
+            onTurnOn = viewModel::turnOnAiFromNudge,
+            onKeepOff = viewModel::keepAiOffFromNudge,
+        )
+    }
 
     // Bank & UPI Statement Parsing Loading Overlay
     if (isParsingStatement) {

@@ -679,7 +679,7 @@ class MainViewModel(
 
     fun requestVoiceCapture() {
         if (!canUseAi()) {
-            _statusMessage.value = uiText(R.string.ai_choice_voice_off)
+            nudgeAiOff(AiFeature.Voice, retry = ::requestVoiceCapture)
             return
         }
         _voiceCaptureRequested.value = true
@@ -1100,7 +1100,7 @@ class MainViewModel(
 
     fun parseInputText(rawText: String) {
         if (rawText.isBlank()) return
-        withAiNotice(insteadOfAi = { fillInOnPhone(rawText) }) { readTextWithAi(rawText) }
+        withAiNotice(AiFeature.QuickAdd, insteadOfAi = { fillInOnPhone(rawText) }) { readTextWithAi(rawText) }
     }
 
     /** "Type it myself" on a quick add: the phone's own guess, and the sheet to check it in. */
@@ -1200,7 +1200,7 @@ class MainViewModel(
     }
 
     fun parseReceiptImage(bitmap: Bitmap) {
-        withAiNotice(insteadOfAi = {
+        withAiNotice(AiFeature.Bill, insteadOfAi = {
             // Typed by hand, with the bill still kept beside it.
             openManualAdd()
             keepBillPhoto { bitmap }
@@ -1254,7 +1254,7 @@ class MainViewModel(
     private var statementJob: Job? = null
 
     fun parseBankOrUpiStatement(pdfBytes: ByteArray, fileName: String = "statement.pdf") {
-        withAiNotice(insteadOfAi = {
+        withAiNotice(AiFeature.Statement, insteadOfAi = {
             _statusMessage.value = uiText(R.string.action_notice_statement_manual)
         }) { readStatementWithAi(pdfBytes, fileName) }
     }
@@ -2084,10 +2084,16 @@ class MainViewModel(
      * build (then nothing leaves the phone). Otherwise shows the notice first; "Type it myself" runs
      * [insteadOfAi], which never sends anything.
      */
-    private fun withAiNotice(insteadOfAi: () -> Unit, withAi: () -> Unit) {
+    private fun withAiNotice(feature: AiFeature, insteadOfAi: () -> Unit, withAi: () -> Unit) {
         if (!canUseAi()) {
-            insteadOfAi()
-            _statusMessage.value = uiText(R.string.ai_choice_off_notice)
+            if (feature == AiFeature.QuickAdd) {
+                // Quick add works without AI, so it never waits on a sheet: the phone's guess opens,
+                // and the line under the capture field says AI is off (tap it for the nudge).
+                insteadOfAi()
+                _statusMessage.value = uiText(R.string.ai_choice_off_notice)
+                return
+            }
+            nudgeAiOff(feature, retry = { withAiNotice(feature, insteadOfAi, withAi) }, instead = insteadOfAi)
             return
         }
         if (!aiAvailable || aiNoticeAccepted.value) {
@@ -2126,6 +2132,58 @@ class MainViewModel(
         insteadOfAi = null
     }
 
+    private val _aiOffNudge = MutableStateFlow<AiFeature?>(null)
+
+    /** The AI feature someone just reached for while AI was off, or null. Drives [AiOffNudgeSheet]. */
+    val aiOffNudge: StateFlow<AiFeature?> = _aiOffNudge.asStateFlow()
+    private var nudgeRetry: (() -> Unit)? = null
+    private var nudgeInstead: (() -> Unit)? = null
+
+    /**
+     * AI is off and someone tapped something that needs it. Rather than a line that's gone in four
+     * seconds, a sheet says what this feature would send and offers to turn AI on and carry on.
+     * [retry] runs again once AI is on (through the consent notice if it hasn't been accepted);
+     * [instead] is the feature's own way without AI, if it has one.
+     */
+    private fun nudgeAiOff(feature: AiFeature, retry: (() -> Unit)?, instead: (() -> Unit)? = null) {
+        nudgeRetry = retry
+        nudgeInstead = instead
+        _aiOffNudge.value = feature
+    }
+
+    /**
+     * From the screen: the "AI is off" line under quick add ([AiFeature.General], nothing pending),
+     * or the mic ([AiFeature.Voice], which starts listening once AI is on).
+     */
+    fun showAiOffNudge(feature: AiFeature = AiFeature.General) {
+        if (canUseAi()) return
+        nudgeAiOff(feature, retry = if (feature == AiFeature.Voice) ::requestVoiceCapture else null)
+    }
+
+    fun turnOnAiFromNudge() {
+        val retry = nudgeRetry
+        closeAiOffNudge()
+        setAiEnabled(true)
+        if (retry == null) return
+        viewModelScope.launch {
+            // Settings' switch waits until the choice is saved; carry on only once it has.
+            val on = withTimeoutOrNull(AI_ON_WAIT_MS) { _aiEnabled.first { it } } != null
+            if (on && canUseAi()) retry()
+        }
+    }
+
+    fun keepAiOffFromNudge() {
+        val instead = nudgeInstead
+        closeAiOffNudge()
+        instead?.invoke()
+    }
+
+    private fun closeAiOffNudge() {
+        _aiOffNudge.value = null
+        nudgeRetry = null
+        nudgeInstead = null
+    }
+
     private var askJob: Job? = null
 
     /**
@@ -2138,12 +2196,12 @@ class MainViewModel(
      */
     fun askInsights(prompt: AiPrompt) {
         if (!canUseAi()) {
-            _statusMessage.value = uiText(R.string.ai_choice_off_notice)
+            nudgeAiOff(AiFeature.Insights, retry = { askInsights(prompt) })
             return
         }
         // Picking an answer already in hand sends nothing, so it needs no notice.
         if (!_askBoard.value.needsAsking(prompt)) return askInsightsNow(prompt)
-        withAiNotice(insteadOfAi = {}) { askInsightsNow(prompt) }
+        withAiNotice(AiFeature.Insights, insteadOfAi = {}) { askInsightsNow(prompt) }
     }
 
     private fun askInsightsNow(prompt: AiPrompt) {
@@ -2227,7 +2285,7 @@ class MainViewModel(
 
     /** Reads one group, start to finish. Group sheet only — it is about a group. */
     fun askTripReview(groupId: Long) {
-        withAiNotice(insteadOfAi = {}) { askTripReviewNow(groupId) }
+        withAiNotice(AiFeature.TripReview, insteadOfAi = {}) { askTripReviewNow(groupId) }
     }
 
     private fun askTripReviewNow(groupId: Long) {
@@ -2478,6 +2536,9 @@ class MainViewModel(
         /** A year of a busy ledger is well under 1 MB of JSON; this is generous and still bounded. */
         const val BACKUP_MAX_BYTES = 16 * 1024 * 1024
 
+        /** How long "Turn on AI" waits for the choice to be saved before giving up quietly. */
+        const val AI_ON_WAIT_MS = 3_000L
+
         /** Debounce window for search input so rapid keystrokes don't re-build the feed synchronously. */
         const val SEARCH_DEBOUNCE_MS = 150L
 
@@ -2496,3 +2557,6 @@ private enum class EntryField { Type, Amount, Merchant, Category, Payment, Note,
 /** Offline and no-key failures never reached Google, so they don't count against the daily cap. */
 private fun AiAskResult.spendsAnAsk(): Boolean =
     this !is AiAskResult.Failed || reason !in setOf(AiFailure.NoKey, AiFailure.Offline)
+
+/** Something that sends to Gemini, named so an AI-off nudge can say what it would send. */
+enum class AiFeature { General, QuickAdd, Bill, Statement, Voice, Insights, TripReview }
