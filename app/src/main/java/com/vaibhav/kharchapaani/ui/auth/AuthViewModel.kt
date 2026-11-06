@@ -154,6 +154,16 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isDeletingAccount = true, deleteAccountError = null) }
         viewModelScope.launch {
             try {
+                // Bill photos first (docs/designs/bill-photo-sync.md): once the account is gone, nothing
+                // could ever delete them. Offline stops here like the delete itself would.
+                try {
+                    com.vaibhav.kharchapaani.data.receipts.SupabaseReceiptRemote(
+                        com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider.get(getApplication()),
+                    ).deleteFolder(userId)
+                } catch (e: RestException) {
+                    // A storage refusal mustn't trap someone in an account they want gone.
+                    Log.w(TAG, "Bill photos not removed before deletion (${e.statusCode})")
+                }
                 repository.deleteAccount(keepName)
             } catch (e: IOException) {
                 _uiState.update { it.copy(isDeletingAccount = false, deleteAccountError = getApplication<Application>().getString(R.string.auth_delete_account_error_offline)) }

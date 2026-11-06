@@ -114,6 +114,8 @@ fun AccountSheet(
     askBeforeDiscarding: Boolean,
     onSaveProfile: (name: String, emoji: String?) -> Unit,
     onAskBeforeDiscardingChange: (Boolean) -> Unit,
+    shareBillPhotos: Boolean = true,
+    onShareBillPhotosChange: (Boolean) -> Unit = {},
     onOpenExport: () -> Unit,
     onBackUp: () -> Unit = {},
     onRestore: () -> Unit = {},
@@ -148,6 +150,8 @@ fun AccountSheet(
             askBeforeDiscarding = askBeforeDiscarding,
             onSaveProfile = onSaveProfile,
             onAskBeforeDiscardingChange = onAskBeforeDiscardingChange,
+            shareBillPhotos = shareBillPhotos,
+            onShareBillPhotosChange = onShareBillPhotosChange,
             onOpenExport = onOpenExport,
             onBackUp = onBackUp,
             onRestore = onRestore,
@@ -185,6 +189,8 @@ fun AccountSheetContent(
     askBeforeDiscarding: Boolean,
     onSaveProfile: (name: String, emoji: String?) -> Unit,
     onAskBeforeDiscardingChange: (Boolean) -> Unit,
+    shareBillPhotos: Boolean = true,
+    onShareBillPhotosChange: (Boolean) -> Unit = {},
     onOpenExport: () -> Unit,
     onBackUp: () -> Unit = {},
     onRestore: () -> Unit = {},
@@ -387,6 +393,26 @@ fun AccountSheetContent(
             ) {
                 Switch(
                     checked = askBeforeDiscarding,
+                    onCheckedChange = null,
+                    colors = SwitchDefaults.colors(
+                        checkedTrackColor = WarmAmberPrimary,
+                        checkedThumbColor = CharcoalBg,
+                        uncheckedTrackColor = CharcoalElevated,
+                        uncheckedThumbColor = MutedWarmGray,
+                        uncheckedBorderColor = OutlineInteractive,
+                    ),
+                )
+            }
+            SettingRow(
+                title = stringResource(R.string.bill_photo_share_title),
+                detail = stringResource(R.string.bill_photo_share_detail),
+                position = RowPosition.Middle,
+                modifier = Modifier
+                    .toggleable(value = shareBillPhotos, role = Role.Switch, onValueChange = onShareBillPhotosChange)
+                    .testTag("setting_share_bill_photos"),
+            ) {
+                Switch(
+                    checked = shareBillPhotos,
                     onCheckedChange = null,
                     colors = SwitchDefaults.colors(
                         checkedTrackColor = WarmAmberPrimary,

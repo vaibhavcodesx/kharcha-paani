@@ -21,6 +21,18 @@ interface ReceiptDao {
     @Query("SELECT DISTINCT transactionId FROM receipts")
     fun observeTransactionIds(): Flow<List<Long>>
 
+    @Query("UPDATE receipts SET remotePath = :remotePath WHERE id = :id")
+    suspend fun setRemotePath(id: Long, remotePath: String?)
+
+    @Query("UPDATE receipts SET width = :width, height = :height, bytes = :bytes WHERE id = :id")
+    suspend fun setDownloaded(id: Long, width: Int, height: Int, bytes: Long)
+
+    @Query("DELETE FROM receipts WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM receipts")
+    suspend fun all(): List<ReceiptEntity>
+
     /** Every file a row still points at; anything else in the folder is an orphan. */
     @Query("SELECT fileName FROM receipts")
     suspend fun allFileNames(): List<String>

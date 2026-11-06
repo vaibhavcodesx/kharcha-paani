@@ -648,7 +648,7 @@
     <string name="bill_photo_copy_saving">Saving photo…</string>
     <string name="bill_photo_copy_thumbnail">Bill photo. Opens it full screen</string>
     <string name="bill_photo_copy_open">Open the bill photo</string>
-    <string name="bill_photo_copy_local">On this phone only</string>
+    <string name="bill_photo_copy_local">Kept with this expense</string>
     <string name="bill_photo_copy_missing">Photo not on this phone</string>
     <string name="bill_photo_copy_remove">Remove</string>
     <string name="bill_photo_copy_take">Take photo</string>

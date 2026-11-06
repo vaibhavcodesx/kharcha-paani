@@ -247,6 +247,18 @@ class MainViewModel(
         viewModelScope.launch { settings.setAskBeforeDiscarding(ask) }
     }
 
+    /** Whether the people in a split see this account's bill photos (docs/designs/bill-photo-sync.md). */
+    val shareBillPhotos: StateFlow<Boolean> = settings.shareBillPhotos
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    fun setShareBillPhotos(share: Boolean) {
+        viewModelScope.launch {
+            settings.setShareBillPhotos(share)
+            // The next sync sets or clears the paths that let the split see them.
+            requestSync()
+        }
+    }
+
     val categoryPrefs: StateFlow<CategoryPrefs> = settings.categoryPrefs(userId)
         .stateIn(viewModelScope, SharingStarted.Eagerly, CategoryPrefs())
 
@@ -909,11 +921,40 @@ class MainViewModel(
     private fun loadBillPhoto(transactionId: Long) {
         // Not billPhotoJob: picking a new photo mustn't cancel learning that there was an old one.
         viewModelScope.launch {
-            val (_, file) = receipts.photoOf(transactionId) ?: return@launch
+            val (receipt, file) = receipts.photoOf(transactionId) ?: return@launch
             if (_editingTransactionId.value != transactionId || !_isConfirmSheetOpen.value) return@launch
             hadBillPhotoOnOpen = true
             if (_billPhoto.value == BillPhoto.None) {
-                _billPhoto.value = if (file.exists()) BillPhoto.Kept(file, staged = null) else BillPhoto.Missing
+                _billPhoto.value = when {
+                    file.exists() -> BillPhoto.Kept(file, staged = null)
+                    // Shared by someone in the split, or this account's backup on a new phone.
+                    receipt.remotePath != null -> BillPhoto.InCloud()
+                    else -> BillPhoto.Missing
+                }
+            }
+        }
+    }
+
+    private val receiptRemote by lazy {
+        com.vaibhav.kharchapaani.data.receipts.SupabaseReceiptRemote(
+            com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider.get(getApplication()),
+        )
+    }
+
+    /** "Load" on a bill photo that's only in the cloud: fetch it, once, and show it. */
+    fun loadCloudBillPhoto() {
+        val transactionId = _editingTransactionId.value ?: return
+        if (_billPhoto.value !is BillPhoto.InCloud) return
+        _billPhoto.value = BillPhoto.InCloud(loading = true)
+        viewModelScope.launch {
+            val receipt = receipts.photoOf(transactionId)?.first
+            val file = receipt?.let { receipts.download(it, receiptRemote) }
+            if (_editingTransactionId.value != transactionId || _billPhoto.value !is BillPhoto.InCloud) return@launch
+            if (file != null) {
+                _billPhoto.value = BillPhoto.Kept(file, staged = null)
+            } else {
+                _billPhoto.value = BillPhoto.InCloud()
+                _statusMessage.value = uiText(R.string.bill_photo_cloud_failed)
             }
         }
     }
@@ -925,7 +966,7 @@ class MainViewModel(
                 if (!receipts.attach(transactionId, staged)) _statusMessage.value = uiText(R.string.action_notice_photo_not_kept)
             }
             BillPhoto.None -> if (hadBillPhotoOnOpen) receipts.remove(transactionId)
-            BillPhoto.Missing, BillPhoto.Processing -> Unit
+            BillPhoto.Missing, BillPhoto.Processing, is BillPhoto.InCloud -> Unit
         }
         _billPhoto.value = BillPhoto.None
         hadBillPhotoOnOpen = false
@@ -1145,7 +1186,7 @@ class MainViewModel(
         is BillPhoto.Kept -> photo.staged != null
         BillPhoto.Processing -> true
         BillPhoto.None -> hadBillPhotoOnOpen
-        BillPhoto.Missing -> false
+        BillPhoto.Missing, is BillPhoto.InCloud -> false
     }
 
     fun parseInputText(rawText: String) {
@@ -1862,8 +1903,10 @@ class MainViewModel(
     fun commitDelete(txId: Long) = pendingDeletes.commit(txId)
 
     private suspend fun commitTransactionDelete(txId: Long) {
+        var cloudCopies = emptyList<String>()
         val photos = try {
             // Read first: the rows go with the expense (cascade), and with them the file names.
+            cloudCopies = receipts.remotePathsOf(txId)
             receipts.fileNamesOf(txId).also { ledgerRepo.deleteTransaction(txId) }
         } catch (e: ArchivedGroupException) {
             _statusMessage.value = archivedMessage(e)
@@ -1876,6 +1919,7 @@ class MainViewModel(
             return
         }
         receipts.deleteFiles(photos)
+        receipts.forgetRemote(cloudCopies)
         // Keep the row hidden until the feed has caught up, so it doesn't blink back in between.
         withTimeoutOrNull(2_000) { ledgerRepo.fullTransactions.first { list -> list.none { it.transaction.id == txId } } }
         SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())

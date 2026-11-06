@@ -360,6 +360,7 @@ fun SplitFlowApp(
     var isAccountSheetOpen by rememberSaveable { mutableStateOf(false) }
     var isDeleteAccountOpen by rememberSaveable { mutableStateOf(false) }
     val askBeforeDiscarding by viewModel.askBeforeDiscarding.collectAsStateWithLifecycle()
+    val shareBillPhotos by viewModel.shareBillPhotos.collectAsStateWithLifecycle()
     val aiEnabled by viewModel.aiEnabled.collectAsStateWithLifecycle()
     val upiPayee by viewModel.upiPayee.collectAsStateWithLifecycle()
     val categoryPrefs by viewModel.categoryPrefs.collectAsStateWithLifecycle()
@@ -744,6 +745,8 @@ fun SplitFlowApp(
             },
             onSaveProfile = onSaveProfile,
             onAskBeforeDiscardingChange = viewModel::setAskBeforeDiscarding,
+            shareBillPhotos = shareBillPhotos,
+            onShareBillPhotosChange = viewModel::setShareBillPhotos,
             onOpenExport = {
                 isAccountSheetOpen = false
                 viewModel.openExport()
@@ -917,6 +920,7 @@ fun SplitFlowApp(
         billPhoto = billPhoto,
         onAddBillPhoto = addBillPhoto,
         onRemoveBillPhoto = viewModel::removeBillPhoto,
+        onLoadBillPhoto = viewModel::loadCloudBillPhoto,
         isSaving = Submit.SaveEntry in submitting,
         isImprovingWithAi = isImprovingWithAi,
         updatedByAi = updatedByAi,
