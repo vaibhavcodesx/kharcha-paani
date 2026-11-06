@@ -1869,15 +1869,16 @@ class MainViewModel(
             if (_type.value == "income") "Income" else _category.value
         }
 
+        // Trimmed to what the server accepts (T2.2): AI and statements fill these without typing.
         val tx = TransactionEntity(
             id = _editingTransactionId.value ?: 0,
             type = _type.value,
             amount = total,
-            category = _category.value,
-            merchant = merchantName,
-            paymentMethod = _paymentMethod.value,
+            category = com.vaibhav.kharchapaani.domain.TextLimits.category(_category.value),
+            merchant = com.vaibhav.kharchapaani.domain.TextLimits.merchant(merchantName),
+            paymentMethod = com.vaibhav.kharchapaani.domain.TextLimits.paymentMethod(_paymentMethod.value),
             date = _date.value,
-            note = _note.value,
+            note = com.vaibhav.kharchapaani.domain.TextLimits.note(_note.value),
             groupId = _groupId.value,
             isSplit = splitting
         )
