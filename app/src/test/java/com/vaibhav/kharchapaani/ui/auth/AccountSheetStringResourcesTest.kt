@@ -33,7 +33,7 @@ class AccountSheetStringResourcesTest {
         assertEquals("Your avatar", resources.getString(R.string.account_avatar_content_description))
         assertEquals("Your account", resources.getString(R.string.account_title_fallback))
         assertEquals("Profile", resources.getString(R.string.account_eyebrow_profile))
-        assertEquals("Your name and avatar can be changed once your cloud profile is reachable.", resources.getString(R.string.account_profile_unreachable))
+        assertEquals("You can change your name and avatar once your account is reachable.", resources.getString(R.string.account_profile_unreachable))
         assertEquals("Name", resources.getString(R.string.account_name_label))
         assertEquals("Your name", resources.getString(R.string.account_name_placeholder))
         assertEquals("Avatar", resources.getString(R.string.account_avatar_label))
@@ -47,10 +47,10 @@ class AccountSheetStringResourcesTest {
     @Test
     fun `account cloud status string resources match exact copy`() {
         assertEquals("Offline. Your account reconnects on its own.", resources.getString(R.string.account_cloud_offline))
-        assertEquals("Can't reach your cloud account right now", resources.getString(R.string.account_cloud_unavailable))
-        assertEquals("Cloud profile ready", resources.getString(R.string.account_cloud_ready))
-        assertEquals("Cloud profile not found", resources.getString(R.string.account_cloud_missing))
-        assertEquals("Checking your cloud profile…", resources.getString(R.string.account_cloud_checking))
+        assertEquals("Can't reach your account right now", resources.getString(R.string.account_cloud_unavailable))
+        assertEquals("Signed in", resources.getString(R.string.account_cloud_ready))
+        assertEquals("Couldn't find your profile", resources.getString(R.string.account_cloud_missing))
+        assertEquals("Checking your account…", resources.getString(R.string.account_cloud_checking))
         assertEquals("Retry", resources.getString(R.string.account_retry))
     }
 
@@ -94,7 +94,7 @@ class AccountSheetStringResourcesTest {
         composeTestRule.onNodeWithText("Initials").assertExists()
         composeTestRule.onNodeWithText("Groupmates see your name and avatar.").assertExists()
         composeTestRule.onNodeWithText("ACCOUNT").assertExists()
-        composeTestRule.onNodeWithText("Cloud profile ready").assertExists()
+        composeTestRule.onNodeWithText("Signed in").assertExists()
     }
 
     @Test

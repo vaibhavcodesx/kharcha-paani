@@ -143,7 +143,8 @@ class GeminiRepository(
 
         val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
         val body = jsonRequest(listOf(textPart(textPrompt(rawText, knownFriends, choices, today))), temperature = 0.1, json = true, thinking = QUICK_THINKING)
-        when (val outcome = call(body, FEATURE_QUICK_ADD, TEXT_TIMEOUT_SECONDS, "text")) {
+        // A typed line goes to Groq; the proxy hands it to Gemini when Groq can't answer.
+        when (val outcome = call(body, FEATURE_QUICK_ADD, TEXT_TIMEOUT_SECONDS, "text", primary = TEXT_MODEL)) {
             is CallOutcome.Failed -> TextParseOutcome(onPhone.copy(guessedOnPhone = true), outcome.reason)
             is CallOutcome.Ok -> {
                 val parsed = outcome.json()
@@ -404,13 +405,13 @@ class GeminiRepository(
      * here, so every one of them tells offline from out-of-quota from a refused key from a block,
      * instead of each catching `Exception` and landing on the same vague message.
      */
-    private suspend fun call(body: JSONObject, feature: String, timeoutSeconds: Long, label: String): CallOutcome {
-        val first = callModel(MODEL, body, feature, timeoutSeconds, label)
+    private suspend fun call(body: JSONObject, feature: String, timeoutSeconds: Long, label: String, primary: String = MODEL): CallOutcome {
+        val first = callModel(primary, body, feature, timeoutSeconds, label)
         // Google's "high demand" 503s and per-model rate limits come and go by the minute and are
         // per model. One retry on the lighter model turns most of them into an answer instead of a
         // notice. Anything else (offline, a refused key, a block) would fail the same way again.
         if (first !is CallOutcome.Failed || first.reason !in RETRY_ON_FALLBACK) return first
-        Log.w(TAG, "$label: $MODEL unavailable (${first.reason}); retrying on $FALLBACK_MODEL")
+        Log.w(TAG, "$label: $primary unavailable (${first.reason}); retrying on $FALLBACK_MODEL")
         // The fallback gets its own default thinking: it may not take the same levels.
         val plain = JSONObject(body.toString()).apply { optJSONObject("generationConfig")?.remove("thinkingConfig") }
         return callModel(FALLBACK_MODEL, plain, feature, timeoutSeconds, "$label (fallback)")
@@ -731,12 +732,20 @@ class GeminiRepository(
         internal const val ASK_TIMEOUT_SECONDS = 60L
 
         /**
-         * The model every call uses. Was gemini-3.5-flash, which Google now lists as legacy: on
-         * 2026-09-27 it took 15-18 s to parse "dinner 1,299 with Hist yesterday gpay" even with
-         * thinking off, and 20 s for a receipt, when it answered at all (503 "high demand" was
-         * common). gemini-3.6-flash answered the same in 3-5 s and the receipt in 2 s.
+         * The model every Gemini call uses: bills, statements, voice and Insights. Was
+         * gemini-3.6-flash, whose free tier allows about 20 requests a day for the whole project;
+         * gemini-3.1-flash-lite read every invented bill and voice clip right in the 2026-11-06
+         * benchmark (tools/ai-bench) and accepts "low" thinking. Before that, gemini-3.5-flash,
+         * which took 15-20 s and often answered 503.
          */
-        private const val MODEL = "gemini-3.6-flash"
+        private const val MODEL = "gemini-3.1-flash-lite"
+
+        /**
+         * A typed line: Groq's qwen3.8-27b through the proxy (owner decision 2026-11-06). In the
+         * benchmark it read 90% of invented lines entirely right in about 1.3 s; when Groq can't
+         * answer, the proxy sends the same request to [MODEL] on the same read.
+         */
+        internal const val TEXT_MODEL = "groq-qwen3.8-27b"
 
         /** Where a call goes when [MODEL] is overloaded or rate-limited: 1-3 s, separate quota. */
         private const val FALLBACK_MODEL = "gemini-3.5-flash-lite"

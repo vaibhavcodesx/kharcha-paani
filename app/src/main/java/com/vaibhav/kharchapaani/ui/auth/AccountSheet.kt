@@ -375,10 +375,8 @@ fun AccountSheetContent(
                 SyncStatusRow(status = syncStatus, onRetryFailed = onRetryFailedSync, position = RowPosition.Last)
             }
             Text(
-                // Said precisely: before 1.3.0 "your expenses back up" was true only of unsplit ones. Since
-                // then new splits and IOUs with friends who aren't on the app back up too; the ones recorded
-                // before that stay on this phone (owner rule), so the backup still matters. The second
-                // sentence is the remedy.
+                // No version history here (owner, 2026-11-06): the few records from before 1.3 that stay on
+                // the phone are covered by Export everything below, which every phone has.
                 text = stringResource(R.string.account_backup_explanation),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = Spacing.s, bottom = Spacing.xl),
