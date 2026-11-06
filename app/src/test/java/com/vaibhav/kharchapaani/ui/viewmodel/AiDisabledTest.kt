@@ -170,8 +170,12 @@ class AiDisabledTest {
     }
 
     @Test fun `AI off keeps a bill photo available for a manual expense`(): Unit = runBlocking {
-        finishAction(ready = { vm.isConfirmSheetOpen.value && vm.billPhoto.value is BillPhoto.Kept && !vm.isParsing.value }) {
+        finishAction(ready = { vm.aiOffNudge.value == AiFeature.Bill }) {
             vm.parseReceiptImage(Bitmap.createBitmap(2, 2, Bitmap.Config.ARGB_8888))
+        }
+        // The nudge's own way without AI: type it, keep the photo.
+        finishAction(ready = { vm.isConfirmSheetOpen.value && vm.billPhoto.value is BillPhoto.Kept && !vm.isParsing.value }) {
+            vm.keepAiOffFromNudge()
         }
         assertNotNull((vm.billPhoto.value as BillPhoto.Kept).staged)
         vm.updateAmount("125.50")
@@ -218,8 +222,11 @@ class AiDisabledTest {
         file.outputStream().use {
             Bitmap.createBitmap(2, 2, Bitmap.Config.ARGB_8888).compress(Bitmap.CompressFormat.PNG, 100, it)
         }
-        finishAction(ready = { vm.isConfirmSheetOpen.value && vm.billPhoto.value is BillPhoto.Kept && !vm.isParsing.value }) {
+        finishAction(ready = { vm.aiOffNudge.value == AiFeature.Bill }) {
             vm.handleSharedImageUri(app, Uri.fromFile(file))
+        }
+        finishAction(ready = { vm.isConfirmSheetOpen.value && vm.billPhoto.value is BillPhoto.Kept && !vm.isParsing.value }) {
+            vm.keepAiOffFromNudge()
         }
         assertNotNull((vm.billPhoto.value as BillPhoto.Kept).staged)
         assertTrue(db.transactionDao().getAllTransactions().first().isEmpty())
