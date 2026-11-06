@@ -118,7 +118,7 @@ class GeminiAiPathsTest {
     }
 
     @Test
-    fun `only typed lines go to Groq: Insights stays on Gemini`() = runTest {
+    fun `only typed lines go to Groq, and Insights stays on Gemini`() = runTest {
         val models = mutableListOf<String>()
         val repo = repo { chain ->
             models += chain.request().url.encodedPath.substringAfter("models/").substringBefore(":")
