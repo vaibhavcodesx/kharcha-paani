@@ -114,7 +114,10 @@ abstract class UiAuditCapture(private val device: String, private val seeded: Bo
     private fun scrollDown(fraction: Float) {
         compose.waitForIdle()
         val height = compose.activity.window.decorView.height
-        compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange) and hasScrollAction()).onFirst()
+        val list = SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange) and hasScrollAction()
+        // A new user's Home has no data to wait for, so its list can still be composing here.
+        compose.waitUntil(10_000) { compose.onAllNodes(list).fetchSemanticsNodes().isNotEmpty() }
+        compose.onAllNodes(list).onFirst()
             .performSemanticsAction(SemanticsActions.ScrollBy) { scrollBy -> scrollBy(0f, height * fraction) }
         compose.waitForIdle()
     }
