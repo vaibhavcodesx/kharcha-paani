@@ -13,14 +13,14 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-11-06
+
 ### Added
 - Typed quick adds are read by Groq: in testing it got more lines right and answered faster than Gemini (about 1.3 s). If Groq can't answer, Gemini does, on the same daily read. Voice, bills, statements and Insights stay with Gemini, which now uses Gemini 3.1 Flash Lite (its free tier isn't limited to about 20 reads a day). The AI notice names Groq, and everyone sees it once more before anything reaches Groq.
 - Bill photos back up to your account and, on a split, the others in it see them (a smaller copy; your original stays on your phone). Settings has a switch to stop sharing. A photo someone shared shows as "Bill photo saved in the cloud · Load". Deleting the expense, the photo or your account deletes the cloud copy.
-
 - Move remaining hardcoded copy in AccountSheet into strings.xml and add safety net test preventing hardcoded Compose Text string literals (W1, T3.11).
 - Use without an account keeps an isolated on-phone ledger, with explicit account switching and no local cloud sync or shared-group writes (owner review).
 - Signing out asks first, and can also remove the account's data from this phone (its ledger, bill photos and settings). That's offered only once everything has synced, so nothing is lost.
-
 - Test matrix for the Activity "involved" rule covering all combinations of group, payer, shares, adder, settlements and IOUs on real Room DB (W2, #228).
 - Golden test suite pinning quick-add parser behavior across 40 Hinglish, relative date, category, and split combinations (W3, #238).
 - Sync entity mapping safety net tests verifying round-trip persistence and documenting server-driven/local-only fields across all syncable Room entities (W4).
@@ -30,70 +30,34 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - LazyColumn for long person ledger sheet lists (Y16, REL M8).
 - CI records test starts and bounded worker thread snapshots so stalled unit runs can be diagnosed without skipping tests.
 - Pull-to-refresh on Home and Splits triggering sync via requestSync and stopping when isSyncing is false (Y14, REL M11).
-
 - A device-wide Use AI switch stops Gemini reads everywhere, keeps manual capture available and labels AI-powered capture.
-
 - Export everything to a portable file and restore into an empty local ledger, including stored records, settings and bill photos, with interrupted-restore recovery.
-
 - Debug-only StrictMode to log main-thread I/O, network calls, and resource leaks during development without interrupting execution (Y11).
 - Personal data breach incident response plan with 72-hour DPDP Board notification lifecycle and communication templates (D3).
-
-- CI records test starts and bounded worker thread snapshots so stalled unit runs can be diagnosed without skipping tests.
 - Comprehensive CSV export formula injection test suite and vulnerability report covering formula triggers, composite fields, and bypass edge cases (T14).
 - A plain text warning in the export spreadsheet sheet advising to share exports only with trusted recipients (Y12, SEC L-10).
-
-- A device-wide Use AI switch stops Gemini reads everywhere, keeps manual capture available and labels AI-powered capture.
-
 - **Voice entry, recorded in the app** *(owner review: new microphone permission; spoken audio now goes to Gemini)*. Tapping the mic opens a small listening bar (a dot that swells with your voice, what it hears, Cancel and Done) instead of Google's dialog. When Gemini's notice has been accepted and the phone is online, the app records up to 30 seconds in memory and sends that audio, once, through the existing `gemini-proxy` as feature `quick_add`; the entry comes back in one step and opens on the sheet, with "Heard: …" shown so a wrong amount is easy to trace. Otherwise (offline, no AI, notice not accepted) Android's speech recogniser shows the words live, in Indian English and listening for your friends' names, and the text goes the typed way. With the microphone permission refused, the old system dialog still works. The microphone is closed when the card leaves the screen or the app goes to the background. New: `RECORD_AUDIO` (and `ACCESS_NETWORK_STATE`, to tell offline from online before listening); privacy policy and the Play Data Safety answers updated. No Supabase change: the proxy already forwards the body as it comes (15 MB limit; 30 s of audio is about 1 MB).
-
 - A compact 2x1 "Quick add" widget (the brand button and a label) with the same tap, for a home screen with no room for the bar.
 - Evidence-scoped source review notes for six merged reliability/accessibility changes (F3).
-
 - Source-pinned architecture map distinguishes checked-in configuration from release and live-service acceptance (O3).
-
 - Outgoing-message and notification tests guard friendly wording while distinguishing in-app self views (T12).
-
 - Source-pinned architecture and domain understanding for agent onboarding, with explicit verification limits (O2).
-
 - Invite-link tests cover malformed inputs and valid normalized alphabet boundaries (T10).
-
 - Ask-message tests reconcile displayed lines and totals across all five history kinds (T11).
-
 - String-resource checker covers placeholders and format execution with positive self-tests (T13).
-
 - UPI-link tests check encoded parameters, exact supported amounts and omitted invalid amounts (T9).
-
 - Migration-chain regression checks legacy v2 rows through v10, UUID uniqueness and post-migration DAO writes (T8).
-
 - Deterministic local-parser golden cases cover 30 representative English/Hinglish inputs (T5).
-
 - Money formatting and input tests cover Indian grouping, invalid numbers, limits, intermediate keystrokes and representative round trips (T4).
-
 - Agent handoff records reviewed PR states, owner decisions and restart instructions, with a working Codex lead progress report (#222).
-
-
 - SplitRounding invariant tests verifying equal, exact, and share modes sum to the paisa across representative amounts and group sizes up to 50 (T3).
-
-
-
 - Invariant test asserting the local backup file round trip preserves supported fields for people, groups, members, subscriptions, direct and split transactions, split shares, settlements, and settings (T7).
-
-
 - Golden test suite for LocalStatementParser and StatementChecks with invented data verifying date parsing, safety anomaly checks, and multi-month grouping (T6).
-
-
-
 - DebtSimplifier invariant tests verifying every net position is preserved down to the paisa and transfers are bounded by at most n - 1 (T2).
-
-
-
 - The Play listing's six screenshots and its 1024×500 feature graphic, in
   `docs/store-listing/assets/`, rendered from the shipped screens with the listing's fictional
   fixture in a real database, so every figure is the app's own (test-only; Stream C item 3).
-
-
 - Group balances sum to zero, shares sum to total amount, and member balances are conserved across random add, edit, delete, and settle sequences (T1).
-
 
 ### Changed
 - Plainer words in Settings, backup and the on-phone ledger: "Signed in" instead of "Cloud profile ready", no more note about version 1.3, and the backup screens say what they do without terms like "complete archive" or "consent choices".
@@ -102,7 +66,6 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - The place is capped at 120 characters and the note at 1,000, matching new server limits, so a very long note can never become an entry that won't sync.
 - The release build is shrunk with R8, so the app downloads and installs smaller. Crash reports stay readable through the mapping attached to each release.
 - Home's month total shows whole rupees (₹12,346, not ₹12,345.50). Entries and sheets still show paise.
-
 - Move AuthViewModel colour and account deletion error messages into string resources (M1).
 - DeleteAccountSheet user-facing text, confirmations, and pluralized sync warnings moved into string and plural resources (M1).
 - AccountSheet profile, avatar, cloud status and sync status copy use string resources with unchanged English, formatted plurals and exact relative sync time (M1).
@@ -110,65 +73,45 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - InsightsScreen flows (`insightsAnalytics`, `insightsMonth`, `earliestInsightsMonth`, `askBoard`, `aiAsksLeft`) in `MainActivity` are collected with `collectAsStateWithLifecycle()`, allowing upstream computations and Room queries with `WhileSubscribed(5000)` to stop when the app is backgrounded (Y10, REL L2).
 - Group detail sheet body and feed backed by LazyColumn, preserving liquid glass haze sampling, bottom action bar clearance, and stable feed keys (Y16).
 - Money figures in group detail figures and donut center, statement import summaries, and sign-in preview cards automatically size down on single lines to prevent truncation at large font scales (M3).
-
 - Home's empty capture line rotates every few seconds from "What did you spend on?" through examples that teach it ("Try: chai 40 cash", "dinner 1200 with Rohan", "auto 5 sau", "kal sabzi 180", "salary 50000 received", "cab 450 split with Aaru", "rent 12k"). Every example is a line quick add reads with an amount (tested); a screen reader still hears the question only.
-
 - Quick add reads more of how people type, on the phone and before the AI answers: "5 sau", "2 hazaar", "dedh sau" and "dhai sau" are amounts; "kal" and "yesterday" log it a day back, "parso" two; "rupaye", "ka", "ke" and day words no longer end up in the merchant; and everyday words (sabzi, doodh, samosa, nashta, kiraya, bijli, "mila" for money in) find their category. The keyword patterns are built once instead of on every line.
-
 - Activity feed building runs off the Main thread on Dispatchers.Default, and search input is debounced by ~150 ms to eliminate frame drops during typing while keeping instant reset on clear (REL M8, Y8).
 - The quick-add widget's tap opens Home's "What did you spend on?" line with the cursor in it and the keyboard up, instead of the empty New entry form. Its mic button still starts voice.
-
 - Account sheet: Name, Avatar and Colour are one connected group with a single helper line under them; the cloud and sync status rows sit as a pair; the three data actions (export, back up, restore) are their own "Your data" section instead of the tail of Settings, which now ends with Notifications. Wording, switches and what each row does are unchanged.
 - Group screen: expenses are two compact lines (merchant and amount, then the date and who it involved) instead of five. Who paid and who it was split with are colour dots only: a ringed dot for the payer, then a dot per person it was split with (four, then "+N"), with a one-line legend above the list. The names are no longer repeated on every row; a screen reader still hears "Paid by Aaru. Split with You, Aaru, Pruthva." The "added by" wording that was in the second line is gone from the row.
-
 - Splits > Groups: the sort control is a header row of its own, "Sort by" on the left and the current choice as a quiet pill with a chevron at the right edge (the menu ticks the active option), instead of a text button floating under "Join" with empty space beside it. Layout only; the sort options and the remembered choice are unchanged.
 - Activity shows only the group items you are part of: a settlement between two other people, and a group expense you didn't add, pay or share in (a ₹0 share doesn't count), no longer appear. The group's own screen still lists everything.
-
 - Quick add opens the sheet instantly, on the phone's own reading of the line, with a quiet
   "Improving with AI…" while the AI reads it. The AI's answer fills in only what you haven't
   changed, and the sheet says "Updated by AI" for a moment when it did. Closing, saving or
   opening another entry stops it, so a slow answer can no longer overwrite what you're typing
   or turn an edit into a new entry (T3.5, REL M5; `docs/designs/sheet-first-quick-add.md`).
-
 - Home headings, capture notices, filters and day totals use Android string resources, preserving their English wording and full rupee figures.
 
-
-
 ### Fixed
-
 - Statement import selection ticks and category overrides survive activity recreation and screen rotation via Compose state savers (REL L4, Y4).
 - Capped friend names at 64 characters and settlement dispute notes at 200 characters in SheetTextInput, matching Supabase column constraints and preventing private split sync failures (Y3, REL L9).
 - Guarded launcher calls against missing activity handlers, and refactored export and ask actions to emit one-shot share chooser intents instead of capturing activities across suspensions (Y2, REL L3).
-
 - ViewModel fixtures verify that their scopes stop before Room closes, protecting later money tests from background database errors.
 - The large-amount quick-add test keeps the friends list subscribed the way the app shell does,
   and reports flow/database contents on timeout, while retaining the original wait limit.
-
 - A confirmed settlement can wait briefly for its confirmation snackbar before requesting a rare Play review; an expired or cancelled opportunity does not consume the cooldown.
-
 - The Back-on-Home test stops its real ViewModels before closing Room, so a late app-shell query no
   longer fails it at random (CI fixture, as #194 did for backup preview).
-
 - A UI audit of every screen at four device sizes, rendered from the real app shell and database,
   with 28 findings and a fix plan (`docs/production-readiness/audits/ui-audit-2026-11.md`;
   test-only harness in `ui/audit/`).
-
-### Fixed
-
 - Screens read consistently (UI audit batch B): Insights shows no empty "Spent most on" and "Per
   day" tiles before anything is logged, and its unavailable Ask chips look unavailable; Subscriptions
   writes dates as "5 Nov 2026" and puts ₹ before the amount; the settle-up preview is titled "What
   Rohan will see" instead of repeating its button; the group sort control lines up with the cards
   and shows it's a menu; "Spent most at" is "Spent most on".
-
 - Money is never cut or misread (UI audit batch A): the Insights day strip writes ₹1,27,366 as
   "1.27L" instead of clipping it to "1,27,36"; a payment waiting for an answer shows its amount in a
   friend's history instead of "₹0"; small non-zero categories say "<1%"; "You're owed" wraps rather
   than clipping on 360 dp phones; the "+N" people count no longer breaks over two lines.
-
 - Home waits for the complete ledger before showing money or its first-entry invitation, preventing a false empty state on cold launch.
 - Statement re-import leaves saved payments unticked with “Already in your ledger”, reserving exact dates before nearby matches so a genuine extra purchase stays importable.
-
 
 ## [1.6.0] - 2026-11-03
 
