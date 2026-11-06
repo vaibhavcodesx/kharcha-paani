@@ -177,7 +177,7 @@ class SheetFirstQuickAddTest {
         assertTrue(viewModel.isImprovingWithAi.value)
         assertFalse("the old full-sheet spinner is gone for typed lines", viewModel.isParsing.value)
         assertEquals("2400", viewModel.amount.value)
-        assertEquals("Dinner Toit Rohan", viewModel.merchant.value)
+        assertEquals("Dinner Toit", viewModel.merchant.value)
         assertEquals(setOf(-1L, 1L), ticked())
 
         aiAnswers()
@@ -248,7 +248,7 @@ class SheetFirstQuickAddTest {
         lateAnswerFinishes()
 
         neverSees("a late reading reopened the sheet") { viewModel.isConfirmSheetOpen.value }
-        assertEquals("Dinner Toit Rohan", viewModel.merchant.value)
+        assertEquals("Dinner Toit", viewModel.merchant.value)
     }
 
     @Test

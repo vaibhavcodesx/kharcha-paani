@@ -13,6 +13,8 @@ owner or Claude go at the bottom.
 
 ## Log
 
+- 2026-11-06 · W11 · Quick-add merchant fix for W3 findings 1 & 2 · in review; filtered split friend names and multi-word payment method words from merchant tokens in LocalHeuristicParser, updated QuickAddGoldenTest rows, no amount/date/category/type changes.
+
 - 2026-11-06 · #265 · W1 / Finish T3.11 move remaining strings to strings.xml & guard Compose text literals · in review; extracted remaining AccountSheet copy to strings.xml, added NoHardcodedTextLiteralsTest scanning app/src/main/java with brand allow-list and extended AccountSheetStringResourcesTest. CI gates merge.
 
 - 2026-11-04 · #249 · CI test diagnostics · squash-merged9b46565 after formal exact-head allthree success at a45efd0 CI41879719382 (1102tests,0failures/errors/skips). Full diff and independent shell/YAML/execution reviews passed; original task list, assertions and30m job preserved. Metadata lagged before formal success; no merge was inferred early. Worker inspectors bounded15s+2s kill grace; no Java worker kill or app behavior change. Local Gradle skipped below4GB free RAM; no phone acceptance claimed.
