@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.model.PersonLedgerItem
@@ -62,7 +63,7 @@ fun PersonLedgerContent(
     val dateFormat = remember { SimpleDateFormat("d MMM yyyy", Locale.getDefault()) }
     val net = ledgerItems.sumOf { it.netChange }
 
-    SheetScaffold(
+    LazySheetScaffold(
         modifier = modifier,
         actionBar = {
             GlassActionBar(
@@ -79,59 +80,66 @@ fun PersonLedgerContent(
             )
         },
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.xl)) {
-            PersonAvatar(name = person.name, colorHex = person.avatarColor, size = 52.dp, emoji = person.avatarEmoji)
-            Column(Modifier.weight(1f).padding(start = Spacing.m)) {
-                Text(person.name, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
-                Text(
-                    text = when {
-                        net >= 0.005 -> stringResource(R.string.person_ledger_owed_amount, Money.format(net))
-                        net <= -0.005 -> stringResource(R.string.person_ledger_owe_amount, Money.format(abs(net)))
-                        else -> stringResource(R.string.person_ledger_settled)
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (net >= 0.005) ChartreuseSecondary else MutedWarmGray,
-                )
+        item(key = "header") {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.xl)) {
+                PersonAvatar(name = person.name, colorHex = person.avatarColor, size = 52.dp, emoji = person.avatarEmoji)
+                Column(Modifier.weight(1f).padding(start = Spacing.m)) {
+                    Text(person.name, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
+                    Text(
+                        text = when {
+                            net >= 0.005 -> stringResource(R.string.person_ledger_owed_amount, Money.format(net))
+                            net <= -0.005 -> stringResource(R.string.person_ledger_owe_amount, Money.format(abs(net)))
+                            else -> stringResource(R.string.person_ledger_settled)
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (net >= 0.005) ChartreuseSecondary else MutedWarmGray,
+                    )
+                }
             }
         }
 
-        Text(stringResource(R.string.person_ledger_count, ledgerItems.size), style = MaterialTheme.typography.titleSmall, color = OffWhiteText, modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() })
-        if (ledgerItems.isEmpty()) {
-            Text(stringResource(R.string.person_ledger_empty, person.name), style = MaterialTheme.typography.bodyMedium)
+        item(key = "count") {
+            Text(stringResource(R.string.person_ledger_count, ledgerItems.size), style = MaterialTheme.typography.titleSmall, color = OffWhiteText, modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() })
         }
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            ledgerItems.forEachIndexed { index, item ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 64.dp)
-                        .clip(RowPosition.of(index, ledgerItems.size).shape)
-                        .background(CharcoalCard)
-                        .semantics(mergeDescendants = true) {}
-                        .padding(horizontal = Spacing.l, vertical = Spacing.m),
+
+        if (ledgerItems.isEmpty()) {
+            item(key = "empty") {
+                Text(stringResource(R.string.person_ledger_empty, person.name), style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+
+        itemsIndexed(ledgerItems, key = { _, item -> item.id }) { index, item ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(top = if (index == 0) 0.dp else 2.dp)
+                    .fillMaxWidth()
+                    .heightIn(min = 64.dp)
+                    .clip(RowPosition.of(index, ledgerItems.size).shape)
+                    .background(CharcoalCard)
+                    .semantics(mergeDescendants = true) {}
+                    .padding(horizontal = Spacing.l, vertical = Spacing.m),
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(40.dp).clip(KpShapes.small).background((if (item.isSettlement) ChartreuseSecondary else WarmAmberLight).copy(alpha = 0.14f)),
                 ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.size(40.dp).clip(KpShapes.small).background((if (item.isSettlement) ChartreuseSecondary else WarmAmberLight).copy(alpha = 0.14f)),
-                    ) {
-                        Icon(
-                            imageVector = if (item.isSettlement) KpIcons.Settle else KpIcons.Splits,
-                            contentDescription = null,
-                            tint = if (item.isSettlement) ChartreuseSecondary else WarmAmberLight,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
-                    Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
-                        Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(stringResource(R.string.person_ledger_detail, dateFormat.format(Date(item.date)), item.subtitle), style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    }
-                    Text(
-                        text = Money.format(item.netChange, showPlus = true),
-                        style = MoneyText.row,
-                        color = if (item.netChange > 0) ChartreuseSecondary else OffWhiteText,
+                    Icon(
+                        imageVector = if (item.isSettlement) KpIcons.Settle else KpIcons.Splits,
+                        contentDescription = null,
+                        tint = if (item.isSettlement) ChartreuseSecondary else WarmAmberLight,
+                        modifier = Modifier.size(20.dp),
                     )
                 }
+                Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
+                    Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(stringResource(R.string.person_ledger_detail, dateFormat.format(Date(item.date)), item.subtitle), style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+                Text(
+                    text = Money.format(item.netChange, showPlus = true),
+                    style = MoneyText.row,
+                    color = if (item.netChange > 0) ChartreuseSecondary else OffWhiteText,
+                )
             }
         }
     }

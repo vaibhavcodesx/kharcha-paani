@@ -106,4 +106,18 @@ class ExportContentTest {
         composeTestRule.onNodeWithTag("export_button").performClick()
         assertEquals(ExportRange.Dates(LocalDate.of(2026, 7, 5), LocalDate.of(2026, 9, 1)), exported)
     }
+
+    @Test
+    fun `export sheet shows plaintext warning line across scopes`() {
+        show()
+
+        composeTestRule.onNodeWithTag("export_warning").assertExists()
+        composeTestRule.onNodeWithText("This file contains your ledger in plain text. Share it only with yourself or people you trust.").assertExists()
+
+        composeTestRule.onNodeWithTag("export_scope_Everything").performClick()
+        composeTestRule.onNodeWithTag("export_warning").assertExists()
+
+        composeTestRule.onNodeWithTag("export_scope_Dates").performClick()
+        composeTestRule.onNodeWithTag("export_warning").assertExists()
+    }
 }

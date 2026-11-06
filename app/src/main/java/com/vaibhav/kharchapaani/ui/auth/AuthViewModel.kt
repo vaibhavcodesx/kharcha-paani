@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.vaibhav.kharchapaani.domain.ProfileEdit
+import com.vaibhav.kharchapaani.R
 import java.io.IOException
 
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
@@ -129,11 +130,11 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update { it.copy(profile = ProfileState.Loaded(saved)) }
                 null
             } catch (e: IOException) {
-                "You're offline, so your colour wasn't saved. Try again when you're connected."
+                getApplication<Application>().getString(R.string.auth_hue_error_offline)
             } catch (e: RestException) {
                 Log.w(TAG, "Colour rejected: ${e.error}")
                 // 23514: the server's rule (too close to a groupmate's colour, or the app's amber accent).
-                "Someone in your groups has a colour too close to that one. Pick one further away."
+                getApplication<Application>().getString(R.string.auth_hue_error_conflict)
             }
             if (!automatic) _uiState.update { it.copy(hueSaveError = error) }
         }
@@ -155,11 +156,11 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 repository.deleteAccount(keepName)
             } catch (e: IOException) {
-                _uiState.update { it.copy(isDeletingAccount = false, deleteAccountError = "You're offline. Connect and try again; nothing was deleted.") }
+                _uiState.update { it.copy(isDeletingAccount = false, deleteAccountError = getApplication<Application>().getString(R.string.auth_delete_account_error_offline)) }
                 return@launch
             } catch (e: RestException) {
                 Log.w(TAG, "Account deletion refused (${e.statusCode})")
-                _uiState.update { it.copy(isDeletingAccount = false, deleteAccountError = "Couldn't delete your account just now. Nothing was deleted; try again in a minute.") }
+                _uiState.update { it.copy(isDeletingAccount = false, deleteAccountError = getApplication<Application>().getString(R.string.auth_delete_account_error_server)) }
                 return@launch
             }
             repository.signOut(context)

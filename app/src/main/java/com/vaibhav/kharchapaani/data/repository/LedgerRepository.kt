@@ -48,6 +48,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import kotlin.math.abs
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -57,6 +58,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
+
+/** Server caps local_name at 64 characters (supabase/migrations/20260923000000_owner_private_local_ledger.sql). */
+const val MAX_LOCAL_NAME_LENGTH = 64
 
 /**
  * @param onLocalTransactionChange called after a syncable write commits, so the account's sync
@@ -635,7 +639,7 @@ class LedgerRepository(
      * @throws DuplicateFriendException when a friend with no account already has this name.
      */
     suspend fun addPerson(name: String, avatarColor: String): Long = withContext(Dispatchers.IO) {
-        val clean = name.trim()
+        val clean = name.trim().take(MAX_LOCAL_NAME_LENGTH)
         db.withTransaction {
             db.groupSyncDao().localPersonByName(clean)?.let { throw DuplicateFriendException(it.name) }
             db.personDao().insertPerson(PersonEntity(name = clean, avatarColor = avatarColor))

@@ -105,6 +105,8 @@ import com.vaibhav.kharchapaani.ui.format.MonthNames
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import com.vaibhav.kharchapaani.domain.StatementPdf
@@ -123,6 +125,7 @@ import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.domain.SplitTargets
 import com.vaibhav.kharchapaani.ui.format.displayNotice
+import com.vaibhav.kharchapaani.domain.FrequentPeople
 import com.vaibhav.kharchapaani.domain.recentSplitGroup
 import com.vaibhav.kharchapaani.ui.components.NewSubscription
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
@@ -153,6 +156,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.sync.withLock
@@ -196,6 +202,9 @@ class MainViewModel(
 
     private val _reviewMoments = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val reviewMoments = _reviewMoments.asSharedFlow()
+
+    private val _shareIntents = Channel<Intent>(Channel.BUFFERED)
+    val shareIntents = _shareIntents.receiveAsFlow()
 
     private val settingsId = if (isLocal) GuestSession(userId).settingsId else userId
     private val ledgerRepo = LedgerRepository(db, onLocalTransactionChange = ::requestSync, selfProfileId = if (isLocal) null else userId, localMode = isLocal)
@@ -550,17 +559,18 @@ class MainViewModel(
     }
 
     /** Cold sources retain the difference between an empty ledger and one not read yet. */
+    @OptIn(FlowPreview::class)
     private val activityFeedSource = combine(
         combine(ledgerRepo.fullTransactions, pendingDeletes.ids) { transactions, hidden ->
             if (hidden.isEmpty()) transactions else transactions.filterNot { it.transaction.id in hidden }
         },
         ledgerRepo.allSettlements,
         combine(ledgerRepo.allPeople, ledgerRepo.allGroups) { people, groups -> people to groups },
-        searchQuery,
+        searchQuery.debounce { if (it.isEmpty()) 0L else SEARCH_DEBOUNCE_MS },
         selectedFilter
     ) { transactions, settlements, (people, groups), query, filter ->
         ActivityFeed.build(getApplication<Application>(), transactions, settlements, people, groups, query, filter)
-    }
+    }.flowOn(Dispatchers.Default)
 
     /** Recent Activity: transactions plus settlements and IOUs, filtered and searched together. */
     val activityFeed: StateFlow<List<ActivityItem>> = activityFeedSource
@@ -1436,7 +1446,7 @@ class MainViewModel(
             sharesForGroup(groupId, only = target.personIds)
         } else {
             listOf(ShareInput(personId = -1L, personName = "You", isSelected = true)) +
-                people.value.map { ShareInput(personId = it.id, personName = it.name, isSelected = it.id in target.personIds) }
+                candidatesFor(null).map { ShareInput(personId = it.id, personName = it.name, isSelected = it.id in target.personIds) }
         }
         _isSplit.value = _shares.value.any { it.personId != -1L && it.isSelected }
         _splitMode.value = SplitMode.EQUAL
@@ -1451,11 +1461,11 @@ class MainViewModel(
     }
 
     private fun initSharesForCurrentPeople() {
-        val currentPeople = people.value
+        val currentPeople = candidatesFor(_groupId.value)
         val shareInputs = mutableListOf<ShareInput>()
         shareInputs.add(ShareInput(personId = -1L, personName = "You", isSelected = true))
         currentPeople.forEach { person ->
-            shareInputs.add(ShareInput(personId = person.id, personName = person.name, isSelected = false))
+            shareInputs.add(ShareInput(personId = person.id, personName = person.name, isSelected = false, isGuest = isGuestIn(_groupId.value, person)))
         }
         _shares.value = shareInputs
     }
@@ -1541,11 +1551,13 @@ class MainViewModel(
      * be a member (decision 1); otherwise everyone, as before.
      */
     private fun candidatesFor(groupId: Long?, includeGuests: Boolean = true): List<PersonEntity> {
-        if (!isSharedGroup(groupId)) return people.value
+        if (!isSharedGroup(groupId)) return FrequentPeople.sortByFrequency(people.value, rawTransactions.value)
         val memberIds = groups.value.firstOrNull { it.group.id == groupId }?.members?.map { it.id }?.toSet().orEmpty()
         // Friends who aren't on the app can come along as my guests (design item 9), after the members.
         val guests = if (includeGuests) people.value.filter { it.profileId == null && it.id !in memberIds } else emptyList()
-        return people.value.filter { it.id in memberIds } + guests
+        val members = people.value.filter { it.id in memberIds }
+        return FrequentPeople.sortByFrequency(members, rawTransactions.value) +
+            FrequentPeople.sortByFrequency(guests, rawTransactions.value)
     }
 
     /** A friend with no account, in a shared group's expense: my guest. */
@@ -2000,10 +2012,10 @@ class MainViewModel(
     }
 
     /**
-     * Opens the share sheet with [message] and, when you have a UPI ID, your payment code for [amount]
-     * (ask-to-pay). The ask is logged only if an app is picked (ask/AskSentReceiver).
+     * Emits a one-shot share chooser intent with [message] and payment code for [amount].
+     * The ask is logged only if an app is picked (ask/AskSentReceiver).
      */
-    fun askToPay(context: Context, person: PersonEntity, amount: Double, message: String) {
+    fun askToPay(person: PersonEntity, amount: Double, message: String) {
         launchAction {
             val app = getApplication<Application>()
             val qr = upiPayee.value?.let { payee ->
@@ -2013,7 +2025,7 @@ class MainViewModel(
             }
             val firstName = person.name.trim().substringBefore(' ').ifEmpty { person.name }
             val chooser = AskShare.chooser(app, AskShare.sendIntent(app, message, qr), person.id, amount, userId, uiText(R.string.action_notice_ask_chooser, firstName))
-            context.startActivity(chooser)
+            _shareIntents.send(chooser)
         }
     }
 
@@ -2404,11 +2416,11 @@ class MainViewModel(
      * Gmail cut off after a screenful, so a whole ledger arrived as its last 10-20 rows.
      */
     /** One group's whole history as a spreadsheet, from its own screen. */
-    fun exportGroupCsv(context: Context, groupId: Long) {
-        exportCsv(context, ExportRange.Everything, groupId)
+    fun exportGroupCsv(groupId: Long) {
+        exportCsv(ExportRange.Everything, groupId)
     }
 
-    fun exportCsv(context: Context, range: ExportRange, groupId: Long? = null) {
+    fun exportCsv(range: ExportRange, groupId: Long? = null) {
         launchAction {
             val csv = ledgerRepo.exportCsv(range, groupId = groupId)
             if (csv.rows == 0) {
@@ -2424,7 +2436,8 @@ class MainViewModel(
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             _isExportOpen.value = false
-            context.startActivity(Intent.createChooser(send, uiQuantity(R.plurals.action_notice_export, csv.rows, csv.rows)))
+            val chooser = Intent.createChooser(send, uiQuantity(R.plurals.action_notice_export, csv.rows, csv.rows))
+            _shareIntents.send(chooser)
         }
     }
 
@@ -2436,7 +2449,7 @@ class MainViewModel(
      * Insurance, not routine: a normal app update keeps all of this. It is uninstalling, a new
      * phone, or a change of signing key that loses it. See [LocalBackup].
      */
-    fun exportLocalBackup(context: Context) {
+    fun exportLocalBackup() {
         launchAction {
             // Settings are read here and handed in: the repository owns the database, not
             // DataStore, and the first version of this simply forgot to pass them — which is
@@ -2459,7 +2472,8 @@ class MainViewModel(
                 clipData = ClipData.newRawUri(fileName, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(Intent.createChooser(send, uiText(R.string.action_notice_backup_chooser, backup.summary(getApplication<Application>()))))
+            val chooser = Intent.createChooser(send, uiText(R.string.action_notice_backup_chooser, backup.summary(getApplication<Application>())))
+            _shareIntents.send(chooser)
         }
     }
 
@@ -2796,6 +2810,9 @@ class MainViewModel(
         /** A year of a busy ledger is well under 1 MB of JSON; this is generous and still bounded. */
         const val BACKUP_MAX_BYTES = 16 * 1024 * 1024
 
+        /** Debounce window for search input so rapid keystrokes don't re-build the feed synchronously. */
+        const val SEARCH_DEBOUNCE_MS = 150L
+
         fun factory(application: Application, db: AppDatabase, userId: String, isLocal: Boolean = false): ViewModelProvider.Factory =
             viewModelFactory { initializer { MainViewModel(application, db, userId, isLocal = isLocal) } }
     }
@@ -2803,6 +2820,7 @@ class MainViewModel(
 
 /** Two readings' times this close are the same moment ("now" on the phone, "now" from the AI). */
 private const val SAME_MOMENT_MS = 60_000L
+
 
 /** A part of the quick-add sheet the person can change; see [MainViewModel.isImprovingWithAi]. */
 private enum class EntryField { Type, Amount, Merchant, Category, Payment, Note, Date, Split }

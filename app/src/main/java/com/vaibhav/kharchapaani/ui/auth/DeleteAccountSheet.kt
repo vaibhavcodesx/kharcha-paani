@@ -20,11 +20,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.ui.components.DestructiveText
 import com.vaibhav.kharchapaani.ui.components.GlassActionBar
 import com.vaibhav.kharchapaani.ui.components.KpModalSheet
@@ -81,8 +84,8 @@ fun DeleteAccountContent(
             onDismissRequest = { confirming = false },
             containerColor = CharcoalSurface,
             shape = KpShapes.large,
-            title = { Text("Delete your account for good?", style = MaterialTheme.typography.headlineMedium) },
-            text = { Text("This can't be undone. You'll be signed out, and this phone keeps nothing of the account.", style = MaterialTheme.typography.bodyMedium) },
+            title = { Text(stringResource(R.string.delete_account_dialog_title), style = MaterialTheme.typography.headlineMedium) },
+            text = { Text(stringResource(R.string.delete_account_dialog_body), style = MaterialTheme.typography.bodyMedium) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -91,12 +94,12 @@ fun DeleteAccountContent(
                     },
                     modifier = Modifier.testTag("delete_account_confirm"),
                 ) {
-                    Text("Delete my account", style = MaterialTheme.typography.labelLarge, color = DestructiveText)
+                    Text(stringResource(R.string.delete_account_action_delete), style = MaterialTheme.typography.labelLarge, color = DestructiveText)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { confirming = false }) {
-                    Text("Keep it", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
+                    Text(stringResource(R.string.delete_account_dialog_keep), style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
                 }
             },
             titleContentColor = OffWhiteText,
@@ -107,7 +110,7 @@ fun DeleteAccountContent(
         modifier = modifier,
         actionBar = {
             GlassActionBar(
-                label = if (blockedByUnsynced) "Discard them and continue" else "Continue",
+                label = if (blockedByUnsynced) stringResource(R.string.delete_account_action_discard_continue) else stringResource(R.string.delete_account_action_continue),
                 enabled = !isDeleting,
                 busy = isDeleting,
                 onClick = { if (blockedByUnsynced) unsyncedAccepted = true else confirming = true },
@@ -115,40 +118,45 @@ fun DeleteAccountContent(
             )
         },
     ) {
-        SheetTitle(title = "Delete your account?", supporting = "Here's what happens.")
+        SheetTitle(
+            title = stringResource(R.string.delete_account_title),
+            supporting = stringResource(R.string.delete_account_supporting),
+        )
 
-        Text("GOES", style = EyebrowText, modifier = Modifier.padding(top = Spacing.s))
+        Text(stringResource(R.string.delete_account_section_goes), style = EyebrowText, modifier = Modifier.padding(top = Spacing.s))
         Text(
-            "Your sign-in, your own expenses and income, splits and IOUs with friends who aren't on the app, and " +
-                "your profile: picture, emoji, colour and UPI ID. Bill photos and everything else on this phone go too.",
+            stringResource(R.string.delete_account_goes_body),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = Spacing.xs),
         )
-        Text("STAYS", style = EyebrowText, modifier = Modifier.padding(top = Spacing.l))
+        Text(stringResource(R.string.delete_account_section_stays), style = EyebrowText, modifier = Modifier.padding(top = Spacing.l))
         Text(
-            "Shared expenses and payments stay in your groups, so nobody's balance changes. Groups you made pass " +
-                "to the person who's been in them longest.",
+            stringResource(R.string.delete_account_stays_body),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = Spacing.xs),
         )
 
-        Text("ON PAST GROUP EXPENSES, SHOW ME AS", style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl))
+        Text(stringResource(R.string.delete_account_section_show_me_as), style = EyebrowText, modifier = Modifier.padding(top = Spacing.xl))
         Column(Modifier.selectableGroup().padding(top = Spacing.xs), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-            NameChoice("Former member", "Nothing of you stays but that", selected = !keepName, onSelect = { keepName = false }, tag = "delete_account_former_member")
-            NameChoice("My name, as it is now", "Only the name; nothing else about you", selected = keepName, onSelect = { keepName = true }, tag = "delete_account_keep_name")
+            NameChoice(stringResource(R.string.group_people_former), stringResource(R.string.delete_account_former_member_detail), selected = !keepName, onSelect = { keepName = false }, tag = "delete_account_former_member")
+            NameChoice(stringResource(R.string.delete_account_keep_name_title), stringResource(R.string.delete_account_keep_name_detail), selected = keepName, onSelect = { keepName = true }, tag = "delete_account_keep_name")
         }
 
         if (unsyncedChanges > 0) {
+            val unsyncedText = LocalContext.current.resources.getQuantityString(
+                R.plurals.delete_account_unsynced_warning,
+                unsyncedChanges,
+                unsyncedChanges,
+            )
             Row(Modifier.padding(top = Spacing.l), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    if (unsyncedChanges == 1) "1 change hasn't synced yet. Sync first, or it's lost with the account."
-                    else "$unsyncedChanges changes haven't synced yet. Sync first, or they're lost with the account.",
+                    unsyncedText,
                     style = MaterialTheme.typography.bodySmall,
                     color = WarmAmberLight,
                     modifier = Modifier.weight(1f).testTag("delete_account_unsynced"),
                 )
                 TextButton(onClick = onSyncNow, modifier = Modifier.testTag("delete_account_sync_now")) {
-                    Text("Sync now", style = MaterialTheme.typography.labelLarge, color = WarmAmberPrimary)
+                    Text(stringResource(R.string.delete_account_sync_now), style = MaterialTheme.typography.labelLarge, color = WarmAmberPrimary)
                 }
             }
         }
@@ -166,7 +174,7 @@ fun DeleteAccountContent(
         }
 
         TextButton(onClick = onKeepAccount, modifier = Modifier.fillMaxWidth().padding(top = Spacing.m)) {
-            Text("Keep my account", style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
+            Text(stringResource(R.string.delete_account_keep_account), style = MaterialTheme.typography.labelLarge, color = OffWhiteText)
         }
     }
 }

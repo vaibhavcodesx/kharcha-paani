@@ -4,11 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.test.assert
-import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.performTextInput
 import com.vaibhav.kharchapaani.data.model.ShareInput
 import com.vaibhav.kharchapaani.data.model.SplitMode
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
@@ -52,5 +49,44 @@ class SplitEditorTest {
 
         field.assert(hasText("12.5"))
         assertEquals(12.5, bobsShare, 0.0)
+    }
+
+    @Test
+    fun `search filters payer chips and split rows and clear restores them`() {
+        composeTestRule.setContent {
+            val shares = listOf(
+                ShareInput(-1, "You", isSelected = true),
+                ShareInput(2, "Rohan", isSelected = false),
+                ShareInput(3, "Amit", isSelected = false),
+                ShareInput(4, "Zara", isSelected = true),
+            )
+            SplitFlowTheme {
+                SplitEditor(
+                    amount = "100", splitMode = SplitMode.EQUAL, paidByPersonId = -1L, shares = shares,
+                    onSplitModeChange = {}, onPaidByPersonIdChange = {}, onTogglePersonShare = {},
+                    onExactAmountChange = { _, _ -> }, onPercentageChange = { _, _ -> }, onOpenAddFriend = {},
+                )
+            }
+        }
+
+        // Initially all candidates exist in both payer chip and split row (2 each)
+        composeTestRule.onAllNodesWithText("Rohan").assertCountEquals(2)
+        composeTestRule.onAllNodesWithText("Amit").assertCountEquals(2)
+        composeTestRule.onAllNodesWithText("Zara").assertCountEquals(2)
+
+        // Filter by "Roh"
+        composeTestRule.onNodeWithTag("split_search_input").performTextInput("Roh")
+
+        composeTestRule.onAllNodesWithText("Rohan").assertCountEquals(2)
+        // Amit is not selected and doesn't match query, so hidden completely
+        composeTestRule.onAllNodesWithText("Amit").assertCountEquals(0)
+        // Zara is selected, so stays visible in split rows (1 node)
+        composeTestRule.onAllNodesWithText("Zara").assertCountEquals(1)
+
+        // Clear search
+        composeTestRule.onNodeWithTag("split_search_clear").performClick()
+
+        // Amit reappears in both payer chip and split row
+        composeTestRule.onAllNodesWithText("Amit").assertCountEquals(2)
     }
 }

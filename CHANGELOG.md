@@ -17,12 +17,24 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 - Use without an account keeps an isolated on-phone ledger, with explicit account switching and no local cloud sync or shared-group writes (owner review).
 
+- Recover cleanly from corrupted app settings with ReplaceFileCorruptionHandler (reliability audit L14, Y1).
+- Search and frequent-people-first in split and payer pickers (Y15, TODOS 6).
+- LazyColumn for long person ledger sheet lists (Y16, REL M8).
 - CI records test starts and bounded worker thread snapshots so stalled unit runs can be diagnosed without skipping tests.
+- Pull-to-refresh on Home and Splits triggering sync via requestSync and stopping when isSyncing is false (Y14, REL M11).
 
 - A device-wide Use AI switch stops Gemini reads everywhere, keeps manual capture available and labels AI-powered capture.
 
 - Export everything to a portable file and restore into an empty local ledger, including stored records, settings and bill photos, with interrupted-restore recovery.
 
+- Debug-only StrictMode to log main-thread I/O, network calls, and resource leaks during development without interrupting execution (Y11).
+- Personal data breach incident response plan with 72-hour DPDP Board notification lifecycle and communication templates (D3).
+
+- CI records test starts and bounded worker thread snapshots so stalled unit runs can be diagnosed without skipping tests.
+- Comprehensive CSV export formula injection test suite and vulnerability report covering formula triggers, composite fields, and bypass edge cases (T14).
+- A plain text warning in the export spreadsheet sheet advising to share exports only with trusted recipients (Y12, SEC L-10).
+
+- A device-wide Use AI switch stops Gemini reads everywhere, keeps manual capture available and labels AI-powered capture.
 
 - A compact 2x1 "Quick add" widget (the brand button and a label) with the same tap, for a home screen with no room for the bar.
 - Evidence-scoped source review notes for six merged reliability/accessibility changes (F3).
@@ -75,9 +87,19 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Changed
 
+- Move AuthViewModel colour and account deletion error messages into string resources (M1).
+- DeleteAccountSheet user-facing text, confirmations, and pluralized sync warnings moved into string and plural resources (M1).
+- AccountSheet profile, avatar, cloud status and sync status copy use string resources with unchanged English, formatted plurals and exact relative sync time (M1).
+- Person ledger sheet flow in MainActivity is remembered by person ID, preventing redundant Flow creation and repeated database queries on recomposition (REL M8, Y9).
+- InsightsScreen flows (`insightsAnalytics`, `insightsMonth`, `earliestInsightsMonth`, `askBoard`, `aiAsksLeft`) in `MainActivity` are collected with `collectAsStateWithLifecycle()`, allowing upstream computations and Room queries with `WhileSubscribed(5000)` to stop when the app is backgrounded (Y10, REL L2).
+- Group detail sheet body and feed backed by LazyColumn, preserving liquid glass haze sampling, bottom action bar clearance, and stable feed keys (Y16).
+- Money figures in group detail figures and donut center, statement import summaries, and sign-in preview cards automatically size down on single lines to prevent truncation at large font scales (M3).
+
 - Home's empty capture line rotates every few seconds from "What did you spend on?" through examples that teach it ("Try: chai 40 cash", "dinner 1200 with Rohan", "auto 5 sau", "kal sabzi 180", "salary 50000 received", "cab 450 split with Aaru", "rent 12k"). Every example is a line quick add reads with an amount (tested); a screen reader still hears the question only.
 
 - Quick add reads more of how people type, on the phone and before the AI answers: "5 sau", "2 hazaar", "dedh sau" and "dhai sau" are amounts; "kal" and "yesterday" log it a day back, "parso" two; "rupaye", "ka", "ke" and day words no longer end up in the merchant; and everyday words (sabzi, doodh, samosa, nashta, kiraya, bijli, "mila" for money in) find their category. The keyword patterns are built once instead of on every line.
+
+- Activity feed building runs off the Main thread on Dispatchers.Default, and search input is debounced by ~150 ms to eliminate frame drops during typing while keeping instant reset on clear (REL M8, Y8).
 - The quick-add widget's tap opens Home's "What did you spend on?" line with the cursor in it and the keyboard up, instead of the empty New entry form. Its mic button still starts voice.
 
 - Account sheet: Name, Avatar and Colour are one connected group with a single helper line under them; the cloud and sync status rows sit as a pair; the three data actions (export, back up, restore) are their own "Your data" section instead of the tail of Settings, which now ends with Notifications. Wording, switches and what each row does are unchanged.
@@ -97,6 +119,10 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 
 ### Fixed
+
+- Statement import selection ticks and category overrides survive activity recreation and screen rotation via Compose state savers (REL L4, Y4).
+- Capped friend names at 64 characters and settlement dispute notes at 200 characters in SheetTextInput, matching Supabase column constraints and preventing private split sync failures (Y3, REL L9).
+- Guarded launcher calls against missing activity handlers, and refactored export and ask actions to emit one-shot share chooser intents instead of capturing activities across suspensions (Y2, REL L3).
 
 - ViewModel fixtures verify that their scopes stop before Room closes, protecting later money tests from background database errors.
 - The large-amount quick-add test keeps the friends list subscribed the way the app shell does,

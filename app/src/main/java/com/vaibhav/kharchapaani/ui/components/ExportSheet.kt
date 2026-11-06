@@ -38,6 +38,7 @@ import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
+import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -165,6 +166,15 @@ fun ExportContent(
                 modifier = Modifier.padding(top = Spacing.l),
             )
         }
+
+        Text(
+            text = stringResource(R.string.export_warning),
+            style = MaterialTheme.typography.bodySmall,
+            color = SubMutedWarmGray,
+            modifier = Modifier
+                .padding(top = Spacing.xl)
+                .testTag("export_warning"),
+        )
     }
 }
 

@@ -6,7 +6,9 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.hasScrollToKeyAction
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performSemanticsAction
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
@@ -107,7 +109,8 @@ class GroupDetailContentTest {
 
         // Activated the way TalkBack does: a tap at its centre can land under the floating action bar,
         // which the test's own scrolling doesn't account for.
-        composeTestRule.onNodeWithTag("export_group_button").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNode(hasScrollToKeyAction()).performScrollToKey("feed_header")
+        composeTestRule.onNodeWithTag("export_group_button").assertIsDisplayed()
             .performSemanticsAction(SemanticsActions.OnClick)
 
         assertEquals(7L, exported)

@@ -83,9 +83,10 @@ fun SettlementAnswerContent(
             SheetRow(label = stringResource(R.string.payment_wrong_label), modifier = Modifier.padding(top = Spacing.l)) {
                 SheetTextInput(
                     value = note,
-                    onValueChange = { note = it.take(200) },
+                    onValueChange = { note = it },
                     placeholder = stringResource(R.string.payment_wrong_hint),
                     fieldTestTag = "settlement_reject_note",
+                    maxLength = 200,
                 )
             }
         } else {
