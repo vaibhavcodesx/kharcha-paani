@@ -4,6 +4,15 @@ import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
+import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.input.ImeAction
@@ -88,7 +97,7 @@ import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import java.time.LocalDate
 import java.time.ZoneId
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     people: List<PersonEntity> = emptyList(),
@@ -122,6 +131,7 @@ fun HomeScreen(
     onCaptureFocused: () -> Unit = {},
     syncStatus: SyncStatus = SyncStatus(),
     onShowMessage: (String) -> Unit = {},
+    onRequestSync: () -> Unit = {},
 ) {
     var showSearch by rememberSaveable { mutableStateOf(searchQuery.isNotEmpty()) }
     val days = remember(activity, today) { ActivityDays.group(activity, today, ZoneId.systemDefault()) }
@@ -129,12 +139,49 @@ fun HomeScreen(
         MerchantVisits.thisMonth(activity, YearMonth.from(today), ZoneId.systemDefault())
     }
 
-    LazyColumn(
+    var isRefreshing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) {
+            try {
+                withTimeoutOrNull(5_000L) {
+                    if (!syncStatus.isSyncing) {
+                        snapshotFlow { syncStatus.isSyncing }.first { it }
+                    }
+                    snapshotFlow { syncStatus.isSyncing }.first { !it }
+                }
+            } finally {
+                isRefreshing = false
+            }
+        }
+    }
+
+    val pullToRefreshState = rememberPullToRefreshState()
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = {
+            isRefreshing = true
+            onRequestSync()
+        },
+        state = pullToRefreshState,
         modifier = modifier
             .fillMaxSize()
-            .background(CharcoalBg),
-        contentPadding = PaddingValues(start = Spacing.page, end = Spacing.page, top = Spacing.l, bottom = dockClearance()),
+            .background(CharcoalBg)
+            .testTag("home_pull_to_refresh"),
+        indicator = {
+            PullToRefreshDefaults.Indicator(
+                state = pullToRefreshState,
+                isRefreshing = isRefreshing,
+                modifier = Modifier.align(Alignment.TopCenter).testTag("home_pull_refresh_indicator"),
+                containerColor = CharcoalElevated,
+                color = WarmAmberPrimary,
+            )
+        },
     ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = Spacing.page, end = Spacing.page, top = Spacing.l, bottom = dockClearance()),
+        ) {
         item(key = "balance") {
             BalanceHeader(
                 monthlyExpense = monthlyAnalytics.totalExpense,
@@ -222,6 +269,7 @@ fun HomeScreen(
                 }
             }
         }
+    }
     }
 }
 

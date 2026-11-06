@@ -19,6 +19,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Search and frequent-people-first in split and payer pickers (Y15, TODOS 6).
 - LazyColumn for long person ledger sheet lists (Y16, REL M8).
 - CI records test starts and bounded worker thread snapshots so stalled unit runs can be diagnosed without skipping tests.
+- Pull-to-refresh on Home and Splits triggering sync via requestSync and stopping when isSyncing is false (Y14, REL M11).
 
 - A device-wide Use AI switch stops Gemini reads everywhere, keeps manual capture available and labels AI-powered capture.
 

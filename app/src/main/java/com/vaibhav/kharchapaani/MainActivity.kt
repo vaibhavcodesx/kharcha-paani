@@ -625,7 +625,8 @@ fun SplitFlowApp(
                             syncStatus = syncStatus,
                             onShowMessage = viewModel::showMessage,
                             onVoiceCaptureStarted = viewModel::onVoiceCaptureStarted,
-                            onOpenAccount = { isAccountSheetOpen = true }
+                            onOpenAccount = { isAccountSheetOpen = true },
+                            onRequestSync = { viewModel.requestSync() }
                         )
                     }
 
@@ -650,6 +651,7 @@ fun SplitFlowApp(
                         onAnswerSettlement = { viewModel.openSettlementAnswer(it) },
                         onWithdrawSettlement = { viewModel.retractSettlement(it) },
                         askedAt = askedAt,
+                        onRequestSync = { viewModel.requestSync() },
                     )
 
                     2 -> InsightsScreen(
