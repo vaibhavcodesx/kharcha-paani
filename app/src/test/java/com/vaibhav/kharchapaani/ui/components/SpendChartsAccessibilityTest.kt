@@ -31,7 +31,7 @@ class SpendChartsAccessibilityTest {
     @Test
     fun `DailyFlowChart at fontScale 2f displays tap hint without clipping`() {
         val days = (1..30).map { day ->
-            DaySpend(LocalDate.of(2026, 11, day), 100.0 * day)
+            DaySpend(LocalDate.of(2026, 11, day), 100.0 * day, hasHappened = true)
         }
         compose.setContent {
             val density = LocalDensity.current
@@ -66,7 +66,7 @@ class SpendChartsAccessibilityTest {
     @Test
     fun `DailyFlowChart at fontScale 2f displays pinned day tooltip without clipping`() {
         val days = (1..30).map { day ->
-            DaySpend(LocalDate.of(2026, 11, day), 12500.50)
+            DaySpend(LocalDate.of(2026, 11, day), 12500.50, hasHappened = true)
         }
         compose.setContent {
             val density = LocalDensity.current
