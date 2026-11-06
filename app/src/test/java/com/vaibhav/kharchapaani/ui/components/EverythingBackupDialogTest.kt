@@ -1,0 +1,153 @@
+package com.vaibhav.kharchapaani.ui.components
+
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.performClick
+import com.vaibhav.kharchapaani.domain.EverythingBackup
+import com.vaibhav.kharchapaani.domain.EverythingPerson
+import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
+import org.junit.Assert.assertEquals
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+
+/** Component gates only; real Room/archive integrity is covered by EverythingBackupRepositoryTest. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36], qualifiers = "w411dp-h891dp")
+class EverythingBackupDialogTest {
+    @get:Rule val compose = createComposeRule()
+    private val backup = EverythingBackup(exportedAt = 0, appVersion = "test", people = listOf(
+        EverythingPerson(11, "Same name", "#123456", 1, null, null, null, null, null),
+        EverythingPerson(22, "Same name", "#654321", 2, null, null, null, null, null),
+    ))
+
+    private fun awaitValidation() {
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithTag("everything_backup_progress").fetchSemanticsNodes().isEmpty()
+        }
+    }
+
+    @Test fun `preview counts duplicate names separately and restore waits for confirmation`() {
+        var restores = 0
+        var dismisses = 0
+        compose.setContent { SplitFlowTheme {
+            EverythingBackupDialog(backup, true, true, false, { restores++ }, { dismisses++ })
+        } }
+        compose.onNodeWithText("Friends: 2", substring = true).assertExists()
+        compose.onNodeWithText("Shared history stays an offline copy. It does not join groups or upload to an account.").assertExists()
+        assertEquals(0, restores)
+        compose.waitUntil(5_000) {
+            compose.onNodeWithTag("everything_restore_confirm").fetchSemanticsNode().config
+                .getOrNull(SemanticsProperties.Disabled) == null
+        }
+        compose.onNodeWithTag("everything_restore_confirm").assertIsEnabled().performClick()
+        assertEquals(1, restores)
+        assertEquals(0, dismisses)
+    }
+
+    @Test fun `occupied destination cannot be restored into`() {
+        var restores = 0
+        compose.setContent { SplitFlowTheme {
+            EverythingBackupDialog(backup, true, false, false, { restores++ }, {})
+        } }
+        awaitValidation()
+        compose.onNodeWithText("This ledger already has data. Choose an empty local ledger to restore this archive.").assertExists()
+        compose.onNodeWithTag("everything_restore_confirm").assertIsNotEnabled().performClick()
+        assertEquals(0, restores)
+    }
+
+    @Test fun `signed in destination cannot be restored into`() {
+        var restores = 0
+        compose.setContent { SplitFlowTheme {
+            EverythingBackupDialog(backup, false, true, false, { restores++ }, {})
+        } }
+        awaitValidation()
+        compose.onNodeWithText("Switch to On this phone before restoring a complete archive.").assertExists()
+        compose.onNodeWithTag("everything_restore_confirm").assertIsNotEnabled().performClick()
+        assertEquals(0, restores)
+    }
+
+    @Test fun `busy restore shows progress and blocks repeated confirmation and dismissal`() {
+        var restores = 0
+        var dismisses = 0
+        compose.setContent { SplitFlowTheme {
+            EverythingBackupDialog(backup, true, true, true, { restores++ }, { dismisses++ })
+        } }
+        compose.onNodeWithTag("everything_backup_progress").assertExists()
+        compose.onNodeWithTag("everything_restore_confirm").assertIsNotEnabled().performClick()
+        compose.onNodeWithTag("everything_restore_cancel").assertIsNotEnabled().performClick()
+        assertEquals(0, restores)
+        assertEquals(0, dismisses)
+    }
+
+    @Test fun `malformed archive cannot be confirmed even when local ledger is empty`() {
+        var restores = 0
+        compose.setContent { SplitFlowTheme {
+            EverythingBackupDialog(backup.copy(version = 999), true, true, false, { restores++ }, {})
+        } }
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithText("This archive could not be read. Choose a supported complete archive.")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithText("This archive could not be read. Choose a supported complete archive.").assertExists()
+        compose.onNodeWithTag("everything_restore_confirm").assertIsNotEnabled().performClick()
+        assertEquals(0, restores)
+    }
+
+    @Test fun `read failure without a preview remains dismissible and cannot restore`() {
+        var restores = 0
+        var dismisses = 0
+        compose.setContent { SplitFlowTheme {
+            EverythingBackupDialog(null, true, true, false, { restores++ }, { dismisses++ }, hasReadError = true)
+        } }
+        compose.onNodeWithTag("everything_restore_confirm").assertIsNotEnabled().performClick()
+        compose.onNodeWithTag("everything_restore_cancel").performClick()
+        assertEquals(0, restores)
+        assertEquals(1, dismisses)
+    }
+
+    @Test fun `no picked archive has no preview`() {
+        compose.setContent { SplitFlowTheme {
+            EverythingBackupDialog(null, true, true, false, {}, {})
+        } }
+        compose.onNodeWithTag("everything_restore_dialog").assertDoesNotExist()
+    }
+
+    @Test fun `export explains plaintext scope and waits for an explicit choice`() {
+        var exports = 0
+        var dismisses = 0
+        compose.setContent { SplitFlowTheme {
+            EverythingBackupExportDialog(true, false, { exports++ }, { dismisses++ })
+        } }
+        compose.onNodeWithText("The file is not encrypted and contains your full financial history and bill photos. Keep it somewhere private and share it only with someone you trust.").assertExists()
+        compose.onNodeWithText("Only data held on this phone is included, using its latest saved edits. This does not fetch server history or include login credentials or consent choices.").assertExists()
+        assertEquals(0, exports)
+        compose.onNodeWithTag("everything_export_cancel").performClick()
+        assertEquals(0, exports)
+        assertEquals(1, dismisses)
+        compose.onNodeWithTag("everything_export_confirm").performClick()
+        assertEquals(1, exports)
+    }
+
+    @Test fun `busy export cannot be repeated or dismissed`() {
+        var exports = 0
+        var dismisses = 0
+        compose.setContent { SplitFlowTheme {
+            EverythingBackupExportDialog(true, true, { exports++ }, { dismisses++ })
+        } }
+        compose.onNodeWithTag("everything_export_progress").assertExists()
+        compose.onNodeWithTag("everything_export_confirm").assertIsNotEnabled().performClick()
+        compose.onNodeWithTag("everything_export_cancel").assertIsNotEnabled().performClick()
+        assertEquals(0, exports)
+        assertEquals(0, dismisses)
+    }
+}

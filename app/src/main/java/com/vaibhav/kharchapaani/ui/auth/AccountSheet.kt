@@ -114,6 +114,8 @@ fun AccountSheet(
     askBeforeDiscarding: Boolean,
     onSaveProfile: (name: String, emoji: String?) -> Unit,
     onAskBeforeDiscardingChange: (Boolean) -> Unit,
+    shareBillPhotos: Boolean = true,
+    onShareBillPhotosChange: (Boolean) -> Unit = {},
     onOpenExport: () -> Unit,
     onBackUp: () -> Unit = {},
     onRestore: () -> Unit = {},
@@ -136,6 +138,9 @@ fun AccountSheet(
     onNoApp: (String) -> Unit = {},
     aiEnabled: Boolean = true,
     onAiEnabledChange: (Boolean) -> Unit = {},
+    isLocal: Boolean = false,
+    onSignInFromLocal: () -> Unit = {},
+    onUseLocal: () -> Unit = {},
 ) {
     // Read here rather than passed in: the setting lives with crash reporting, which starts before
     // anything else and can't wait for a view model. Null in a build with no Firebase project.
@@ -148,6 +153,8 @@ fun AccountSheet(
             askBeforeDiscarding = askBeforeDiscarding,
             onSaveProfile = onSaveProfile,
             onAskBeforeDiscardingChange = onAskBeforeDiscardingChange,
+            shareBillPhotos = shareBillPhotos,
+            onShareBillPhotosChange = onShareBillPhotosChange,
             onOpenExport = onOpenExport,
             onBackUp = onBackUp,
             onRestore = onRestore,
@@ -168,6 +175,9 @@ fun AccountSheet(
             onNoApp = onNoApp,
             aiEnabled = aiEnabled,
             onAiEnabledChange = onAiEnabledChange,
+            isLocal = isLocal,
+            onSignInFromLocal = onSignInFromLocal,
+            onUseLocal = onUseLocal,
             crashReports = crashReports,
             onCrashReportsChange = {
                 CrashReporting.setEnabled(context, it)
@@ -185,6 +195,8 @@ fun AccountSheetContent(
     askBeforeDiscarding: Boolean,
     onSaveProfile: (name: String, emoji: String?) -> Unit,
     onAskBeforeDiscardingChange: (Boolean) -> Unit,
+    shareBillPhotos: Boolean = true,
+    onShareBillPhotosChange: (Boolean) -> Unit = {},
     onOpenExport: () -> Unit,
     onBackUp: () -> Unit = {},
     onRestore: () -> Unit = {},
@@ -207,6 +219,9 @@ fun AccountSheetContent(
     onNoApp: (String) -> Unit = {},
     aiEnabled: Boolean = true,
     onAiEnabledChange: (Boolean) -> Unit = {},
+    isLocal: Boolean = false,
+    onSignInFromLocal: () -> Unit = {},
+    onUseLocal: () -> Unit = {},
     /** Whether crash reports are on; null when this build can't send any, and the switch isn't shown. */
     crashReports: Boolean? = null,
     onCrashReportsChange: (Boolean) -> Unit = {},
@@ -223,7 +238,7 @@ fun AccountSheetContent(
     SheetScaffold(
         modifier = modifier,
         // The bar only appears once there's something to save.
-        actionBar = if (changed || state.isSavingProfile) {
+        actionBar = if (!isLocal && (changed || state.isSavingProfile)) {
             {
                 GlassActionBar(
                     label = "Save profile",
@@ -244,112 +259,140 @@ fun AccountSheetContent(
         // No brand mark appeared anywhere in the app, which is a real part of why a settings page
         // reads as generic (backlog item 19).
         BrandMark(Modifier.padding(bottom = Spacing.l))
-        // Your own colour once you have one (design item 11): the same one groupmates see you in.
-        val mine = state.hue?.let(::hueColour)
-        val avatarDescription = stringResource(R.string.account_avatar_content_description)
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.xl)) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape)
-                    .background((mine ?: WarmAmberPrimary).copy(alpha = 0.18f))
-                    // The brand gradient as a ring. It is the app's one distinctive mark and it
-                    // was used only as a fill — on the add button and the hero figure — never as
-                    // an edge. This is the one avatar in the app that is *yours*, which is the
-                    // right place for it and the reason it goes nowhere else.
-                    .then(if (mine != null) Modifier.border(2.dp, mine, CircleShape) else Modifier.border(2.dp, BrandGradient.diagonal(), CircleShape))
-                    .semantics { contentDescription = avatarDescription },
-            ) {
-                Text(
-                    text = previewAvatar,
-                    fontSize = if (emoji != null) 34.sp else 28.sp,
-                    color = mine ?: WarmAmberLight,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-            Column(Modifier.weight(1f).padding(start = Spacing.m)) {
-                Text(
-                    text = cleanName ?: state.displayName ?: stringResource(R.string.account_title_fallback),
-                    style = MaterialTheme.typography.headlineMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.semantics { heading() },
-                )
-                state.email?.let {
-                    Text(text = it, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-        }
-
-        Eyebrow(stringResource(R.string.account_eyebrow_profile))
-        if (saved == null) {
+        if (isLocal) {
+            Eyebrow(stringResource(R.string.guest_on_this_phone))
             Text(
-                stringResource(R.string.account_profile_unreachable),
+                stringResource(R.string.guest_local_explanation),
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(bottom = Spacing.m),
+                modifier = Modifier.padding(bottom = Spacing.m).testTag("account_local_explanation"),
+            )
+            OutlinedButton(
+                onClick = onSignInFromLocal,
+                enabled = !state.isSigningIn,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("account_local_sign_in"),
+            ) {
+                Text(stringResource(if (state.isSigningIn) R.string.guest_signing_in else R.string.guest_sign_in))
+            }
+            Text(
+                stringResource(R.string.guest_separate_ledgers),
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = Spacing.s, bottom = Spacing.xl),
             )
         } else {
-            // One connected group, like the settings below: three rows that all describe you,
-            // with the helper line once, under them, instead of between the first two.
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                SheetRow(label = stringResource(R.string.account_name_label), position = RowPosition.First) {
-                    SheetTextInput(value = name, onValueChange = { name = it }, placeholder = stringResource(R.string.account_name_placeholder), fieldTestTag = "profile_name_input")
+            // Your own colour once you have one (design item 11): the same one groupmates see you in.
+            val mine = state.hue?.let(::hueColour)
+            val avatarDescription = stringResource(R.string.account_avatar_content_description)
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.xl)) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background((mine ?: WarmAmberPrimary).copy(alpha = 0.18f))
+                        // The brand gradient as a ring. It is the app's one distinctive mark and it
+                        // was used only as a fill — on the add button and the hero figure — never as
+                        // an edge. This is the one avatar in the app that is *yours*, which is the
+                        // right place for it and the reason it goes nowhere else.
+                        .then(if (mine != null) Modifier.border(2.dp, mine, CircleShape) else Modifier.border(2.dp, BrandGradient.diagonal(), CircleShape))
+                        .semantics { contentDescription = avatarDescription },
+                ) {
+                    Text(
+                        text = previewAvatar,
+                        fontSize = if (emoji != null) 34.sp else 28.sp,
+                        color = mine ?: WarmAmberLight,
+                        fontWeight = FontWeight.SemiBold,
+                    )
                 }
-                // Collapsed until wanted: open, the grid would push everything else off the sheet.
-                Box(Modifier.testTag("avatar_row")) {
-                    ExpandableDetail(
-                        label = stringResource(R.string.account_avatar_label),
-                        value = emoji ?: stringResource(R.string.account_avatar_initials),
-                        expanded = avatarOpen,
-                        onToggle = { avatarOpen = !avatarOpen },
-                        position = RowPosition.Middle,
-                    ) {
-                        AvatarGrid(
-                            initial = (cleanName ?: state.email)?.firstOrNull()?.uppercase() ?: "?",
-                            selected = emoji,
-                            onSelect = { emoji = it },
-                        )
+                Column(Modifier.weight(1f).padding(start = Spacing.m)) {
+                    Text(
+                        text = cleanName ?: state.displayName ?: stringResource(R.string.account_title_fallback),
+                        style = MaterialTheme.typography.headlineMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    state.email?.let {
+                        Text(text = it, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
-                ColourRow(colour = colour, saved = state.hue, onSave = onSaveHue, error = state.hueSaveError)
+            }
+
+            Eyebrow(stringResource(R.string.account_eyebrow_profile))
+            if (saved == null) {
+                Text(
+                    stringResource(R.string.account_profile_unreachable),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = Spacing.m),
+                )
+            } else {
+                // One connected group, like the settings below: three rows that all describe you,
+                // with the helper line once, under them, instead of between the first two.
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    SheetRow(label = stringResource(R.string.account_name_label), position = RowPosition.First) {
+                        SheetTextInput(value = name, onValueChange = { name = it }, placeholder = stringResource(R.string.account_name_placeholder), fieldTestTag = "profile_name_input")
+                    }
+                    // Collapsed until wanted: open, the grid would push everything else off the sheet.
+                    Box(Modifier.testTag("avatar_row")) {
+                        ExpandableDetail(
+                            label = stringResource(R.string.account_avatar_label),
+                            value = emoji ?: stringResource(R.string.account_avatar_initials),
+                            expanded = avatarOpen,
+                            onToggle = { avatarOpen = !avatarOpen },
+                            position = RowPosition.Middle,
+                        ) {
+                            AvatarGrid(
+                                initial = (cleanName ?: state.email)?.firstOrNull()?.uppercase() ?: "?",
+                                selected = emoji,
+                                onSelect = { emoji = it },
+                            )
+                        }
+                    }
+                    ColourRow(colour = colour, saved = state.hue, onSave = onSaveHue, error = state.hueSaveError)
+                }
+                Text(
+                    text = when {
+                        state.profileSaveFailed -> stringResource(R.string.account_profile_save_failed)
+                        name.isNotBlank() && cleanName == null -> stringResource(R.string.account_name_too_long, ProfileEdit.MAX_NAME_LENGTH)
+                        else -> stringResource(R.string.account_name_helper)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (state.profileSaveFailed || (name.isNotBlank() && cleanName == null)) WarmAmberLight else SubMutedWarmGray,
+                    modifier = Modifier
+                        .padding(top = Spacing.s)
+                        .semantics { liveRegion = LiveRegionMode.Polite },
+                )
+                Spacer(Modifier.height(Spacing.xl))
+            }
+
+            Eyebrow(stringResource(R.string.account_eyebrow_account))
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                CloudStatusRow(
+                    profile = state.profile,
+                    isRefreshPending = (state.authState as? AuthState.SignedIn)?.isRefreshPending == true,
+                    onRetry = onRetryProfile,
+                    position = RowPosition.First,
+                )
+                SyncStatusRow(status = syncStatus, onRetryFailed = onRetryFailedSync, position = RowPosition.Last)
             }
             Text(
-                text = when {
-                    state.profileSaveFailed -> stringResource(R.string.account_profile_save_failed)
-                    name.isNotBlank() && cleanName == null -> stringResource(R.string.account_name_too_long, ProfileEdit.MAX_NAME_LENGTH)
-                    else -> stringResource(R.string.account_name_helper)
-                },
+                // Said precisely: before 1.3.0 "your expenses back up" was true only of unsplit ones. Since
+                // then new splits and IOUs with friends who aren't on the app back up too; the ones recorded
+                // before that stay on this phone (owner rule), so the backup still matters. The second
+                // sentence is the remedy.
+                text = "Your expenses back up to your account and keep working offline, including splits and " +
+                    "IOUs with friends who aren't on the app. Ones from before version 1.3 stay on this " +
+                    "phone only, so back those up below. Shared groups sync with everyone in them.",
                 style = MaterialTheme.typography.bodySmall,
-                color = if (state.profileSaveFailed || (name.isNotBlank() && cleanName == null)) WarmAmberLight else SubMutedWarmGray,
-                modifier = Modifier
-                    .padding(top = Spacing.s)
-                    .semantics { liveRegion = LiveRegionMode.Polite },
+                modifier = Modifier.padding(top = Spacing.s, bottom = Spacing.xl),
             )
-            Spacer(Modifier.height(Spacing.xl))
-        }
 
-        Eyebrow(stringResource(R.string.account_eyebrow_account))
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            CloudStatusRow(
-                profile = state.profile,
-                isRefreshPending = (state.authState as? AuthState.SignedIn)?.isRefreshPending == true,
-                onRetry = onRetryProfile,
-                position = RowPosition.First,
-            )
-            SyncStatusRow(status = syncStatus, onRetryFailed = onRetryFailedSync, position = RowPosition.Last)
+            TextButton(
+                onClick = onUseLocal,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("account_use_local"),
+            ) { Text(stringResource(R.string.guest_use_local)) }
+            Text(stringResource(R.string.guest_separate_ledgers), style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(bottom = Spacing.xl))
         }
-        Text(
-            // Said precisely: before 1.3.0 "your expenses back up" was true only of unsplit ones. Since
-            // then new splits and IOUs with friends who aren't on the app back up too; the ones recorded
-            // before that stay on this phone (owner rule), so the backup still matters. The second
-            // sentence is the remedy.
-            text = "Your expenses back up to your account and keep working offline, including splits and " +
-                "IOUs with friends who aren't on the app. Ones from before version 1.3 stay on this " +
-                "phone only, so back those up below. Shared groups sync with everyone in them.",
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(top = Spacing.s, bottom = Spacing.xl),
-        )
 
         Eyebrow("Settings")
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -398,8 +441,28 @@ fun AccountSheetContent(
                 )
             }
             SettingRow(
+                title = stringResource(R.string.bill_photo_share_title),
+                detail = stringResource(R.string.bill_photo_share_detail),
+                position = RowPosition.Middle,
+                modifier = Modifier
+                    .toggleable(value = shareBillPhotos, role = Role.Switch, onValueChange = onShareBillPhotosChange)
+                    .testTag("setting_share_bill_photos"),
+            ) {
+                Switch(
+                    checked = shareBillPhotos,
+                    onCheckedChange = null,
+                    colors = SwitchDefaults.colors(
+                        checkedTrackColor = WarmAmberPrimary,
+                        checkedThumbColor = CharcoalBg,
+                        uncheckedTrackColor = CharcoalElevated,
+                        uncheckedThumbColor = MutedWarmGray,
+                        uncheckedBorderColor = OutlineInteractive,
+                    ),
+                )
+            }
+            SettingRow(
                 title = stringResource(R.string.ai_choice_title),
-                detail = stringResource(if (aiEnabled) R.string.ai_choice_enabled_detail else R.string.ai_choice_disabled_detail),
+                detail = stringResource(if (isLocal) R.string.guest_ai_needs_account else if (aiEnabled) R.string.ai_choice_enabled_detail else R.string.ai_choice_disabled_detail),
                 position = RowPosition.Middle,
                 modifier = Modifier.toggleable(value = aiEnabled, role = Role.Switch, onValueChange = onAiEnabledChange)
                     .testTag("setting_ai_enabled"),
@@ -443,18 +506,18 @@ fun AccountSheetContent(
             // subscription and a custom category come through. What loses it is uninstalling, a
             // new phone, or a change of signing key.
             SettingRow(
-                title = "Back up what's only on this phone",
-                detail = "Local friends, subscriptions and your own categories, as a file",
+                title = stringResource(R.string.full_backup_ui_export_title),
+                detail = stringResource(R.string.full_backup_ui_export_detail),
                 position = RowPosition.Middle,
-                modifier = Modifier.clickable(onClickLabel = "Back up local data", onClick = onBackUp).testTag("setting_backup"),
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.full_backup_ui_export_title), onClick = onBackUp).testTag("setting_backup"),
             ) {
                 Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
             }
             SettingRow(
-                title = "Restore from a backup",
-                detail = "Adds back anything missing; never overwrites what's here",
+                title = stringResource(R.string.full_backup_ui_restore_title),
+                detail = stringResource(R.string.full_backup_ui_restore_detail),
                 position = RowPosition.Last,
-                modifier = Modifier.clickable(onClickLabel = "Restore from a backup", onClick = onRestore).testTag("setting_restore"),
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.full_backup_ui_restore_title), onClick = onRestore).testTag("setting_restore"),
             ) {
                 Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
             }
@@ -468,25 +531,27 @@ fun AccountSheetContent(
             modifier = Modifier.padding(top = Spacing.xl),
         )
 
-        OutlinedButton(
-            onClick = onSignOut,
-            shape = KpShapes.medium,
-            // SubMutedWarmGray, not CharcoalBorder: the boundary needs 3:1 against the sheet (3.17 vs 1.28).
-            border = BorderStroke(1.dp, SubMutedWarmGray),
-            modifier = Modifier
-                .padding(top = Spacing.xl)
-                .fillMaxWidth()
-                .heightIn(min = 52.dp)
-                .testTag("account_sign_out"),
-        ) {
-            Text(text = "Sign out", style = MaterialTheme.typography.titleMedium.copy(color = OffWhiteText))
-        }
-        // Play requires deleting an account to be easy to find in the app (plan T1.1).
-        TextButton(
-            onClick = onDeleteAccount,
-            modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("account_delete"),
-        ) {
-            Text("Delete my account", style = MaterialTheme.typography.labelLarge, color = DestructiveText)
+        if (!isLocal) {
+            OutlinedButton(
+                onClick = onSignOut,
+                shape = KpShapes.medium,
+                // SubMutedWarmGray, not CharcoalBorder: the boundary needs 3:1 against the sheet (3.17 vs 1.28).
+                border = BorderStroke(1.dp, SubMutedWarmGray),
+                modifier = Modifier
+                    .padding(top = Spacing.xl)
+                    .fillMaxWidth()
+                    .heightIn(min = 52.dp)
+                    .testTag("account_sign_out"),
+            ) {
+                Text(text = "Sign out", style = MaterialTheme.typography.titleMedium.copy(color = OffWhiteText))
+            }
+            // Play requires deleting an account to be easy to find in the app (plan T1.1).
+            TextButton(
+                onClick = onDeleteAccount,
+                modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("account_delete"),
+            ) {
+                Text("Delete my account", style = MaterialTheme.typography.labelLarge, color = DestructiveText)
+            }
         }
     }
 }

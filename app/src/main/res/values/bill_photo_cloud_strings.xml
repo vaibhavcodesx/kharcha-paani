@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Bill photos in the cloud (docs/designs/bill-photo-sync.md). -->
+    <string name="bill_photo_share_title">Share bill photos in splits</string>
+    <string name="bill_photo_share_detail">People in a split see a smaller copy of the bill. Your photos always back up to your account.</string>
+    <string name="bill_photo_cloud_waiting">Bill photo saved in the cloud</string>
+    <string name="bill_photo_cloud_load">Load</string>
+    <string name="bill_photo_cloud_loading">Loading the photo…</string>
+    <string name="bill_photo_cloud_failed">Couldn\'t load the photo. Check your connection and try again.</string>
+</resources>

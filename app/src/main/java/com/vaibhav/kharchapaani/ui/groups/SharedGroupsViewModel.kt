@@ -17,21 +17,22 @@ class SharedGroupsViewModel(
     application: Application,
     db: AppDatabase,
     userId: String,
+    isLocal: Boolean = false,
 ) : AndroidViewModel(application) {
 
-    private val requestSync = { SyncScheduler.requestSync(application, userId) }
+    private val requestSync = { if (!isLocal) SyncScheduler.requestSync(application, userId) }
 
     val controller = SharedGroupsController(
         scope = viewModelScope,
-        repository = LedgerRepository(db, onLocalTransactionChange = requestSync, selfProfileId = userId),
-        remote = SupabaseGroupMembershipRemote(SupabaseClientProvider.get(application)),
+        repository = LedgerRepository(db, onLocalTransactionChange = requestSync, selfProfileId = if (isLocal) null else userId, localMode = isLocal),
+        remote = if (isLocal) null else SupabaseGroupMembershipRemote(SupabaseClientProvider.get(application)),
         selfProfileId = userId,
         requestSync = requestSync,
         resolveText = { id, args -> application.getString(id, *args) },
     )
 
     companion object {
-        fun factory(application: Application, db: AppDatabase, userId: String): ViewModelProvider.Factory =
-            viewModelFactory { initializer { SharedGroupsViewModel(application, db, userId) } }
+        fun factory(application: Application, db: AppDatabase, userId: String, isLocal: Boolean = false): ViewModelProvider.Factory =
+            viewModelFactory { initializer { SharedGroupsViewModel(application, db, userId, isLocal) } }
     }
 }

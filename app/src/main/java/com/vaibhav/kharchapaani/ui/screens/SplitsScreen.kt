@@ -30,18 +30,15 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
-import com.vaibhav.kharchapaani.ui.components.awaitRequestedSync
-import androidx.compose.runtime.rememberUpdatedState
+import com.vaibhav.kharchapaani.ui.components.PaaniPullRefresh
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.semantics.selected
 import com.vaibhav.kharchapaani.domain.GroupSort
 import com.vaibhav.kharchapaani.data.settings.GroupSortPreferences
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -121,6 +118,7 @@ fun SplitsScreen(
     // Ask-to-pay: person id to when you last asked them, for friends who still owe you.
     askedAt: Map<Long, Long> = emptyMap(),
     onRequestSync: () -> Unit = {},
+    localOnly: Boolean = false,
 ) {
     val owedToMe = personBalances.filter { it.netBalance > 0 }.sumOf { it.netBalance }
     val iOwe = abs(personBalances.filter { it.netBalance < 0 }.sumOf { it.netBalance })
@@ -129,7 +127,7 @@ fun SplitsScreen(
     var section by rememberSaveable { mutableStateOf(SplitsSection.Friends) }
     val context = LocalContext.current
     val sortPreferences = remember(context) { GroupSortPreferences(context) }
-    var groupSort by remember(sortPreferences) { mutableStateOf(sortPreferences.read()) }
+    val groupSort by sortPreferences.sort.collectAsStateWithLifecycle(initialValue = sortPreferences.read())
     val sortedGroups = remember(groups, groupSort) { groupSort.apply(groups) }
     var friendToDelete by remember { mutableStateOf<PersonBalance?>(null) }
     // Who needs attention first: the biggest balances either way, then everyone who's settled.
@@ -145,40 +143,14 @@ fun SplitsScreen(
         onDismiss = { friendToDelete = null }
     )
 
-    var isRefreshing by remember { mutableStateOf(false) }
-
-    val currentSyncStatus by rememberUpdatedState(syncStatus)
-    LaunchedEffect(isRefreshing) {
-        if (isRefreshing) {
-            try {
-                awaitRequestedSync { currentSyncStatus.isSyncing }
-            } finally {
-                isRefreshing = false
-            }
-        }
-    }
-
-    val pullToRefreshState = rememberPullToRefreshState()
-    PullToRefreshBox(
-        isRefreshing = isRefreshing,
-        onRefresh = {
-            isRefreshing = true
-            onRequestSync()
-        },
-        state = pullToRefreshState,
+    PaaniPullRefresh(
+        syncStatus = syncStatus,
+        onRequestSync = onRequestSync,
         modifier = modifier
             .fillMaxSize()
-            .background(CharcoalBg)
-            .testTag("splits_pull_to_refresh"),
-        indicator = {
-            PullToRefreshDefaults.Indicator(
-                state = pullToRefreshState,
-                isRefreshing = isRefreshing,
-                modifier = Modifier.align(Alignment.TopCenter).testTag("splits_pull_refresh_indicator"),
-                containerColor = CharcoalElevated,
-                color = WarmAmberPrimary,
-            )
-        },
+            .background(CharcoalBg),
+        tagPrefix = "splits",
+        localOnly = localOnly,
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -295,7 +267,6 @@ fun SplitsScreen(
                 }
                 item(key = "group_sort") {
                     GroupSortPicker(groupSort) {
-                        groupSort = it
                         sortPreferences.write(it)
                     }
                 }

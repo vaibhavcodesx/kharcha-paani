@@ -17,6 +17,8 @@ import com.vaibhav.kharchapaani.domain.QuietHours
 import com.vaibhav.kharchapaani.domain.UpiPayee
 import com.vaibhav.kharchapaani.reminder.ReminderSettings
 import kotlinx.serialization.json.Json
+import kotlinx.coroutines.flow.first
+import com.vaibhav.kharchapaani.domain.EverythingSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
@@ -33,6 +35,13 @@ class AppSettings internal constructor(private val store: DataStore<Preferences>
 
     /** Whether closing a sheet with unsaved input asks first (backlog item 2). On unless turned off. */
     val askBeforeDiscarding: Flow<Boolean> = store.data.map { it[ASK_BEFORE_DISCARDING] ?: true }
+
+    /** Whether the people in a split see this account's bill photos (docs/designs/bill-photo-sync.md). On by default. */
+    val shareBillPhotos: Flow<Boolean> = store.data.map { it[SHARE_BILL_PHOTOS] ?: true }
+
+    suspend fun setShareBillPhotos(share: Boolean) {
+        store.edit { it[SHARE_BILL_PHOTOS] = share }
+    }
 
     suspend fun setAskBeforeDiscarding(ask: Boolean) {
         store.edit { it[ASK_BEFORE_DISCARDING] = ask }
@@ -151,6 +160,62 @@ class AppSettings internal constructor(private val store: DataStore<Preferences>
         }
     }
 
+    /** A consistent preference snapshot for the complete archive; credentials/consent are excluded. */
+    suspend fun collectEverythingSettings(userId: String): EverythingSettings {
+        val prefs = store.data.first()
+        val categories = prefs[categoryPrefsKey(userId)]?.let {
+            json.decodeFromString(CategoryPrefs.serializer(), it)
+        } ?: CategoryPrefs()
+        return EverythingSettings(
+            customExpenseCategories = categories.customExpense,
+            customIncomeCategories = categories.customIncome,
+            hiddenCategories = categories.hiddenCategories.toList(),
+            customPaymentMethods = categories.customPaymentMethods,
+            hiddenPaymentMethods = categories.hiddenPaymentMethods.toList(),
+            defaultCategory = categories.defaultCategory,
+            defaultPaymentMethod = categories.defaultPaymentMethod,
+            askBeforeDiscarding = prefs[ASK_BEFORE_DISCARDING] ?: true,
+            reminderEnabled = prefs[REMINDER_ENABLED] ?: true,
+            reminderMinute = prefs[REMINDER_MINUTE] ?: ReminderSettings.DEFAULT_MINUTE_OF_DAY,
+            paymentsToConfirm = prefs[PAYMENTS_TO_CONFIRM] ?: true,
+            quietHoursEnabled = prefs[QUIET_HOURS_ENABLED] ?: true,
+            quietHoursStart = prefs[QUIET_HOURS_START] ?: QuietHours.DEFAULT_START,
+            quietHoursEnd = prefs[QUIET_HOURS_END] ?: QuietHours.DEFAULT_END,
+            upiId = prefs[upiIdKey(userId)],
+            upiName = prefs[upiNameKey(userId)],
+        )
+    }
+
+    /** One atomic DataStore write; repeatable after an interrupted full restore. No consent fields. */
+    suspend fun restoreEverythingSettings(userId: String, saved: EverythingSettings) {
+        require(saved.reminderMinute in 0..1439 && saved.quietHoursStart in 0..1439 && saved.quietHoursEnd in 0..1439)
+        val categories = CategoryPrefs(
+            customExpense = saved.customExpenseCategories,
+            customIncome = saved.customIncomeCategories,
+            hiddenCategories = saved.hiddenCategories.toSet(),
+            customPaymentMethods = saved.customPaymentMethods,
+            hiddenPaymentMethods = saved.hiddenPaymentMethods.toSet(),
+            defaultCategory = saved.defaultCategory,
+            defaultPaymentMethod = saved.defaultPaymentMethod,
+        )
+        store.edit { prefs ->
+            prefs[categoryPrefsKey(userId)] = json.encodeToString(CategoryPrefs.serializer(), categories)
+            prefs[ASK_BEFORE_DISCARDING] = saved.askBeforeDiscarding
+            prefs[REMINDER_ENABLED] = saved.reminderEnabled
+            prefs[REMINDER_MINUTE] = saved.reminderMinute
+            prefs[PAYMENTS_TO_CONFIRM] = saved.paymentsToConfirm
+            prefs[QUIET_HOURS_ENABLED] = saved.quietHoursEnabled
+            prefs[QUIET_HOURS_START] = saved.quietHoursStart
+            prefs[QUIET_HOURS_END] = saved.quietHoursEnd
+            if (saved.upiId == null || saved.upiName == null) {
+                prefs.remove(upiIdKey(userId)); prefs.remove(upiNameKey(userId))
+            } else {
+                prefs[upiIdKey(userId)] = saved.upiId
+                prefs[upiNameKey(userId)] = saved.upiName
+            }
+        }
+    }
+
     /**
      * How many AI answers have been generated today (backlog item 16).
      *
@@ -182,6 +247,7 @@ class AppSettings internal constructor(private val store: DataStore<Preferences>
         val AI_USAGE_COUNT = intPreferencesKey("ai_usage_count")
         fun categoryPrefsKey(userId: String) = stringPreferencesKey("category_prefs_$userId")
         val ASK_BEFORE_DISCARDING = booleanPreferencesKey("ask_before_discarding")
+        val SHARE_BILL_PHOTOS = booleanPreferencesKey("share_bill_photos")
         val AI_NOTICE_ACCEPTED = booleanPreferencesKey("ai_notice_accepted")
         val REMINDER_ENABLED = booleanPreferencesKey("reminder_enabled")
         val REMINDER_MINUTE = intPreferencesKey("reminder_minute_of_day")
