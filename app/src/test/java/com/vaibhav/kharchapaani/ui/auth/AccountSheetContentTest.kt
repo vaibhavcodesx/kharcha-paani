@@ -92,7 +92,7 @@ class AccountSheetContentTest {
         show(ProfileState.Unavailable)
 
         composeTestRule.onNodeWithTag("profile_name_input").assertDoesNotExist()
-        composeTestRule.onNodeWithText("Your name and avatar can be changed once your cloud profile is reachable.").assertExists()
+        composeTestRule.onNodeWithText("You can change your name and avatar once your account is reachable.").assertExists()
     }
 
     @Test

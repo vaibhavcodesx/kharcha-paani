@@ -2,19 +2,19 @@
 <resources>
     <string name="everything_backup_restore_title">Restore everything</string>
     <string name="everything_backup_counts">Entries: %1$d\nFriends: %2$d\nGroups: %3$d\nMemberships: %4$d\nSplits: %5$d\nShares: %6$d\nSettlements: %7$d\nSubscriptions: %8$d\nSaved asks: %9$d\nBill photos: %10$d</string>
-    <string name="everything_backup_settings_included">Also includes saved categories, payment methods and preferences.</string>
-    <string name="everything_backup_offline_copy">Shared history stays an offline copy. It does not join groups or upload to an account.</string>
-    <string name="everything_backup_restore_scope">Restore keeps the saved entries, splits, guest shares, confirmation states and subscription checkpoints. It requires an empty local ledger and does not replace or merge existing data.</string>
-    <string name="everything_backup_requires_local">Switch to On this phone before restoring a complete archive.</string>
-    <string name="everything_backup_requires_empty">This ledger already has data. Choose an empty local ledger to restore this archive.</string>
-    <string name="everything_backup_read_error">This archive could not be read. Choose a supported complete archive.</string>
-    <string name="everything_backup_restore_working">Reading or restoring your archive…</string>
+    <string name="everything_backup_settings_included">Your categories, payment methods and settings come too.</string>
+    <string name="everything_backup_offline_copy">Shared groups come back as your own copy. Restoring doesn\'t rejoin them or upload anything.</string>
+    <string name="everything_backup_restore_scope">Everything comes back as it was saved: entries, splits, payments and subscriptions. It only goes into an empty ledger on this phone, so nothing you have now is replaced or mixed in.</string>
+    <string name="everything_backup_requires_local">Switch to On this phone first, then restore.</string>
+    <string name="everything_backup_requires_empty">This ledger already has entries. A full backup only goes into an empty one.</string>
+    <string name="everything_backup_read_error">Couldn\'t read that file. Pick a backup saved by Kharcha Paani.</string>
+    <string name="everything_backup_restore_working">Opening your backup…</string>
     <string name="everything_backup_restore">Restore</string>
     <string name="everything_backup_cancel">Cancel</string>
     <string name="everything_backup_export_title">Export everything</string>
-    <string name="everything_backup_export_private">The file is not encrypted and contains your full financial history and bill photos. Keep it somewhere private and share it only with someone you trust.</string>
-    <string name="everything_backup_export_contents">Includes entries, splits and guest shares, friends, groups and memberships, settlement states, subscriptions and checkpoints, saved asks, bill photos, categories, payment methods and preferences.</string>
-    <string name="everything_backup_export_scope">Only data held on this phone is included, using its latest saved edits. This does not fetch server history or include login credentials or consent choices.</string>
-    <string name="everything_backup_export_working">Preparing your archive…</string>
+    <string name="everything_backup_export_private">The file isn\'t encrypted, and it has all your money history and bill photos. Keep it somewhere private.</string>
+    <string name="everything_backup_export_contents">Everything: entries, splits, friends, groups, payments, subscriptions, saved asks, bill photos, categories and settings.</string>
+    <string name="everything_backup_export_scope">It\'s what\'s on this phone right now, without your sign-in or your AI choice.</string>
+    <string name="everything_backup_export_working">Making your backup…</string>
     <string name="everything_backup_export">Choose where to save</string>
 </resources>

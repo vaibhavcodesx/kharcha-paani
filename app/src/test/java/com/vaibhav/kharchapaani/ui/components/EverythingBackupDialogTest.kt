@@ -43,7 +43,7 @@ class EverythingBackupDialogTest {
             EverythingBackupDialog(backup, true, true, false, { restores++ }, { dismisses++ })
         } }
         compose.onNodeWithText("Friends: 2", substring = true).assertExists()
-        compose.onNodeWithText("Shared history stays an offline copy. It does not join groups or upload to an account.").assertExists()
+        compose.onNodeWithText("Shared groups come back as your own copy. Restoring doesn't rejoin them or upload anything.").assertExists()
         assertEquals(0, restores)
         compose.waitUntil(5_000) {
             compose.onNodeWithTag("everything_restore_confirm").fetchSemanticsNode().config
@@ -60,7 +60,7 @@ class EverythingBackupDialogTest {
             EverythingBackupDialog(backup, true, false, false, { restores++ }, {})
         } }
         awaitValidation()
-        compose.onNodeWithText("This ledger already has data. Choose an empty local ledger to restore this archive.").assertExists()
+        compose.onNodeWithText("This ledger already has entries. A full backup only goes into an empty one.").assertExists()
         compose.onNodeWithTag("everything_restore_confirm").assertIsNotEnabled().performClick()
         assertEquals(0, restores)
     }
@@ -71,7 +71,7 @@ class EverythingBackupDialogTest {
             EverythingBackupDialog(backup, false, true, false, { restores++ }, {})
         } }
         awaitValidation()
-        compose.onNodeWithText("Switch to On this phone before restoring a complete archive.").assertExists()
+        compose.onNodeWithText("Switch to On this phone first, then restore.").assertExists()
         compose.onNodeWithTag("everything_restore_confirm").assertIsNotEnabled().performClick()
         assertEquals(0, restores)
     }
@@ -95,10 +95,10 @@ class EverythingBackupDialogTest {
             EverythingBackupDialog(backup.copy(version = 999), true, true, false, { restores++ }, {})
         } }
         compose.waitUntil(5_000) {
-            compose.onAllNodesWithText("This archive could not be read. Choose a supported complete archive.")
+            compose.onAllNodesWithText("Couldn't read that file. Pick a backup saved by Kharcha Paani.")
                 .fetchSemanticsNodes().isNotEmpty()
         }
-        compose.onNodeWithText("This archive could not be read. Choose a supported complete archive.").assertExists()
+        compose.onNodeWithText("Couldn't read that file. Pick a backup saved by Kharcha Paani.").assertExists()
         compose.onNodeWithTag("everything_restore_confirm").assertIsNotEnabled().performClick()
         assertEquals(0, restores)
     }
@@ -128,8 +128,8 @@ class EverythingBackupDialogTest {
         compose.setContent { SplitFlowTheme {
             EverythingBackupExportDialog(true, false, { exports++ }, { dismisses++ })
         } }
-        compose.onNodeWithText("The file is not encrypted and contains your full financial history and bill photos. Keep it somewhere private and share it only with someone you trust.").assertExists()
-        compose.onNodeWithText("Only data held on this phone is included, using its latest saved edits. This does not fetch server history or include login credentials or consent choices.").assertExists()
+        compose.onNodeWithText("The file isn't encrypted, and it has all your money history and bill photos. Keep it somewhere private.").assertExists()
+        compose.onNodeWithText("It's what's on this phone right now, without your sign-in or your AI choice.").assertExists()
         assertEquals(0, exports)
         compose.onNodeWithTag("everything_export_cancel").performClick()
         assertEquals(0, exports)

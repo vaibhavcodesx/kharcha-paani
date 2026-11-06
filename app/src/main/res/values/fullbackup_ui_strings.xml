@@ -3,6 +3,6 @@
     <string name="full_backup_ui_export_title">Export everything</string>
     <string name="full_backup_ui_export_detail">All saved entries, splits, friends, groups, settings and bill photos</string>
     <string name="full_backup_ui_restore_title">Restore from a backup</string>
-    <string name="full_backup_ui_restore_detail">Complete archives need an empty local ledger; older backups add missing local data</string>
-    <string name="full_backup_ui_picker_unavailable">A file picker could not be opened. Try again with a file manager installed.</string>
+    <string name="full_backup_ui_restore_detail">A full backup goes into an empty ledger; an older one adds what\'s missing</string>
+    <string name="full_backup_ui_picker_unavailable">Couldn\'t open a file picker. Install a file manager and try again.</string>
 </resources>

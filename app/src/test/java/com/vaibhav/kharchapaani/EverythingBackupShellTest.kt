@@ -115,7 +115,7 @@ class EverythingBackupShellTest {
         compose.onNodeWithTag("home_account_button").performClick()
         compose.onNodeWithTag("setting_backup").performScrollTo().performClick()
         compose.onNodeWithTag("everything_export_dialog").assertExists()
-        compose.onNodeWithText("The file is not encrypted and contains your full financial history and bill photos. Keep it somewhere private and share it only with someone you trust.").assertExists()
+        compose.onNodeWithText("The file isn't encrypted, and it has all your money history and bill photos. Keep it somewhere private.").assertExists()
         assertNull(shadowOf(application).nextStartedActivity)
         assertTrue(viewModel.fullBackupExportOpen.value)
         assertFalse(viewModel.fullBackupBusy.value)

@@ -31,7 +31,7 @@ class AiNoticeContentTest {
     fun `it says who reads it, that Google may use it, and that it's never sold`() {
         show()
 
-        compose.onNodeWithText("Bills, statements and quick-add text are read by Google Gemini").assertExists()
+        compose.onNodeWithText("Groq reads typed quick adds, and Google Gemini reads bills, statements and voice").assertExists()
         compose.onNodeWithText("Google may use what's sent to improve Gemini, and its reviewers may see it", substring = true).assertExists()
         compose.onNodeWithText("we never sell your data", substring = true).assertExists()
     }

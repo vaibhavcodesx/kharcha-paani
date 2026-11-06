@@ -1,0 +1,5040 @@
+[
+ {
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "task": "bill",
+  "rows": [
+   {
+    "case": "restaurant_gst",
+    "ms": 1695,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "grocery_discount",
+    "ms": 2665,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "cafe_tip",
+    "ms": 3074,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "upi_screenshot",
+    "ms": 3946,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "fuel",
+    "ms": 5223,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "pharmacy",
+    "ms": 26757,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "restaurant_blurry",
+    "ms": 24106,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "grocery_rotated",
+    "ms": 15748,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "upi_received",
+    "ms": 19628,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "electricity",
+    "ms": 8906,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-3.5-flash-lite",
+  "task": "bill",
+  "rows": [
+   {
+    "case": "restaurant_gst",
+    "ms": 4977,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1092,
+     "merchant": "Punjab Grill",
+     "category": "Food",
+     "paymentMethod": "Credit Card",
+     "date": "2026-11-03T13:05",
+     "note": "Bill No: 6305"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "grocery_discount",
+    "ms": 4305,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 900.0,
+     "merchant": "DMART",
+     "category": "Groceries",
+     "paymentMethod": "UPI",
+     "date": "2026-11-02T13:05",
+     "note": "Bill No: 3471"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "cafe_tip",
+    "ms": 4548,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 491.5,
+     "merchant": "Blue Tokai",
+     "category": "Beverages",
+     "paymentMethod": "Cash",
+     "date": "2026-11-05T13:05",
+     "note": "Bill No: 7468"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "upi_screenshot",
+    "ms": 5497,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 503: {\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "fuel",
+    "ms": 7207,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 500,
+     "merchant": "Indian Oil",
+     "category": "Transport",
+     "paymentMethod": "Cash",
+     "date": "2026-11-01T13:05",
+     "note": "Bill No: 1791"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "pharmacy",
+    "ms": 42155,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 417.0,
+     "merchant": "Apollo Pharmacy",
+     "category": "Health",
+     "paymentMethod": "Debit Card",
+     "date": "2026-10-28T13:05",
+     "note": "Bill No: 2186"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "restaurant_blurry",
+    "ms": 11304,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 2934.76,
+     "merchant": "Barbeque Nation",
+     "category": "Food",
+     "paymentMethod": "Credit Card",
+     "date": "2026-10-31T13:05",
+     "note": "Bill No: 9779"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "grocery_rotated",
+    "ms": 12565,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 234.0,
+     "merchant": "Reliance Fresh",
+     "category": "Groceries",
+     "paymentMethod": "Cash",
+     "date": "2026-11-06T13:05",
+     "note": "Bill No: 2542"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "upi_received",
+    "ms": 15681,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 750,
+     "merchant": "Priya Sharma",
+     "category": "Income (Other)",
+     "paymentMethod": "UPI",
+     "date": "2026-11-05T19:42",
+     "note": "603159081935"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "electricity",
+    "ms": 9312,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1920,
+     "merchant": "Tata Power",
+     "category": "Bills",
+     "paymentMethod": "UPI",
+     "date": "2026-11-02T13:05",
+     "note": "Bill No: 1950"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-3-flash-preview",
+  "task": "bill",
+  "rows": [
+   {
+    "case": "restaurant_gst",
+    "ms": 1787,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "grocery_discount",
+    "ms": 2668,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "cafe_tip",
+    "ms": 3083,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "upi_screenshot",
+    "ms": 4329,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "fuel",
+    "ms": 5067,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "pharmacy",
+    "ms": 43459,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "restaurant_blurry",
+    "ms": 16875,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "grocery_rotated",
+    "ms": 22680,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "upi_received",
+    "ms": 8255,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "electricity",
+    "ms": 2491,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-lite",
+  "task": "bill",
+  "rows": [
+   {
+    "case": "restaurant_gst",
+    "ms": 39320,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1092,
+     "merchant": "Punjab Grill",
+     "category": "Food",
+     "paymentMethod": "Credit Card",
+     "date": "2026-11-03T13:05",
+     "note": "Bill No: 6305"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "grocery_discount",
+    "ms": 4151,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 900,
+     "merchant": "DMART",
+     "category": "Groceries",
+     "paymentMethod": "UPI",
+     "date": "2026-11-02T13:05",
+     "note": "Bill No: 3471"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "cafe_tip",
+    "ms": 6592,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 491.5,
+     "merchant": "Blue Tokai",
+     "category": "Beverages",
+     "paymentMethod": "Cash",
+     "date": "2026-11-05T13:05",
+     "note": "Bill No: 7468"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "upi_screenshot",
+    "ms": 2775,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1500,
+     "merchant": "Ramesh Kumar",
+     "category": "Other",
+     "paymentMethod": "UPI",
+     "date": "2026-11-04T19:42",
+     "note": "UPI transaction ID: 603197366946"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "fuel",
+    "ms": 23559,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 500,
+     "merchant": "Indian Oil",
+     "category": "Transport",
+     "paymentMethod": "Cash",
+     "date": "2026-11-01T13:05",
+     "note": "Bill No: 1791"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "pharmacy",
+    "ms": 20312,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 417,
+     "merchant": "Apollo Pharmacy",
+     "category": "Health",
+     "paymentMethod": "Debit Card",
+     "date": "2026-10-28T13:05",
+     "note": "Bill No: 2186"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "restaurant_blurry",
+    "ms": 9951,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 2934.76,
+     "merchant": "Barbeque Nation",
+     "category": "Food",
+     "paymentMethod": "Credit Card",
+     "date": "2026-10-31T13:05",
+     "note": "Bill No: 9779"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "grocery_rotated",
+    "ms": 21216,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 234,
+     "merchant": "Reliance Fresh",
+     "category": "Groceries",
+     "paymentMethod": "Cash",
+     "date": "2026-11-06T13:05",
+     "note": "Bill No: 2542"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "upi_received",
+    "ms": 7662,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 750,
+     "merchant": "Priya Sharma",
+     "category": "Income (Other)",
+     "paymentMethod": "UPI",
+     "date": "2026-11-05T19:42",
+     "note": "UPI transaction ID: 603159081935"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "electricity",
+    "ms": 4078,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1920,
+     "merchant": "Tata Power",
+     "category": "Bills",
+     "paymentMethod": "UPI",
+     "date": "2026-11-02T13:05",
+     "note": "Bill No: 1950"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-3-flash-preview",
+  "task": "text",
+  "rows": [
+   {
+    "case": "chai 40 cash",
+    "ms": 1919,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 40,
+     "merchant": "Chai",
+     "category": "Beverages",
+     "paymentMethod": "Cash",
+     "date": "",
+     "splitWith": [],
+     "note": "chai 40 cash"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "dinner 1200 with Rohan and Ankit",
+    "ms": 2279,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "kal 5 sau ka petrol",
+    "ms": 2482,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "swiggy 349 gpay",
+    "ms": 2571,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "uber to office 236",
+    "ms": 3725,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "1.2k groceries dmart card",
+    "ms": 8248,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "salary 85000 credited",
+    "ms": 4667,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "movie tickets 2 for 640 with priya",
+    "ms": 5836,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "rent 18000 bank transfer",
+    "ms": 4548,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "dedh sau ka auto",
+    "ms": 3804,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "paid 999 for netflix credit card",
+    "ms": 4069,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "medicines 420 apollo",
+    "ms": 3614,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "electricity bill 2,340 paytm",
+    "ms": 1468,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "haircut 300 cash yesterday",
+    "ms": 1668,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "client paid 25000 for the logo",
+    "ms": 1588,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "zomato 560 split with aaru",
+    "ms": 1828,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "2 coffees 380 starbucks",
+    "ms": 1418,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "amazon order 1499",
+    "ms": 2488,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "goa trip hotel 9600 with rohan ankit priya",
+    "ms": 3858,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "biscuits and maggi 120",
+    "ms": 2290,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "metro recharge 500 phonepe",
+    "ms": 4529,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "sip 5000 on 1 nov",
+    "ms": 1669,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "refund from myntra 799",
+    "ms": 1693,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "parso pizza 650 with mayank",
+    "ms": 1494,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "gym fees 1500 last friday",
+    "ms": 3035,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "bhai ko 2000 diye",
+    "ms": 1027,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "lunch 270 office canteen",
+    "ms": 914,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "recharge jio 299",
+    "ms": 867,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "2 lakh gold",
+    "ms": 926,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "doodh 64 sabzi 90",
+    "ms": 1030,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "task": "text",
+  "rows": [
+   {
+    "case": "chai 40 cash",
+    "ms": 1166,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "dinner 1200 with Rohan and Ankit",
+    "ms": 2039,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "kal 5 sau ka petrol",
+    "ms": 2368,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "swiggy 349 gpay",
+    "ms": 2542,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "uber to office 236",
+    "ms": 3599,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "1.2k groceries dmart card",
+    "ms": 7113,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "salary 85000 credited",
+    "ms": 5116,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "movie tickets 2 for 640 with priya",
+    "ms": 7745,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "rent 18000 bank transfer",
+    "ms": 4668,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "dedh sau ka auto",
+    "ms": 3818,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "paid 999 for netflix credit card",
+    "ms": 4073,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "medicines 420 apollo",
+    "ms": 3597,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "electricity bill 2,340 paytm",
+    "ms": 1453,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "haircut 300 cash yesterday",
+    "ms": 1903,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "client paid 25000 for the logo",
+    "ms": 1570,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "zomato 560 split with aaru",
+    "ms": 1802,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "2 coffees 380 starbucks",
+    "ms": 1471,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "amazon order 1499",
+    "ms": 2546,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "goa trip hotel 9600 with rohan ankit priya",
+    "ms": 3839,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "biscuits and maggi 120",
+    "ms": 2282,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "metro recharge 500 phonepe",
+    "ms": 4679,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "sip 5000 on 1 nov",
+    "ms": 1639,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "refund from myntra 799",
+    "ms": 1676,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "parso pizza 650 with mayank",
+    "ms": 1491,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "gym fees 1500 last friday",
+    "ms": 3006,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "bhai ko 2000 diye",
+    "ms": 951,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "lunch 270 office canteen",
+    "ms": 862,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "recharge jio 299",
+    "ms": 990,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "2 lakh gold",
+    "ms": 885,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "doodh 64 sabzi 90",
+    "ms": 1135,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error,",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   }
+  ]
+ },
+ {
+  "provider": "gemini",
+  "model": "gemini-3.5-flash-lite",
+  "task": "text",
+  "rows": [
+   {
+    "case": "chai 40 cash",
+    "ms": 2445,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 40,
+     "merchant": "Chai",
+     "category": "Beverages",
+     "paymentMethod": "Cash",
+     "date": "",
+     "splitWith": [],
+     "note": "chai 40 cash"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "dinner 1200 with Rohan and Ankit",
+    "ms": 2554,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1200,
+     "merchant": "Dinner",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Rohan",
+      "Ankit"
+     ],
+     "note": "dinner 1200 with Rohan and Ankit"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "kal 5 sau ka petrol",
+    "ms": 3696,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 500,
+     "merchant": "Petrol",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "2026-11-05",
+     "splitWith": [],
+     "note": "kal 5 sau ka petrol"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "swiggy 349 gpay",
+    "ms": 3312,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 349,
+     "merchant": "Swiggy",
+     "category": "Food",
+     "paymentMethod": "GPay",
+     "date": "",
+     "splitWith": [],
+     "note": "swiggy 349 gpay"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "uber to office 236",
+    "ms": 5262,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 503: {\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "1.2k groceries dmart card",
+    "ms": 9562,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 503: {\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "salary 85000 credited",
+    "ms": 5991,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 85000,
+     "merchant": "Salary",
+     "category": "Income (Salary)",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "salary 85000 credited"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "movie tickets 2 for 640 with priya",
+    "ms": 7996,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 503: {\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "rent 18000 bank transfer",
+    "ms": 5489,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 18000,
+     "merchant": "Rent",
+     "category": "Rent",
+     "paymentMethod": "Bank Transfer",
+     "date": "",
+     "splitWith": [],
+     "note": "rent 18000 bank transfer"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "dedh sau ka auto",
+    "ms": 4748,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 150,
+     "merchant": "Auto",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "dedh sau ka auto"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "paid 999 for netflix credit card",
+    "ms": 5019,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 999,
+     "merchant": "Netflix",
+     "category": "Entertainment",
+     "paymentMethod": "Credit Card",
+     "date": "",
+     "splitWith": [],
+     "note": "paid 999 for netflix credit card"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "medicines 420 apollo",
+    "ms": 4213,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 420,
+     "merchant": "Apollo",
+     "category": "Health",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "medicines 420 apollo"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "electricity bill 2,340 paytm",
+    "ms": 2214,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 2340,
+     "merchant": "Electricity bill",
+     "category": "Bills",
+     "paymentMethod": "Paytm",
+     "date": "",
+     "splitWith": [],
+     "note": "electricity bill 2,340 paytm"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "haircut 300 cash yesterday",
+    "ms": 2360,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 300,
+     "merchant": "Haircut",
+     "category": "Self-care",
+     "paymentMethod": "Cash",
+     "date": "2026-11-05",
+     "splitWith": [],
+     "note": "haircut 300 cash yesterday"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "client paid 25000 for the logo",
+    "ms": 2268,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 503: {\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "zomato 560 split with aaru",
+    "ms": 2345,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 560,
+     "merchant": "Zomato",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Aaru"
+     ],
+     "note": "zomato 560 split with aaru"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "2 coffees 380 starbucks",
+    "ms": 2442,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 380,
+     "merchant": "Starbucks",
+     "category": "Beverages",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "2 coffees 380 starbucks"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "amazon order 1499",
+    "ms": 3265,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1499,
+     "merchant": "Amazon",
+     "category": "Shopping",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "amazon order 1499"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "goa trip hotel 9600 with rohan ankit priya",
+    "ms": 4502,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 9600,
+     "merchant": "Goa Trip Hotel",
+     "category": "Entertainment",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Rohan",
+      "Ankit",
+      "Priya"
+     ],
+     "note": "goa trip hotel 9600 with rohan ankit priya"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": false,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "biscuits and maggi 120",
+    "ms": 2743,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 120,
+     "merchant": "Biscuits and Maggi",
+     "category": "Groceries",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "biscuits and maggi 120"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "metro recharge 500 phonepe",
+    "ms": 5447,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 500,
+     "merchant": "Metro Recharge",
+     "category": "Transport",
+     "paymentMethod": "PhonePe",
+     "date": "",
+     "splitWith": [],
+     "note": "metro recharge 500 phonepe"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "sip 5000 on 1 nov",
+    "ms": 3174,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 5000,
+     "merchant": "SIP",
+     "category": "Investment",
+     "paymentMethod": "UPI",
+     "date": "2026-11-01",
+     "splitWith": [],
+     "note": "sip 5000 on 1 nov"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "refund from myntra 799",
+    "ms": 2443,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 799,
+     "merchant": "Myntra",
+     "category": "Income (Other)",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "refund from myntra 799"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "parso pizza 650 with mayank",
+    "ms": 2460,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 503: {\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "gym fees 1500 last friday",
+    "ms": 4044,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 503: {\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "bhai ko 2000 diye",
+    "ms": 2196,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 2000,
+     "merchant": "Rohan (loan)",
+     "category": "Other",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Rohan"
+     ],
+     "note": "bhai ko 2000 diye"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": false,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": false
+    }
+   },
+   {
+    "case": "lunch 270 office canteen",
+    "ms": 1981,
+    "stt_ms": null,
+    "heard": null,
+    "error": "HTTP 503: {\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later",
+    "got": null,
+    "fields": {
+     "amount": false,
+     "type": false,
+     "merchant": false,
+     "category": false,
+     "payment": false,
+     "date": false,
+     "split": false
+    }
+   },
+   {
+    "case": "recharge jio 299",
+    "ms": 2156,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 299,
+     "merchant": "Jio",
+     "category": "Bills",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "recharge jio 299"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "2 lakh gold",
+    "ms": 1694,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 200000,
+     "merchant": "Gold",
+     "category": "Investment",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "2 lakh gold"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "doodh 64 sabzi 90",
+    "ms": 1758,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 154,
+     "merchant": "Doodh and sabzi",
+     "category": "Groceries",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "doodh 64 sabzi 90"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   }
+  ]
+ },
+ {
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "task": "text",
+  "rows": [
+   {
+    "case": "chai 40 cash",
+    "ms": 2129,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 40,
+     "merchant": "Chai",
+     "category": "Beverages",
+     "paymentMethod": "Cash",
+     "date": "",
+     "splitWith": [],
+     "note": "chai 40 cash"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "dinner 1200 with Rohan and Ankit",
+    "ms": 1706,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1200,
+     "merchant": "Dinner",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Rohan",
+      "Ankit"
+     ],
+     "note": "dinner 1200 with Rohan and Ankit"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "kal 5 sau ka petrol",
+    "ms": 1576,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 500,
+     "merchant": "Petrol",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "2026-11-05",
+     "splitWith": [],
+     "note": "kal 5 sau ka petrol"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "swiggy 349 gpay",
+    "ms": 4716,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 349,
+     "merchant": "Swiggy",
+     "category": "Food",
+     "paymentMethod": "GPay",
+     "date": "",
+     "splitWith": [],
+     "note": "swiggy 349 gpay"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "uber to office 236",
+    "ms": 1905,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 236,
+     "merchant": "Uber",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "uber to office 236"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "1.2k groceries dmart card",
+    "ms": 2508,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1200,
+     "merchant": "Dmart",
+     "category": "Groceries",
+     "paymentMethod": "Debit Card",
+     "date": "",
+     "splitWith": [],
+     "note": "1.2k groceries dmart card"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "salary 85000 credited",
+    "ms": 2603,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 85000,
+     "merchant": "Salary",
+     "category": "Income (Salary)",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "salary 85000 credited"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "movie tickets 2 for 640 with priya",
+    "ms": 1561,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 640,
+     "merchant": "Movie tickets",
+     "category": "Entertainment",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Priya"
+     ],
+     "note": "movie tickets 2 for 640 with priya"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "rent 18000 bank transfer",
+    "ms": 1494,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 18000,
+     "merchant": "Rent",
+     "category": "Rent",
+     "paymentMethod": "Bank Transfer",
+     "date": "",
+     "splitWith": [],
+     "note": "rent 18000 bank transfer"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "dedh sau ka auto",
+    "ms": 2823,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 150,
+     "merchant": "Auto",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "dedh sau ka auto"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "paid 999 for netflix credit card",
+    "ms": 1126,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 999,
+     "merchant": "Netflix",
+     "category": "Entertainment",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "paid 999 for netflix credit card"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": false,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "medicines 420 apollo",
+    "ms": 1252,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 420,
+     "merchant": "Apollo",
+     "category": "Health",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "medicines 420 apollo"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "electricity bill 2,340 paytm",
+    "ms": 2540,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 2340,
+     "merchant": "Electricity",
+     "category": "Bills",
+     "paymentMethod": "Paytm",
+     "date": "",
+     "splitWith": [],
+     "note": "electricity bill 2,340 paytm"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "haircut 300 cash yesterday",
+    "ms": 2339,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 300,
+     "merchant": "Haircut",
+     "category": "Self-care",
+     "paymentMethod": "Cash",
+     "date": "2026-11-05",
+     "splitWith": [],
+     "note": "haircut 300 cash yesterday"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "client paid 25000 for the logo",
+    "ms": 1149,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 25000,
+     "merchant": "Client",
+     "category": "Income (Client)",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "client paid 25000 for the logo"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "zomato 560 split with aaru",
+    "ms": 1281,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 560,
+     "merchant": "Zomato",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Aaru"
+     ],
+     "note": "zomato 560 split with aaru"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "2 coffees 380 starbucks",
+    "ms": 2489,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 380,
+     "merchant": "Starbucks",
+     "category": "Beverages",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "2 coffees 380 starbucks"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "amazon order 1499",
+    "ms": 1434,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1499,
+     "merchant": "Amazon",
+     "category": "Shopping",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "amazon order 1499"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "goa trip hotel 9600 with rohan ankit priya",
+    "ms": 2138,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 9600,
+     "merchant": "Goa Trip Hotel",
+     "category": "Other",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Rohan",
+      "Ankit",
+      "Priya"
+     ],
+     "note": "goa trip hotel 9600 with rohan ankit priya"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "biscuits and maggi 120",
+    "ms": 4344,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 120,
+     "merchant": "Local Store",
+     "category": "Packaged goods",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "biscuits and maggi 120"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": false,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "metro recharge 500 phonepe",
+    "ms": 1457,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 500,
+     "merchant": "Metro",
+     "category": "Transport",
+     "paymentMethod": "PhonePe",
+     "date": "",
+     "splitWith": [],
+     "note": "metro recharge 500 phonepe"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "sip 5000 on 1 nov",
+    "ms": 2246,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 5000,
+     "merchant": "Sip",
+     "category": "Beverages",
+     "paymentMethod": "UPI",
+     "date": "2026-11-01",
+     "splitWith": [],
+     "note": "sip 5000 on 1 nov"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": false,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "refund from myntra 799",
+    "ms": 2144,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 799,
+     "merchant": "Myntra",
+     "category": "Income (Other)",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "refund from myntra 799"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "parso pizza 650 with mayank",
+    "ms": 2812,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 650,
+     "merchant": "Parso",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Mayank"
+     ],
+     "note": "parso pizza 650 with mayank"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": false,
+     "category": true,
+     "payment": true,
+     "date": false,
+     "split": true
+    }
+   },
+   {
+    "case": "gym fees 1500 last friday",
+    "ms": 3790,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1500,
+     "merchant": "Gym",
+     "category": "Health",
+     "paymentMethod": "UPI",
+     "date": "2026-10-30",
+     "splitWith": [],
+     "note": "gym fees 1500 last friday"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "bhai ko 2000 diye",
+    "ms": 2587,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 2000,
+     "merchant": "Bhai",
+     "category": "Team Payment",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "bhai ko 2000 diye"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "lunch 270 office canteen",
+    "ms": 9318,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 270,
+     "merchant": "Office Canteen",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "lunch 270 office canteen"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "recharge jio 299",
+    "ms": 8019,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 299,
+     "merchant": "Jio",
+     "category": "Bills",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "recharge jio 299"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "2 lakh gold",
+    "ms": 3087,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 200000,
+     "merchant": "Gold",
+     "category": "Investment",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "2 lakh gold"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "doodh 64 sabzi 90",
+    "ms": 1403,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 154,
+     "merchant": "Doodh Sabzi",
+     "category": "Groceries",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "doodh 64 sabzi 90"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": false,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   }
+  ]
+ },
+ {
+  "provider": "groq",
+  "model": "openai/gpt-oss-20b",
+  "task": "text",
+  "rows": [
+   {
+    "case": "chai 40 cash",
+    "ms": 1649,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 40,
+     "merchant": "Chai",
+     "category": "Beverages",
+     "paymentMethod": "Cash",
+     "date": "",
+     "splitWith": [],
+     "note": "chai 40 cash"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "dinner 1200 with Rohan and Ankit",
+    "ms": 1497,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1200,
+     "merchant": "Dinner",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Rohan",
+      "Ankit"
+     ],
+     "note": "dinner 1200 with Rohan and Ankit"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "kal 5 sau ka petrol",
+    "ms": 2903,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 500,
+     "merchant": "Petrol",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "2026-11-05",
+     "splitWith": [],
+     "note": "kal 5 sau ka petrol"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "swiggy 349 gpay",
+    "ms": 2495,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 349,
+     "merchant": "Swiggy",
+     "category": "Food",
+     "paymentMethod": "GPay",
+     "date": "",
+     "splitWith": [],
+     "note": "swiggy 349 gpay"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "uber to office 236",
+    "ms": 4211,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 236,
+     "merchant": "Auto to office",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "uber to office 236"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": false,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "1.2k groceries dmart card",
+    "ms": 3905,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1200,
+     "merchant": "Dmart",
+     "category": "Groceries",
+     "paymentMethod": "Debit Card",
+     "date": "",
+     "splitWith": [],
+     "note": "1.2k groceries dmart card"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "salary 85000 credited",
+    "ms": 1337,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 85000,
+     "merchant": "Salary",
+     "category": "Income (Salary)",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "salary 85000 credited"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "movie tickets 2 for 640 with priya",
+    "ms": 1580,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 640,
+     "merchant": "Movie Tickets",
+     "category": "Entertainment",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Priya"
+     ],
+     "note": "movie tickets 2 for 640 with priya"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "rent 18000 bank transfer",
+    "ms": 2688,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 18000,
+     "merchant": "Rent",
+     "category": "Rent",
+     "paymentMethod": "Bank Transfer",
+     "date": "",
+     "splitWith": [],
+     "note": "rent 18000 bank transfer"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "dedh sau ka auto",
+    "ms": 1841,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 150,
+     "merchant": "Auto",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "dedh sau ka auto"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "paid 999 for netflix credit card",
+    "ms": 1471,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 999,
+     "merchant": "Netflix",
+     "category": "Entertainment",
+     "paymentMethod": "Credit Card",
+     "date": "",
+     "splitWith": [],
+     "note": "paid 999 for netflix credit card"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "medicines 420 apollo",
+    "ms": 1342,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 420,
+     "merchant": "Apollo",
+     "category": "Health",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "medicines 420 apollo"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "electricity bill 2,340 paytm",
+    "ms": 1273,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 2340,
+     "merchant": "Electricity Bill",
+     "category": "Bills",
+     "paymentMethod": "Paytm",
+     "date": "",
+     "splitWith": [],
+     "note": "electricity bill 2,340 paytm"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "haircut 300 cash yesterday",
+    "ms": 1067,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 300,
+     "merchant": "Haircut",
+     "category": "Self-care",
+     "paymentMethod": "Cash",
+     "date": "2026-11-05",
+     "splitWith": [],
+     "note": "haircut 300 cash yesterday"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "client paid 25000 for the logo",
+    "ms": 1053,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 25000,
+     "merchant": "Client",
+     "category": "Income (Client)",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "client paid 25000 for the logo"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "zomato 560 split with aaru",
+    "ms": 1001,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 560,
+     "merchant": "Zomato",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Aaru"
+     ],
+     "note": "zomato 560 split with aaru"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "2 coffees 380 starbucks",
+    "ms": 859,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 380,
+     "merchant": "Starbucks",
+     "category": "Beverages",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "2 coffees 380 starbucks"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "amazon order 1499",
+    "ms": 1580,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1499,
+     "merchant": "Amazon",
+     "category": "Shopping",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "amazon order 1499"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "goa trip hotel 9600 with rohan ankit priya",
+    "ms": 2061,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 9600,
+     "merchant": "Goa Trip Hotel",
+     "category": "Entertainment",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Rohan",
+      "Ankit",
+      "Priya"
+     ],
+     "note": "goa trip hotel 9600 with rohan ankit priya"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": false,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "biscuits and maggi 120",
+    "ms": 4139,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 120,
+     "merchant": "Biscuits & Maggi",
+     "category": "Packaged goods",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "biscuits and maggi 120"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "metro recharge 500 phonepe",
+    "ms": 1507,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 500,
+     "merchant": "Metro",
+     "category": "Bills",
+     "paymentMethod": "PhonePe",
+     "date": "",
+     "splitWith": [],
+     "note": "metro recharge 500 phonepe"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": false,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "sip 5000 on 1 nov",
+    "ms": 1667,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 5000,
+     "merchant": "SIP",
+     "category": "Investment",
+     "paymentMethod": "UPI",
+     "date": "2026-11-01",
+     "splitWith": [],
+     "note": "sip 5000 on 1 nov"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "refund from myntra 799",
+    "ms": 1772,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 799,
+     "merchant": "Myntra",
+     "category": "Income (Other)",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "refund from myntra 799"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "parso pizza 650 with mayank",
+    "ms": 2162,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 650,
+     "merchant": "Pizza",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "2026-11-04",
+     "splitWith": [
+      "Mayank"
+     ],
+     "note": "parso pizza 650 with mayank"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "gym fees 1500 last friday",
+    "ms": 2454,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1500,
+     "merchant": "Gym",
+     "category": "Bills",
+     "paymentMethod": "UPI",
+     "date": "2026-10-28",
+     "splitWith": [],
+     "note": "gym fees 1500 last friday"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": false,
+     "payment": true,
+     "date": false,
+     "split": true
+    }
+   },
+   {
+    "case": "bhai ko 2000 diye",
+    "ms": 2240,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 2000,
+     "merchant": "Bhai",
+     "category": "Team Payment",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "bhai ko 2000 diye"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "lunch 270 office canteen",
+    "ms": 5788,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 270,
+     "merchant": "Office Canteen",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "lunch 270 office canteen"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "recharge jio 299",
+    "ms": 3684,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 299,
+     "merchant": "Jio",
+     "category": "Bills",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "recharge jio 299"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "2 lakh gold",
+    "ms": 2541,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 200000,
+     "merchant": "Gold",
+     "category": "Investment",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "2 lakh gold"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "doodh 64 sabzi 90",
+    "ms": 1160,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 154,
+     "merchant": "Market",
+     "category": "Groceries",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "doodh 64 sabzi 90"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": false,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   }
+  ]
+ },
+ {
+  "provider": "groq",
+  "model": "qwen/qwen3.8-27b",
+  "task": "text",
+  "rows": [
+   {
+    "case": "chai 40 cash",
+    "ms": 3707,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 40,
+     "merchant": "Chai",
+     "category": "Beverages",
+     "paymentMethod": "Cash",
+     "date": "",
+     "splitWith": [],
+     "note": "chai 40 cash"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "dinner 1200 with Rohan and Ankit",
+    "ms": 1232,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1200,
+     "merchant": "Dinner",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Rohan",
+      "Ankit"
+     ],
+     "note": "dinner 1200 with Rohan and Ankit"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "kal 5 sau ka petrol",
+    "ms": 5024,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 500,
+     "merchant": "Petrol",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "2026-11-05",
+     "splitWith": [],
+     "note": "kal 5 sau ka petrol"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "swiggy 349 gpay",
+    "ms": 1205,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 349,
+     "merchant": "Swiggy",
+     "category": "Food",
+     "paymentMethod": "GPay",
+     "date": "",
+     "splitWith": [],
+     "note": "swiggy 349 gpay"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "uber to office 236",
+    "ms": 2965,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 236,
+     "merchant": "Uber to office",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "uber to office 236"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "1.2k groceries dmart card",
+    "ms": 1362,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1200,
+     "merchant": "DMart",
+     "category": "Groceries",
+     "paymentMethod": "Debit Card",
+     "date": "",
+     "splitWith": [],
+     "note": "1.2k groceries dmart card"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "salary 85000 credited",
+    "ms": 1284,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 85000,
+     "merchant": "Salary",
+     "category": "Income (Salary)",
+     "paymentMethod": "Bank Transfer",
+     "date": "",
+     "splitWith": [],
+     "note": "salary 85000 credited"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "movie tickets 2 for 640 with priya",
+    "ms": 1509,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 640,
+     "merchant": "Movie tickets",
+     "category": "Entertainment",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Priya"
+     ],
+     "note": "movie tickets 2 for 640 with priya"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "rent 18000 bank transfer",
+    "ms": 2282,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 18000,
+     "merchant": "Rent",
+     "category": "Rent",
+     "paymentMethod": "Bank Transfer",
+     "date": "",
+     "splitWith": [],
+     "note": "rent 18000 bank transfer"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "dedh sau ka auto",
+    "ms": 681,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1500,
+     "merchant": "Auto",
+     "category": "Transport",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "dedh sau ka auto"
+    },
+    "fields": {
+     "amount": false,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "paid 999 for netflix credit card",
+    "ms": 1132,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 999,
+     "merchant": "Netflix",
+     "category": "Entertainment",
+     "paymentMethod": "Credit Card",
+     "date": "",
+     "splitWith": [],
+     "note": "paid 999 for netflix credit card"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "medicines 420 apollo",
+    "ms": 873,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 420,
+     "merchant": "Apollo",
+     "category": "Health",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "medicines 420 apollo"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "electricity bill 2,340 paytm",
+    "ms": 755,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 2340,
+     "merchant": "Electricity bill",
+     "category": "Bills",
+     "paymentMethod": "Paytm",
+     "date": "",
+     "splitWith": [],
+     "note": "electricity bill 2,340 paytm"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "haircut 300 cash yesterday",
+    "ms": 907,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 300,
+     "merchant": "Haircut",
+     "category": "Self-care",
+     "paymentMethod": "Cash",
+     "date": "2026-11-05",
+     "splitWith": [],
+     "note": "haircut 300 cash yesterday"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "client paid 25000 for the logo",
+    "ms": 884,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 25000,
+     "merchant": "Logo",
+     "category": "Income (Client)",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "client paid 25000 for the logo"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": false,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "zomato 560 split with aaru",
+    "ms": 866,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 560,
+     "merchant": "Zomato",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Aaru"
+     ],
+     "note": "zomato 560 with aaru"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "2 coffees 380 starbucks",
+    "ms": 813,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 380,
+     "merchant": "Starbucks",
+     "category": "Beverages",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "2 coffees 380 starbucks"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "amazon order 1499",
+    "ms": 1244,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1499,
+     "merchant": "Amazon",
+     "category": "Shopping",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "amazon order 1499"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "goa trip hotel 9600 with rohan ankit priya",
+    "ms": 2266,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 9600,
+     "merchant": "Goa trip hotel",
+     "category": "Other",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [
+      "Rohan",
+      "Ankit",
+      "Priya"
+     ],
+     "note": "goa trip hotel 9600 with rohan ankit priya"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "biscuits and maggi 120",
+    "ms": 1282,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 120,
+     "merchant": "Biscuits and Maggi",
+     "category": "Groceries",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "biscuits and maggi 120"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "metro recharge 500 phonepe",
+    "ms": 1364,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 500,
+     "merchant": "Metro",
+     "category": "Transport",
+     "paymentMethod": "PhonePe",
+     "date": "",
+     "splitWith": [],
+     "note": "metro recharge 500 phonepe"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "sip 5000 on 1 nov",
+    "ms": 1536,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 5000,
+     "merchant": "SIP",
+     "category": "Investment",
+     "paymentMethod": "UPI",
+     "date": "2026-11-01",
+     "splitWith": [],
+     "note": "sip 5000 on 1 nov"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "refund from myntra 799",
+    "ms": 4172,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "income",
+     "amount": 799,
+     "merchant": "Myntra",
+     "category": "Income (Other)",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "refund from myntra 799"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "parso pizza 650 with mayank",
+    "ms": 3734,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 650,
+     "merchant": "Pizza",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "2026-11-04",
+     "splitWith": [
+      "Mayank"
+     ],
+     "note": "parso pizza 650 with mayank"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "gym fees 1500 last friday",
+    "ms": 2281,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 1500,
+     "merchant": "Gym",
+     "category": "Health",
+     "paymentMethod": "UPI",
+     "date": "2026-10-30",
+     "splitWith": [],
+     "note": "gym fees 1500 last friday"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "bhai ko 2000 diye",
+    "ms": 7883,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 2000,
+     "merchant": "Bhai",
+     "category": "Other",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "bhai ko 2000 diye"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "lunch 270 office canteen",
+    "ms": 6209,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 270,
+     "merchant": "Office Canteen",
+     "category": "Food",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "lunch 270 office canteen"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "recharge jio 299",
+    "ms": 1264,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 299,
+     "merchant": "Jio",
+     "category": "Bills",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "recharge jio 299"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "2 lakh gold",
+    "ms": 1028,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 200000,
+     "merchant": "Gold",
+     "category": "Shopping",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "2 lakh gold"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": true,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   },
+   {
+    "case": "doodh 64 sabzi 90",
+    "ms": 1516,
+    "stt_ms": null,
+    "heard": null,
+    "error": null,
+    "got": {
+     "type": "expense",
+     "amount": 154,
+     "merchant": "Doodh, Sabzi",
+     "category": "Groceries",
+     "paymentMethod": "UPI",
+     "date": "",
+     "splitWith": [],
+     "note": "doodh 64 sabzi 90"
+    },
+    "fields": {
+     "amount": true,
+     "type": true,
+     "merchant": false,
+     "category": true,
+     "payment": true,
+     "date": true,
+     "split": true
+    }
+   }
+  ]
+ }
+]
