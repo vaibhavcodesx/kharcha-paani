@@ -133,7 +133,7 @@
     <string name="insights_no_categories">Nothing to break down</string>
     <string name="insights_no_entries">No entries to show.</string>
     <string name="insights_open">Open</string>
-    <string name="insights_spent_most_at">Spent most at</string>
+    <string name="insights_spent_most_at">Spent most on</string>
     <string name="insights_empty_past">Nothing was logged in %1$s.</string>
     <string name="insights_no_spending_past">Nothing was spent in %1$s.</string>
     <string name="insights_more_in">%1$s more came in than went out.</string>
@@ -285,6 +285,7 @@
     <string name="payment_they_owe">%1$s owes you %2$s.</string>
     <string name="payment_you_owe">You owe %1$s %2$s.</string>
     <string name="payment_ask_name">Ask %1$s to pay</string>
+    <string name="payment_ask_preview_title">What %1$s will see</string>
     <string name="payment_share_hisaab">Share this hisaab with %1$s</string>
     <string name="payment_they_paid">%1$s paid you</string>
     <string name="payment_you_paid">You paid %1$s</string>
