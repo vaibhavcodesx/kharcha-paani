@@ -366,7 +366,7 @@ class MainActivity : ComponentActivity() {
                     authUiState = authUiState,
                     onRetryProfile = { authViewModel?.retryProfileLoad() },
                     onSaveProfile = { name, emoji -> authViewModel?.saveProfile(name, emoji) },
-                    onSignOut = { authViewModel?.signOut(this@MainActivity) },
+                    onSignOut = { removeData -> authViewModel?.signOut(this@MainActivity, removeData) },
                     onSaveHue = { hue, automatic -> authViewModel?.saveHue(hue, automatic) },
                     onDeleteAccount = { keepName -> authViewModel?.deleteAccount(this@MainActivity, keepName) },
                     onDismissDeleteAccountError = { authViewModel?.dismissDeleteAccountError() },
@@ -457,7 +457,7 @@ fun SplitFlowApp(
     authUiState: AuthUiState,
     onRetryProfile: () -> Unit,
     onSaveProfile: (name: String, emoji: String?) -> Unit,
-    onSignOut: () -> Unit,
+    onSignOut: (removeData: Boolean) -> Unit,
     onSaveHue: (hue: Int, automatic: Boolean) -> Unit = { _, _ -> },
     onDeleteAccount: (keepName: Boolean) -> Unit = {},
     onDismissDeleteAccountError: () -> Unit = {},
@@ -467,6 +467,7 @@ fun SplitFlowApp(
 ) {
     var isAccountSheetOpen by rememberSaveable { mutableStateOf(false) }
     var isDeleteAccountOpen by rememberSaveable { mutableStateOf(false) }
+    var isSignOutOpen by rememberSaveable { mutableStateOf(false) }
     val askBeforeDiscarding by viewModel.askBeforeDiscarding.collectAsStateWithLifecycle()
     val shareBillPhotos by viewModel.shareBillPhotos.collectAsStateWithLifecycle()
     val aiEnabled by viewModel.aiEnabled.collectAsStateWithLifecycle()
@@ -903,7 +904,7 @@ fun SplitFlowApp(
             onSignOut = {
                 if (!fullBackupModalOpen) {
                     isAccountSheetOpen = false
-                    onSignOut()
+                    isSignOutOpen = true
                 }
             },
             onDeleteAccount = {
@@ -958,6 +959,16 @@ fun SplitFlowApp(
             LaunchedEffect(offerMoment) { viewModel.clearNotificationMoment() }
         }
     }
+
+    com.vaibhav.kharchapaani.ui.auth.SignOutDialog(
+        isOpen = isSignOutOpen,
+        unsyncedChanges = syncStatus.unsyncedChanges,
+        onSignOut = { removeData ->
+            isSignOutOpen = false
+            onSignOut(removeData)
+        },
+        onDismiss = { isSignOutOpen = false },
+    )
 
     DeleteAccountSheet(
         isOpen = isDeleteAccountOpen,
