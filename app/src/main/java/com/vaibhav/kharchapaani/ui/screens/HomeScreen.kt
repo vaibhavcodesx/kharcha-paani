@@ -127,6 +127,7 @@ fun HomeScreen(
     voiceToAiAllowed: () -> Boolean = { false },
     syncStatus: SyncStatus = SyncStatus(),
     onShowMessage: (String) -> Unit = {},
+    onAiOff: (com.vaibhav.kharchapaani.ui.viewmodel.AiFeature) -> Unit = {},
     onRequestSync: () -> Unit = {},
 ) {
     var showSearch by rememberSaveable { mutableStateOf(searchQuery.isNotEmpty()) }
@@ -180,6 +181,7 @@ fun HomeScreen(
                 voiceToAiAllowed = voiceToAiAllowed,
                 onCaptureFailed = onShowMessage,
                 onVoiceCaptureStarted = onVoiceCaptureStarted,
+                onAiOff = onAiOff,
                 modifier = Modifier.padding(top = Spacing.xl),
             )
         }

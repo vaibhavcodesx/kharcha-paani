@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AiOffNudgeSheet: AI is off and someone reached for something that needs it. -->
+    <string name="ai_off_nudge_turn_on_continue">Turn on AI and continue</string>
+    <string name="ai_off_nudge_turn_on">Turn on AI</string>
+    <string name="ai_off_nudge_keep_off">Keep it off</string>
+    <string name="ai_off_nudge_not_now">Not now</string>
+    <string name="ai_off_nudge_capture_action">See what AI adds</string>
+    <string name="ai_off_nudge_footer">You can turn AI off again any time in Settings.</string>
+
+    <string name="ai_off_nudge_general_title">AI is off</string>
+    <string name="ai_off_nudge_general_body">Quick add still works on this phone. With AI on, Google Gemini also reads bills, statements and what you say, and answers questions about your month. You check every entry before it\'s saved.</string>
+
+    <string name="ai_off_nudge_bill_title">Reading a bill needs AI</string>
+    <string name="ai_off_nudge_bill_body">AI is off, so this photo stayed on your phone. Turn it on and Google Gemini reads the bill to fill in the amount, the place and the date. You check it before saving.</string>
+    <string name="ai_off_nudge_bill_instead">Type it myself, keep the photo</string>
+
+    <string name="ai_off_nudge_statement_title">Statements are read by AI</string>
+    <string name="ai_off_nudge_statement_body">AI is off, so the statement stayed on your phone. Turn it on and Google Gemini picks out each payment, and you tick the ones to add.</string>
+
+    <string name="ai_off_nudge_voice_title">Voice entries need AI</string>
+    <string name="ai_off_nudge_voice_body">AI is off, so nothing you say is recorded or sent. Turn it on and Google Gemini turns what you say into an entry, ready for you to check.</string>
+    <string name="ai_off_nudge_voice_instead">I\'ll type it</string>
+
+    <string name="ai_off_nudge_insights_title">Questions are answered by AI</string>
+    <string name="ai_off_nudge_insights_body">AI is off, so your month stayed on your phone. Turn it on and Google Gemini answers from this month\'s entries.</string>
+
+    <string name="ai_off_nudge_trip_title">The trip review is written by AI</string>
+    <string name="ai_off_nudge_trip_body">AI is off, so this group stayed on your phone. Turn it on and Google Gemini writes a short review of the trip from its expenses.</string>
+</resources>
