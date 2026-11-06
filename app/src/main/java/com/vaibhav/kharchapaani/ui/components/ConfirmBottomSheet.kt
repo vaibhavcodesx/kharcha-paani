@@ -369,6 +369,7 @@ fun ConfirmSheetContent(
                     onValueChange = onMerchantChange,
                     placeholder = if (isIncome) stringResource(R.string.entry_who_paid_you) else stringResource(R.string.entry_where_what),
                     fieldTestTag = "confirm_merchant_input",
+                    maxLength = com.vaibhav.kharchapaani.domain.TextLimits.MERCHANT,
                 )
             }
             ExpandableDetail(
@@ -490,7 +491,7 @@ fun ConfirmSheetContent(
         }
 
         SheetRow(label = stringResource(R.string.entry_note), position = RowPosition.Single, modifier = Modifier.padding(top = Spacing.xl)) {
-            SheetTextInput(value = note, onValueChange = onNoteChange, placeholder = stringResource(R.string.entry_optional))
+            SheetTextInput(value = note, onValueChange = onNoteChange, placeholder = stringResource(R.string.entry_optional), maxLength = com.vaibhav.kharchapaani.domain.TextLimits.NOTE)
         }
 
         BillPhotoRow(photo = billPhoto, onAdd = onAddBillPhoto, onRemove = onRemoveBillPhoto, modifier = Modifier.padding(top = Spacing.s))

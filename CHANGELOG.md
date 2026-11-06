@@ -84,6 +84,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 
 ### Changed
+- The place is capped at 120 characters and the note at 1,000, matching new server limits, so a very long note can never become an entry that won't sync.
 - The release build is shrunk with R8, so the app downloads and installs smaller. Crash reports stay readable through the mapping attached to each release.
 
 - Move AuthViewModel colour and account deletion error messages into string resources (M1).
