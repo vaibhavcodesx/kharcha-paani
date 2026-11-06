@@ -4,6 +4,16 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!--
+        Saying an entry out loud: the microphone is opened only while the listening bar is up, after
+        the person taps the mic, and the audio is kept in memory until it is sent (to Gemini, once
+        its notice is accepted) or dropped. Never recorded in the background, never written to disk.
+    -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- To tell, before listening, whether the audio can go to Gemini or the phone's own recogniser should answer. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- A phone with no microphone can still use the app; the mic button just isn't offered a recording. -->
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 
     <!--
         Android 11+ hides other packages unless they are declared. The settle-up screen hands a
@@ -14,6 +24,10 @@
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="upi" />
+        </intent>
+        <!-- Is there a speech recogniser on this phone (SpeechRecognizer.isRecognitionAvailable). -->
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
         </intent>
     </queries>
 
