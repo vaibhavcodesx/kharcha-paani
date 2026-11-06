@@ -16,6 +16,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 ### Added
 - Bill photos back up to your account and, on a split, the others in it see them (a smaller copy; your original stays on your phone). Settings has a switch to stop sharing. A photo someone shared shows as "Bill photo saved in the cloud · Load". Deleting the expense, the photo or your account deletes the cloud copy.
 
+- Move remaining hardcoded copy in AccountSheet into strings.xml and add safety net test preventing hardcoded Compose Text string literals (W1, T3.11).
 - Use without an account keeps an isolated on-phone ledger, with explicit account switching and no local cloud sync or shared-group writes (owner review).
 - Signing out asks first, and can also remove the account's data from this phone (its ledger, bill photos and settings). That's offered only once everything has synced, so nothing is lost.
 

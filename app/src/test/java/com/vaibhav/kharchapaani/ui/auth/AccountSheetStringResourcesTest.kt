@@ -96,4 +96,50 @@ class AccountSheetStringResourcesTest {
         composeTestRule.onNodeWithText("ACCOUNT").assertExists()
         composeTestRule.onNodeWithText("Cloud profile ready").assertExists()
     }
+
+    @Test
+    fun `account settings and data string resources match exact copy`() {
+        assertEquals("Settings", resources.getString(R.string.account_eyebrow_settings))
+        assertEquals("UPI ID for getting paid", resources.getString(R.string.account_setting_upi_title))
+        assertEquals("Add yours so friends can scan to pay you", resources.getString(R.string.account_setting_upi_empty))
+        assertEquals("Set up UPI", resources.getString(R.string.account_setting_upi_click_label))
+        assertEquals("Subscriptions", resources.getString(R.string.account_setting_subscriptions_title))
+        assertEquals("Charges that repeat, added when they're due", resources.getString(R.string.account_setting_subscriptions_detail))
+        assertEquals("Categories & payment methods", resources.getString(R.string.account_setting_categories_title))
+        assertEquals("Hide defaults, add your own", resources.getString(R.string.account_setting_categories_detail))
+        assertEquals("Ask before discarding an entry", resources.getString(R.string.account_setting_discard_prompt_title))
+        assertEquals("When you close a half-filled expense", resources.getString(R.string.account_setting_discard_prompt_detail))
+        assertEquals("Notifications", resources.getString(R.string.account_setting_notifications_title))
+        assertEquals("Off for Kharcha Paani", resources.getString(R.string.account_setting_notifications_off))
+        assertEquals("Payments to confirm, and a reminder at 9:00 PM", resources.getString(R.string.account_setting_notifications_reminder_and_payments, "9:00 PM"))
+        assertEquals("Payments to confirm", resources.getString(R.string.account_setting_notifications_payments_only))
+        assertEquals("Your data", resources.getString(R.string.account_eyebrow_data))
+        assertEquals("Export to a spreadsheet", resources.getString(R.string.account_setting_export_title))
+        assertEquals("A month, dates or everything, as CSV", resources.getString(R.string.account_setting_export_detail))
+        assertEquals("Export everything", resources.getString(R.string.full_backup_ui_export_title))
+        assertEquals("Restore from a backup", resources.getString(R.string.full_backup_ui_restore_title))
+    }
+
+    @Test
+    fun `account help and reminder string resources match exact copy`() {
+        assertEquals("Help & about", resources.getString(R.string.account_eyebrow_help))
+        assertEquals("Send feedback", resources.getString(R.string.account_help_feedback_title))
+        assertEquals("Privacy policy", resources.getString(R.string.account_help_privacy_title))
+        assertEquals("Terms of use", resources.getString(R.string.account_help_terms_title))
+        assertEquals("Send crash reports", resources.getString(R.string.account_help_crash_title))
+        assertEquals("Open-source licences", resources.getString(R.string.account_help_licences_title))
+        assertEquals("Kharcha Paani 1.6.0 (7)", resources.getString(R.string.account_help_version, "1.6.0", 7))
+        assertEquals("Colour", resources.getString(R.string.account_colour_label))
+        assertEquals("Choosing one", resources.getString(R.string.account_colour_choosing))
+        assertEquals("Yours everywhere", resources.getString(R.string.account_colour_yours))
+        assertEquals("You wear this colour everywhere: on your phone and on every groupmate's.", resources.getString(R.string.account_colour_wear_description))
+        assertEquals("Save colour", resources.getString(R.string.account_colour_save))
+        assertEquals("Your colour is close to Rohan's. Pick another so you're easy to tell apart.", resources.getString(R.string.account_colour_clash, "Rohan"))
+        assertEquals("Daily reminder", resources.getString(R.string.account_setting_daily_reminder_title))
+        assertEquals("Off", resources.getString(R.string.account_setting_daily_reminder_off))
+        assertEquals("Notifications are off for Kharcha Paani, so it can't appear", resources.getString(R.string.account_setting_daily_reminder_blocked))
+        assertEquals("At 9:00 PM if nothing's logged that day", resources.getString(R.string.account_setting_daily_reminder_scheduled, "9:00 PM"))
+        assertEquals("Allow", resources.getString(R.string.account_setting_daily_reminder_allow))
+        assertEquals("Reminder time", resources.getString(R.string.account_setting_reminder_time_title))
+    }
 }
