@@ -30,12 +30,8 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
-import com.vaibhav.kharchapaani.ui.components.awaitRequestedSync
-import androidx.compose.runtime.rememberUpdatedState
+import com.vaibhav.kharchapaani.ui.components.PaaniPullRefresh
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.semantics.selected
 import com.vaibhav.kharchapaani.domain.GroupSort
@@ -145,40 +141,13 @@ fun SplitsScreen(
         onDismiss = { friendToDelete = null }
     )
 
-    var isRefreshing by remember { mutableStateOf(false) }
-
-    val currentSyncStatus by rememberUpdatedState(syncStatus)
-    LaunchedEffect(isRefreshing) {
-        if (isRefreshing) {
-            try {
-                awaitRequestedSync { currentSyncStatus.isSyncing }
-            } finally {
-                isRefreshing = false
-            }
-        }
-    }
-
-    val pullToRefreshState = rememberPullToRefreshState()
-    PullToRefreshBox(
-        isRefreshing = isRefreshing,
-        onRefresh = {
-            isRefreshing = true
-            onRequestSync()
-        },
-        state = pullToRefreshState,
+    PaaniPullRefresh(
+        syncStatus = syncStatus,
+        onRequestSync = onRequestSync,
         modifier = modifier
             .fillMaxSize()
-            .background(CharcoalBg)
-            .testTag("splits_pull_to_refresh"),
-        indicator = {
-            PullToRefreshDefaults.Indicator(
-                state = pullToRefreshState,
-                isRefreshing = isRefreshing,
-                modifier = Modifier.align(Alignment.TopCenter).testTag("splits_pull_refresh_indicator"),
-                containerColor = CharcoalElevated,
-                color = WarmAmberPrimary,
-            )
-        },
+            .background(CharcoalBg),
+        tagPrefix = "splits",
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
