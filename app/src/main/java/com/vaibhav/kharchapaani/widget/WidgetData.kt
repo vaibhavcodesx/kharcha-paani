@@ -1,8 +1,7 @@
 package com.vaibhav.kharchapaani.widget
 
 import android.content.Context
-import com.vaibhav.kharchapaani.data.db.LedgerDatabases
-import com.vaibhav.kharchapaani.data.remote.BackgroundAuth
+import com.vaibhav.kharchapaani.data.settings.BackgroundLedger
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.domain.DailySpend
 import kotlinx.coroutines.flow.first
@@ -17,19 +16,20 @@ import java.time.ZoneId
  */
 internal object WidgetData {
 
-    suspend fun load(context: Context): WidgetSummary {
-        // Not auth.awaitInitialization(): in the background that waits until the app is next opened.
-        val userId = BackgroundAuth.signedInUserId(context) ?: return WidgetSummary.signedOut(context)
+    suspend fun load(context: Context): WidgetSummary = withSummary(context) { it }
 
-        val repository = LedgerRepository(LedgerDatabases.open(context, userId))
-        val analytics = repository.monthlyAnalytics.first()
-        val netOwedToMe = repository.personBalances.first().sumOf { it.netBalance }
-
-        val zone = ZoneId.systemDefault()
-        val today = LocalDate.now(zone)
-        val todaySpent = DailySpend.of(repository.fullTransactions.first(), YearMonth.from(today), today, zone)
-            .firstOrNull { it.date == today }?.amount ?: 0.0
-
-        return WidgetSummary.of(context, analytics.totalExpense, analytics.totalIncome, netOwedToMe, todaySpent)
+    /** Keep rendering/publication inside the same operation as its financial reads. */
+    suspend fun <T> withSummary(context: Context, consume: suspend (WidgetSummary) -> T): T {
+        val ledger = BackgroundLedger.current(context) ?: return consume(WidgetSummary.signedOut(context))
+        return ledger.withDatabase(context) { database ->
+            val repository = LedgerRepository(database)
+            val analytics = repository.monthlyAnalytics.first()
+            val netOwedToMe = repository.personBalances.first().sumOf { it.netBalance }
+            val zone = ZoneId.systemDefault()
+            val today = LocalDate.now(zone)
+            val todaySpent = DailySpend.of(repository.fullTransactions.first(), YearMonth.from(today), today, zone)
+                .firstOrNull { it.date == today }?.amount ?: 0.0
+            consume(WidgetSummary.of(context, analytics.totalExpense, analytics.totalIncome, netOwedToMe, todaySpent))
+        }
     }
 }

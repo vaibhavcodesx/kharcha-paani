@@ -32,7 +32,9 @@ class ReceiptRepository(private val db: AppDatabase, val store: ReceiptStore) {
         val fileName = store.commit(photo) ?: return@withContext false.also { store.discard(photo) }
         val replaced = try {
             db.withTransaction {
-                val before = dao.forTransaction(transactionId).map { it.fileName }
+                val old = dao.forTransaction(transactionId)
+                com.vaibhav.kharchapaani.data.sync.ReceiptDeleteQueue.add(db, old.mapNotNull { it.remotePath })
+                val before = old.map { it.fileName }
                 dao.deleteForTransaction(transactionId)
                 dao.insert(
                     ReceiptEntity(
@@ -57,7 +59,11 @@ class ReceiptRepository(private val db: AppDatabase, val store: ReceiptStore) {
     /** Takes the expense's photo off it. */
     suspend fun remove(transactionId: Long) = withContext(Dispatchers.IO) {
         val names = db.withTransaction {
-            dao.forTransaction(transactionId).map { it.fileName }.also { dao.deleteForTransaction(transactionId) }
+            val rows = dao.forTransaction(transactionId)
+            // The cloud copy goes on the next sync; queued in the same transaction, so it can't be lost.
+            com.vaibhav.kharchapaani.data.sync.ReceiptDeleteQueue.add(db, rows.mapNotNull { it.remotePath })
+            dao.deleteForTransaction(transactionId)
+            rows.map { it.fileName }
         }
         store.delete(names)
     }
@@ -66,6 +72,36 @@ class ReceiptRepository(private val db: AppDatabase, val store: ReceiptStore) {
     suspend fun fileNamesOf(transactionId: Long): List<String> = withContext(Dispatchers.IO) {
         dao.forTransaction(transactionId).map { it.fileName }
     }
+
+    /** The cloud copies of [transactionId]'s photos, read before its delete like [fileNamesOf]. */
+    suspend fun remotePathsOf(transactionId: Long): List<String> = withContext(Dispatchers.IO) {
+        dao.forTransaction(transactionId).mapNotNull { it.remotePath }
+    }
+
+    /** After the expense's delete commits, its cloud copies go on the next sync. */
+    suspend fun forgetRemote(paths: List<String>) = withContext(Dispatchers.IO) {
+        com.vaibhav.kharchapaani.data.sync.ReceiptDeleteQueue.add(db, paths)
+    }
+
+    /**
+     * Brings a photo that's only in the cloud onto this phone, as an ordinary bill photo. Null when it
+     * can't (offline, or no longer shared); the row stays, so it can be tried again.
+     */
+    suspend fun download(receipt: ReceiptEntity, remote: com.vaibhav.kharchapaani.data.receipts.ReceiptRemote): File? =
+        withContext(Dispatchers.IO) {
+            val path = receipt.remotePath ?: return@withContext null
+            val target = store.file(receipt.fileName)
+            if (target.exists()) return@withContext target
+            val bytes = runCatching { remote.download(path) }.getOrNull() ?: return@withContext null
+            store.dir.mkdirs()
+            val part = File(store.dir, receipt.fileName + ".part")
+            part.writeBytes(bytes)
+            if (!part.renameTo(target)) return@withContext null.also { part.delete() }
+            val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            android.graphics.BitmapFactory.decodeFile(target.path, bounds)
+            dao.setDownloaded(receipt.id, bounds.outWidth.coerceAtLeast(0), bounds.outHeight.coerceAtLeast(0), target.length())
+            target
+        }
 
     /** After the expense's delete commits: its rows went by cascade, these are their files. */
     suspend fun deleteFiles(fileNames: List<String>) = withContext(Dispatchers.IO) {

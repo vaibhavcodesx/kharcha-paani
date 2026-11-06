@@ -62,7 +62,7 @@ val releaseSigning: ReleaseSigning? = run {
 
 android {
   namespace = "com.vaibhav.kharchapaani"
-  compileSdk { version = release(36) { minorApiLevel = 1 } }
+  compileSdk { version = release(37) }
 
   defaultConfig {
     applicationId = "com.vaibhav.kharchapaani"
@@ -204,6 +204,8 @@ dependencies {
   implementation(libs.supabase.auth)
   implementation(libs.supabase.postgrest)
   implementation(libs.supabase.realtime)
+    // Bill photos in the cloud (docs/designs/bill-photo-sync.md).
+    implementation(libs.supabase.storage)
   implementation(libs.haze)
   implementation(libs.ktor.client.okhttp)
   implementation(libs.multiplatform.settings)

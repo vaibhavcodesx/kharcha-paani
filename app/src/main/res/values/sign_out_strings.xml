@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- SignOutDialog (plan T2.6 part 3). -->
+    <string name="sign_out_title">Sign out?</string>
+    <string name="sign_out_body">Your entries stay in your account. Sign back in and they\'re all here.</string>
+    <string name="sign_out_remove_data">Also remove this account\'s data from this phone</string>
+    <plurals name="sign_out_unsynced">
+        <item quantity="one">%d change hasn\'t synced yet, so it stays on this phone for now. Sync first to remove everything.</item>
+        <item quantity="other">%d changes haven\'t synced yet, so they stay on this phone for now. Sync first to remove everything.</item>
+    </plurals>
+    <string name="sign_out_confirm">Sign out</string>
+    <string name="sign_out_cancel">Cancel</string>
+</resources>

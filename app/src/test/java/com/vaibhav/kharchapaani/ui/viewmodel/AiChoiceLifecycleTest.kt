@@ -135,6 +135,51 @@ class AiChoiceLifecycleTest {
         assertEquals(1, requests.get())
     }
 
+    @Test fun `with AI off a bill read nudges instead of sending, and the photo can still be kept`(): Unit = runBlocking {
+        vm.setAiEnabled(false)
+        until { !choice.enabledNow && !vm.aiEnabled.value }
+        vm.parseReceiptImage(Bitmap.createBitmap(2, 2, Bitmap.Config.ARGB_8888))
+        main.scheduler.runCurrent()
+        assertEquals(AiFeature.Bill, vm.aiOffNudge.value)
+        assertFalse("AI off never shows the consent notice", vm.isAiNoticeOpen.value)
+        assertFalse(vm.isConfirmSheetOpen.value)
+
+        vm.keepAiOffFromNudge()
+        until { vm.isConfirmSheetOpen.value }
+        assertNull(vm.aiOffNudge.value)
+        assertFalse(choice.enabledNow)
+        assertEquals("nothing was sent to Gemini", 0, requests.get())
+    }
+
+    @Test fun `turning AI on from the nudge carries on, through the consent notice first`(): Unit = runBlocking {
+        vm.setAiEnabled(false)
+        until { !choice.enabledNow && !vm.aiEnabled.value }
+        vm.parseReceiptImage(Bitmap.createBitmap(2, 2, Bitmap.Config.ARGB_8888))
+        main.scheduler.runCurrent()
+        assertEquals(AiFeature.Bill, vm.aiOffNudge.value)
+
+        vm.turnOnAiFromNudge()
+        until { choice.enabledNow && vm.isAiNoticeOpen.value }
+        assertNull(vm.aiOffNudge.value)
+        assertEquals("consent comes before anything is sent", 0, requests.get())
+        vm.declineAiNotice()
+        until { vm.isConfirmSheetOpen.value }
+        assertEquals(0, requests.get())
+    }
+
+    @Test fun `the AI off line explains what AI adds without starting anything`(): Unit = runBlocking {
+        vm.setAiEnabled(false)
+        until { !choice.enabledNow && !vm.aiEnabled.value }
+        vm.showAiOffNudge()
+        assertEquals(AiFeature.General, vm.aiOffNudge.value)
+        vm.keepAiOffFromNudge()
+        assertNull(vm.aiOffNudge.value)
+        assertFalse(vm.isConfirmSheetOpen.value)
+        vm.setAiEnabled(true)
+        until { choice.enabledNow && vm.aiEnabled.value }
+        vm.showAiOffNudge()
+        assertNull("no nudge while AI is on", vm.aiOffNudge.value)
+    }
     @Test fun `switching off cancels held text HTTP and prevents its late draft overwrite`(): Unit = runBlocking {
         stopHeldRead { vm.parseInputText("chai 40 cash") }
     }

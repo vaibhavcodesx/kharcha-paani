@@ -2,6 +2,7 @@ package com.vaibhav.kharchapaani.ui.viewmodel
 
 import android.database.sqlite.SQLiteFullException
 import android.content.Context
+import com.vaibhav.kharchapaani.data.repository.OfflineHistoryException
 import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.diagnostics.CrashReporting
 import kotlinx.coroutines.CancellationException
@@ -47,6 +48,8 @@ class Submissions(
                 block()
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: OfflineHistoryException) {
+                onFailure(failureMessage(e, context))
             } catch (e: Exception) {
                 CrashReporting.recordProblem("$action failed", e)
                 onFailure(failureMessage(e, context))
@@ -59,6 +62,7 @@ class Submissions(
     companion object {
         /** What the person is told when a save fails in a way the action itself didn't expect. */
         fun failureMessage(e: Exception, context: Context): String = context.getString(when (e) {
+            is OfflineHistoryException -> R.string.local_mode_history_read_only
             is SQLiteFullException -> R.string.action_notice_space
             // The ledger closed under the save: signing out, or switching accounts, mid-save.
             is IllegalStateException -> R.string.action_notice_closed

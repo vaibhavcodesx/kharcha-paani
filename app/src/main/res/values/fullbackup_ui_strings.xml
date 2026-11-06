@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="full_backup_ui_export_title">Export everything</string>
+    <string name="full_backup_ui_export_detail">All saved entries, splits, friends, groups, settings and bill photos</string>
+    <string name="full_backup_ui_restore_title">Restore from a backup</string>
+    <string name="full_backup_ui_restore_detail">Complete archives need an empty local ledger; older backups add missing local data</string>
+    <string name="full_backup_ui_picker_unavailable">A file picker could not be opened. Try again with a file manager installed.</string>
+</resources>

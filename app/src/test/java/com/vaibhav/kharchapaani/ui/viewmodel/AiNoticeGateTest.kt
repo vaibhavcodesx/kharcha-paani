@@ -5,7 +5,6 @@ import androidx.room.Room
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.first
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
 import androidx.work.testing.SynchronousExecutor
@@ -122,9 +121,10 @@ class AiNoticeGateTest {
         until { calls.get() == 1 && viewModel.isConfirmSheetOpen.value }
         viewModel.dismissConfirmSheet()
 
-        // Await the actual persisted acceptance, then deliver queued ViewModel flow updates.
-        AppSettings(application).aiNoticeAccepted.first { it }
-        dispatcher.scheduler.runCurrent()
+        // Wait, bounded, until the ViewModel itself has seen the saved acceptance. The save runs on
+        // the test dispatcher, so an unbounded wait on the DataStore that never ran the scheduler
+        // hung CI for 25 minutes; until() runs the scheduler and gives up after 10 seconds.
+        until { viewModel.voiceToAiAllowed }
         viewModel.parseInputText("auto 120")
 
         assertFalse(viewModel.isAiNoticeOpen.value)

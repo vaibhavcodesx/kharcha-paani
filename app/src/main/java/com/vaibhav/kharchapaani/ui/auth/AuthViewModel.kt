@@ -140,8 +140,17 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun signOut(context: Context) {
-        viewModelScope.launch { repository.signOut(context) }
+    /**
+     * Signs out. With [removeData], nothing of the account stays on this phone afterwards: its ledger,
+     * bill photos and settings go, as after deleting it (plan T2.6 part 3). The sheet only offers that
+     * once everything has synced, so it can't lose anything the server doesn't have.
+     */
+    fun signOut(context: Context, removeData: Boolean = false) {
+        val userId = (_uiState.value.authState as? AuthState.SignedIn)?.userId
+        viewModelScope.launch {
+            repository.signOut(context)
+            if (removeData && userId != null) AccountDeletion.wipeLocal(context, userId)
+        }
     }
 
     /**
@@ -154,6 +163,16 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isDeletingAccount = true, deleteAccountError = null) }
         viewModelScope.launch {
             try {
+                // Bill photos first (docs/designs/bill-photo-sync.md): once the account is gone, nothing
+                // could ever delete them. Offline stops here like the delete itself would.
+                try {
+                    com.vaibhav.kharchapaani.data.receipts.SupabaseReceiptRemote(
+                        com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider.get(getApplication()),
+                    ).deleteFolder(userId)
+                } catch (e: RestException) {
+                    // A storage refusal mustn't trap someone in an account they want gone.
+                    Log.w(TAG, "Bill photos not removed before deletion (${e.statusCode})")
+                }
                 repository.deleteAccount(keepName)
             } catch (e: IOException) {
                 _uiState.update { it.copy(isDeletingAccount = false, deleteAccountError = getApplication<Application>().getString(R.string.auth_delete_account_error_offline)) }

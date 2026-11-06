@@ -22,6 +22,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.ViewModelStore
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -37,6 +38,14 @@ import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
 import com.vaibhav.kharchapaani.ui.viewmodel.MainViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeout
+import org.robolectric.shadows.ShadowLooper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -107,10 +116,31 @@ class GroupSortingTest {
     }
 
     @After
-    fun tearDown() {
-        store.clear()
-        db.close()
-        Dispatchers.resetMain()
+    fun tearDown(): Unit = runBlocking {
+        try {
+            val job = if (::vm.isInitialized) vm.viewModelScope.coroutineContext[Job] else null
+            store.clear()
+            withTimeout(10_000) {
+                while (job != null && !job.isCompleted) {
+                    dispatcher.scheduler.runCurrent(); ShadowLooper.idleMainLooper(); delay(10)
+                }
+            }
+            if (::vm.isInitialized) {
+                val closingScope = CoroutineScope(SupervisorJob() + dispatcher)
+                try {
+                    val closing = closingScope.async { vm.awaitSessionClosingWork() }
+                    withTimeout(10_000) {
+                        while (!closing.isCompleted) {
+                            dispatcher.scheduler.runCurrent(); ShadowLooper.idleMainLooper(); delay(10)
+                        }
+                    }
+                    closing.await()
+                } finally { closingScope.cancel() }
+            }
+        } finally {
+            if (::db.isInitialized) db.close()
+            Dispatchers.resetMain()
+        }
     }
 
     private val mounted = mutableStateOf(true)
@@ -127,6 +157,8 @@ class GroupSortingTest {
                 )
             }
         }
+        dispatcher.scheduler.runCurrent()
+        compose.waitForIdle()
         groupsTab()
     }
 
@@ -146,6 +178,7 @@ class GroupSortingTest {
     private fun sort(option: String) {
         compose.onNodeWithTag("group_sort_button").performScrollTo().performClick()
         compose.onNodeWithTag("group_sort_$option", useUnmergedTree = true).performClick()
+        dispatcher.scheduler.runCurrent()
         compose.waitForIdle()
     }
 

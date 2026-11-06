@@ -25,7 +25,7 @@ class SyncRefreshTest {
     @Test
     fun `lets go shortly when no sync starts`() = runTest {
         val syncing = mutableStateOf(false)
-        awaitRequestedSync { syncing.value }
+        assertEquals(RequestedSync.NeverStarted, awaitRequestedSync { syncing.value })
         assertEquals(SYNC_START_WAIT_MS, currentTime)
     }
 
@@ -33,13 +33,15 @@ class SyncRefreshTest {
     fun `waits for a sync that starts late and stops when it finishes`() = runTest {
         val syncing = mutableStateOf(false)
         var done = false
-        launch { awaitRequestedSync { syncing.value }; done = true }
+        var seen: RequestedSync? = null
+        launch { seen = awaitRequestedSync { syncing.value }; done = true }
         runCurrent()
         advanceTimeBy(500); set(syncing, true); runCurrent()
         advanceTimeBy(3_000); runCurrent()
         assertFalse("still syncing, the spinner stays", done)
         set(syncing, false); runCurrent()
         assertTrue(done)
+        assertEquals(RequestedSync.Finished, seen)
         assertEquals(3_500L, currentTime)
     }
 
@@ -57,7 +59,7 @@ class SyncRefreshTest {
     @Test
     fun `a stuck sync never holds the spinner forever`() = runTest {
         val syncing = mutableStateOf(true)
-        awaitRequestedSync { syncing.value }
+        assertEquals(RequestedSync.StillRunning, awaitRequestedSync { syncing.value })
         assertEquals(SYNC_FINISH_WAIT_MS, currentTime)
     }
 }
