@@ -58,7 +58,7 @@ class CaptureAiChoiceTest {
                     onOpenIou = {}, aiEnabled = true)
             }
         }
-        compose.onNodeWithTag("capture_ai_status").assertTextEquals("Quick add, bill and statement reads use Google Gemini")
+        compose.onNodeWithTag("capture_ai_status").assertTextEquals("Typed lines use Groq · bills, statements and voice use Google Gemini")
     }
 
     @Test fun `settings exposes a labelled off switch and asks to enable it explicitly`() {

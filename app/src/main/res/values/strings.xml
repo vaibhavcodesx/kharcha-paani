@@ -689,8 +689,8 @@
     <string name="ai_display_answermessageresource_needssignin">Sign out and back in to use AI answers again.</string>
     <string name="ai_display_notice_got_it">Got it</string>
     <string name="ai_display_notice_manual">Type it myself</string>
-    <string name="ai_display_notice_title">Bills, statements and quick-add text are read by Google Gemini</string>
-    <string name="ai_display_notice_body">That\'s how the app fills in amounts for you. While Kharcha Paani is free, Google may use what\'s sent to improve Gemini, and its reviewers may see it. It\'s never shown to other users, and we never sell your data. Prefer not to? Type entries yourself: everything else works the same.</string>
+    <string name="ai_display_notice_title">Groq reads typed quick adds, and Google Gemini reads bills, statements and voice</string>
+    <string name="ai_display_notice_body">That\'s how the app fills in amounts for you. Groq doesn\'t use what it reads to train its models. While Kharcha Paani is free, Google may use what\'s sent to improve Gemini, and its reviewers may see it. It\'s never shown to other users, and we never sell your data. Prefer not to? Type entries yourself: everything else works the same.</string>
     <string name="ai_display_quickadd_offline">You\'re offline, so this is a best guess from your words. Check it before saving.</string>
     <string name="ai_display_quickadd_ratelimited">The AI is busy right now, so this is a best guess from your words. Check it before saving.</string>
     <string name="ai_display_quickadd_keyrefused">The AI isn\'t available in this copy, so this is a best guess from your words. Check it before saving.</string>
@@ -986,13 +986,13 @@
     <string name="statement_warning_already_in_ledger">Already in your ledger</string>
     <string name="statement_warning_large">Much bigger than the rest of this statement</string>
     <string name="statement_warning_outside">Outside the statement\'s dates (%1$s)</string>
-    <string name="ai_choice_title">Use AI (Google Gemini)</string>
+    <string name="ai_choice_title">Use AI (Groq and Google Gemini)</string>
     <string name="ai_choice_enabled_detail">AI can read quick-add text, bills and statements, and answer Insights questions</string>
     <string name="ai_choice_disabled_detail">Off everywhere. Type entries yourself; bill photos can stay as attachments.</string>
-    <string name="ai_choice_off_notice">AI is off. Nothing was sent to Gemini. You can turn it on in Settings.</string>
-    <string name="ai_choice_using_gemini">Using Google Gemini. Check the reading before saving.</string>
+    <string name="ai_choice_off_notice">AI is off. Nothing was sent to Groq or Gemini. You can turn it on in Settings.</string>
+    <string name="ai_choice_using_gemini">Reading it with AI. Check the reading before saving.</string>
     <string name="ai_choice_voice_off">AI is off, including speech recognition. Type an entry instead.</string>
-    <string name="ai_choice_capture_on">Quick add, bill and statement reads use Google Gemini</string>
+    <string name="ai_choice_capture_on">Typed lines use Groq · bills, statements and voice use Google Gemini</string>
     <string name="ai_choice_capture_off">AI is off · quick add stays on this phone</string>
     <!-- Auth messages: hue conflict/offline, account deletion errors -->
     <string name="auth_hue_error_offline">You\'re offline, so your colour wasn\'t saved. Try again when you\'re connected.</string>

@@ -98,7 +98,37 @@ class GeminiAiPathsTest {
         }
 
         assertEquals("Food was ₹900.", (result as AiAskResult.Answer).text)
-        assertEquals(listOf("gemini-3.6-flash", "gemini-3.5-flash-lite"), models)
+        assertEquals(listOf("gemini-3.1-flash-lite", "gemini-3.5-flash-lite"), models)
+    }
+
+    @Test
+    fun `a typed line goes to Groq first, and a busy proxy still gets the lighter Gemini`() = runTest {
+        val models = mutableListOf<String>()
+        val repo = repo { chain ->
+            models += chain.request().url.encodedPath.substringAfter("models/").substringBefore(":")
+            if (models.size == 1) respond(503, """{"error":{"status":"UNAVAILABLE"}}""")(chain)
+            else respond(200, answer("""{"type":"expense","amount":60,"merchant":"Chai","category":"Food","paymentMethod":"Cash"}"""))(chain)
+        }
+
+        val outcome = repo.parseText("chai 60 cash", now = now, zone = zone)
+
+        assertNull(outcome.failure)
+        assertEquals(60.0, outcome.result.amount, 0.0)
+        assertEquals(listOf("groq-qwen3.8-27b", "gemini-3.5-flash-lite"), models)
+    }
+
+    @Test
+    fun `only typed lines go to Groq: Insights stays on Gemini`() = runTest {
+        val models = mutableListOf<String>()
+        val repo = repo { chain ->
+            models += chain.request().url.encodedPath.substringAfter("models/").substringBefore(":")
+            respond(200, answer("ok"))(chain)
+        }
+
+        repo.parseText("chai 60 cash", now = now, zone = zone)
+        repo.askForAnswer(AiPrompt.MonthInReview, "September's", "")
+
+        assertEquals(listOf("groq-qwen3.8-27b", "gemini-3.1-flash-lite"), models)
     }
 
     @Test

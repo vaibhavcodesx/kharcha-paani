@@ -1,8 +1,25 @@
 # gemini-proxy
 
-The app's only way to Google Gemini (plan T1.3, decision D2). It holds the Gemini key as a secret,
-checks each person's AI reads for the day, and passes Google's reply back. Code: `index.ts`;
-statement cleaning: `statement.ts` (tests: `deno test statement_test.ts`).
+The app's only way to its AI (plan T1.3, decision D2). It holds the Gemini and Groq keys as secrets,
+checks each person's AI reads for the day, and passes the reply back. Code: `index.ts`;
+statement cleaning: `statement.ts`; Groq: `groq.ts` (tests: `deno test supabase/functions/gemini-proxy/`).
+
+## Groq for typed quick adds (from 1.7)
+
+A typed line arrives as model `groq-qwen3.8-27b`. The function turns it into a Groq chat request,
+and turns Groq's answer back into Gemini's shape, so the app reads both the same way. If Groq can't
+answer (no key, busy, slower than 8 s, down), the same request goes to `gemini-3.1-flash-lite` on the
+same day's read. Voice, bills, statements and Insights never go to Groq.
+
+Owner steps:
+1. **Groq console → API Keys:** create a key for the server only.
+2. **Supabase dashboard → Edge Functions → Secrets:** `GROQ_API_KEY` = that key. Until it's set, typed
+   lines quietly go to Gemini.
+3. **Groq console → Settings → Data Controls:** turn on **Zero Data Retention**. Without it, Groq can
+   keep requests for up to 30 days for reliability and abuse checks.
+
+Free tier, per organisation: 1,000 requests a day and 8,000 tokens a minute for qwen3.8-27b, which is
+roughly six typed lines a minute across everyone. Past that, Groq answers 429 and Gemini answers instead.
 
 ## Turning it on (owner, plan step O2)
 
