@@ -10,9 +10,8 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withTimeoutOrNull
-import androidx.compose.runtime.snapshotFlow
+import com.vaibhav.kharchapaani.ui.components.awaitRequestedSync
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.input.ImeAction
@@ -141,15 +140,11 @@ fun HomeScreen(
 
     var isRefreshing by remember { mutableStateOf(false) }
 
+    val currentSyncStatus by rememberUpdatedState(syncStatus)
     LaunchedEffect(isRefreshing) {
         if (isRefreshing) {
             try {
-                withTimeoutOrNull(5_000L) {
-                    if (!syncStatus.isSyncing) {
-                        snapshotFlow { syncStatus.isSyncing }.first { it }
-                    }
-                    snapshotFlow { syncStatus.isSyncing }.first { !it }
-                }
+                awaitRequestedSync { currentSyncStatus.isSyncing }
             } finally {
                 isRefreshing = false
             }

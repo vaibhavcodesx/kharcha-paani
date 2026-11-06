@@ -34,9 +34,8 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withTimeoutOrNull
-import androidx.compose.runtime.snapshotFlow
+import com.vaibhav.kharchapaani.ui.components.awaitRequestedSync
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.semantics.selected
 import com.vaibhav.kharchapaani.domain.GroupSort
@@ -148,15 +147,11 @@ fun SplitsScreen(
 
     var isRefreshing by remember { mutableStateOf(false) }
 
+    val currentSyncStatus by rememberUpdatedState(syncStatus)
     LaunchedEffect(isRefreshing) {
         if (isRefreshing) {
             try {
-                withTimeoutOrNull(5_000L) {
-                    if (!syncStatus.isSyncing) {
-                        snapshotFlow { syncStatus.isSyncing }.first { it }
-                    }
-                    snapshotFlow { syncStatus.isSyncing }.first { !it }
-                }
+                awaitRequestedSync { currentSyncStatus.isSyncing }
             } finally {
                 isRefreshing = false
             }
