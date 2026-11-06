@@ -843,7 +843,7 @@
     <string name="signin_copy_failure_googleunavailable">If you\'re offline, connect and try again. Otherwise, check that Google Play services is up to date.</string>
     <string name="signin_copy_failure_network">You\'re offline. Connect once to sign in.</string>
     <string name="signin_copy_failure_rejected">Sign-in didn\'t go through on our end. Try again in a moment.</string>
-    <string name="signin_copy_failure_pickerblocked">Google didn\'t open the account picker. It holds it back for a few minutes after it\'s been closed a few times. Wait a moment and try again.</string>
+    <string name="signin_copy_failure_pickerblocked">Google didn\'t open the account picker. It holds it back for a few minutes after it\'s been closed a few times, so wait a moment and try again.</string>
     <string name="signin_copy_failure_appnotaccepted">Google didn\'t accept this copy of the app for sign-in. That\'s a setup problem on our side, not your account. Try again later, or ask whoever sent you the app.</string>
     <string name="signin_copy_failure_dismissed">No account picked. Tap Continue with Google when you\'re ready.</string>
     <string name="signin_copy_demo_meal">Friday dinner</string>
