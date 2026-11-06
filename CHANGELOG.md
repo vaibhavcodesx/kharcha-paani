@@ -18,6 +18,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Recover cleanly from corrupted app settings with ReplaceFileCorruptionHandler (reliability audit L14, Y1).
 
 - Debug-only StrictMode to log main-thread I/O, network calls, and resource leaks during development without interrupting execution (Y11).
+- Personal data breach incident response plan with 72-hour DPDP Board notification lifecycle and communication templates (D3).
+
 - CI records test starts and bounded worker thread snapshots so stalled unit runs can be diagnosed without skipping tests.
 - Comprehensive CSV export formula injection test suite and vulnerability report covering formula triggers, composite fields, and bypass edge cases (T14).
 - A plain text warning in the export spreadsheet sheet advising to share exports only with trusted recipients (Y12, SEC L-10).

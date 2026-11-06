@@ -216,6 +216,7 @@ owner or Claude go at the bottom.
 
 - 2026-11-04 · T14 / CSV formula injection coverage · prepared; comprehensive security analysis and property/boundary tests in CsvFormulaInjectionTest check formula starters (=, +, -, @, \t, \r), bypass edge cases (leading whitespace, Unix LF \n, composite fields), and numeric formatting. Full report added in docs/reports/csv-export-formula-injection.md. No production code changes; CI gates merge.
 - 2026-11-04 · Y1 / DataStore corruption handler · prepared; ReplaceFileCorruptionHandler recovers default emptyPreferences on corrupted prefs without throwing CorruptionException; AppSettingsCorruptionTest verifies baseline exception and recovery/persistence in Robolectric. CI gates merge.
+- 2026-11-05 · #255 · D3 / incident response plan · prepared; documented personal data breach response procedures under DPDP Act 2023 / DPDP Rules 2025 (Rule 7) with 72-hour DPBI reporting timeline, user notification requirements, severity classification, containment workflows, and communication templates. Docs only; exact-head CI gates merge.
 
 ## Questions
 
