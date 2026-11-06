@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="fullbackup_vm_read_failed">Could not read this backup. Choose a valid Kharcha Paani backup file.</string>
-    <string name="fullbackup_vm_operation_failed">Could not finish the backup operation. Your existing entries are kept. Try again.</string>
-    <string name="fullbackup_vm_recovery_pending">The previous restore needs to finish before editing. Keep your backup file and reopen the app to retry.</string>
-    <string name="fullbackup_vm_busy">Please wait for the backup operation to finish.</string>
-    <string name="fullbackup_vm_exported">Complete backup saved.</string>
-    <string name="fullbackup_vm_restored">Complete backup restored on this phone.</string>
-    <string name="fullbackup_vm_delete_wait">Please wait for the current deletion to finish before restoring.</string>
+    <string name="fullbackup_vm_read_failed">Couldn\'t read that file. Pick a backup saved by Kharcha Paani.</string>
+    <string name="fullbackup_vm_operation_failed">The backup didn\'t finish. Nothing you had is lost. Try again.</string>
+    <string name="fullbackup_vm_recovery_pending">The last restore didn\'t finish. Keep your backup file, then close and reopen the app to finish it.</string>
+    <string name="fullbackup_vm_busy">One moment, the backup is still going.</string>
+    <string name="fullbackup_vm_exported">Backup saved.</string>
+    <string name="fullbackup_vm_restored">Backup restored.</string>
+    <string name="fullbackup_vm_delete_wait">One moment, an entry is still being deleted. Then restore again.</string>
     <string name="fullbackup_vm_delete_wait_export">Give it a second: the entry you just deleted is still on its Undo. Then save the backup again.</string>
     <plurals name="fullbackup_vm_exported_missing_photos">
-        <item quantity="one">Complete backup saved. %d bill photo wasn\'t on this phone, so it isn\'t in the backup. Its entry is.</item>
-        <item quantity="other">Complete backup saved. %d bill photos weren\'t on this phone, so they aren\'t in the backup. Their entries are.</item>
+        <item quantity="one">Backup saved. %d bill photo wasn\'t on this phone, so it isn\'t in the backup. Its entry is.</item>
+        <item quantity="other">Backup saved. %d bill photos weren\'t on this phone, so they aren\'t in the backup. Their entries are.</item>
     </plurals>
 </resources>
