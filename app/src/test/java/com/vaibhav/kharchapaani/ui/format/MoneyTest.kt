@@ -199,4 +199,25 @@ class MoneyTest {
         assertEquals("₹1,00,00,00,000", Money.format(1000000000.0))
         assertEquals("₹9,99,99,99,999.99", Money.format(MAX_AMOUNT_RUPEES))
     }
+
+    @Test
+    fun `a compact figure is never cut and never says more than was spent`() {
+        // The Insights day strip clipped ₹1,27,366 to "1,27,36" (UI audit U1).
+        assertEquals("1.27L", Money.compactDigits(1_27_366.17))
+        assertEquals("1.99L", Money.compactDigits(1_99_999.0))
+        assertEquals("2L", Money.compactDigits(2_00_000.0))
+        assertEquals("1.5Cr", Money.compactDigits(1_50_00_000.0))
+        // Whole rupees from ₹1,000, so a day like ₹1,066.67 fits the cell too.
+        assertEquals("1,066", Money.compactDigits(1_066.67))
+        assertEquals("99,999", Money.compactDigits(99_999.0))
+        assertEquals("99,999", Money.compactDigits(99_999.6))
+        // Small amounts stay exact.
+        assertEquals("40", Money.compactDigits(40.0))
+        assertEquals("999.50", Money.compactDigits(999.5))
+        assertEquals("0", Money.compactDigits(Double.NaN))
+        // Short enough for the strip's fixed cell: at most six characters.
+        listOf(40.0, 999.5, 1_066.67, 99_999.0, 1_27_366.0, 9_99_99_999.0).forEach {
+            assertEquals(true, Money.compactDigits(it).length <= 6)
+        }
+    }
 }

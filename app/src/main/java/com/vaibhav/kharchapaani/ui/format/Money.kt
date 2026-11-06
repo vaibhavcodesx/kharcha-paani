@@ -49,6 +49,21 @@ object Money {
         return "$sign₹${digits(rounded)}"
     }
 
+    /**
+     * A figure for a narrow cell that must never be cut (the Insights day strip): as [digits] under
+     * ₹1,000, whole rupees up to ₹99,999, then lakh and crore ("1.27L", "2L", "1.5Cr"), always
+     * rounded down so it never says more than was spent. Use it only where the exact amount is also given to a
+     * screen reader and one tap away; a fixed-width cell clipped ₹1,27,366 to "1,27,36".
+     */
+    fun compactDigits(amount: Double): String {
+        if (!amount.isFinite()) return "0"
+        val a = kotlin.math.abs(roundPaisa(amount))
+        if (a < 1_000) return digits(a)
+        if (a < 1_00_000) return digits(BigDecimal.valueOf(a).setScale(0, RoundingMode.DOWN).toDouble())
+        val (value, unit) = if (a >= 1_00_00_000) a / 1_00_00_000 to "Cr" else a / 1_00_000 to "L"
+        return BigDecimal.valueOf(value).setScale(2, RoundingMode.DOWN).stripTrailingZeros().toPlainString() + unit
+    }
+
     /** A number for an editable text field: no ₹, no grouping, no trailing zeros ("33.33", "35", "12.5"). */
     fun input(amount: Double): String =
         if (!amount.isFinite()) "" else BigDecimal.valueOf(roundPaisa(amount)).stripTrailingZeros().toPlainString()

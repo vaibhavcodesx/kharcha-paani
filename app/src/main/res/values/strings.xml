@@ -143,19 +143,20 @@
     <string name="insights_your_share">Your share of %1$s</string>
     <string name="insights_this_month_possessive">this month\'s</string>
     <string name="insights_month_possessive">%1$s\'s</string>
-    <string name="insights_category_state">%1$d percent of %2$s spending</string>
-    <string name="insights_slice_percent">%1$s %2$d percent</string>
+    <string name="insights_category_state">%1$s percent of %2$s spending</string>
+    <string name="insights_slice_percent">%1$s %2$s percent</string>
+    <string name="insights_less_than_one">less than 1</string>
     <string name="insights_ring_description">%1$s %2$s. %3$s</string>
     <string name="insights_show_category">Show %1$s</string>
-    <string name="insights_percent">%1$d%%</string>
+    <string name="insights_percent">%1$s%%</string>
     <string name="insights_tap_day">Tap a day to see what it cost</string>
     <string name="insights_day_amount">%1$d, %2$s</string>
     <string name="insights_none">none</string>
     <string name="insights_flow_description">Spending day by day. Busiest day %1$s</string>
     <string name="insights_show_day">Show %1$d</string>
     <plurals name="insights_entry_percent">
-        <item quantity="one">%1$d entry · %2$d%%</item>
-        <item quantity="other">%1$d entries · %2$d%%</item>
+        <item quantity="one">%1$d entry · %2$s%%</item>
+        <item quantity="other">%1$d entries · %2$s%%</item>
     </plurals>
     <!-- Additional screen strings. -->
     <string name="entry_discard_changes">Discard your changes?</string>

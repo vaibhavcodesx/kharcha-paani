@@ -362,7 +362,7 @@ private fun CategoryBarRow(
     // One amber for all of them meant the badge carried the category and the bar carried nothing.
     val categoryColor = CategoryHelper.getCategoryColor(summary.category)
     val barColor = if (emphasis) categoryColor else categoryColor.copy(alpha = 0.35f)
-    val stateLabel = stringResource(R.string.insights_category_state, summary.percentage.roundToInt(), possessive)
+    val stateLabel = stringResource(R.string.insights_category_state, com.vaibhav.kharchapaani.ui.components.spokenPercent(summary.percentage), possessive)
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -381,7 +381,7 @@ private fun CategoryBarRow(
             Column(Modifier.weight(1f).padding(horizontal = Spacing.m)) {
                 Text(summary.category, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    pluralStringResource(R.plurals.insights_entry_percent, summary.count, summary.count, summary.percentage.roundToInt()),
+                    pluralStringResource(R.plurals.insights_entry_percent, summary.count, summary.count, com.vaibhav.kharchapaani.ui.components.shownPercent(summary.percentage)),
                     style = MaterialTheme.typography.bodySmall,
                 )
             }

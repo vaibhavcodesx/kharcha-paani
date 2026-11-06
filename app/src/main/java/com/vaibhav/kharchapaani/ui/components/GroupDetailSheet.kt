@@ -528,7 +528,9 @@ private fun Figure(label: String, value: String, color: androidx.compose.ui.grap
             .testTag("group_figure_${label.uppercase()}")
             .semantics(mergeDescendants = true) {},
     ) {
-        Text(label.uppercase(), style = EyebrowText, maxLines = 1)
+        // Two lines, not one: three of these share a row, and on a 360 dp phone "You're owed" was
+        // clipped to "YOU'RE".
+        Text(label.uppercase(), style = EyebrowText, maxLines = 2)
         BasicText(
             text = value,
             style = MoneyText.title.copy(color = color, lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified),
