@@ -42,7 +42,8 @@ unless noted. Collection is **required** unless noted.
 | App activity → Other user-generated content | Yes | **Yes** for the Gemini part | Partly | Notes; quick-add text and Insights summaries sent to Gemini |
 | App info and performance → Crash logs | Yes (optional, once T1.6 ships) | No | No | Purpose: **Analytics** (app stability). Off switch in Help & about |
 | App info and performance → Diagnostics | Yes (optional, once T1.6 ships) | No | No | As above |
-| Audio, Contacts, Location, Calendar, Messages, Device or other IDs, Web browsing, Health | No | | | No such permission or collection |
+| Audio → Voice or sound recordings | Yes (optional) | **Yes** | Yes | The spoken quick-add line, sent as audio to Gemini once, only after the AI notice is accepted and only while online; kept in memory only, never saved. Purpose: App functionality. Not shared for advertising. |
+| Contacts, Location, Calendar, Messages, Device or other IDs, Web browsing, Health | No | | | No such permission or collection |
 
 **Why "Shared: Yes" for what Gemini reads.** Sending data to a service provider that processes it only
 for you isn't "sharing". On Gemini's **free tier**, Google may use what's sent to improve its products,

@@ -148,36 +148,84 @@ class GeminiRepository(
             is CallOutcome.Ok -> {
                 val parsed = outcome.json()
                     ?: return@withContext TextParseOutcome(onPhone.copy(guessedOnPhone = true), AiFailure.Unreadable)
-                // The model missing a figure that plainly is in the line is worse than the phone's guess.
-                val amount = AiParse.amountField(parsed.opt("amount")).takeIf { it > 0 } ?: onPhone.amount
-                val splitWith = parsed.optJSONArray("splitWith")
-                    ?.let { arr -> (0 until arr.length()).mapNotNull { i -> arr.optString(i).trim().takeIf { it.isNotEmpty() } } }
-                    .orEmpty()
-                TextParseOutcome(
-                    ParsedTransactionResult(
-                        type = if (parsed.optString("type").equals("income", ignoreCase = true)) "income" else "expense",
-                        amount = amount,
-                        merchant = parsed.optString("merchant").trim().ifEmpty { onPhone.merchant },
-                        category = parsed.optString("category", "Other"),
-                        paymentMethod = parsed.optString("paymentMethod").trim().ifEmpty { choices.paymentMethods.firstOrNull() ?: "Other" },
-                        date = AiParse.dateOrNow(parsed.optString("date"), now, zone),
-                        note = parsed.optString("note").trim().ifEmpty { rawText.trim() },
-                        splitWithPersonNames = splitWith,
-                        confidence = 0.95f,
-                    ),
-                    failure = null,
-                )
+                TextParseOutcome(entryFrom(parsed, onPhone, rawText, choices, now, zone), failure = null)
             }
         }
     }
 
-    private fun textPrompt(rawText: String, knownFriends: List<String>, choices: ParseChoices, today: LocalDate): String = """
+    /** The model's JSON as an entry. The phone's own reading fills what the model left out. */
+    private fun entryFrom(
+        parsed: JSONObject,
+        onPhone: ParsedTransactionResult,
+        rawText: String,
+        choices: ParseChoices,
+        now: Long,
+        zone: ZoneId,
+    ): ParsedTransactionResult {
+        // The model missing a figure that plainly is in the line is worse than the phone's guess.
+        val amount = AiParse.amountField(parsed.opt("amount")).takeIf { it > 0 } ?: onPhone.amount
+        val splitWith = parsed.optJSONArray("splitWith")
+            ?.let { arr -> (0 until arr.length()).mapNotNull { i -> arr.optString(i).trim().takeIf { it.isNotEmpty() } } }
+            .orEmpty()
+        return ParsedTransactionResult(
+            type = if (parsed.optString("type").equals("income", ignoreCase = true)) "income" else "expense",
+            amount = amount,
+            merchant = parsed.optString("merchant").trim().ifEmpty { onPhone.merchant },
+            category = parsed.optString("category", "Other"),
+            paymentMethod = parsed.optString("paymentMethod").trim().ifEmpty { choices.paymentMethods.firstOrNull() ?: "Other" },
+            date = AiParse.dateOrNow(parsed.optString("date"), now, zone),
+            note = parsed.optString("note").trim().ifEmpty { rawText.trim() },
+            splitWithPersonNames = splitWith,
+            confidence = 0.95f,
+        )
+    }
+
+    /**
+     * A line the person said, as the audio itself (16 kHz mono WAV): Gemini listens and returns the
+     * entry in one step, through the same proxy and feature as a typed line. Hinglish and numbers
+     * said aloud ("do sau pachas") are why this beats the phone's own transcript, which is what the
+     * old microphone dialog gave us. [AiFailure] says what went wrong; there is no on-phone guess to
+     * fall back to because the phone never heard words, only sound.
+     */
+    suspend fun parseAudio(
+        wav: ByteArray,
+        knownFriends: List<String> = emptyList(),
+        choices: ParseChoices = ParseChoices.defaults,
+        now: Long = System.currentTimeMillis(),
+        zone: ZoneId = ZoneId.systemDefault(),
+    ): TextParseOutcome = withContext(Dispatchers.IO) {
+        val nothing = ParsedTransactionResult(amount = 0.0, merchant = "", note = "", readFailed = true)
+        if (!configured) return@withContext TextParseOutcome(nothing, AiFailure.NoKey)
+
+        val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+        val parts = listOf(
+            textPart(textPrompt(null, knownFriends, choices, today)),
+            JSONObject().put("inlineData", JSONObject().put("mimeType", "audio/wav").put("data", Base64.encodeToString(wav, Base64.NO_WRAP))),
+        )
+        when (val outcome = call(jsonRequest(parts, temperature = 0.1, json = true, thinking = QUICK_THINKING), FEATURE_QUICK_ADD, AUDIO_TIMEOUT_SECONDS, "voice")) {
+            is CallOutcome.Failed -> TextParseOutcome(nothing, outcome.reason)
+            is CallOutcome.Ok -> {
+                val parsed = outcome.json() ?: return@withContext TextParseOutcome(nothing, AiFailure.Unreadable)
+                val heard = parsed.optString("transcript").trim()
+                val entry = entryFrom(parsed, LocalHeuristicParser.parse(heard, knownFriends, now = now), heard, choices, now, zone)
+                // Silence, or a cough: no money, no place, nothing heard. Not an entry to save.
+                if (entry.amount <= 0 && heard.isEmpty() && parsed.optString("merchant").isBlank()) {
+                    TextParseOutcome(nothing, AiFailure.Unreadable)
+                } else {
+                    TextParseOutcome(entry, failure = null)
+                }
+            }
+        }
+    }
+
+    /** [rawText] is the typed line, or null when the line is the attached audio ([parseAudio]). */
+    private fun textPrompt(rawText: String?, knownFriends: List<String>, choices: ParseChoices, today: LocalDate): String = """
         You turn one line a person typed or said into an entry for an Indian expense app. Amounts are
         in rupees.
 
         Today is $today. Friends on this account: ${knownFriends.joinToString(", ").ifEmpty { "none" }}.
 
-        The line: ${JSONObject.quote(rawText)}
+        ${if (rawText != null) "The line: ${JSONObject.quote(rawText)}" else AUDIO_LINE}
 
         Fill in:
         - type: "income" only if money came in (salary, refund, client paid, received); otherwise "expense".
@@ -194,10 +242,10 @@ class GeminiRepository(
         - splitWith: the people the line says this was shared with ("with Rohan", "split with Ankit
           bhai"). A friend from the list exactly as spelled there; anyone else as written. Never the
           person themself ("me", "I") and never a group or trip name. [] if none.
-        - note: the original line.
+        - note: the original line.${if (rawText == null) "\n        - transcript: what you heard, written out as text (\"\" if nobody said anything)." else ""}
 
         Return only this JSON:
-        {"type":"expense","amount":370,"merchant":"McDonald's","category":"Food","paymentMethod":"GPay","date":"","splitWith":[],"note":"burger 370 mcd gpay"}
+        {"type":"expense","amount":370,"merchant":"McDonald's","category":"Food","paymentMethod":"GPay","date":"","splitWith":[],"note":"burger 370 mcd gpay"${if (rawText == null) ",\"transcript\":\"burger three seventy mcd gpay\"" else ""}}
     """.trimIndent()
 
     suspend fun parseReceiptOrScreenshot(
@@ -668,6 +716,13 @@ class GeminiRepository(
 
         /** Short text lines: an entry should be back in seconds or not at all (the phone guesses). */
         internal const val TEXT_TIMEOUT_SECONDS = 25L
+
+        /** Audio is a few seconds of sound on the same short read; a little longer than text to upload. */
+        internal const val AUDIO_TIMEOUT_SECONDS = 30L
+
+        private const val AUDIO_LINE = "The line is the attached audio: someone speaking in English, Hindi or Hinglish, for example " +
+            "\"chai pachaas rupaye cash\" or \"dinner twelve hundred with Rohan\". Listen to it and treat what " +
+            "is said as the line. It may be noisy, or have no money in it at all."
 
         /** One photo up and a short answer back, on a phone network. */
         internal const val RECEIPT_TIMEOUT_SECONDS = 45L

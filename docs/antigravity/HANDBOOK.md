@@ -152,6 +152,26 @@ Commit subjects are plain English about what changed for a user. **Tags:** GREEN
 
 ## 7. The queue
 
+### Wave 2, from 2026-11-06 (do this first)
+
+**Claude leads again and merges your PRs.** Codex is away until 2026-11-11. Everything in Wave 1 below is finished or merged, so don't redo it. Claude owns these, so don't start them: T2.4 sync visibility (Y13), T2.6 part 3, Y5–Y7 (#252), "Edited by X", T2.2, R8 (#71), Dependabot, the UI audit (#212/#214/#215), #227, #230, #241, and the Home hero.
+
+**Always first: review fixes.** When Claude comments on one of your PRs, fix that before taking a new item. Push to the same branch, never force-push, and reply on the PR with the new head and its CI result.
+
+- **W1** GREEN. Finish T3.11. Move the last hard-coded user-visible strings into `strings.xml` without changing any wording. Remaining files: `SignInBackdrop`, `SyncBadge`, `KpDock`, `SpendCharts`, `BrandMark`, `MainActivity`, `InsightsScreen`, `CaptureCard`, `ConfirmBottomSheet`, `AnimationUtils`. Also check `util/NotificationHelper.kt`, `widget/**` and `ask/**`. Skip AI prompts, test tags, log text and stored ids. Make one PR, plus a unit test that scans `app/src/main/java` for `Text("<letters>` literals, with an allow-list for the brand name, so they can't creep back.
+- **W2** GREEN. A test matrix for the Activity "involved" rule (#228, `FullTransaction.involvesMe` and `ActivityFeed`). Cover each combination of: in a group or not, I paid, I have a share, I added it, a settlement I'm in or not, and an IOU. Build it from a real Room DB. Tests only. If a case fails, report it on #188 and don't fix it.
+- **W3** GREEN. Golden tests for the quick-add parser after #238: "5 sau", "dedh sau", "kal", "parso", "chai 40 cash", "dinner 1200 with Rohan", mixed Hindi and English, with 25 or more cases. Assert today's behaviour. List anything that looks wrong on #188, but don't change the parser.
+- **W4** GREEN. Sync mapping safety net, with tests only under `app/src/test/.../data/sync/`. Every field of each syncable Room entity must survive the upload and download mapping. A field that's silently dropped is a finding: report it and don't fix it. You still never edit `data/sync/**` main code.
+- **W5** GREEN. Find flaky tests. Look for tests that use `Thread.sleep`, wall-clock time (`System.currentTimeMillis`, `LocalDate.now()` without a fixed clock), real `Dispatchers` or unbounded waits. Fix only the test side, and never weaken an assertion. Make one PR per five files at most.
+- **W6** YELLOW. Large-font safety. Replace fixed `height(…)` with `heightIn(min = same value)` on containers that hold text (REL M7), with the same size at normal font. Make one screen or sheet per PR, with a Compose test at `fontScale = 2f` that asserts the text is displayed, not clipped. Don't change any design.
+- **W7** GREEN. Second reviewer. For each open `[claude]` PR, read the diff and post one PR comment (never an approval) with concrete findings: file:line, what breaks, and how to see it. Write "No findings" if there are none. Never write `@claude`. Repeat whenever a new `[claude]` PR appears.
+- **W8** GREEN. The legal and store lines for #241 (voice audio to Gemini), #230 (use without an account) and #227 (full backup). Do this only after they merge: check with `gh pr view <n> --json state`. Draft the changes to `docs/legal/privacy-policy.md` and `docs/legal/play-console-answers.md`, and say "for owner review" in the PR. Not legal advice.
+- **W9** GREEN. Do this last. Write `docs/testing/1.7.0-device-checks.md` in 1.6.0's format, from the "Check on the phone" section of every PR in `git log v1.6.0..main`. Section 0 is install and sign-in on the signed release build. Then group the checks by screen, numbered, with `[ ]` boxes. Re-run it when Claude asks on #188.
+
+If Wave 2 runs out, comment on #188 and stop.
+
+### Wave 1 (2026-11-03 to 11-05, done)
+
 **From 2026-11-03 Codex leads, and it reviews and merges your PRs. Skip these, Codex owns them: R1–R3, F1, F2, F4–F7, Y5–Y7, Y13.** Start after O1–O3 at F3, then the T items. If Codex has already opened a PR for an item, skip it.
 
 Work in order. Say so and skip if something is blocked; don't stop the run.
@@ -210,7 +230,7 @@ Check each against current code first; some may be partly done. One PR each. `Ap
 
 ### Not yours
 
-Everything else belongs to Claude cloud sessions (`docs/claude-cloud/HANDOFF.md`): design and product calls, anything in `data/db`, `data/sync` or on the server, sync visibility, notifications, "Edited by X", app lock, merging. If the queue runs out, comment on #188 and stop. Don't borrow work. Already done, don't redo: "one source for per-friend balance" (`balanceEntries`), account deletion, Gemini proxy.
+Everything else belongs to Claude: design and product calls, anything in `data/db`, `data/sync` main code or on the server, sync visibility, notifications, "Edited by X", app lock, merging. If the queue runs out, comment on #188 and stop. Don't borrow work. Already done, don't redo: "one source for per-friend balance" (`balanceEntries`), account deletion, Gemini proxy.
 
 ## 8. What Claude's review found (2026-11-03, `main` at `a73fe8f`)
 
