@@ -23,6 +23,8 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasScrollToKeyAction
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.room.Room
@@ -236,7 +238,9 @@ class StoreListingCapture {
             }
         }
         waitForFixture()
+        compose.onNode(hasScrollToKeyAction()).performScrollToKey("tx_${StoreFixture.DINNER}")
         waitForText("Dinner")
+        compose.onNode(hasScrollToKeyAction()).performScrollToKey("header")
         waitForText("Ankit")
         // As it opens: the trip, what it cost, who was in it and who owes whom. The Dinner's own
         // split is screen 4.

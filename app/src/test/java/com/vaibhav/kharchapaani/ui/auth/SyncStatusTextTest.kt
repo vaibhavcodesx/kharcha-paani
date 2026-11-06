@@ -1,13 +1,22 @@
 package com.vaibhav.kharchapaani.ui.auth
 
+import android.app.Application
+import android.content.res.Resources
+import androidx.test.core.app.ApplicationProvider
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36])
 class SyncStatusTextTest {
 
+    private val resources: Resources = ApplicationProvider.getApplicationContext<Application>().resources
     private val now = 10_000_000L
-    private fun text(status: SyncStatus) = syncStatusText(status, now) { "5 min. ago" }
+    private fun text(status: SyncStatus) = syncStatusText(resources, status, now) { "5 min. ago" }
 
     @Test
     fun `failures are reported before anything else`() {

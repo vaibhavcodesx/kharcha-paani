@@ -15,7 +15,9 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.hasScrollToKeyAction
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.lifecycle.ViewModelStore
 import androidx.room.Room
@@ -131,7 +133,8 @@ class GroupSettlementsViewTest {
     }
 
     private fun settlements() {
-        compose.onNodeWithTag("group_history_settlements").performScrollTo()
+        compose.onNode(hasScrollToKeyAction()).performScrollToKey("feed_header")
+        compose.onNodeWithTag("group_history_settlements")
             .performSemanticsAction(SemanticsActions.OnClick)
     }
 
@@ -142,7 +145,8 @@ class GroupSettlementsViewTest {
         compose.onNodeWithTag("group_history_settlements").assertIsSelected()
         compose.onNodeWithText("Settlements · 4").assertExists()
         for (id in listOf(10, 11, 12, 13)) {
-            compose.onNodeWithTag("group_settlement_$id").performScrollTo().assertIsDisplayed()
+            compose.onNode(hasScrollToKeyAction()).performScrollToKey("st_$id")
+            compose.onNodeWithTag("group_settlement_$id").assertIsDisplayed()
         }
         compose.onNodeWithTag("group_settlement_14").assertDoesNotExist()
         compose.onNodeWithTag("group_expense_1").assertDoesNotExist()
@@ -151,18 +155,23 @@ class GroupSettlementsViewTest {
         compose.onNode(hasTestTag("group_settlement_12") and hasText("Not confirmed", substring = true)).assertExists()
         compose.onNode(hasTestTag("group_settlement_10") and hasText("Rohan paid Priya")).assertExists()
         compose.onNode(hasTestTag("group_settlement_13") and hasText("You lent Rohan")).assertExists()
-        compose.onNodeWithTag("group_history_all").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
-        compose.onNodeWithTag("group_expense_1").performScrollTo().assertIsDisplayed()
+        compose.onNode(hasScrollToKeyAction()).performScrollToKey("feed_header")
+        compose.onNodeWithTag("group_history_all").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNode(hasScrollToKeyAction()).performScrollToKey("tx_1")
+        compose.onNodeWithTag("group_expense_1").assertIsDisplayed()
     }
 
     @Test
     fun `archived history can be filtered and another group starts with all activity`() {
         val switchGroup = show(archived = true)
         settlements()
-        compose.onNodeWithTag("group_settlement_10").performScrollTo().assertHasNoClickAction()
+        compose.onNode(hasScrollToKeyAction()).performScrollToKey("st_10")
+        compose.onNodeWithTag("group_settlement_10").assertHasNoClickAction()
         compose.runOnIdle { switchGroup() }
-        compose.onNodeWithTag("group_history_all").performScrollTo().assertIsSelected()
+        compose.onNode(hasScrollToKeyAction()).performScrollToKey("feed_header")
+        compose.onNodeWithTag("group_history_all").assertIsSelected()
         compose.onNodeWithTag("group_settlement_10").assertDoesNotExist()
-        compose.onNodeWithTag("group_settlement_14").performScrollTo().assertIsDisplayed()
+        compose.onNode(hasScrollToKeyAction()).performScrollToKey("st_14")
+        compose.onNodeWithTag("group_settlement_14").assertIsDisplayed()
     }
 }

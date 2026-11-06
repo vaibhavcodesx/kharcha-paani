@@ -92,6 +92,7 @@ fun CaptureCard(
     friendNames: () -> List<String> = { emptyList() },
     voiceToAiAllowed: () -> Boolean = { false },
     // The home-screen widget's Speak button: start listening straight away.
+    aiEnabled: Boolean = true,
     startVoiceCapture: Boolean = false,
     onVoiceCaptureStarted: () -> Unit = {},
     // The widget's quick-add bar: put the cursor in the line (keyboard up), then report it.
@@ -117,7 +118,14 @@ fun CaptureCard(
         onText = onParseText,
         onMessage = onCaptureFailed,
     )
-    fun listen() = voice.listen()
+    fun listen() {
+        // AI off (#226) means nothing goes to Gemini, and voice entries need it to be read.
+        if (!aiEnabled) {
+            onCaptureFailed(context.getString(R.string.ai_choice_voice_off))
+            return
+        }
+        voice.listen()
+    }
 
     val focusRequester = remember { FocusRequester() }
     val bringIntoView = remember { BringIntoViewRequester() }
@@ -213,9 +221,21 @@ fun CaptureCard(
             }
         }
         Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.l).height(1.dp).background(CharcoalBorder))
+        Text(
+            text = stringResource(if (aiEnabled) R.string.ai_choice_capture_on else R.string.ai_choice_capture_off),
+            style = MaterialTheme.typography.bodySmall,
+            color = SubMutedWarmGray,
+            modifier = Modifier.padding(horizontal = Spacing.l, vertical = Spacing.s).testTag("capture_ai_status"),
+        )
         Row(Modifier.padding(Spacing.xs)) {
-            CaptureMode(KpIcons.Scan, stringResource(R.string.home_capture_bill_photo), Modifier.testTag("scan_receipt_button")) { imagePicker.launch("image/*") }
-            CaptureMode(KpIcons.Statement, stringResource(R.string.home_capture_statement), Modifier.testTag("upload_pdf_statement_button")) { pdfPicker.launch("application/pdf") }
+            CaptureMode(KpIcons.Scan, stringResource(R.string.home_capture_bill_photo), Modifier.testTag("scan_receipt_button")) {
+                runCatching { imagePicker.launch("image/*") }
+                    .onFailure { onCaptureFailed(context.getString(R.string.home_capture_image_unreadable)) }
+            }
+            CaptureMode(KpIcons.Statement, stringResource(R.string.home_capture_statement), Modifier.testTag("upload_pdf_statement_button")) {
+                runCatching { pdfPicker.launch("application/pdf") }
+                    .onFailure { onCaptureFailed(context.getString(R.string.home_capture_pdf_unreadable)) }
+            }
             CaptureMode(KpIcons.Lend, stringResource(R.string.home_capture_iou), Modifier.testTag("home_iou_button"), onOpenIou)
         }
     }

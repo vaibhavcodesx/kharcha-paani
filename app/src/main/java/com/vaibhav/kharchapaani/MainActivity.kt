@@ -360,6 +360,7 @@ fun SplitFlowApp(
     var isAccountSheetOpen by rememberSaveable { mutableStateOf(false) }
     var isDeleteAccountOpen by rememberSaveable { mutableStateOf(false) }
     val askBeforeDiscarding by viewModel.askBeforeDiscarding.collectAsStateWithLifecycle()
+    val aiEnabled by viewModel.aiEnabled.collectAsStateWithLifecycle()
     val upiPayee by viewModel.upiPayee.collectAsStateWithLifecycle()
     val categoryPrefs by viewModel.categoryPrefs.collectAsStateWithLifecycle()
     val isCategoriesOpen by viewModel.isCategoriesOpen.collectAsStateWithLifecycle()
@@ -374,9 +375,9 @@ fun SplitFlowApp(
     val billPhotoIds by viewModel.billPhotoIds.collectAsStateWithLifecycle()
     val rawTransactions by viewModel.rawTransactions.collectAsState()
     val homeSnapshot by viewModel.homeSnapshot.collectAsStateWithLifecycle()
-    val insightsAnalytics by viewModel.insightsAnalytics.collectAsState()
-    val insightsMonth by viewModel.insightsMonth.collectAsState()
-    val earliestInsightsMonth by viewModel.earliestInsightsMonth.collectAsState()
+    val insightsAnalytics by viewModel.insightsAnalytics.collectAsStateWithLifecycle()
+    val insightsMonth by viewModel.insightsMonth.collectAsStateWithLifecycle()
+    val earliestInsightsMonth by viewModel.earliestInsightsMonth.collectAsStateWithLifecycle()
     val personBalances by viewModel.personBalances.collectAsState()
     val people by viewModel.people.collectAsState()
 
@@ -443,8 +444,8 @@ fun SplitFlowApp(
     val selectedGroupForDetail by viewModel.selectedGroupForDetail.collectAsState()
 
     // AI Summary
-    val askBoard by viewModel.askBoard.collectAsState()
-    val aiAsksLeft by viewModel.aiAsksLeft.collectAsState()
+    val askBoard by viewModel.askBoard.collectAsStateWithLifecycle()
+    val aiAsksLeft by viewModel.aiAsksLeft.collectAsStateWithLifecycle()
     val tripReview by viewModel.tripReview.collectAsState()
 
     // Statement Import State
@@ -556,6 +557,19 @@ fun SplitFlowApp(
             sharedGroups.clearMessage()
         }
     }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(viewModel, lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewModel.shareIntents.collect { intent ->
+                try {
+                    context.startActivity(intent)
+                } catch (e: ActivityNotFoundException) {
+                    Log.w("MainActivity", "No app available to handle share chooser", e)
+                    viewModel.showMessage(context.getString(R.string.shell_copy_file_failed))
+                }
+            }
+        }
+    }
     val syncStatus by viewModel.syncStatus.collectAsStateWithLifecycle()
     val parseNotice by viewModel.parseNotice.collectAsState()
 
@@ -605,6 +619,7 @@ fun SplitFlowApp(
                             onOpenSimplifyDebts = { viewModel.openSimplifyDebts() },
                             accountAvatar = authUiState.accountAvatar,
                             startVoiceCapture = voiceCaptureRequested,
+                            aiEnabled = aiEnabled,
                             focusCapture = captureFocusRequested,
                             onCaptureFocused = viewModel::onCaptureFocused,
                             onParseAudio = viewModel::parseVoiceAudio,
@@ -613,7 +628,8 @@ fun SplitFlowApp(
                             syncStatus = syncStatus,
                             onShowMessage = viewModel::showMessage,
                             onVoiceCaptureStarted = viewModel::onVoiceCaptureStarted,
-                            onOpenAccount = { isAccountSheetOpen = true }
+                            onOpenAccount = { isAccountSheetOpen = true },
+                            onRequestSync = { viewModel.requestSync() }
                         )
                     }
 
@@ -638,6 +654,7 @@ fun SplitFlowApp(
                         onAnswerSettlement = { viewModel.openSettlementAnswer(it) },
                         onWithdrawSettlement = { viewModel.retractSettlement(it) },
                         askedAt = askedAt,
+                        onRequestSync = { viewModel.requestSync() },
                     )
 
                     2 -> InsightsScreen(
@@ -650,7 +667,7 @@ fun SplitFlowApp(
                         askBoard = askBoard,
                         onAsk = { viewModel.askInsights(it) },
                         aiAsksLeft = aiAsksLeft,
-                        aiAvailable = viewModel.aiAvailable,
+                        aiAvailable = viewModel.aiAvailable && aiEnabled,
                         onExport = { viewModel.openExport() },
                         onEditTransaction = { viewModel.openEditTransaction(it) },
                         month = insightsMonth,
@@ -710,6 +727,8 @@ fun SplitFlowApp(
             state = authUiState,
             syncStatus = syncStatus,
             askBeforeDiscarding = askBeforeDiscarding,
+            aiEnabled = aiEnabled,
+            onAiEnabledChange = viewModel::setAiEnabled,
             upiId = upiPayee?.upiId,
             onOpenUpi = {
                 isAccountSheetOpen = false
@@ -731,9 +750,15 @@ fun SplitFlowApp(
             },
             onBackUp = {
                 isAccountSheetOpen = false
-                viewModel.exportLocalBackup(context)
+                viewModel.exportLocalBackup()
             },
-            onRestore = { pickBackup.launch(arrayOf("application/json", "text/plain", "*/*")) },
+            onRestore = {
+                try {
+                    pickBackup.launch(arrayOf("application/json", "text/plain", "*/*"))
+                } catch (e: ActivityNotFoundException) {
+                    viewModel.showMessage(context.getString(R.string.shell_copy_file_failed))
+                }
+            },
             onRetryFailedSync = viewModel::retryFailedSync,
             onRetryProfile = onRetryProfile,
             onSignOut = {
@@ -838,7 +863,13 @@ fun SplitFlowApp(
                     viewModel.showMessage(context.getString(R.string.shell_copy_camera_missing))
                 }
             }
-            BillPhotoSource.Gallery -> pickBillPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            BillPhotoSource.Gallery -> {
+                try {
+                    pickBillPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                } catch (e: ActivityNotFoundException) {
+                    viewModel.showMessage(context.getString(R.string.shell_copy_file_failed))
+                }
+            }
         }
     }
 
@@ -898,7 +929,7 @@ fun SplitFlowApp(
         transactions = rawTransactions,
         initialMonth = insightsMonth,
         earliestMonth = earliestInsightsMonth,
-        onExport = { viewModel.exportCsv(context, it) },
+        onExport = { viewModel.exportCsv(it) },
         onDismiss = { viewModel.closeExport() },
     )
 
@@ -920,7 +951,7 @@ fun SplitFlowApp(
         onDismiss = { viewModel.dismissSettleUp() },
         upiPayee = upiPayee,
         hisaab = settleUpHisaab,
-        onAsk = { amount, message -> settleUpPerson?.let { viewModel.askToPay(context, it, amount, message) } },
+        onAsk = { amount, message -> settleUpPerson?.let { viewModel.askToPay(it, amount, message) } },
     )
 
     SubscriptionsSheet(
@@ -994,11 +1025,11 @@ fun SplitFlowApp(
                 viewModel.openSettleUp(person)
             }
         },
-        onExportGroup = { groupId -> viewModel.exportGroupCsv(context, groupId) },
+        onExportGroup = { groupId -> viewModel.exportGroupCsv(groupId) },
         onAskTripReview = { groupId -> viewModel.askTripReview(groupId) },
         tripReview = tripReview,
         aiAsksLeft = aiAsksLeft,
-        aiAvailable = viewModel.aiAvailable,
+        aiAvailable = viewModel.aiAvailable && aiEnabled,
         onDismiss = {
             sharedGroups.dismissInvite()
             viewModel.dismissGroupDetail()
@@ -1039,10 +1070,11 @@ fun SplitFlowApp(
 
     // Person Ledger Sheet
     if (selectedPersonForLedger != null) {
-        val ledgerFlow = viewModel.getPersonLedgerFlow(selectedPersonForLedger!!.id)
+        val person = selectedPersonForLedger!!
+        val ledgerFlow = remember(person.id, viewModel) { viewModel.getPersonLedgerFlow(person.id) }
         val ledgerItems by ledgerFlow.collectAsState(initial = emptyList())
         PersonLedgerSheet(
-            person = selectedPersonForLedger,
+            person = person,
             ledgerItems = ledgerItems,
             onSettleUp = {
                 viewModel.closePersonLedger()

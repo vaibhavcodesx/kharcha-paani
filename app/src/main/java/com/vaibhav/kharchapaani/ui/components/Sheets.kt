@@ -33,6 +33,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.AlertDialog
@@ -43,7 +46,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
@@ -256,6 +258,46 @@ fun SheetScaffold(
 }
 
 /**
+ * A sheet's body backed by a [LazyColumn] scrolling under a floating [actionBar].
+ * Uses the same liquid glass haze, bring-into-view handling and action bar clearance as [SheetScaffold].
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun LazySheetScaffold(
+    modifier: Modifier = Modifier,
+    actionBar: (@Composable BoxScope.() -> Unit)? = null,
+    content: LazyListScope.() -> Unit,
+) {
+    val hazeState = rememberHazeState()
+    val density = LocalDensity.current
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val clearOfBar = remember(density, navBarBottom, actionBar != null) {
+        ClearOfBarSpec(if (actionBar != null) with(density) { (ActionBarClearance + navBarBottom).toPx() } else 0f)
+    }
+    val bottomClearance = if (actionBar != null) ActionBarClearance + navBarBottom else Spacing.xl + navBarBottom
+    Box(modifier.fillMaxWidth().imePadding()) {
+        CompositionLocalProvider(LocalBringIntoViewSpec provides clearOfBar) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .hazeSource(hazeState),
+                contentPadding = PaddingValues(
+                    start = Spacing.page,
+                    end = Spacing.page,
+                    bottom = bottomClearance,
+                ),
+                content = content,
+            )
+        }
+        if (actionBar != null) {
+            CompositionLocalProvider(LocalHazeState provides hazeState) {
+                Box(Modifier.align(Alignment.BottomCenter), content = actionBar)
+            }
+        }
+    }
+}
+
+/**
  * The sheet's primary action, floating in Liquid Glass. The glass is only the rim: an optional
  * summary and the gradient button sit on the solid core. Disabled, the button says what's missing
  * ([disabledLabel]) instead of just dimming. [busy] while the action is still writing: the button
@@ -426,12 +468,19 @@ fun RowScope.SheetTextInput(
     modifier: Modifier = Modifier,
     keyboardType: KeyboardType = KeyboardType.Text,
     fieldTestTag: String? = null,
+    maxLength: Int? = null,
 ) {
     Box(modifier.weight(1f)) {
         if (value.isEmpty()) Text(placeholder, style = MaterialTheme.typography.bodyLarge, color = SubMutedWarmGray, maxLines = 1)
         BasicTextField(
             value = value,
-            onValueChange = onValueChange,
+            onValueChange = { input ->
+                if (maxLength == null || input.length <= maxLength) {
+                    onValueChange(input)
+                } else if (value.length < maxLength) {
+                    onValueChange(input.take(maxLength))
+                }
+            },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = OffWhiteText),

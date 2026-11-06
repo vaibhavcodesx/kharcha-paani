@@ -1,7 +1,10 @@
 package com.vaibhav.kharchapaani.ui.auth
 
+import com.vaibhav.kharchapaani.R
+import androidx.compose.ui.res.stringResource
 import android.app.TimePickerDialog
 import android.text.format.DateUtils
+import android.content.res.Resources
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -131,6 +134,8 @@ fun AccountSheet(
     onOpenLicences: () -> Unit = {},
     /** When the phone has no app to open a link or an email with: what to tell the person instead. */
     onNoApp: (String) -> Unit = {},
+    aiEnabled: Boolean = true,
+    onAiEnabledChange: (Boolean) -> Unit = {},
 ) {
     // Read here rather than passed in: the setting lives with crash reporting, which starts before
     // anything else and can't wait for a view model. Null in a build with no Firebase project.
@@ -161,6 +166,8 @@ fun AccountSheet(
             onSaveHue = onSaveHue,
             onOpenLicences = onOpenLicences,
             onNoApp = onNoApp,
+            aiEnabled = aiEnabled,
+            onAiEnabledChange = onAiEnabledChange,
             crashReports = crashReports,
             onCrashReportsChange = {
                 CrashReporting.setEnabled(context, it)
@@ -198,6 +205,8 @@ fun AccountSheetContent(
     onOpenLicences: () -> Unit = {},
     /** When the phone has no app to open a link or an email with: what to tell the person instead. */
     onNoApp: (String) -> Unit = {},
+    aiEnabled: Boolean = true,
+    onAiEnabledChange: (Boolean) -> Unit = {},
     /** Whether crash reports are on; null when this build can't send any, and the switch isn't shown. */
     crashReports: Boolean? = null,
     onCrashReportsChange: (Boolean) -> Unit = {},
@@ -237,6 +246,7 @@ fun AccountSheetContent(
         BrandMark(Modifier.padding(bottom = Spacing.l))
         // Your own colour once you have one (design item 11): the same one groupmates see you in.
         val mine = state.hue?.let(::hueColour)
+        val avatarDescription = stringResource(R.string.account_avatar_content_description)
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.xl)) {
             Box(
                 contentAlignment = Alignment.Center,
@@ -249,7 +259,7 @@ fun AccountSheetContent(
                     // an edge. This is the one avatar in the app that is *yours*, which is the
                     // right place for it and the reason it goes nowhere else.
                     .then(if (mine != null) Modifier.border(2.dp, mine, CircleShape) else Modifier.border(2.dp, BrandGradient.diagonal(), CircleShape))
-                    .semantics { contentDescription = "Your avatar" },
+                    .semantics { contentDescription = avatarDescription },
             ) {
                 Text(
                     text = previewAvatar,
@@ -260,7 +270,7 @@ fun AccountSheetContent(
             }
             Column(Modifier.weight(1f).padding(start = Spacing.m)) {
                 Text(
-                    text = cleanName ?: state.displayName ?: "Your account",
+                    text = cleanName ?: state.displayName ?: stringResource(R.string.account_title_fallback),
                     style = MaterialTheme.typography.headlineMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -272,10 +282,10 @@ fun AccountSheetContent(
             }
         }
 
-        Eyebrow("Profile")
+        Eyebrow(stringResource(R.string.account_eyebrow_profile))
         if (saved == null) {
             Text(
-                "Your name and avatar can be changed once your cloud profile is reachable.",
+                stringResource(R.string.account_profile_unreachable),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(bottom = Spacing.m),
             )
@@ -283,14 +293,14 @@ fun AccountSheetContent(
             // One connected group, like the settings below: three rows that all describe you,
             // with the helper line once, under them, instead of between the first two.
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                SheetRow(label = "Name", position = RowPosition.First) {
-                    SheetTextInput(value = name, onValueChange = { name = it }, placeholder = "Your name", fieldTestTag = "profile_name_input")
+                SheetRow(label = stringResource(R.string.account_name_label), position = RowPosition.First) {
+                    SheetTextInput(value = name, onValueChange = { name = it }, placeholder = stringResource(R.string.account_name_placeholder), fieldTestTag = "profile_name_input")
                 }
                 // Collapsed until wanted: open, the grid would push everything else off the sheet.
                 Box(Modifier.testTag("avatar_row")) {
                     ExpandableDetail(
-                        label = "Avatar",
-                        value = emoji ?: "Initials",
+                        label = stringResource(R.string.account_avatar_label),
+                        value = emoji ?: stringResource(R.string.account_avatar_initials),
                         expanded = avatarOpen,
                         onToggle = { avatarOpen = !avatarOpen },
                         position = RowPosition.Middle,
@@ -306,9 +316,9 @@ fun AccountSheetContent(
             }
             Text(
                 text = when {
-                    state.profileSaveFailed -> "Couldn't save your profile. Check your connection and try again."
-                    name.isNotBlank() && cleanName == null -> "Keep it to ${ProfileEdit.MAX_NAME_LENGTH} characters."
-                    else -> "Groupmates see your name and avatar."
+                    state.profileSaveFailed -> stringResource(R.string.account_profile_save_failed)
+                    name.isNotBlank() && cleanName == null -> stringResource(R.string.account_name_too_long, ProfileEdit.MAX_NAME_LENGTH)
+                    else -> stringResource(R.string.account_name_helper)
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = if (state.profileSaveFailed || (name.isNotBlank() && cleanName == null)) WarmAmberLight else SubMutedWarmGray,
@@ -319,7 +329,7 @@ fun AccountSheetContent(
             Spacer(Modifier.height(Spacing.xl))
         }
 
-        Eyebrow("Account")
+        Eyebrow(stringResource(R.string.account_eyebrow_account))
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             CloudStatusRow(
                 profile = state.profile,
@@ -386,6 +396,19 @@ fun AccountSheetContent(
                         uncheckedBorderColor = OutlineInteractive,
                     ),
                 )
+            }
+            SettingRow(
+                title = stringResource(R.string.ai_choice_title),
+                detail = stringResource(if (aiEnabled) R.string.ai_choice_enabled_detail else R.string.ai_choice_disabled_detail),
+                position = RowPosition.Middle,
+                modifier = Modifier.toggleable(value = aiEnabled, role = Role.Switch, onValueChange = onAiEnabledChange)
+                    .testTag("setting_ai_enabled"),
+            ) {
+                Switch(checked = aiEnabled, onCheckedChange = null, colors = SwitchDefaults.colors(
+                    checkedTrackColor = WarmAmberPrimary, checkedThumbColor = CharcoalBg,
+                    uncheckedTrackColor = CharcoalElevated, uncheckedThumbColor = MutedWarmGray,
+                    uncheckedBorderColor = OutlineInteractive,
+                ))
             }
             val reminderTime = ReminderSchedule.label(reminder.minuteOfDay, android.text.format.DateFormat.is24HourFormat(LocalContext.current))
             SettingRow(
@@ -792,11 +815,11 @@ private fun CloudStatusRow(
         }
         Text(
             text = when {
-                isRefreshPending -> "Offline. Your account reconnects on its own."
-                profile == ProfileState.Unavailable -> "Can't reach your cloud account right now"
-                profile is ProfileState.Loaded -> "Cloud profile ready"
-                profile == ProfileState.Missing -> "Cloud profile not found"
-                else -> "Checking your cloud profile…"
+                isRefreshPending -> stringResource(R.string.account_cloud_offline)
+                profile == ProfileState.Unavailable -> stringResource(R.string.account_cloud_unavailable)
+                profile is ProfileState.Loaded -> stringResource(R.string.account_cloud_ready)
+                profile == ProfileState.Missing -> stringResource(R.string.account_cloud_missing)
+                else -> stringResource(R.string.account_cloud_checking)
             },
             style = MaterialTheme.typography.titleSmall,
             modifier = Modifier
@@ -806,7 +829,7 @@ private fun CloudStatusRow(
         if (profile == ProfileState.Unavailable || profile == ProfileState.Missing) {
             TextButton(onClick = onRetry) {
                 Text(
-                    text = "Retry",
+                    text = stringResource(R.string.account_retry),
                     style = MaterialTheme.typography.labelLarge.copy(
                         color = WarmAmberPrimary,
                         fontWeight = FontWeight.Bold,
@@ -823,6 +846,7 @@ private fun SyncStatusRow(
     onRetryFailed: () -> Unit,
     position: RowPosition = RowPosition.Single,
 ) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -847,7 +871,7 @@ private fun SyncStatusRow(
             else -> StatusIcon(Icons.Outlined.CloudQueue, MutedWarmGray)
         }
         Text(
-            text = syncStatusText(status, now = System.currentTimeMillis()) { lastSyncedAt ->
+            text = syncStatusText(context.resources, status, now = System.currentTimeMillis()) { lastSyncedAt ->
                 DateUtils.getRelativeTimeSpanString(
                     lastSyncedAt, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS,
                 ).toString()
@@ -860,7 +884,7 @@ private fun SyncStatusRow(
         if (status.failedChanges > 0) {
             TextButton(onClick = onRetryFailed) {
                 Text(
-                    text = "Retry",
+                    text = stringResource(R.string.account_retry),
                     style = MaterialTheme.typography.labelLarge.copy(
                         color = WarmAmberPrimary,
                         fontWeight = FontWeight.Bold,
@@ -871,15 +895,20 @@ private fun SyncStatusRow(
     }
 }
 
-internal fun syncStatusText(status: SyncStatus, now: Long, relativeTime: (Long) -> String): String = when {
-    status.failedChanges == 1 -> "1 change couldn't sync"
-    status.failedChanges > 1 -> "${status.failedChanges} changes couldn't sync"
-    status.isSyncing -> "Syncing…"
-    status.unsyncedChanges == 1 -> "1 change waiting to sync"
-    status.unsyncedChanges > 1 -> "${status.unsyncedChanges} changes waiting to sync"
-    status.lastSyncedAt != null && now - status.lastSyncedAt < JUST_NOW_MILLIS -> "All changes synced"
-    status.lastSyncedAt != null -> "All changes synced · ${relativeTime(status.lastSyncedAt)}"
-    else -> "Not synced yet"
+internal fun syncStatusText(
+    resources: Resources,
+    status: SyncStatus,
+    now: Long,
+    relativeTime: (Long) -> String,
+): String = when {
+    status.failedChanges == 1 -> resources.getQuantityString(R.plurals.account_sync_failed, 1, 1)
+    status.failedChanges > 1 -> resources.getQuantityString(R.plurals.account_sync_failed, status.failedChanges, status.failedChanges)
+    status.isSyncing -> resources.getString(R.string.account_sync_syncing)
+    status.unsyncedChanges == 1 -> resources.getQuantityString(R.plurals.account_sync_unsynced, 1, 1)
+    status.unsyncedChanges > 1 -> resources.getQuantityString(R.plurals.account_sync_unsynced, status.unsyncedChanges, status.unsyncedChanges)
+    status.lastSyncedAt != null && now - status.lastSyncedAt < JUST_NOW_MILLIS -> resources.getString(R.string.account_sync_synced_just_now)
+    status.lastSyncedAt != null -> resources.getString(R.string.account_sync_synced_relative, relativeTime(status.lastSyncedAt))
+    else -> resources.getString(R.string.account_sync_not_synced)
 }
 
 private const val JUST_NOW_MILLIS = 60_000L

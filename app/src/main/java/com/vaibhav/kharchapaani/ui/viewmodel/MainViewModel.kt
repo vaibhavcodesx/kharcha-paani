@@ -66,6 +66,7 @@ import com.vaibhav.kharchapaani.data.repository.ParseChoices
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.data.db.entity.SettlementStatus
 import com.vaibhav.kharchapaani.data.repository.NotYoursToWithdrawException
+import com.vaibhav.kharchapaani.data.settings.AiSettings
 import com.vaibhav.kharchapaani.data.settings.AppSettings
 import com.vaibhav.kharchapaani.data.sync.SyncScheduler
 import com.vaibhav.kharchapaani.data.sync.TransactionSyncEngine
@@ -86,6 +87,8 @@ import com.vaibhav.kharchapaani.ui.format.MonthNames
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import com.vaibhav.kharchapaani.domain.StatementPdf
@@ -104,6 +107,7 @@ import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.domain.SplitTargets
 import com.vaibhav.kharchapaani.ui.format.displayNotice
+import com.vaibhav.kharchapaani.domain.FrequentPeople
 import com.vaibhav.kharchapaani.domain.recentSplitGroup
 import com.vaibhav.kharchapaani.ui.components.NewSubscription
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
@@ -134,8 +138,12 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -151,6 +159,7 @@ class MainViewModel(
     // Tests pass one whose client answers without a network.
     private val geminiRepo: GeminiRepository = GeminiRepository(
         accessToken = { SupabaseClientProvider.get(application).auth.currentSessionOrNull()?.accessToken },
+        aiAllowed = { AiSettings(application).enabledNow },
     ),
 ) : AndroidViewModel(application) {
 
@@ -159,6 +168,9 @@ class MainViewModel(
 
     private val _reviewMoments = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val reviewMoments = _reviewMoments.asSharedFlow()
+
+    private val _shareIntents = Channel<Intent>(Channel.BUFFERED)
+    val shareIntents = _shareIntents.receiveAsFlow()
 
     private val ledgerRepo = LedgerRepository(db, onLocalTransactionChange = ::requestSync, selfProfileId = userId)
 
@@ -212,6 +224,14 @@ class MainViewModel(
     }
 
     private val settings = AppSettings(application)
+    private val aiSettings = AiSettings(application)
+    private val aiChoiceMutex = kotlinx.coroutines.sync.Mutex()
+    private var requestedAiChoice: Boolean? = null
+    private var aiChoiceVersion = 0L
+    private val _aiEnabled = MutableStateFlow(aiSettings.enabledNow)
+    val aiEnabled: StateFlow<Boolean> = _aiEnabled.asStateFlow()
+    private fun canUseAi(): Boolean = _aiEnabled.value && aiSettings.enabledNow
+
 
     init {
         // A subscription is a rule; its charges become real entries when their date has arrived.
@@ -497,17 +517,18 @@ class MainViewModel(
     }
 
     /** Cold sources retain the difference between an empty ledger and one not read yet. */
+    @OptIn(FlowPreview::class)
     private val activityFeedSource = combine(
         combine(ledgerRepo.fullTransactions, pendingDeletes.ids) { transactions, hidden ->
             if (hidden.isEmpty()) transactions else transactions.filterNot { it.transaction.id in hidden }
         },
         ledgerRepo.allSettlements,
         combine(ledgerRepo.allPeople, ledgerRepo.allGroups) { people, groups -> people to groups },
-        searchQuery,
+        searchQuery.debounce { if (it.isEmpty()) 0L else SEARCH_DEBOUNCE_MS },
         selectedFilter
     ) { transactions, settlements, (people, groups), query, filter ->
         ActivityFeed.build(getApplication<Application>(), transactions, settlements, people, groups, query, filter)
-    }
+    }.flowOn(Dispatchers.Default)
 
     /** Recent Activity: transactions plus settlements and IOUs, filtered and searched together. */
     val activityFeed: StateFlow<List<ActivityItem>> = activityFeedSource
@@ -622,6 +643,7 @@ class MainViewModel(
     /** True while the open sheet shows the phone's guess and the AI's reading of the line is on its way. */
     val isImprovingWithAi: StateFlow<Boolean> = _isImprovingWithAi.asStateFlow()
     private var improveJob: Job? = null
+    private var receiptJob: Job? = null
     private val touchedWhileImproving = mutableSetOf<EntryField>()
 
     private val _updatedByAi = MutableStateFlow(false)
@@ -630,6 +652,9 @@ class MainViewModel(
 
     /** The AI's reading isn't wanted any more: the sheet closed, saved, or now holds another entry. */
     private fun stopImprovingWithAi() {
+        receiptJob?.cancel()
+        receiptJob = null
+        _isParsing.value = false
         improveJob?.cancel()
         improveJob = null
         _isImprovingWithAi.value = false
@@ -653,6 +678,10 @@ class MainViewModel(
     val voiceCaptureRequested: StateFlow<Boolean> = _voiceCaptureRequested.asStateFlow()
 
     fun requestVoiceCapture() {
+        if (!canUseAi()) {
+            _statusMessage.value = uiText(R.string.ai_choice_voice_off)
+            return
+        }
         _voiceCaptureRequested.value = true
     }
 
@@ -676,7 +705,7 @@ class MainViewModel(
      * and the person can say it again or type it.
      */
     fun parseVoiceAudio(wav: ByteArray) {
-        if (!aiAvailable) return
+        if (!aiAvailable || !canUseAi()) return
         stopImprovingWithAi()
         resetBillPhoto()
         viewModelScope.launch {
@@ -1233,9 +1262,9 @@ class MainViewModel(
         // The picture that was read is kept with the expense by default; one tap on the row drops it.
         resetBillPhoto()
         keepBillPhoto { bitmap }
-        viewModelScope.launch {
-            _isParsing.value = true
-            _isConfirmSheetOpen.value = true
+        _isParsing.value = true
+        _isConfirmSheetOpen.value = true
+        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             try {
                 when (val read = geminiRepo.readReceipt(bitmap, parseChoices())) {
                     is ReceiptReadResult.Read -> {
@@ -1253,9 +1282,14 @@ class MainViewModel(
                     }
                 }
             } finally {
-                _isParsing.value = false
+                if (receiptJob === coroutineContext[Job]) {
+                    receiptJob = null
+                    _isParsing.value = false
+                }
             }
         }
+        receiptJob = job
+        job.start()
     }
 
     /** A picture shared into the app: read off the main thread and at a size the phone can hold. */
@@ -1417,7 +1451,7 @@ class MainViewModel(
             sharesForGroup(groupId, only = target.personIds)
         } else {
             listOf(ShareInput(personId = -1L, personName = "You", isSelected = true)) +
-                people.value.map { ShareInput(personId = it.id, personName = it.name, isSelected = it.id in target.personIds) }
+                candidatesFor(null).map { ShareInput(personId = it.id, personName = it.name, isSelected = it.id in target.personIds) }
         }
         _isSplit.value = _shares.value.any { it.personId != -1L && it.isSelected }
         _splitMode.value = SplitMode.EQUAL
@@ -1432,11 +1466,11 @@ class MainViewModel(
     }
 
     private fun initSharesForCurrentPeople() {
-        val currentPeople = people.value
+        val currentPeople = candidatesFor(_groupId.value)
         val shareInputs = mutableListOf<ShareInput>()
         shareInputs.add(ShareInput(personId = -1L, personName = "You", isSelected = true))
         currentPeople.forEach { person ->
-            shareInputs.add(ShareInput(personId = person.id, personName = person.name, isSelected = false))
+            shareInputs.add(ShareInput(personId = person.id, personName = person.name, isSelected = false, isGuest = isGuestIn(_groupId.value, person)))
         }
         _shares.value = shareInputs
     }
@@ -1514,11 +1548,13 @@ class MainViewModel(
      * be a member (decision 1); otherwise everyone, as before.
      */
     private fun candidatesFor(groupId: Long?, includeGuests: Boolean = true): List<PersonEntity> {
-        if (!isSharedGroup(groupId)) return people.value
+        if (!isSharedGroup(groupId)) return FrequentPeople.sortByFrequency(people.value, rawTransactions.value)
         val memberIds = groups.value.firstOrNull { it.group.id == groupId }?.members?.map { it.id }?.toSet().orEmpty()
         // Friends who aren't on the app can come along as my guests (design item 9), after the members.
         val guests = if (includeGuests) people.value.filter { it.profileId == null && it.id !in memberIds } else emptyList()
-        return people.value.filter { it.id in memberIds } + guests
+        val members = people.value.filter { it.id in memberIds }
+        return FrequentPeople.sortByFrequency(members, rawTransactions.value) +
+            FrequentPeople.sortByFrequency(guests, rawTransactions.value)
     }
 
     /** A friend with no account, in a shared group's expense: my guest. */
@@ -1937,10 +1973,10 @@ class MainViewModel(
     }
 
     /**
-     * Opens the share sheet with [message] and, when you have a UPI ID, your payment code for [amount]
-     * (ask-to-pay). The ask is logged only if an app is picked (ask/AskSentReceiver).
+     * Emits a one-shot share chooser intent with [message] and payment code for [amount].
+     * The ask is logged only if an app is picked (ask/AskSentReceiver).
      */
-    fun askToPay(context: Context, person: PersonEntity, amount: Double, message: String) {
+    fun askToPay(person: PersonEntity, amount: Double, message: String) {
         launchAction {
             val app = getApplication<Application>()
             val qr = upiPayee.value?.let { payee ->
@@ -1950,7 +1986,7 @@ class MainViewModel(
             }
             val firstName = person.name.trim().substringBefore(' ').ifEmpty { person.name }
             val chooser = AskShare.chooser(app, AskShare.sendIntent(app, message, qr), person.id, amount, userId, uiText(R.string.action_notice_ask_chooser, firstName))
-            context.startActivity(chooser)
+            _shareIntents.send(chooser)
         }
     }
 
@@ -2099,7 +2135,15 @@ class MainViewModel(
      * [insteadOfAi], which never sends anything.
      */
     private fun withAiNotice(insteadOfAi: () -> Unit, withAi: () -> Unit) {
-        if (!aiAvailable || aiNoticeAccepted.value) return withAi()
+        if (!canUseAi()) {
+            insteadOfAi()
+            _statusMessage.value = uiText(R.string.ai_choice_off_notice)
+            return
+        }
+        if (!aiAvailable || aiNoticeAccepted.value) {
+            if (aiAvailable) _statusMessage.value = uiText(R.string.ai_choice_using_gemini)
+            return withAi()
+        }
         afterAiNotice = withAi
         this.insteadOfAi = insteadOfAi
         _isAiNoticeOpen.value = true
@@ -2107,9 +2151,17 @@ class MainViewModel(
 
     fun acceptAiNotice() {
         val next = afterAiNotice
+        val manual = insteadOfAi
         closeAiNotice()
+        if (!canUseAi()) {
+            manual?.invoke()
+            _statusMessage.value = uiText(R.string.ai_choice_off_notice)
+            return
+        }
+        if (next == null) return
         viewModelScope.launch { settings.setAiNoticeAccepted(true) }
-        next?.invoke()
+        _statusMessage.value = uiText(R.string.ai_choice_using_gemini)
+        next.invoke()
     }
 
     fun declineAiNotice() {
@@ -2135,6 +2187,10 @@ class MainViewModel(
      * running — no queue, because a queued answer lands under a chip nobody is looking at.
      */
     fun askInsights(prompt: AiPrompt) {
+        if (!canUseAi()) {
+            _statusMessage.value = uiText(R.string.ai_choice_off_notice)
+            return
+        }
         // Picking an answer already in hand sends nothing, so it needs no notice.
         if (!_askBoard.value.needsAsking(prompt)) return askInsightsNow(prompt)
         withAiNotice(insteadOfAi = {}) { askInsightsNow(prompt) }
@@ -2255,6 +2311,48 @@ class MainViewModel(
         }
     }
 
+    /** The switch takes effect immediately; enabling waits until the preference is durable. */
+    fun setAiEnabled(enabled: Boolean) {
+        requestedAiChoice = enabled
+        val version = ++aiChoiceVersion
+        if (!enabled) applyAiChoice(false)
+        launchAction {
+            aiChoiceMutex.withLock {
+                aiSettings.setEnabled(enabled)
+                if (version == aiChoiceVersion) {
+                    requestedAiChoice = null
+                    applyAiChoice(enabled)
+                }
+            }
+        }
+    }
+
+    private fun applyAiChoice(enabled: Boolean) {
+        // An old preference emission cannot undo a newer Off tap while its write is pending.
+        val allowed = enabled && requestedAiChoice != false
+        _aiEnabled.value = allowed
+        geminiRepo.setAiEnabled(allowed)
+        if (!allowed) {
+            stopImprovingWithAi()
+            statementJob?.cancel()
+            statementJob = null
+            _isParsingStatement.value = false
+            _isImportStatementOpen.value = false
+            askJob?.cancel()
+            tripJob?.cancel()
+            _askBoard.value = _askBoard.value.cleared()
+            _tripReview.value = AskState.Idle
+            _voiceCaptureRequested.value = false
+            closeAiNotice()
+        }
+    }
+
+    // After every job/state declaration: no constructor initializer can see an uninitialized flow.
+    init {
+        geminiRepo.setAiEnabled(aiSettings.enabledNow)
+        viewModelScope.launch { aiSettings.enabled.collect(::applyAiChoice) }
+    }
+
     private val _isExportOpen = MutableStateFlow(false)
     val isExportOpen: StateFlow<Boolean> = _isExportOpen.asStateFlow()
 
@@ -2271,11 +2369,11 @@ class MainViewModel(
      * Gmail cut off after a screenful, so a whole ledger arrived as its last 10-20 rows.
      */
     /** One group's whole history as a spreadsheet, from its own screen. */
-    fun exportGroupCsv(context: Context, groupId: Long) {
-        exportCsv(context, ExportRange.Everything, groupId)
+    fun exportGroupCsv(groupId: Long) {
+        exportCsv(ExportRange.Everything, groupId)
     }
 
-    fun exportCsv(context: Context, range: ExportRange, groupId: Long? = null) {
+    fun exportCsv(range: ExportRange, groupId: Long? = null) {
         launchAction {
             val csv = ledgerRepo.exportCsv(range, groupId = groupId)
             if (csv.rows == 0) {
@@ -2291,7 +2389,8 @@ class MainViewModel(
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             _isExportOpen.value = false
-            context.startActivity(Intent.createChooser(send, uiQuantity(R.plurals.action_notice_export, csv.rows, csv.rows)))
+            val chooser = Intent.createChooser(send, uiQuantity(R.plurals.action_notice_export, csv.rows, csv.rows))
+            _shareIntents.send(chooser)
         }
     }
 
@@ -2303,7 +2402,7 @@ class MainViewModel(
      * Insurance, not routine: a normal app update keeps all of this. It is uninstalling, a new
      * phone, or a change of signing key that loses it. See [LocalBackup].
      */
-    fun exportLocalBackup(context: Context) {
+    fun exportLocalBackup() {
         launchAction {
             // Settings are read here and handed in: the repository owns the database, not
             // DataStore, and the first version of this simply forgot to pass them — which is
@@ -2326,7 +2425,8 @@ class MainViewModel(
                 clipData = ClipData.newRawUri(fileName, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(Intent.createChooser(send, uiText(R.string.action_notice_backup_chooser, backup.summary(getApplication<Application>()))))
+            val chooser = Intent.createChooser(send, uiText(R.string.action_notice_backup_chooser, backup.summary(getApplication<Application>())))
+            _shareIntents.send(chooser)
         }
     }
 
@@ -2428,6 +2528,9 @@ class MainViewModel(
         /** A year of a busy ledger is well under 1 MB of JSON; this is generous and still bounded. */
         const val BACKUP_MAX_BYTES = 16 * 1024 * 1024
 
+        /** Debounce window for search input so rapid keystrokes don't re-build the feed synchronously. */
+        const val SEARCH_DEBOUNCE_MS = 150L
+
         fun factory(application: Application, db: AppDatabase, userId: String): ViewModelProvider.Factory =
             viewModelFactory { initializer { MainViewModel(application, db, userId) } }
     }
@@ -2435,6 +2538,7 @@ class MainViewModel(
 
 /** Two readings' times this close are the same moment ("now" on the phone, "now" from the AI). */
 private const val SAME_MOMENT_MS = 60_000L
+
 
 /** A part of the quick-add sheet the person can change; see [MainViewModel.isImprovingWithAi]. */
 private enum class EntryField { Type, Amount, Merchant, Category, Payment, Note, Date, Split }

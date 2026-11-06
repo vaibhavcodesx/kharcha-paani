@@ -11,6 +11,9 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -298,8 +301,22 @@ private fun PreviewRow(
             Text(detail, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Column(horizontalAlignment = Alignment.End) {
-            Text(amount, style = MoneyText.row, color = amountColor, maxLines = 1)
-            if (below != null) Text(below, style = MoneyText.small, maxLines = 1)
+            BasicText(
+                text = amount,
+                style = MoneyText.row.copy(color = amountColor, lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified),
+                maxLines = 1,
+                softWrap = false,
+                autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = MoneyText.row.fontSize),
+            )
+            if (below != null) {
+                BasicText(
+                    text = below,
+                    style = MoneyText.small.copy(lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified),
+                    maxLines = 1,
+                    softWrap = false,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = MoneyText.small.fontSize),
+                )
+            }
         }
     }
 }

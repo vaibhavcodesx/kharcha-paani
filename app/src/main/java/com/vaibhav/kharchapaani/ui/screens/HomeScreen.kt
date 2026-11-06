@@ -4,6 +4,14 @@ import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
+import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
+import com.vaibhav.kharchapaani.ui.components.awaitRequestedSync
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.input.ImeAction
@@ -77,18 +85,16 @@ import java.time.YearMonth
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
-import com.vaibhav.kharchapaani.ui.theme.CharcoalElevated
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
-import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
 import java.time.LocalDate
 import java.time.ZoneId
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     people: List<PersonEntity> = emptyList(),
@@ -115,6 +121,7 @@ fun HomeScreen(
     today: LocalDate = LocalDate.now(),
     /** Expenses with a bill photo, which get a small receipt icon. */
     billPhotoIds: Set<Long> = emptySet(),
+    aiEnabled: Boolean = true,
     startVoiceCapture: Boolean = false,
     onVoiceCaptureStarted: () -> Unit = {},
     focusCapture: Boolean = false,
@@ -124,6 +131,7 @@ fun HomeScreen(
     voiceToAiAllowed: () -> Boolean = { false },
     syncStatus: SyncStatus = SyncStatus(),
     onShowMessage: (String) -> Unit = {},
+    onRequestSync: () -> Unit = {},
 ) {
     var showSearch by rememberSaveable { mutableStateOf(searchQuery.isNotEmpty()) }
     val days = remember(activity, today) { ActivityDays.group(activity, today, ZoneId.systemDefault()) }
@@ -131,12 +139,45 @@ fun HomeScreen(
         MerchantVisits.thisMonth(activity, YearMonth.from(today), ZoneId.systemDefault())
     }
 
-    LazyColumn(
+    var isRefreshing by remember { mutableStateOf(false) }
+
+    val currentSyncStatus by rememberUpdatedState(syncStatus)
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) {
+            try {
+                awaitRequestedSync { currentSyncStatus.isSyncing }
+            } finally {
+                isRefreshing = false
+            }
+        }
+    }
+
+    val pullToRefreshState = rememberPullToRefreshState()
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = {
+            isRefreshing = true
+            onRequestSync()
+        },
+        state = pullToRefreshState,
         modifier = modifier
             .fillMaxSize()
-            .background(CharcoalBg),
-        contentPadding = PaddingValues(start = Spacing.page, end = Spacing.page, top = Spacing.l, bottom = dockClearance()),
+            .background(CharcoalBg)
+            .testTag("home_pull_to_refresh"),
+        indicator = {
+            PullToRefreshDefaults.Indicator(
+                state = pullToRefreshState,
+                isRefreshing = isRefreshing,
+                modifier = Modifier.align(Alignment.TopCenter).testTag("home_pull_refresh_indicator"),
+                containerColor = CharcoalElevated,
+                color = WarmAmberPrimary,
+            )
+        },
     ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = Spacing.page, end = Spacing.page, top = Spacing.l, bottom = dockClearance()),
+        ) {
         item(key = "balance") {
             BalanceHeader(
                 monthlyExpense = monthlyAnalytics.totalExpense,
@@ -162,6 +203,7 @@ fun HomeScreen(
                 onParsePdf = onParsePdf,
                 onOpenIou = onOpenIouDialog,
                 startVoiceCapture = startVoiceCapture,
+                aiEnabled = aiEnabled,
                 focusCapture = focusCapture,
                 onCaptureFocused = onCaptureFocused,
                 onParseAudio = onParseAudio,
@@ -226,6 +268,7 @@ fun HomeScreen(
                 }
             }
         }
+    }
     }
 }
 
