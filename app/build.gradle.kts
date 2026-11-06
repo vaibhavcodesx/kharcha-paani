@@ -124,7 +124,13 @@ android {
   testOptions { unitTests { isIncludeAndroidResources = true } }
   // Issues already in the code when lint joined CI (2026-10-24); CI's lint job fails on new ones.
   // Fix one, then regenerate with `./gradlew :app:updateLintBaseline`.
-  lint { baseline = file("lint-baseline.xml") }
+  lint {
+    baseline = file("lint-baseline.xml")
+    // New in Compose 1.12's lint: reading strings or the locale through LocalContext inside a
+    // composable. ~22 call sites, all in files other open PRs are changing, so they're warnings
+    // until those land; then they move to LocalResources (Antigravity W10) and this goes.
+    warning += setOf("LocalContextGetResourceValueCall", "LocalContextResourcesRead", "NonObservableLocale")
+  }
   // MigrationTestHelper builds old schema versions from these JSON files. Robolectric only sees
   // the app's merged debug assets (not the test source set's), so they go in debug; release
   // APKs don't carry them.
