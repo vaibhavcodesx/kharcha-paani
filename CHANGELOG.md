@@ -14,16 +14,11 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 ## [Unreleased]
 
 ## [1.7.0] - 2026-11-06
-### Fixed
-- Quick-add heuristic parser keeps split friend names (e.g. "with Rohan and Ankit") and multi-word payment method words ("google pay", "bank transfer", "credit card", "debit card") out of merchant titles (W11).
 
 ### Added
-- Bill photos back up to your account and, on a split, the others in it see them (a smaller copy; your original stays on your phone). Settings has a switch to stop sharing. A photo someone shared shows as "Bill photo saved in the cloud · Load". Deleting the expense, the photo or your account deletes the cloud copy.
-
-### Added
-- Bill photo sync safety net tests verifying replacement delete queuing, expense deletion queue transactions, deduplication, and split unsharing (W12, #266).
 - Typed quick adds are read by Groq: in testing it got more lines right and answered faster than Gemini (about 1.3 s). If Groq can't answer, Gemini does, on the same daily read. Voice, bills, statements and Insights stay with Gemini, which now uses Gemini 3.1 Flash Lite (its free tier isn't limited to about 20 reads a day). The AI notice names Groq, and everyone sees it once more before anything reaches Groq.
 - Bill photos back up to your account and, on a split, the others in it see them (a smaller copy; your original stays on your phone). Settings has a switch to stop sharing. A photo someone shared shows as "Bill photo saved in the cloud · Load". Deleting the expense, the photo or your account deletes the cloud copy.
+- Bill photo sync safety net tests verifying replacement delete queuing, expense deletion queue transactions, deduplication, and split unsharing (W12, #266).
 - Move remaining hardcoded copy in AccountSheet into strings.xml and add safety net test preventing hardcoded Compose Text string literals (W1, T3.11).
 - Use without an account keeps an isolated on-phone ledger, with explicit account switching and no local cloud sync or shared-group writes (owner review).
 - Signing out asks first, and can also remove the account's data from this phone (its ledger, bill photos and settings). That's offered only once everything has synced, so nothing is lost.
@@ -67,6 +62,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Changed
 - Plainer words in Settings, backup and the on-phone ledger: "Signed in" instead of "Cloud profile ready", no more note about version 1.3, and the backup screens say what they do without terms like "complete archive" or "consent choices".
+- Daily flow chart callout and axis containers in SpendCharts use heightIn(min = ...) so tap hints, amounts, and dates expand gracefully without visual clipping at 200% font scale while preserving exact heights at normal scale (REL M7, W6).
 - Pull to sync on Home and Splits is now a small glass that fills as you pull and ripples while it syncs, then says what happened: all caught up, saved on this phone, or how many changes couldn't sync. It used to spin for five seconds whatever happened.
 - With AI off, tapping something that needs it (a bill, a statement, the mic, an Insights question, a trip review) opens a short sheet instead of a passing line: what stayed on the phone, what AI would do, "Turn on AI and continue", or the feature's own way without AI. The "AI is off" line under quick add leads to it too.
 - The place is capped at 120 characters and the note at 1,000, matching new server limits, so a very long note can never become an entry that won't sync.
@@ -95,6 +91,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Home headings, capture notices, filters and day totals use Android string resources, preserving their English wording and full rupee figures.
 
 ### Fixed
+- Quick-add heuristic parser keeps split friend names (e.g. "with Rohan and Ankit") and multi-word payment method words ("google pay", "bank transfer", "credit card", "debit card") out of merchant titles (W11).
+- In a quick add, the names after "split with" end at the place: "coffee 200 split with Amit at Starbucks" splits with Amit and keeps Starbucks in the title, instead of a friend called "Amit At Starbucks".
 - Statement import selection ticks and category overrides survive activity recreation and screen rotation via Compose state savers (REL L4, Y4).
 - Capped friend names at 64 characters and settlement dispute notes at 200 characters in SheetTextInput, matching Supabase column constraints and preventing private split sync failures (Y3, REL L9).
 - Guarded launcher calls against missing activity handlers, and refactored export and ask actions to emit one-shot share chooser intents instead of capturing activities across suspensions (Y2, REL L3).

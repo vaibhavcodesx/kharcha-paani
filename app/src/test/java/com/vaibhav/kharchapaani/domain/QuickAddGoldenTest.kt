@@ -114,4 +114,20 @@ class QuickAddGoldenTest {
         assertEquals("Lunch", LocalHeuristicParser.parse("lunch 1500 with Anand", knownFriends = listOf("Anand")).merchant)
         assertEquals("Cab", LocalHeuristicParser.parse("cab 450 split with Ankit", knownFriends = listOf("Ankit Shah")).merchant)
     }
+
+    @Test
+    fun `the place after the split names stays the merchant`() {
+        val atStarbucks = LocalHeuristicParser.parse("coffee 200 split with Amit at Starbucks")
+        assertEquals(listOf("Amit"), atStarbucks.splitWithPersonNames)
+        assertEquals("Coffee Starbucks", atStarbucks.merchant)
+
+        val toit = LocalHeuristicParser.parse("dinner with Rohan at Toit 2400", knownFriends = listOf("Rohan"))
+        assertEquals(listOf("Rohan"), toit.splitWithPersonNames)
+        assertEquals("Dinner Toit", toit.merchant)
+
+        // Not a friend and not "split with": no split, so the name isn't taken out of the line.
+        val chai = LocalHeuristicParser.parse("chai 40 with Amit")
+        assertEquals(emptyList<String>(), chai.splitWithPersonNames)
+        assertEquals("Chai Amit", chai.merchant)
+    }
 }
