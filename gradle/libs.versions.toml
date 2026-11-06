@@ -35,7 +35,9 @@ cameraCore = "1.5.0"
 okhttp = "5.5.1"
 datastorePreferences = "1.3.0"
 zxingCore = "3.5.4"
-robolectric = "4.17"
+# 4.17 fails every Robolectric test on CI's JDK 25 (IllegalAccessException in AndroidInterceptors);
+# held at 4.16.1 until a fix ships.
+robolectric = "4.16.1"
 roborazzi = "1.77.0"
 secretsGradlePlugin = "2.0.1"
 credentials = "1.6.0"
