@@ -11,8 +11,11 @@
              few hundred bills would stop the ledger itself being backed up. Device transfer has no
              such limit and keeps them. -->
         <exclude domain="file" path="receipts/" />
+        <!-- A restore in progress keeps a full plaintext copy of the archive here. -->
+        <exclude domain="file" path="backup-recovery/" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="sharedpref" path="supabase_auth.xml" />
+        <exclude domain="file" path="backup-recovery/" />
     </device-transfer>
 </data-extraction-rules>

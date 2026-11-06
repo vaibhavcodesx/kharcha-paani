@@ -280,4 +280,27 @@ class EverythingBackupRepositoryTest {
         assertEquals(2L, target.splitDao().getAllSplitSharesDirect().single { it.guestName != null }.guestPersonId!!)
     }
 
+    @Test fun `a bill-photo row whose file is gone does not stop the whole export`() = runBlocking {
+        source.transactionDao().insertTransaction(TransactionEntity(id = 1, type = "expense", amount = 40.0, category = "Food", merchant = "Chai", paymentMethod = "Cash", date = 1))
+        source.transactionDao().insertTransaction(TransactionEntity(id = 2, type = "expense", amount = 60.0, category = "Food", merchant = "Lunch", paymentMethod = "Cash", date = 2))
+        source.receiptDao().insert(ReceiptEntity(id = 1, transactionId = 2, fileName = "gone.jpg", width = 10, height = 10, bytes = 1234, createdAt = 3, remotePath = null))
+
+        val collected = exporter.collectReport("probe")
+
+        assertEquals(2, collected.archive.transactions.size)
+        assertTrue(collected.archive.receipts.isEmpty())
+        assertEquals(1, collected.missingPhotos)
+        assertEquals(2, exporter.collect("probe").transactions.size)
+    }
+
+    @Test fun `a photo file that is there but changed still stops the export`() = runBlocking {
+        source.transactionDao().insertTransaction(TransactionEntity(id = 2, type = "expense", amount = 60.0, category = "Food", merchant = "Lunch", paymentMethod = "Cash", date = 2))
+        val stored = File(directory, "source/changed.jpg").apply { writeBytes(ByteArray(10) { 1 }) }
+        assertTrue(stored.exists())
+        source.receiptDao().insert(ReceiptEntity(id = 1, transactionId = 2, fileName = "changed.jpg", width = 10, height = 10, bytes = 1234, createdAt = 3, remotePath = null))
+
+        val failure = runCatching { exporter.collectReport("probe") }.exceptionOrNull()
+
+        assertTrue("a changed file must not export as if it were fine", failure is IllegalArgumentException)
+    }
 }

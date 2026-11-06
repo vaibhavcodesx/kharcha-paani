@@ -15,12 +15,25 @@ import java.io.ByteArrayOutputStream
 /** Full archive, independent of cloud availability. No authentication or scheduling side effects. */
 class EverythingBackupRepository(private val db: AppDatabase, private val receiptStore: ReceiptStore) {
     suspend fun collect(appVersion: String, settings: EverythingSettings = EverythingSettings()): EverythingBackup =
+        collectReport(appVersion, settings).archive
+
+    /** The archive, plus how many bill photos had a row but no file on this phone. */
+    class Collected(val archive: EverythingBackup, val missingPhotos: Int)
+
+    /**
+     * Auto Backup leaves `receipts/` out on purpose, so a phone restored from Google backup has photo
+     * rows whose files never came back. Those rows are left out and counted, and the entries stay.
+     * A file that is there but has the wrong size still fails the export: that means it changed.
+     */
+    suspend fun collectReport(appVersion: String, settings: EverythingSettings = EverythingSettings()): Collected =
         withContext(Dispatchers.IO) {
             db.withTransaction {
                 val transactions = db.transactionDao().getAllTransactionsDirect()
-                val receipts = transactions.flatMap { db.receiptDao().forTransaction(it.id) }
+                val allReceipts = transactions.flatMap { db.receiptDao().forTransaction(it.id) }
+                val receipts = allReceipts.filter { safeReceipt(it.fileName).exists() }
+                val missingPhotos = allReceipts.size - receipts.size
                 var photoBytes = 0L
-                EverythingBackup(
+                Collected(missingPhotos = missingPhotos, archive = EverythingBackup(
                     exportedAt = System.currentTimeMillis(), appVersion = appVersion,
                     people = db.personDao().getAllPeopleDirect().map { it.archive() },
                     groups = db.groupDao().getAllGroupsDirect().map { it.archive() },
@@ -43,7 +56,7 @@ class EverythingBackupRepository(private val db: AppDatabase, private val receip
                     val present = archive.people.map { it.id }.toSet()
                     archive.copy(missingPersonIds = archive.referencedPersonIds()
                         .filter { it != -1L && it !in present }.distinct()).also { it.validate() }
-                }
+                })
             }
         }
 

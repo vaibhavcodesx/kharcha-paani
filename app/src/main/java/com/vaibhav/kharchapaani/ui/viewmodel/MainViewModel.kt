@@ -2576,6 +2576,11 @@ class MainViewModel(
 
     fun exportEverything(context: Context, uri: Uri) {
         if (fullBackupBlocksActions()) return
+        // A swiped-away entry stays in Room until its Undo window ends; don't archive it.
+        if (restoreDeleteWorkPending()) {
+            _statusMessage.value = uiText(R.string.fullbackup_vm_delete_wait_export)
+            return
+        }
         _fullBackupBusy.value = true
         _fullBackupExportOpen.value = true
         val app = context.applicationContext
@@ -2585,14 +2590,18 @@ class MainViewModel(
                 val saved = settings.collectEverythingSettings(settingsId).copy(
                     aiEnabled = aiSettings.enabledNow, groupSort = GroupSortPreferences(app).read().name,
                 )
-                val archive = everythingRepository.collect(BuildConfig.VERSION_NAME, saved)
+                val collected = everythingRepository.collectReport(BuildConfig.VERSION_NAME, saved)
                 withContext(Dispatchers.IO) {
-                    val encoded = EverythingBackup.encode(archive)
+                    val encoded = EverythingBackup.encode(collected.archive)
                     val output = requireNotNull(app.contentResolver.openOutputStream(uri, "wt")) { "Could not open export destination" }
                     output.bufferedWriter(Charsets.UTF_8).use { it.write(encoded) }
                 }
                 _fullBackupExportOpen.value = false
-                _statusMessage.value = uiText(R.string.fullbackup_vm_exported)
+                _statusMessage.value = if (collected.missingPhotos == 0) {
+                    uiText(R.string.fullbackup_vm_exported)
+                } else {
+                    uiQuantity(R.plurals.fullbackup_vm_exported_missing_photos, collected.missingPhotos, collected.missingPhotos)
+                }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
