@@ -84,6 +84,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 
 ### Changed
+- Daily flow chart callout and axis containers in SpendCharts use heightIn(min = ...) so tap hints, amounts, and dates expand gracefully without visual clipping at 200% font scale while preserving exact heights at normal scale (REL M7, W6).
+
 - The release build is shrunk with R8, so the app downloads and installs smaller. Crash reports stay readable through the mapping attached to each release.
 
 - Move AuthViewModel colour and account deletion error messages into string resources (M1).

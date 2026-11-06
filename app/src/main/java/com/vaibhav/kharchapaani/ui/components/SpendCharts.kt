@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -328,7 +329,7 @@ fun DailyFlowChart(
             .testTag("daily_flow_chart"),
     ) {
         // The callout keeps its row whether or not a day is pinned, so the chart doesn't jump.
-        Box(Modifier.fillMaxWidth().height(34.dp), contentAlignment = Alignment.CenterStart) {
+        Box(Modifier.fillMaxWidth().heightIn(min = 34.dp), contentAlignment = Alignment.CenterStart) {
             if (pinned == null) {
                 Text(
                     stringResource(R.string.insights_tap_day),
@@ -456,7 +457,7 @@ fun DailyFlowChart(
 private fun FlowAxis(days: List<Int>) {
     if (days.size < 2) return
     val ticks = listOf(0, days.lastIndex / 3, days.lastIndex * 2 / 3, days.lastIndex).distinct()
-    Box(Modifier.fillMaxWidth().padding(top = Spacing.xs).height(16.dp)) {
+    Box(Modifier.fillMaxWidth().padding(top = Spacing.xs).heightIn(min = 16.dp)) {
         ticks.forEach { index ->
             Text(
                 text = days[index].toString(),
