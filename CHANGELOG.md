@@ -14,6 +14,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 ## [Unreleased]
 
 ### Added
+- Signing out asks first, and can also remove the account's data from this phone (its ledger, bill photos and settings). That's offered only once everything has synced, so nothing is lost.
 
 - Recover cleanly from corrupted app settings with ReplaceFileCorruptionHandler (reliability audit L14, Y1).
 - Search and frequent-people-first in split and payer pickers (Y15, TODOS 6).

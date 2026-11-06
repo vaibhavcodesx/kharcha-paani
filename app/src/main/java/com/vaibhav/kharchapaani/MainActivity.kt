@@ -278,7 +278,7 @@ class MainActivity : ComponentActivity() {
                     authUiState = authUiState,
                     onRetryProfile = authViewModel::retryProfileLoad,
                     onSaveProfile = authViewModel::saveProfile,
-                    onSignOut = { authViewModel.signOut(this@MainActivity) },
+                    onSignOut = { removeData -> authViewModel.signOut(this@MainActivity, removeData) },
                     onSaveHue = authViewModel::saveHue,
                     onDeleteAccount = { keepName -> authViewModel.deleteAccount(this@MainActivity, keepName) },
                     onDismissDeleteAccountError = authViewModel::dismissDeleteAccountError,
@@ -352,13 +352,14 @@ fun SplitFlowApp(
     authUiState: AuthUiState,
     onRetryProfile: () -> Unit,
     onSaveProfile: (name: String, emoji: String?) -> Unit,
-    onSignOut: () -> Unit,
+    onSignOut: (removeData: Boolean) -> Unit,
     onSaveHue: (hue: Int, automatic: Boolean) -> Unit = { _, _ -> },
     onDeleteAccount: (keepName: Boolean) -> Unit = {},
     onDismissDeleteAccountError: () -> Unit = {},
 ) {
     var isAccountSheetOpen by rememberSaveable { mutableStateOf(false) }
     var isDeleteAccountOpen by rememberSaveable { mutableStateOf(false) }
+    var isSignOutOpen by rememberSaveable { mutableStateOf(false) }
     val askBeforeDiscarding by viewModel.askBeforeDiscarding.collectAsStateWithLifecycle()
     val aiEnabled by viewModel.aiEnabled.collectAsStateWithLifecycle()
     val upiPayee by viewModel.upiPayee.collectAsStateWithLifecycle()
@@ -763,7 +764,7 @@ fun SplitFlowApp(
             onRetryProfile = onRetryProfile,
             onSignOut = {
                 isAccountSheetOpen = false
-                onSignOut()
+                isSignOutOpen = true
             },
             onDeleteAccount = {
                 isAccountSheetOpen = false
@@ -815,6 +816,16 @@ fun SplitFlowApp(
             LaunchedEffect(offerMoment) { viewModel.clearNotificationMoment() }
         }
     }
+
+    com.vaibhav.kharchapaani.ui.auth.SignOutDialog(
+        isOpen = isSignOutOpen,
+        unsyncedChanges = syncStatus.unsyncedChanges,
+        onSignOut = { removeData ->
+            isSignOutOpen = false
+            onSignOut(removeData)
+        },
+        onDismiss = { isSignOutOpen = false },
+    )
 
     DeleteAccountSheet(
         isOpen = isDeleteAccountOpen,

@@ -140,8 +140,17 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun signOut(context: Context) {
-        viewModelScope.launch { repository.signOut(context) }
+    /**
+     * Signs out. With [removeData], nothing of the account stays on this phone afterwards: its ledger,
+     * bill photos and settings go, as after deleting it (plan T2.6 part 3). The sheet only offers that
+     * once everything has synced, so it can't lose anything the server doesn't have.
+     */
+    fun signOut(context: Context, removeData: Boolean = false) {
+        val userId = (_uiState.value.authState as? AuthState.SignedIn)?.userId
+        viewModelScope.launch {
+            repository.signOut(context)
+            if (removeData && userId != null) AccountDeletion.wipeLocal(context, userId)
+        }
     }
 
     /**
