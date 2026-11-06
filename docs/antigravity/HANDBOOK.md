@@ -150,9 +150,102 @@ Before opening a PR, read your whole diff and answer in the PR body:
 
 Commit subjects are plain English about what changed for a user. **Tags:** GREEN is tests, docs and mechanical work. YELLOW is product code with no schema or sync change. ⚠ needs the most care: use High effort.
 
+## 6a. Running items in parallel (from 2026-11-06)
+
+You may run **up to three agents at once**, for example from Antigravity's Agent Manager. One agent is the
+**lead**: it reads this page and #188, hands each lane to a worker, and posts the #188 report at the end.
+Parallel agents are only faster when they can't collide, so the rules below are about keeping them apart.
+
+**Lanes.** Each wave lists its items under lane A, B or C. Only one agent works a lane at a time, and it
+takes that lane's items in order.
+
+| Lane | What it may touch | Why |
+|---|---|---|
+| **A: product code** | `app/src/main/**` and the tests for its own change | Hot files (`MainActivity`, `MainViewModel`, `strings.xml`) conflict with anything else in `main` |
+| **B: tests only** | **new** files under `app/src/test/**` | New files never conflict |
+| **C: docs and review** | `docs/**` and PR comments | Nothing builds from them |
+
+**Each agent works in its own worktree.** Agents that share one folder switch each other's branches mid-edit.
+```
+git fetch origin
+git worktree add ../kp-wt/antigravity-<id> -b antigravity/<id>-<short-name> origin/main
+```
+Work and commit only inside that folder. After its PR is open, `git worktree remove ../kp-wt/antigravity-<id>`.
+The owner's folder stays on `main` for the lead.
+
+**Claim an item before you start it.** The lead comments on #188 ("Claiming W11 (lane A), W12 (lane B),
+W8 (lane C)") before it hands the items out, so a second session doesn't pick the same ones.
+
+**Never run Gradle on this laptop, in any lane.** One build already crashed it, and three at once would.
+Push and let CI build: each PR's `unit-tests`, `lint` and `release-bundle` are the build. While CI runs, the
+agent may start reading for its next item, but it opens no second PR in its lane until the first is green or parked.
+
+**Resource strings go in a new file per feature** (`res/values/<feature>_strings.xml`, like
+`sign_out_strings.xml`), not in `strings.xml`, so that two lanes never edit the same file. The exception
+is W1, which exists to move strings into `strings.xml`.
+
+**CHANGELOG.md is the one file every lane touches.** Add your line at the top of `## [Unreleased]`; Claude
+resolves those conflicts when merging. Never rebase or force-push to resolve them yourself.
+
+**When lanes depend on each other** (for example a test in lane B for code in lane A's open PR), the
+lane B agent branches from lane A's branch, opens its PR with `--base antigravity/<that-branch>` and writes "Merge after
+#N". Otherwise lanes never wait for each other.
+
+**The pile-up limit counts all lanes together:** at 20 open `[antigravity]` PRs, lane A stops. Lanes B and C may
+continue, and the lead asks for a merge pass on #188.
+
 ## 7. The queue
 
-### Wave 2, from 2026-11-06 (do this first)
+### Wave 3, from 2026-11-06 evening (do this first, in parallel: section 6a)
+
+**Where things stand.** Claude is merging the 1.7 batch as #264: #227 backup, #230 no-account mode,
+#260, #261, #262 dependencies, #266 bill photo sync, #270, #271 sign-out data removal, #272 text limits,
+and your #269, #273, #274 and #275. Then 1.7.0 goes out as a prerelease, and it becomes the **closed-test
+build**. Play needs 12+ testers for 14 days before production, so from here on anything a tester could hit
+(a wrong merchant name, clipped text, a missing privacy line) costs more than a missing feature.
+
+Wave 2's W2–W5 and W10 are done. Still open from Wave 2: W1 (#265), W6, W7, W8 and W9, which are
+folded into the lanes below. Claude still owns everything listed in Wave 2's second paragraph.
+
+**Lane A (product code), in order:**
+- **W1 rebuild** GREEN. After #264 merges (`gh pr view 264 --json state`), merge `origin/main` into
+  `antigravity/w1-hardcoded-strings` (#265), resolve the conflicts against #227's AccountSheet without
+  changing any wording, push to the same branch and reply on #265 with the new head and its CI result.
+- **W11** YELLOW. Quick-add merchant fix, from your own W3 findings 1 and 2. In `LocalHeuristicParser`, the
+  names in a split phrase ("with Rohan and Ankit") and the words of a multi-word payment method ("google pay",
+  "bank transfer", "credit card", "debit card") stay out of the merchant: "dinner 1200 with Rohan" → "Dinner",
+  "thali 150 google pay" → "Thali". Amount, date, category and type parsing must not change. Update the
+  `QuickAddGoldenTest` rows this changes in the same PR, and list each changed row with its old and new value
+  in the PR body. Leave findings 3 and 4 alone.
+- **W6** YELLOW. Large-font safety, as written in Wave 2, one screen or sheet per PR. Begin with the screens
+  a tester sees first: Home, the confirm sheet, then Splits.
+
+**Lane B (tests only, new files), in order:**
+- **W12** GREEN. Bill photo sync safety net for #266, after #264 merges. Start from a real Room database and
+  `ReceiptRepository`: replacing a photo queues the old cloud copy for deletion, deleting the expense queues
+  its cloud copies, and the queue survives the same transaction as the delete. A queued path is deleted at most
+  once, and turning "Share bill photos" off clears the shared path on the next run of `ReceiptSyncEngine` with a fake
+  `ReceiptRemote`. If something fails, report it on #188 and don't fix it.
+- **W13** GREEN. Backup round trip (T7) for what's new since T7 was written: every column added to any entity
+  since v1.6.0 (for example the receipt's cloud path) and a backup made in no-account mode (#230) restored
+  into an account. Tests only, findings to #188.
+- **W5 continued** GREEN. Any flaky-test candidates W5 didn't reach, as written in Wave 2. The pattern
+  that just hung CI for 25 minutes on #262 and #266 was `flow.first { … }` with no timeout while the test
+  dispatcher wasn't advancing. Look for that one first.
+
+**Lane C (docs and review), in order:**
+- **W8** GREEN, now unblocked once #264 merges. Same as Wave 2's W8, plus two more: **bill photos (#266)**: every
+  photo is backed up to the account (re-encoded, so no EXIF or location leaves the phone, and at most 1 MB) and is
+  shown to the people in that split unless "Share bill photos" is off in Settings. **Sign-out (#271)** can remove
+  the account's data from the phone. Draft the privacy policy and the Data safety answers
+  (`docs/legal/play-console-answers.md`): photos are now stored on the server. The PR says "for owner review", and it is not legal advice.
+- **W7** GREEN. Second reviewer, as written in Wave 2, for every new `[claude]` PR.
+- **W9** GREEN, last. The 1.7.0 device checks, as written in Wave 2, once #264 has merged. Put the bill photo
+  checks near the top, using two phones: one adds a photo to a shared split and the other sees "Load".
+
+If all three lanes run out, comment on #188 and stop.
+
+### Wave 2, from 2026-11-06 (folded into Wave 3)
 
 **Claude leads again and merges your PRs.** Codex is away until 2026-11-11. Everything in Wave 1 below is finished or merged, so don't redo it. Claude owns these, so don't start them: T2.4 sync visibility (Y13), T2.6 part 3, Y5–Y7 (#252), "Edited by X", T2.2, R8 (#71), Dependabot, the UI audit (#212/#214/#215), #227, #230, #241, and the Home hero.
 
