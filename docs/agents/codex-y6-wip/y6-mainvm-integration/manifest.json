@@ -1,0 +1,23 @@
+{
+  "base": "9b465654df3a94d85b051e8072d767ad401b2b32",
+  "requiresScaffold": "00-receipt-retention-api-scaffold.patch",
+  "productionPatchSha256": "6a2e7b39d772163803458055b4d6e2bdfca11735b19511104277133439c19b44",
+  "sources": [
+    {
+      "path": "app/src/main/java/com/vaibhav/kharchapaani/data/drafts/EntryDraftRecoveryLedger.kt",
+      "sha256": "2fab0fa16a33edde6f3a1301940623cbdc216e0666220f25e82dcff8fafea730"
+    },
+    {
+      "path": "app/src/main/java/com/vaibhav/kharchapaani/data/receipts/ReceiptStore.kt",
+      "sha256": "8ea5abbed9583f7f894f818b3c4fa12a792beede9ace5d8085cc77f268dcfb51"
+    },
+    {
+      "path": "app/src/main/java/com/vaibhav/kharchapaani/data/repository/ReceiptRepository.kt",
+      "sha256": "e401a788b5517381a3885ba7752cc31896a7cff2854f2d4305629eb53e345b68"
+    },
+    {
+      "path": "app/src/main/java/com/vaibhav/kharchapaani/ui/viewmodel/MainViewModel.kt",
+      "sha256": "9a16b7df772187a2e54fe15c9a00469e385cf9f7aa96ab2364a3b6459bef88f3"
+    }
+  ]
+}

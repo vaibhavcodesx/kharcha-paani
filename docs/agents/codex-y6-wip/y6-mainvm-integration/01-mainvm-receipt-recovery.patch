@@ -1,0 +1,1044 @@
+diff --git a/app/src/main/java/com/vaibhav/kharchapaani/data/drafts/EntryDraftRecoveryLedger.kt b/app/src/main/java/com/vaibhav/kharchapaani/data/drafts/EntryDraftRecoveryLedger.kt
+new file mode 100644
+--- /dev/null
++++ b/app/src/main/java/com/vaibhav/kharchapaani/data/drafts/EntryDraftRecoveryLedger.kt
+@@ -0,0 +1,123 @@
++package com.vaibhav.kharchapaani.data.drafts
++
++import com.vaibhav.kharchapaani.data.db.AppDatabase
++import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
++import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
++import com.vaibhav.kharchapaani.data.db.entity.SyncState
++import com.vaibhav.kharchapaani.data.model.FullTransaction
++import com.vaibhav.kharchapaani.data.model.SplitMode
++import com.vaibhav.kharchapaani.domain.DraftEditTarget
++import com.vaibhav.kharchapaani.domain.EntryDraft
++import com.vaibhav.kharchapaani.domain.EntrySaveCheckpoint
++import com.vaibhav.kharchapaani.domain.SplitRounding
++import com.vaibhav.kharchapaani.ui.format.Money
++import org.json.JSONArray
++import java.security.MessageDigest
++
++/** Direct Room reads: initial screen StateFlow values cannot validate a recovered money edit. */
++internal class EntryDraftRecoveryLedger(private val db: AppDatabase) {
++    suspend fun full(id: Long): FullTransaction? {
++        val tx = db.transactionDao().getTransactionByIdDirect(id) ?: return null
++        val split = db.splitDao().getSplitByTransactionIdDirect(id)
++        return FullTransaction(tx, split, split?.let { db.splitDao().getSharesForSplitDirect(it.id) }.orEmpty())
++    }
++
++    suspend fun byRemoteId(remoteId: String): FullTransaction? =
++        db.transactionDao().getAllTransactionsDirect().firstOrNull { it.remoteId == remoteId }?.let { full(it.id) }
++
++    suspend fun problem(entry: EntryDraft, edit: DraftEditTarget?, locked: List<SplitShareEntity>?): DraftRecoveryIssue? {
++        val existing = edit?.let { full(it.transactionId) }
++        if (edit != null && (existing == null || existing.transaction.remoteId != edit.remoteId ||
++                existing.transaction.createdAt != edit.createdAt || fingerprint(existing) != edit.originalFingerprint || !existing.canEdit)) {
++            return DraftRecoveryIssue.StaleEdit
++        }
++        val group = entry.groupId?.let { db.groupDao().getGroupByIdDirect(it) }
++        if (entry.groupId != null && (group == null || group.isShared && group.isArchived)) return DraftRecoveryIssue.GroupUnavailable
++        if (existing != null && !existing.transaction.isOwnedByMe &&
++            (entry.groupId != existing.transaction.groupId || !entry.isSplit || entry.paidByPersonId != -1L)) return DraftRecoveryIssue.StaleEdit
++        if (locked != null && edit != null) {
++            val baseline = edit.baseline
++            val splitOnly = entry.copy(type = baseline.type, amount = baseline.amount, merchant = baseline.merchant,
++                category = baseline.category, paymentMethod = baseline.paymentMethod, note = baseline.note, date = baseline.date)
++            if (EntryDraft.isUnsaved(splitOnly, baseline)) return DraftRecoveryIssue.StaleEdit
++        }
++        if (group?.isShared == true && db.groupDao().getMembersForGroupDirect(group.id).none { it.personId == -1L })
++            return DraftRecoveryIssue.GroupUnavailable
++        if (!entry.isSplit || entry.type == "income") return null
++        val people = db.personDao().getAllPeopleDirect().associateBy { it.id }
++        val selected = entry.shares.filter { it.isSelected }
++        if (selected.any { it.personId != -1L && it.personId !in people } ||
++            entry.paidByPersonId != -1L && entry.paidByPersonId !in people) return DraftRecoveryIssue.MissingPerson
++        if (group?.isShared == true) {
++            val members = db.groupDao().getMembersForGroupDirect(group.id).map { it.personId }.toSet()
++            if (-1L !in members) return DraftRecoveryIssue.GroupUnavailable
++            if (selected.any { share ->
++                share.personId != -1L && if (share.isGuest) people[share.personId]?.profileId != null
++                else share.personId !in members
++            } || entry.paidByPersonId != -1L &&
++                (entry.paidByPersonId !in members || people[entry.paidByPersonId]?.profileId == null)) return DraftRecoveryIssue.MissingPerson
++        } else if (selected.any { it.isGuest }) return DraftRecoveryIssue.GroupUnavailable
++        return null
++    }
++
++    companion object {
++        fun fingerprint(full: FullTransaction): String {
++            val t = full.transaction
++            val data = JSONArray().put(t.type).put(t.amount).put(t.merchant).put(t.category).put(t.paymentMethod)
++                .put(t.note).put(t.date).put(t.groupId).put(t.isSplit).put(t.ownerProfileId)
++                .put(full.split?.paidByPersonId).put(full.split?.splitType)
++                .put(shareSignature(full.shares))
++            return MessageDigest.getInstance("SHA-256").digest(data.toString().toByteArray(Charsets.UTF_8))
++                .joinToString("") { "%02x".format(it) }
++        }
++
++        private fun shareSignature(shares: List<SplitShareEntity>): String = JSONArray(shares.map {
++            JSONArray().put(it.personId).put(it.shareAmount).put(it.percentage).put(it.guestName).put(it.guestPersonId).toString()
++        }.sorted()).toString()
++
++        fun shares(entry: EntryDraft, locked: List<SplitShareEntity>?): List<SplitShareEntity> {
++            if (locked != null) return locked.map { it.copy(id = 0, splitId = 0) }
++            if (!entry.isSplit || entry.type == "income") return emptyList()
++            val total = Money.parseInput(entry.amount) ?: return emptyList()
++            val selected = entry.shares.filter { it.isSelected && it.amount > 0 }
++            val rounded = if (entry.splitMode == SplitMode.PERCENTAGE && selected.isNotEmpty() && selected.sumOf { it.percentage } > 0)
++                SplitRounding.byWeights(total, selected.associate { it.personId to it.percentage }, entry.paidByPersonId) else null
++            return selected.map { share ->
++                val amount = rounded?.get(share.personId) ?: share.amount
++                if (share.isGuest) SplitShareEntity(splitId = 0, personId = -1L, shareAmount = amount,
++                    percentage = share.percentage, guestName = share.personName, guestPersonId = share.personId)
++                else SplitShareEntity(splitId = 0, personId = share.personId, shareAmount = amount, percentage = share.percentage)
++            }
++        }
++
++        fun transaction(entry: EntryDraft, id: Long, remoteId: String) = TransactionEntity(
++            id = id, remoteId = remoteId, type = entry.type, amount = Money.parseInput(entry.amount) ?: 0.0,
++            category = entry.category, merchant = entry.merchant.ifBlank { if (entry.type == "income") "Income" else entry.category },
++            paymentMethod = entry.paymentMethod, date = entry.date, note = entry.note, groupId = entry.groupId,
++            isSplit = entry.isSplit && entry.type != "income",
++        )
++
++        fun matches(full: FullTransaction, checkpoint: EntrySaveCheckpoint): Boolean {
++            val expected = transaction(checkpoint.entry, full.transaction.id, full.transaction.remoteId)
++            val actual = full.transaction
++            val inputShares = shares(checkpoint.entry, checkpoint.lockedShares)
++            val expectedShares = if (actual.syncState != SyncState.LOCAL_ONLY && inputShares.isNotEmpty()) {
++                val keys = inputShares.mapIndexed { index, share -> if (share.isGuest) -1_000_000L - index else share.personId }
++                try {
++                    val rounded = SplitRounding.normalize(expected.amount, keys.zip(inputShares).associate { (key, share) -> key to share.shareAmount }, checkpoint.entry.paidByPersonId)
++                    inputShares.mapIndexed { index, share -> share.copy(shareAmount = rounded.getValue(keys[index])) }
++                } catch (_: IllegalArgumentException) { inputShares }
++            } else inputShares
++            return actual.type == expected.type && actual.amount == expected.amount && actual.category == expected.category &&
++                actual.merchant == expected.merchant && actual.paymentMethod == expected.paymentMethod && actual.date == expected.date &&
++                actual.note == expected.note && actual.groupId == expected.groupId && actual.isSplit == expectedShares.isNotEmpty() &&
++                (expectedShares.isEmpty() || full.split?.let { split ->
++                    split.paidByPersonId == checkpoint.entry.paidByPersonId &&
++                        split.splitType == checkpoint.entry.splitMode.name.lowercase(java.util.Locale.ROOT) &&
++                        shareSignature(full.shares) == shareSignature(expectedShares)
++                } == true)
++        }
++    }
++}
++
++internal enum class DraftRecoveryIssue { StaleEdit, MissingPerson, GroupUnavailable, PhotoMissing }
+diff --git a/app/src/main/java/com/vaibhav/kharchapaani/data/receipts/ReceiptStore.kt b/app/src/main/java/com/vaibhav/kharchapaani/data/receipts/ReceiptStore.kt
+--- a/app/src/main/java/com/vaibhav/kharchapaani/data/receipts/ReceiptStore.kt
++++ b/app/src/main/java/com/vaibhav/kharchapaani/data/receipts/ReceiptStore.kt
+@@ -7,6 +7,7 @@
+ import kotlinx.coroutines.Dispatchers
+ import kotlinx.coroutines.withContext
+ import java.io.File
++import java.security.MessageDigest
+ import java.io.FileOutputStream
+ import java.util.UUID
+ import kotlin.math.roundToInt
+@@ -53,11 +54,35 @@
+     /** Moves a staged photo in; returns the name to store, or null if the move failed. */
+     fun commit(photo: Staged): String? {
+         val target = File(dir, photo.file.name)
+-        return if (photo.file.renameTo(target)) target.name else null
++        // Recovery can find a committed file whose Receipt row was not written before process death.
++        return if (photo.file.canonicalFile == target.canonicalFile && target.isFile || photo.file.renameTo(target)) target.name else null
+     }
+ 
+-    /** API scaffold only: recovery is deliberately not implemented in the red stage. */
+-    suspend fun recoverStaged(fileName: String, width: Int, height: Int, bytes: Long, sha256: String): Staged? = null
++    /** Only this ledger's strict JPEG leaf, checked against the durable size/hash before use. */
++    suspend fun recoverStaged(fileName: String, width: Int, height: Int, bytes: Long, sha256: String): Staged? =
++        withContext(Dispatchers.IO) {
++            if (!SAFE_JPEG.matches(fileName) || width !in 1..MAX_SIDE || height !in 1..MAX_SIDE || bytes !in 1..16_777_216L ||
++                !Regex("[0-9a-f]{64}").matches(sha256)) return@withContext null
++            listOf(File(staged, fileName), File(dir, fileName)).firstOrNull { file ->
++                file.isFile && file.canonicalFile.parentFile in setOf(staged.canonicalFile, dir.canonicalFile) &&
++                    file.length() == bytes && hash(file) == sha256
++            }?.let { Staged(it, width, height) }
++        }
++
++    suspend fun hashOf(photo: Staged): String = withContext(Dispatchers.IO) { hash(photo.file) }
++
++    private fun hash(file: File): String {
++        val digest = MessageDigest.getInstance("SHA-256")
++        file.inputStream().use { input ->
++            val buffer = ByteArray(8192)
++            while (true) {
++                val count = input.read(buffer)
++                if (count < 0) break
++                digest.update(buffer, 0, count)
++            }
++        }
++        return digest.digest().joinToString("") { "%02x".format(it) }
++    }
+ 
+     fun discard(photo: Staged) {
+         photo.file.delete()
+@@ -74,17 +99,17 @@
+      * sync pull, a groupmate's delete, a friend's removal), and staged ones older than [stagedMaxAge].
+      * Returns how many went.
+      */
+-    suspend fun sweep(referenced: Set<String>, now: Long = System.currentTimeMillis(), stagedMaxAge: Long = DAY_MILLIS): Int =
++    suspend fun sweep(referenced: Set<String>, now: Long = System.currentTimeMillis(), stagedMaxAge: Long = DAY_MILLIS, protectedNames: Set<String> = emptySet()): Int =
+         withContext(Dispatchers.IO) {
+             var deleted = 0
+             dir.listFiles()?.forEach { file ->
+                 // An hour's grace: a photo is moved in just before its row is written, and a sweep
+                 // that ran in between would delete a bill that's about to be someone's.
+-                val orphan = file.isFile && file.name !in referenced && now - file.lastModified() > ORPHAN_GRACE
++                val orphan = file.isFile && file.name !in referenced && file.name !in protectedNames && now - file.lastModified() > ORPHAN_GRACE
+                 if (orphan && file.delete()) deleted++
+             }
+             staged.listFiles()?.forEach { file ->
+-                if (now - file.lastModified() > stagedMaxAge && file.delete()) deleted++
++                if (file.name !in protectedNames && now - file.lastModified() > stagedMaxAge && file.delete()) deleted++
+             }
+             deleted
+         }
+@@ -92,6 +117,7 @@
+     companion object {
+         private const val TAG = "ReceiptStore"
+         private const val STAGED = "staged"
++        private val SAFE_JPEG = Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\.jpg")
+         private const val DAY_MILLIS = 24 * 60 * 60 * 1000L
+         private const val ORPHAN_GRACE = 60 * 60 * 1000L
+ 
+diff --git a/app/src/main/java/com/vaibhav/kharchapaani/data/repository/ReceiptRepository.kt b/app/src/main/java/com/vaibhav/kharchapaani/data/repository/ReceiptRepository.kt
+--- a/app/src/main/java/com/vaibhav/kharchapaani/data/repository/ReceiptRepository.kt
++++ b/app/src/main/java/com/vaibhav/kharchapaani/data/repository/ReceiptRepository.kt
+@@ -4,6 +4,7 @@
+ import com.vaibhav.kharchapaani.data.db.AppDatabase
+ import com.vaibhav.kharchapaani.data.db.entity.ReceiptEntity
+ import com.vaibhav.kharchapaani.data.receipts.ReceiptStore
++import kotlinx.coroutines.CancellationException
+ import kotlinx.coroutines.Dispatchers
+ import kotlinx.coroutines.flow.Flow
+ import kotlinx.coroutines.flow.map
+@@ -29,7 +30,7 @@
+ 
+     /** Makes [photo] the expense's one photo, replacing any it had. False if it couldn't be kept. */
+     suspend fun attach(transactionId: Long, photo: ReceiptStore.Staged, preserveForDraftRecovery: Boolean = false): Boolean = withContext(Dispatchers.IO) {
+-        val fileName = store.commit(photo) ?: return@withContext false.also { store.discard(photo) }
++        val fileName = store.commit(photo) ?: return@withContext false.also { if (!preserveForDraftRecovery) store.discard(photo) }
+         val replaced = try {
+             db.withTransaction {
+                 val before = dao.forTransaction(transactionId).map { it.fileName }
+@@ -46,11 +47,17 @@
+                 before
+             }
+         } catch (e: Exception) {
+-            // The expense went (a delete raced the save) or the database refused: the file is no one's.
+-            store.delete(listOf(fileName))
++            if (preserveForDraftRecovery) {
++                // Only an already-durable draft pins this strict leaf against orphan maintenance.
++                // Keep the journaled file for retry in either its staged or committed location.
++                if (e is CancellationException) throw e
++            } else {
++                // Preserve the established cleanup contract for callers without a recovery journal.
++                store.delete(listOf(fileName))
++            }
+             return@withContext false
+         }
+-        store.delete(replaced)
++        store.delete(replaced.filterNot { it == fileName })
+         true
+     }
+ 
+@@ -73,6 +80,6 @@
+     }
+ 
+     /** See [ReceiptStore.sweep]. Run when the account's ledger opens. */
+-    suspend fun sweepOrphans(now: Long = System.currentTimeMillis()): Int =
+-        store.sweep(withContext(Dispatchers.IO) { dao.allFileNames().toSet() }, now)
++    suspend fun sweepOrphans(now: Long = System.currentTimeMillis(), protectedNames: Set<String> = emptySet()): Int =
++        store.sweep(withContext(Dispatchers.IO) { dao.allFileNames().toSet() }, now, protectedNames = protectedNames)
+ }
+diff --git a/app/src/main/java/com/vaibhav/kharchapaani/ui/viewmodel/MainViewModel.kt b/app/src/main/java/com/vaibhav/kharchapaani/ui/viewmodel/MainViewModel.kt
+--- a/app/src/main/java/com/vaibhav/kharchapaani/ui/viewmodel/MainViewModel.kt
++++ b/app/src/main/java/com/vaibhav/kharchapaani/ui/viewmodel/MainViewModel.kt
+@@ -19,6 +19,14 @@
+ import com.vaibhav.kharchapaani.data.repository.ReceiptRepository
+ import com.vaibhav.kharchapaani.data.receipts.BillPhoto
+ import com.vaibhav.kharchapaani.data.receipts.ReceiptStore
++import com.vaibhav.kharchapaani.data.drafts.EntryDraftAtomicStore
++import com.vaibhav.kharchapaani.data.drafts.DraftLoadResult
++import com.vaibhav.kharchapaani.data.drafts.EntryDraftRecoveryLedger
++import com.vaibhav.kharchapaani.data.drafts.DraftRecoveryIssue
++import com.vaibhav.kharchapaani.domain.RecoverableEntryDraft
++import com.vaibhav.kharchapaani.domain.DraftEditTarget
++import com.vaibhav.kharchapaani.domain.EntrySaveCheckpoint
++import com.vaibhav.kharchapaani.domain.DraftPhotoState
+ import android.app.Application
+ import com.vaibhav.kharchapaani.R
+ import android.content.ClipData
+@@ -798,13 +806,6 @@
+     val billPhotoIds: StateFlow<Set<Long>> = receipts.transactionIds
+         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+ 
+-    init {
+-        // Photos whose expense went by a route that doesn't know about files (a sync pull, a
+-        // groupmate's delete), and photos picked but never saved.
+-        viewModelScope.launch {
+-            runCatching { receipts.sweepOrphans() }.onFailure { Log.w("MainViewModel", "Bill photo sweep failed", it) }
+-        }
+-    }
+ 
+     /** A picture from the camera or the gallery for the bill photo row; [onRead] runs once it's read. */
+     fun attachBillPhoto(context: Context, uri: Uri, onRead: () -> Unit = {}) {
+@@ -815,25 +816,44 @@
+ 
+     fun removeBillPhoto() {
+         billPhotoJob?.cancel()
+-        (_billPhoto.value as? BillPhoto.Kept)?.staged?.let(receipts.store::discard)
++        if (_editingTransactionId.value != null) hadBillPhotoOnOpen = true
++        if (draftStore == null) (_billPhoto.value as? BillPhoto.Kept)?.staged?.let(receipts.store::discard)
++        photoGeneration++
++        draftPhoto = DraftPhotoState.None
+         _billPhoto.value = BillPhoto.None
++        captureEntryDraft()
+     }
+ 
+     /** Decodes and writes a new photo; until it's written the row shows it's working. */
+     private fun keepBillPhoto(decode: suspend () -> Bitmap?) {
+         billPhotoJob?.cancel()
++        photoGeneration++
++        val generation = photoGeneration
+         val previous = _billPhoto.value.takeIf { it != BillPhoto.Processing } ?: BillPhoto.None
+         _billPhoto.value = BillPhoto.Processing
+         billPhotoJob = viewModelScope.launch {
+             val staged = decode()?.let { receipts.store.stage(it) }
++            if (generation != photoGeneration) return@launch
+             if (staged == null) {
+                 // The photo that was there stays; this one couldn't be read or written.
+                 _billPhoto.value = previous
+                 _statusMessage.value = uiText(R.string.action_notice_photo_failed)
+                 return@launch
+             }
+-            (previous as? BillPhoto.Kept)?.staged?.let(receipts.store::discard)
++            val hash = try { receipts.store.hashOf(staged) }
++            catch (e: CancellationException) { throw e }
++            catch (_: Exception) {
++                if (generation == photoGeneration) {
++                    _billPhoto.value = previous
++                    _statusMessage.value = uiText(R.string.action_notice_photo_failed)
++                }
++                return@launch
++            }
++            if (generation != photoGeneration) return@launch
++            if (draftStore == null) (previous as? BillPhoto.Kept)?.staged?.let(receipts.store::discard)
++            draftPhoto = DraftPhotoState.Staged(staged.file.name, staged.width, staged.height, staged.bytes, hash)
+             _billPhoto.value = BillPhoto.Kept(staged.file, staged)
++            captureEntryDraft()
+         }
+     }
+ 
+@@ -841,34 +861,26 @@
+     private fun resetBillPhoto() {
+         billPhotoJob?.cancel()
+         billPhotoJob = null
+-        (_billPhoto.value as? BillPhoto.Kept)?.staged?.let(receipts.store::discard)
++        if (draftStore == null) (_billPhoto.value as? BillPhoto.Kept)?.staged?.let(receipts.store::discard)
++        photoGeneration++
++        draftPhoto = DraftPhotoState.None
+         _billPhoto.value = BillPhoto.None
+         hadBillPhotoOnOpen = false
+     }
+ 
+     private fun loadBillPhoto(transactionId: Long) {
++        val generation = photoGeneration
+         // Not billPhotoJob: picking a new photo mustn't cancel learning that there was an old one.
+         viewModelScope.launch {
+             val (_, file) = receipts.photoOf(transactionId) ?: return@launch
+-            if (_editingTransactionId.value != transactionId || !_isConfirmSheetOpen.value) return@launch
++            if (_editingTransactionId.value != transactionId || !_isConfirmSheetOpen.value || generation != photoGeneration) return@launch
+             hadBillPhotoOnOpen = true
+             if (_billPhoto.value == BillPhoto.None) {
+                 _billPhoto.value = if (file.exists()) BillPhoto.Kept(file, staged = null) else BillPhoto.Missing
+-            }
+-        }
+-    }
+-
+-    /** After the expense saved: keep, replace or remove its photo to match the sheet. */
+-    private suspend fun settleBillPhoto(transactionId: Long) {
+-        when (val photo = _billPhoto.value) {
+-            is BillPhoto.Kept -> photo.staged?.let { staged ->
+-                if (!receipts.attach(transactionId, staged)) _statusMessage.value = uiText(R.string.action_notice_photo_not_kept)
+-            }
+-            BillPhoto.None -> if (hadBillPhotoOnOpen) receipts.remove(transactionId)
+-            BillPhoto.Missing, BillPhoto.Processing -> Unit
+-        }
+-        _billPhoto.value = BillPhoto.None
+-        hadBillPhotoOnOpen = false
++                draftPhoto = if (file.exists()) DraftPhotoState.Existing else DraftPhotoState.Missing
++            }
++            captureEntryDraft()
++        }
+     }
+ 
+     fun showMessage(text: String) {
+@@ -908,6 +920,7 @@
+     private fun defaultPaymentMethod(): String = Categories.defaultPaymentMethod(categoryPrefs.value)
+ 
+     fun openManualAdd(defaultType: String = "expense") {
++        beginEntryDraft()
+         stopImprovingWithAi()
+         resetBillPhoto()
+         _parseNotice.value = null
+@@ -928,9 +941,11 @@
+         _paidByPersonId.value = -1L
+         initSharesForCurrentPeople()
+         _isConfirmSheetOpen.value = true
++        captureEntryDraft()
+     }
+ 
+     fun openManualAddForGroup(targetGroupId: Long) {
++        beginEntryDraft()
+         stopImprovingWithAi()
+         resetBillPhoto()
+         // A notice left from an earlier bill that couldn't be read doesn't belong on a fresh entry.
+@@ -954,6 +969,7 @@
+         _shares.value = sharesForGroup(targetGroupId)
+         recalculateShares()
+         _isConfirmSheetOpen.value = true
++        captureEntryDraft()
+     }
+ 
+     /**
+@@ -988,6 +1004,7 @@
+             _statusMessage.value = archivedMessage(ArchivedGroupException(group.name))
+             return
+         }
++        beginEntryDraft(quarantineUnreadable = false)
+         stopImprovingWithAi()
+         _editingTransactionId.value = tx.id
+         resetBillPhoto()
+@@ -1051,7 +1068,10 @@
+         }
+ 
+         editBaseline = currentDraft()
++        draftEdit = DraftEditTarget(tx.id, tx.remoteId, tx.createdAt, EntryDraftRecoveryLedger.fingerprint(fullTx), currentDraft())
++        draftSaveRemoteId = tx.remoteId
+         _isConfirmSheetOpen.value = true
++        captureEntryDraft()
+         // After the sheet is open: the load gives up on a sheet that has closed, and started any
+         // earlier it could see this one as not open yet.
+         loadBillPhoto(tx.id)
+@@ -1104,6 +1124,7 @@
+      * about the split when a name didn't find its friend, or null.
+      */
+     private fun openOnPhoneGuess(rawText: String): String? {
++        beginEntryDraft()
+         stopImprovingWithAi()
+         resetBillPhoto()
+         val splitNotice = applyParsedResult(
+@@ -1113,6 +1134,7 @@
+         if (_paymentMethod.value.isBlank()) _paymentMethod.value = defaultPaymentMethod()
+         _parseNotice.value = null
+         _isConfirmSheetOpen.value = true
++        captureEntryDraft()
+         return splitNotice
+     }
+ 
+@@ -1186,6 +1208,7 @@
+         // Fields changing under someone's eyes with no word would feel like a glitch; when the AI
+         // agreed with the phone, there's nothing to say.
+         _updatedByAi.value = currentDraft() != before
++        captureEntryDraft()
+         return splitNotice
+     }
+ 
+@@ -1198,7 +1221,7 @@
+     }
+ 
+     private fun readReceiptWithAi(bitmap: Bitmap) {
+-        stopImprovingWithAi()
++        openManualAdd()
+         // The picture that was read is kept with the expense by default; one tap on the row drops it.
+         resetBillPhoto()
+         keepBillPhoto { bitmap }
+@@ -1221,6 +1244,7 @@
+                         _parseNotice.value = getApplication<Application>().getString(read.reason.receiptNoticeResource)
+                     }
+                 }
++                captureEntryDraft()
+             } finally {
+                 if (receiptJob === coroutineContext[Job]) {
+                     receiptJob = null
+@@ -1419,26 +1443,31 @@
+         if (newAmount != _amount.value) touched(EntryField.Amount)
+         _amount.value = newAmount
+         recalculateShares()
++        captureEntryDraft()
+     }
+ 
+     fun updateMerchant(newMerchant: String) {
+         if (newMerchant != _merchant.value) touched(EntryField.Merchant)
+         _merchant.value = newMerchant
++        captureEntryDraft()
+     }
+ 
+     fun updateCategory(newCat: String) {
+         touched(EntryField.Category)
+         _category.value = newCat
++        captureEntryDraft()
+     }
+ 
+     fun updatePaymentMethod(newMethod: String) {
+         touched(EntryField.Payment)
+         _paymentMethod.value = newMethod
++        captureEntryDraft()
+     }
+ 
+     fun updateNote(newNote: String) {
+         if (newNote != _note.value) touched(EntryField.Note)
+         _note.value = newNote
++        captureEntryDraft()
+     }
+ 
+     fun updateType(newType: String) {
+@@ -1452,17 +1481,20 @@
+             // Back to spending: the chosen default, not whatever happens to be first in the list.
+             _category.value = defaultCategory("expense")
+         }
++        captureEntryDraft()
+     }
+ 
+     fun updateDate(newDate: Long) {
+         touched(EntryField.Date)
+         _date.value = newDate
++        captureEntryDraft()
+     }
+ 
+     fun updateGroupId(newGroupId: Long?) {
+         touched(EntryField.Split)
+         groupChoiceIsExplicit = true
+         changeGroupId(newGroupId)
++        captureEntryDraft()
+     }
+ 
+     private fun changeGroupId(newGroupId: Long?) {
+@@ -1519,12 +1551,14 @@
+             }
+             recalculateShares()
+         }
++        captureEntryDraft()
+     }
+ 
+     fun setSplitMode(mode: SplitMode) {
+         touched(EntryField.Split)
+         _splitMode.value = mode
+         recalculateShares()
++        captureEntryDraft()
+     }
+ 
+     fun setPaidByPersonId(id: Long) {
+@@ -1532,6 +1566,7 @@
+         _paidByPersonId.value = id
+         // In a shared group the leftover paisa follow the payer.
+         if (isSharedGroup(_groupId.value)) recalculateShares()
++        captureEntryDraft()
+     }
+ 
+     fun togglePersonShare(personId: Long) {
+@@ -1545,6 +1580,7 @@
+             suggestRecentGroup()
+             recalculateShares()
+         }
++        captureEntryDraft()
+     }
+ 
+     private fun suggestRecentGroup() {
+@@ -1568,6 +1604,7 @@
+             current[index] = item.copy(amount = exactAmount)
+             _shares.value = current
+         }
++        captureEntryDraft()
+     }
+ 
+     fun updateSharePercentage(personId: Long, pct: Double) {
+@@ -1583,6 +1620,7 @@
+             )
+             _shares.value = current
+         }
++        captureEntryDraft()
+     }
+ 
+     private fun recalculateShares() {
+@@ -1637,6 +1675,24 @@
+     }
+ 
+     fun dismissConfirmSheet() {
++        draftInteractionVersion++
++        val discardInteraction = draftInteractionVersion
++        val discardedId = draftId
++        val discardedRevision = draftRevision
++        draftStore?.quarantineUnreadable()
++        if (discardedRevision > 0) {
++            val clear = draftStore?.conditionalClear(discardedId, discardedRevision)
++            if (clear != null) viewModelScope.launch {
++                if (clear.await().isFailure) _statusMessage.value = uiText(R.string.draft_recovery_write_failed)
++            }
++        } else if (draftStore != null) viewModelScope.launch {
++            // Explicit discard can race startup before this VM knows the stored draft identity.
++            val loaded = draftStore.load()
++            if (draftInteractionVersion == discardInteraction && !_isConfirmSheetOpen.value && loaded is DraftLoadResult.Loaded) {
++                if (draftStore.conditionalClear(loaded.snapshot.draftId, loaded.snapshot.revision).await().isFailure)
++                    _statusMessage.value = uiText(R.string.draft_recovery_write_failed)
++            }
++        }
+         stopImprovingWithAi()
+         _isConfirmSheetOpen.value = false
+         _parseNotice.value = null
+@@ -1672,111 +1728,148 @@
+     }
+ 
+     fun saveCurrentTransaction(askForGroup: Boolean = true) {
+-        val total = Money.parseInput(_amount.value) ?: 0.0
++        if (_isRestoringDraft.value) return
++        val entry = currentDraft()
++        val total = Money.parseInput(entry.amount) ?: 0.0
+         if (total <= 0) return
+-        // Saved as it is on the sheet: an AI reading arriving now must not change who paid or the
+-        // split under a save that's already writing.
+         stopImprovingWithAi()
+-        // Income has no split: the sheet hides the editor, but the toggle stayed on, and the hidden
+-        // shares were saved as friends owing me (correctness audit, 2026-10-24).
+-        val splitting = _isSplit.value && _type.value != "income"
+-        // The sheet disables Save and says why; this keeps any other caller from saving it anyway.
+-        if (splitting) splitProblem(getApplication<Application>(), _amount.value, _splitMode.value, _shares.value)?.let {
++        val splitting = entry.isSplit && entry.type != "income"
++        if (splitting) splitProblem(getApplication<Application>(), entry.amount, entry.splitMode, entry.shares)?.let {
+             _statusMessage.value = it
+             return
+         }
+-
+-        // A split with groupmates outside a shared group never reaches them (decision 1): ask first.
+-        if (askForGroup && splitting && !isSharedGroup(_groupId.value)) {
+-            val participants = _shares.value.filter { it.isSelected }.map { it.personId } + _paidByPersonId.value
+-            // A split can bring friends who aren't on the app along as my guests (design item 9).
+-            val options = SharedRecordGroups.optionsFor(participants, people.value, groups.value, splitPayerId = _paidByPersonId.value)
++        if (askForGroup && splitting && !isSharedGroup(entry.groupId)) {
++            val participants = entry.shares.filter { it.isSelected }.map { it.personId } + entry.paidByPersonId
++            val options = SharedRecordGroups.optionsFor(participants, people.value, groups.value, splitPayerId = entry.paidByPersonId)
+             if (options.involvesGroupmates) {
+                 _splitGroupPrompt.value = options
+                 return
+             }
+         }
+-
+-        val merchantName = _merchant.value.ifBlank {
+-            if (_type.value == "income") "Income" else _category.value
+-        }
+-
+-        val tx = TransactionEntity(
+-            id = _editingTransactionId.value ?: 0,
+-            type = _type.value,
+-            amount = total,
+-            category = _category.value,
+-            merchant = merchantName,
+-            paymentMethod = _paymentMethod.value,
+-            date = _date.value,
+-            note = _note.value,
+-            groupId = _groupId.value,
+-            isSplit = splitting
+-        )
+-
+-        val selectedShares = _shares.value.filter { it.isSelected && it.amount > 0 }
+-        // Percentages like 33.3 x 3 leave the amounts short (10 paisa on ₹100, ₹1 on ₹1000), so the
+-        // amounts are taken proportionally to the percentages instead. Every split, not only a shared
+-        // group's: since 1.3 a split with friends who aren't on the app syncs too, and the server
+-        // refuses shares that don't add up, so that one stayed FAILED and never left the phone
+-        // (correctness audit, 2026-10-24). Owed by nobody, the gap was wrong locally as well.
+-        val sharedPercentageAmounts = if (
+-            splitting && _splitMode.value == SplitMode.PERCENTAGE &&
+-            selectedShares.isNotEmpty() && selectedShares.sumOf { it.percentage } > 0
+-        ) {
+-            SplitRounding.byWeights(total, selectedShares.associate { it.personId to it.percentage }, _paidByPersonId.value)
+-        } else null
+-        val locked = lockedShares
++        val locked = lockedShares?.toList()
+         if (locked != null && abs(total - locked.sumOf { it.shareAmount }) >= 0.005) {
+             _statusMessage.value = uiText(R.string.action_notice_guest_edit)
+             return
+         }
+-        val splitShareEntities = when {
+-            // Someone else's guests: the server only accepts them back exactly as they were.
+-            locked != null -> locked.map { it.copy(id = 0, splitId = 0) }
+-            splitting -> selectedShares.map {
+-                val amount = sharedPercentageAmounts?.get(it.personId) ?: it.amount
+-                if (it.isGuest) {
+-                    // Stored under me, the host, so every group balance counts it as mine to cover.
+-                    SplitShareEntity(splitId = 0, personId = -1L, shareAmount = amount, percentage = it.percentage, guestName = it.personName, guestPersonId = it.personId)
+-                } else {
+-                    SplitShareEntity(splitId = 0, personId = it.personId, shareAmount = amount, percentage = it.percentage)
+-                }
+-            }
+-            else -> emptyList()
+-        }
+-
++        val savingId = draftId
++        val savingRevision = draftRevision
++        val savingRemoteId = draftSaveRemoteId
++        val editing = draftEdit
++        val photoJob = billPhotoJob
++        val photoVersion = photoGeneration
++        val explicitGroup = groupChoiceIsExplicit
++        val quarantine = draftQuarantine
+         submissions.launch(Submit.SaveEntry) {
+-            // A photo still being written goes with the expense rather than being dropped.
+-            billPhotoJob?.join()
+-            val savedId = try {
+-                val editingId = _editingTransactionId.value
+-                if (editingId != null && editingId != 0L) {
+-                    ledgerRepo.updateTransactionWithSplits(
+-                        tx = tx,
+-                        paidByPersonId = _paidByPersonId.value,
+-                        shares = splitShareEntities,
+-                        splitType = _splitMode.value.name.lowercase(Locale.getDefault())
+-                    )
+-                    editingId
+-                } else {
+-                    ledgerRepo.saveTransactionWithSplits(
+-                        tx = tx,
+-                        paidByPersonId = _paidByPersonId.value,
+-                        shares = splitShareEntities,
+-                        splitType = _splitMode.value.name.lowercase(Locale.getDefault())
+-                    )
+-                }
++            photoJob?.join()
++            if (draftId != savingId || photoGeneration != photoVersion || _billPhoto.value == BillPhoto.Processing) {
++                _statusMessage.value = uiText(R.string.draft_recovery_save_changed)
++                return@launch
++            }
++            if (quarantine?.await()?.isFailure == true) {
++                _statusMessage.value = uiText(R.string.draft_recovery_write_failed)
++                return@launch
++            }
++            val photo = _billPhoto.value
++            val photoState = draftPhoto
++            val hadPhoto = hadBillPhotoOnOpen
++            val checkpoint = EntrySaveCheckpoint(savingRevision, savingRemoteId, entry, photoState, editing, locked, hadPhoto, explicitGroup)
++            draftSaving = checkpoint
++            draftRevision++ // Checkpoint metadata is a new durable revision too.
++            // The file contains BOTH the captured write and any more recent typed fields.
++            val journal = draftStore?.save(durableSnapshot())?.await()
++            if (journal?.isFailure == true) {
++                _statusMessage.value = uiText(R.string.draft_recovery_write_failed)
++                return@launch
++            }
++            val saved = try {
++                withContext(Dispatchers.IO) { db.withTransaction {
++                    directDraftProblem(entry, editing, locked, photoState)?.let { throw DraftSaveBlocked(it) }
++                    val already = if (editing == null) draftLedger.byRemoteId(savingRemoteId) else null
++                    val savedId = if (already != null) {
++                        if (!EntryDraftRecoveryLedger.matches(already, checkpoint)) throw DraftSaveBlocked(DraftRecoveryIssue.StaleEdit)
++                        already.transaction.id
++                    } else {
++                        val tx = EntryDraftRecoveryLedger.transaction(entry, editing?.transactionId ?: 0L, savingRemoteId)
++                        val shares = EntryDraftRecoveryLedger.shares(entry, locked)
++                        if (editing != null) {
++                            ledgerRepo.updateTransactionWithSplits(tx, entry.paidByPersonId, shares, entry.splitMode.name.lowercase(Locale.ROOT))
++                            editing.transactionId
++                        } else ledgerRepo.saveTransactionWithSplits(tx, entry.paidByPersonId, shares, entry.splitMode.name.lowercase(Locale.ROOT))
++                    }
++                    val actual = draftLedger.full(savedId) ?: throw DraftSaveBlocked(DraftRecoveryIssue.StaleEdit)
++                    // Repository updates deliberately return Unit even when refusing a stale edit.
++                    if (!EntryDraftRecoveryLedger.matches(actual, checkpoint)) throw DraftSaveBlocked(DraftRecoveryIssue.StaleEdit)
++                    actual
++                } }
++            } catch (e: DraftSaveBlocked) {
++                _draftRecoveryProblem.value = recoveryMessage(e.issue)
++                _statusMessage.value = _draftRecoveryProblem.value
++                return@launch
+             } catch (e: ArchivedGroupException) {
+                 _statusMessage.value = archivedMessage(e)
+                 return@launch
+             }
+-            settleBillPhoto(savedId)
+-            _isConfirmSheetOpen.value = false
++            val photoSettled = settleCapturedPhoto(saved.transaction.id, photo, photoState, hadPhoto)
++            if (!photoSettled) _statusMessage.value = uiText(R.string.action_notice_photo_not_kept)
++            val storedPhoto = if (photoSettled) receipts.photoOf(saved.transaction.id) else null
++            if (draftId == savingId) {
++                val unchanged = currentDraft() == entry && photoGeneration == photoVersion
++                draftEdit = DraftEditTarget(saved.transaction.id, saved.transaction.remoteId, saved.transaction.createdAt,
++                    EntryDraftRecoveryLedger.fingerprint(saved), entry)
++                draftSaveRemoteId = saved.transaction.remoteId
++                _editingTransactionId.value = saved.transaction.id
++                editBaseline = entry
++                draftSaving = null
++                if (photoSettled && photoGeneration == photoVersion) {
++                    hadBillPhotoOnOpen = storedPhoto != null
++                    _billPhoto.value = storedPhoto?.let { (_, file) -> if (file.exists()) BillPhoto.Kept(file, null) else BillPhoto.Missing } ?: BillPhoto.None
++                    draftPhoto = when (_billPhoto.value) {
++                        is BillPhoto.Kept -> DraftPhotoState.Existing
++                        BillPhoto.Missing -> DraftPhotoState.Missing
++                        else -> DraftPhotoState.None
++                    }
++                }
++                if (unchanged && photoSettled) {
++                    val clearingRevision = draftRevision
++                    // Any typing while clear is on IO starts a new explicit edit identity. The
++                    // store closes the cleared identity, so it must never receive those new edits.
++                    val continuationId = java.util.UUID.randomUUID().toString()
++                    draftId = continuationId
++                    draftRevision = 0L
++                    val clear = draftStore?.conditionalClear(savingId, clearingRevision)?.await()
++                    if (clear?.isFailure == true) {
++                        _statusMessage.value = uiText(R.string.draft_recovery_write_failed)
++                        captureEntryDraft()
++                    } else if (draftId == continuationId && draftRevision == 0L) {
++                        _isConfirmSheetOpen.value = false
++                        _billPhoto.value = BillPhoto.None
++                        hadBillPhotoOnOpen = false
++                        _draftRecoveryProblem.value = null
++                    } else if (draftId == continuationId) captureEntryDraft()
++                } else {
++                    if (!photoSettled) _draftRecoveryProblem.value = recoveryMessage(DraftRecoveryIssue.PhotoMissing)
++                    captureEntryDraft()
++                }
++            }
+             _moneyConfirmations.tryEmit(Unit)
+             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
+         }
+     }
++
++    private suspend fun settleCapturedPhoto(transactionId: Long, photo: BillPhoto, photoState: DraftPhotoState, hadPhoto: Boolean): Boolean {
++        if (photoState is DraftPhotoState.Staged) {
++            return receipts.store.recoverStaged(photoState.fileName, photoState.width, photoState.height, photoState.bytes, photoState.sha256)
++                ?.let { receipts.attach(transactionId, it, preserveForDraftRecovery = draftStore != null) } ?: false
++        }
++        return when (photo) {
++            BillPhoto.None -> { if (hadPhoto) receipts.remove(transactionId); true }
++            BillPhoto.Processing -> false
++            is BillPhoto.Kept, BillPhoto.Missing -> true
++        }
++    }
++
++    private class DraftSaveBlocked(val issue: DraftRecoveryIssue) : Exception()
++
+ 
+     private fun archivedMessage(e: ArchivedGroupException) =
+         uiText(R.string.action_notice_archived, e.groupName)
+@@ -1821,6 +1914,8 @@
+ 
+     override fun onCleared() {
+         pendingDeletes.commitAll()
++        // Accepted file writes drain independently after the VM is cancelled.
++        draftStore?.retire()
+         super.onCleared()
+     }
+ 
+@@ -2026,6 +2121,7 @@
+                 current.add(ShareInput(personId = newId, personName = name.trim(), isSelected = true))
+                 _shares.value = current
+                 recalculateShares()
++                captureEntryDraft()
+             }
+             dismissAddFriend()
+             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
+@@ -2460,6 +2556,202 @@
+     private fun uiQuantity(@androidx.annotation.PluralsRes id: Int, count: Int, vararg args: Any): String =
+         getApplication<Application>().resources.getQuantityString(id, count, *args)
+ 
++    // One private file per actual Room identity. In-memory test ledgers have no durable identity.
++    private val draftStore = db.openHelper.databaseName?.let { name ->
++        EntryDraftAtomicStore.open(File(getApplication<Application>().filesDir, "entry-drafts"), File(name).name)
++    }
++    private val draftLedger = EntryDraftRecoveryLedger(db)
++    private var draftId = java.util.UUID.randomUUID().toString()
++    private var draftRevision = 0L
++    private var draftInteractionVersion = 0L
++    private var draftSaveRemoteId = java.util.UUID.randomUUID().toString()
++    private var draftEdit: DraftEditTarget? = null
++    private var draftSaving: EntrySaveCheckpoint? = null
++    private var draftQuarantine: kotlinx.coroutines.Deferred<Result<Unit>>? = null
++    private var draftPhoto: DraftPhotoState = DraftPhotoState.None
++    private var photoGeneration = 0L
++    private val _draftRecoveryProblem = MutableStateFlow<String?>(null)
++    val draftRecoveryProblem: StateFlow<String?> = _draftRecoveryProblem.asStateFlow()
++    private val _isRestoringDraft = MutableStateFlow(draftStore != null)
++    val isRestoringDraft: StateFlow<Boolean> = _isRestoringDraft.asStateFlow()
++
++    private fun beginEntryDraft(quarantineUnreadable: Boolean = true) {
++        draftInteractionVersion++
++        // An explicit fresh-entry action preserves corrupt bytes privately before any new write.
++        draftQuarantine = if (quarantineUnreadable) draftStore?.quarantineUnreadable() else null
++        draftId = java.util.UUID.randomUUID().toString()
++        draftRevision = 0
++        draftSaveRemoteId = java.util.UUID.randomUUID().toString()
++        draftEdit = null
++        draftSaving = null
++        draftPhoto = DraftPhotoState.None
++        _draftRecoveryProblem.value = null
++    }
++
++    private fun durableSnapshot() = RecoverableEntryDraft(draftId, draftRevision, draftSaveRemoteId,
++        currentDraft(), draftEdit, groupChoiceIsExplicit, lockedShares?.toList(), hadBillPhotoOnOpen, draftPhoto, draftSaving)
++
++    /** Called after a complete mutation, including recalculated shares; never from touched(). */
++    private fun captureEntryDraft() {
++        if (!_isConfirmSheetOpen.value) return
++        draftInteractionVersion++
++        draftRevision++
++        val snapshot = durableSnapshot()
++        val write = draftStore?.save(snapshot)
++        val needsValidation = _draftRecoveryProblem.value != null
++        viewModelScope.launch {
++            if (write?.await()?.isFailure == true) _statusMessage.value = uiText(R.string.draft_recovery_write_failed)
++            if (needsValidation) {
++                val issue = withContext(Dispatchers.IO) { db.withTransaction {
++                    directDraftProblem(snapshot.entry, snapshot.edit, snapshot.lockedShares, snapshot.photo)
++                } }
++                if (draftId == snapshot.draftId && draftRevision == snapshot.revision && _isConfirmSheetOpen.value)
++                    _draftRecoveryProblem.value = issue?.let(::recoveryMessage)
++            }
++        }
++    }
++
++    private fun recoveryMessage(issue: DraftRecoveryIssue): String = uiText(when (issue) {
++        DraftRecoveryIssue.StaleEdit -> R.string.draft_recovery_stale_edit
++        DraftRecoveryIssue.MissingPerson -> R.string.draft_recovery_missing_person
++        DraftRecoveryIssue.GroupUnavailable -> R.string.draft_recovery_group_unavailable
++        DraftRecoveryIssue.PhotoMissing -> R.string.draft_recovery_photo_missing
++    })
++
++    private suspend fun directDraftProblem(entry: EntryDraft, edit: DraftEditTarget?, locked: List<SplitShareEntity>?, photo: DraftPhotoState): DraftRecoveryIssue? {
++        draftLedger.problem(entry, edit, locked)?.let { return it }
++        if (photo is DraftPhotoState.Staged && receipts.store.recoverStaged(photo.fileName, photo.width, photo.height, photo.bytes, photo.sha256) == null)
++            return DraftRecoveryIssue.PhotoMissing
++        return null
++    }
++
++    private fun applyRecoveredFields(snapshot: RecoverableEntryDraft) {
++        val e = snapshot.entry
++        _type.value = e.type
++        _amount.value = e.amount
++        _merchant.value = e.merchant
++        _category.value = e.category
++        _paymentMethod.value = e.paymentMethod
++        _note.value = e.note
++        _date.value = e.date
++        _groupId.value = e.groupId
++        _isSplit.value = e.isSplit
++        _splitMode.value = e.splitMode
++        _paidByPersonId.value = e.paidByPersonId
++        _shares.value = e.shares
++        groupChoiceIsExplicit = snapshot.groupChoiceIsExplicit
++        lockedShares = snapshot.lockedShares
++        _splitLocked.value = snapshot.lockedShares != null
++        draftId = snapshot.draftId
++        draftRevision = snapshot.revision
++        draftSaveRemoteId = snapshot.saveRemoteId
++        draftEdit = snapshot.edit
++        draftSaving = snapshot.savingEntry
++        draftPhoto = snapshot.photo
++        _editingTransactionId.value = snapshot.edit?.transactionId
++        editBaseline = snapshot.edit?.baseline
++        hadBillPhotoOnOpen = snapshot.hadBillPhotoOnOpen
++        // Jobs, consent, parsing and AI state are deliberately never replayed.
++        stopImprovingWithAi()
++        _parseNotice.value = null
++        _isConfirmSheetOpen.value = true
++    }
++
++    private suspend fun restoreDraftPhoto(snapshot: RecoverableEntryDraft) {
++        val generation = photoGeneration
++        val editIdentityCurrent = snapshot.edit?.let { target ->
++            withContext(Dispatchers.IO) { draftLedger.full(target.transactionId) }?.transaction?.let {
++                it.remoteId == target.remoteId && it.createdAt == target.createdAt
++            } == true
++        } ?: false
++        var foundExisting = false
++        val restored = when (val photo = snapshot.photo) {
++            is DraftPhotoState.Staged -> receipts.store.recoverStaged(photo.fileName, photo.width, photo.height, photo.bytes, photo.sha256)
++                ?.let { BillPhoto.Kept(it.file, it) } ?: BillPhoto.Missing
++            DraftPhotoState.Existing, DraftPhotoState.Missing -> snapshot.edit?.takeIf { editIdentityCurrent }?.let { receipts.photoOf(it.transactionId) }
++                ?.let { (_, file) -> if (file.isFile) BillPhoto.Kept(file, null) else BillPhoto.Missing } ?: BillPhoto.Missing
++            DraftPhotoState.None -> if (!snapshot.hadBillPhotoOnOpen) snapshot.edit?.takeIf { editIdentityCurrent }?.let { receipts.photoOf(it.transactionId) }
++                ?.let { (_, file) ->
++                    foundExisting = true
++                    if (file.isFile) BillPhoto.Kept(file, null) else BillPhoto.Missing
++                } ?: BillPhoto.None else BillPhoto.None
++        }
++        if (draftId != snapshot.draftId || photoGeneration != generation || !_isConfirmSheetOpen.value) return
++        _billPhoto.value = restored
++        if (foundExisting) {
++            hadBillPhotoOnOpen = true
++            draftPhoto = if (restored is BillPhoto.Kept) DraftPhotoState.Existing else DraftPhotoState.Missing
++        }
++    }
++
++    private fun pinnedPhotos(snapshot: RecoverableEntryDraft?): Set<String> = listOfNotNull(
++        (snapshot?.photo as? DraftPhotoState.Staged)?.fileName,
++        (snapshot?.savingEntry?.photo as? DraftPhotoState.Staged)?.fileName,
++    ).toSet()
++
++    /** Pure recovery: inspect committed money, but never insert/update it or invoke a parser. */
++    private suspend fun reconcileInterruptedSave(snapshot: RecoverableEntryDraft): RecoverableEntryDraft {
++        val checkpoint = snapshot.savingEntry ?: return snapshot
++        val committed = checkpoint.edit?.let { draftLedger.full(it.transactionId) }
++            ?: if (checkpoint.edit == null) draftLedger.byRemoteId(checkpoint.transactionRemoteId) else null
++        if (committed == null) return snapshot
++        if (checkpoint.edit != null && (committed.transaction.createdAt != checkpoint.edit.createdAt ||
++                committed.transaction.remoteId != checkpoint.edit.remoteId && checkpoint.edit.baseline.groupId == checkpoint.entry.groupId)) return snapshot
++        // For an edit that never committed, keep its original target/baseline. Save will validate it again.
++        if (checkpoint.edit != null && EntryDraftRecoveryLedger.fingerprint(committed) == checkpoint.edit.originalFingerprint &&
++            committed.transaction.remoteId == checkpoint.edit.remoteId && committed.transaction.createdAt == checkpoint.edit.createdAt) return snapshot
++        val matches = EntryDraftRecoveryLedger.matches(committed, checkpoint)
++        val fingerprint = if (matches) EntryDraftRecoveryLedger.fingerprint(committed) else "0".repeat(64)
++        val target = DraftEditTarget(committed.transaction.id, committed.transaction.remoteId, committed.transaction.createdAt, fingerprint, checkpoint.entry)
++        // Retain all latest typed fields, with an explicit EDIT identity so retry can never insert again.
++        return snapshot.copy(revision = snapshot.revision + 1L, edit = target, saveRemoteId = committed.transaction.remoteId, savingEntry = null)
++    }
++
++    init {
++        viewModelScope.launch {
++            try {
++            val loadInteraction = draftInteractionVersion
++            val loaded = draftStore?.load() ?: DraftLoadResult.Missing
++            var pins = emptySet<String>()
++            if (loaded is DraftLoadResult.Loaded) {
++                pins = pinnedPhotos(loaded.snapshot)
++                val epoch = draftRevision
++                val restored = withContext(Dispatchers.IO) { reconcileInterruptedSave(loaded.snapshot) }
++                // A new user action during disk/Room reads wins over a late startup load.
++                if (loadInteraction == 0L && draftInteractionVersion == loadInteraction && epoch == 0L && draftRevision == epoch && !_isConfirmSheetOpen.value) {
++                    val photo = restored.photo
++                    val problem = withContext(Dispatchers.IO) { db.withTransaction {
++                        directDraftProblem(restored.entry, restored.edit, restored.lockedShares, photo)
++                    } }
++                    if (draftInteractionVersion == loadInteraction && draftRevision == 0L && !_isConfirmSheetOpen.value) {
++                        applyRecoveredFields(restored)
++                        val restoredId = draftId
++                        val restoredRevision = draftRevision
++                        restoreDraftPhoto(restored)
++                        if (draftId == restoredId && draftRevision == restoredRevision) {
++                            _draftRecoveryProblem.value = problem?.let(::recoveryMessage)
++                            // Rebased interrupted saves must themselves become durable before any retry.
++                            if (restored != loaded.snapshot) draftStore?.save(durableSnapshot())?.await()
++                        }
++                    }
++                }
++            } else if (loaded is DraftLoadResult.Unreadable) {
++                _statusMessage.value = uiText(R.string.draft_recovery_unreadable)
++            }
++            _isRestoringDraft.value = false
++            // Corrupt drafts may still name a valid photo: keep files until the person can recover/discard.
++            if (loaded !is DraftLoadResult.Unreadable) {
++                pins = pins + pinnedPhotos(if (_isConfirmSheetOpen.value) durableSnapshot() else null)
++                try { receipts.sweepOrphans(protectedNames = pins) }
++                catch (e: CancellationException) { throw e }
++                catch (_: Exception) { Log.w("MainViewModel", "Bill photo sweep failed") }
++            }
++            } catch (e: CancellationException) { throw e }
++            catch (_: Exception) { _statusMessage.value = uiText(R.string.draft_recovery_unreadable) }
++            finally { _isRestoringDraft.value = false }
++        }
++    }
++
+     companion object {
+         /** A year of a busy ledger is well under 1 MB of JSON; this is generous and still bounded. */
+         const val BACKUP_MAX_BYTES = 16 * 1024 * 1024

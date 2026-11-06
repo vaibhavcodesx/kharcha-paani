@@ -1,0 +1,671 @@
+diff --git a/app/src/main/java/com/vaibhav/kharchapaani/domain/RecoverableEntryDraft.kt b/app/src/main/java/com/vaibhav/kharchapaani/domain/RecoverableEntryDraft.kt
+new file mode 100644
+--- /dev/null
++++ b/app/src/main/java/com/vaibhav/kharchapaani/domain/RecoverableEntryDraft.kt
+@@ -0,0 +1,48 @@
++package com.vaibhav.kharchapaani.domain
++
++import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
++
++/** One device-local add/edit sheet. Never a queued AI request or an automatic ledger write. */
++data class RecoverableEntryDraft(
++    val draftId: String,
++    val revision: Long,
++    val saveRemoteId: String,
++    val entry: EntryDraft,
++    val edit: DraftEditTarget? = null,
++    val groupChoiceIsExplicit: Boolean = false,
++    val lockedShares: List<SplitShareEntity>? = null,
++    val hadBillPhotoOnOpen: Boolean = false,
++    val photo: DraftPhotoState = DraftPhotoState.None,
++    val savingEntry: EntrySaveCheckpoint? = null,
++)
++
++/** Bind an edit to the original birth as well as its id, even if a group move changes remoteId. */
++data class DraftEditTarget(
++    val transactionId: Long,
++    val remoteId: String,
++    val createdAt: Long,
++    val originalFingerprint: String,
++    val baseline: EntryDraft,
++)
++
++/** Immutable inputs accepted by Save, independent of any typing that follows that tap. */
++data class EntrySaveCheckpoint(
++    val revision: Long,
++    val transactionRemoteId: String,
++    val entry: EntryDraft,
++    val photo: DraftPhotoState,
++    val edit: DraftEditTarget? = null,
++    val lockedShares: List<SplitShareEntity>? = null,
++    val hadBillPhotoOnOpen: Boolean = false,
++    val groupChoiceIsExplicit: Boolean = false,
++)
++
++/** None plus hadBillPhotoOnOpen means removal. Existing/Missing are resolved through Room. */
++sealed interface DraftPhotoState {
++    data object None : DraftPhotoState
++    data object Existing : DraftPhotoState
++    data object Missing : DraftPhotoState
++    /** A leaf inside this ledger's receipt store; bytes/hash are verified by receipt recovery. */
++    data class Staged(val fileName: String, val width: Int, val height: Int,
++        val bytes: Long, val sha256: String) : DraftPhotoState
++}
+diff --git a/app/src/main/java/com/vaibhav/kharchapaani/data/drafts/EntryDraftAtomicStore.kt b/app/src/main/java/com/vaibhav/kharchapaani/data/drafts/EntryDraftAtomicStore.kt
+new file mode 100644
+--- /dev/null
++++ b/app/src/main/java/com/vaibhav/kharchapaani/data/drafts/EntryDraftAtomicStore.kt
+@@ -0,0 +1,216 @@
++package com.vaibhav.kharchapaani.data.drafts
++
++import android.util.AtomicFile
++import com.vaibhav.kharchapaani.domain.RecoverableEntryDraft
++import kotlinx.coroutines.CompletableDeferred
++import kotlinx.coroutines.CoroutineDispatcher
++import kotlinx.coroutines.CoroutineScope
++import kotlinx.coroutines.Deferred
++import kotlinx.coroutines.Dispatchers
++import kotlinx.coroutines.Job
++import kotlinx.coroutines.SupervisorJob
++import kotlinx.coroutines.launch
++import java.io.ByteArrayOutputStream
++import java.io.File
++import java.io.IOException
++import java.nio.ByteBuffer
++import java.nio.charset.CodingErrorAction
++import java.util.UUID
++
++sealed interface DraftLoadResult {
++    data object Missing : DraftLoadResult
++    data object Unreadable : DraftLoadResult
++    data class Loaded(val snapshot: RecoverableEntryDraft) : DraftLoadResult
++}
++
++/**
++ * One owner of a private ledger draft. Acceptance is serialized independently of caller lifetime.
++ * The registry retains operation ordering/retirement metadata, never a last-snapshot payload cache.
++ */
++class EntryDraftAtomicStore private constructor(private val writer: Writer) {
++    private var active = true // guarded by registryLock
++
++    suspend fun load(): DraftLoadResult = synchronized(registryLock) {
++        if (!ownsWriter()) CompletableDeferred<DraftLoadResult>(DraftLoadResult.Unreadable)
++        else writer.enqueue { writer.read() }
++    }.await()
++
++    fun save(snapshot: RecoverableEntryDraft): Deferred<Result<Unit>> {
++        // List ownership is frozen at acceptance. Encoding, validation and all disk writes stay on IO.
++        val frozen = snapshot.frozenCopy()
++        return synchronized(registryLock) {
++            if (!ownsWriter()) refused() else writer.enqueue {
++                operation {
++                    val bytes = DraftJson.encode(frozen)
++                    require(frozen.draftId !in writer.endedDrafts) { "Draft was already cleared" }
++                    val previous = when (val current = writer.read()) {
++                        DraftLoadResult.Missing -> null
++                        DraftLoadResult.Unreadable -> throw IOException("Existing draft is unreadable")
++                        is DraftLoadResult.Loaded -> current.snapshot
++                    }
++                    if (previous?.draftId == frozen.draftId) {
++                        require(frozen.revision >= previous.revision) { "Draft revision is stale" }
++                        if (frozen.revision == previous.revision) {
++                            require(frozen == previous) { "Draft revision has different contents" }
++                            return@operation
++                        }
++                    }
++                    writer.write(bytes)
++                    check(writer.read() == DraftLoadResult.Loaded(frozen)) { "Draft write was not verified" }
++                    if (previous != null && previous.draftId != frozen.draftId) writer.endedDrafts += previous.draftId
++                }
++            }
++        }
++    }
++
++    /** A Save at revision N must never clear typing persisted at N+1. */
++    fun conditionalClear(expectedDraftId: String, expectedRevision: Long): Deferred<Result<Unit>> =
++        synchronized(registryLock) {
++            if (!ownsWriter()) refused() else writer.enqueue {
++                operation {
++                    DraftJson.requireIdentity(expectedDraftId)
++                    require(expectedRevision > 0) { "Invalid draft revision" }
++                    when (val current = writer.read()) {
++                        DraftLoadResult.Unreadable -> throw IOException("Existing draft is unreadable")
++                        DraftLoadResult.Missing -> writer.endedDrafts.add(expectedDraftId)
++                        is DraftLoadResult.Loaded -> {
++                            if (current.snapshot.draftId == expectedDraftId && current.snapshot.revision == expectedRevision) {
++                                writer.atomic.delete()
++                                check(!writer.exists()) { "Draft could not be cleared" }
++                                writer.endedDrafts += expectedDraftId
++                            }
++                        }
++                    }
++                }
++            }
++        }
++
++    /** Explicit New Entry/discard only: retain unsupported/corrupt bytes instead of overwriting them. */
++    fun quarantineUnreadable(): Deferred<Result<Unit>> = synchronized(registryLock) {
++        if (!ownsWriter()) refused() else writer.enqueue {
++            operation {
++                if (writer.read() == DraftLoadResult.Unreadable) {
++                    val source = writer.file
++                    val destination = File(source.parentFile, source.name.take(160) + ".quarantine-" + UUID.randomUUID())
++                    require(source.isFile && !destination.exists()) { "Draft quarantine is unavailable" }
++                    // Same-directory rename retains the original bytes atomically without reading them into memory.
++                    check(source.renameTo(destination)) { "Draft could not be retained" }
++                    check(!writer.exists() && destination.isFile) { "Draft quarantine was not completed" }
++                }
++            }
++        }
++    }
++
++    /** Reject future calls immediately; already accepted operations finish before this completes. */
++    fun retire(): Deferred<Result<Unit>> = synchronized(registryLock) {
++        active = false
++        if (writer.owner === this) writer.owner = null
++        writer.enqueue { Result.success(Unit) }
++    }
++
++    private fun ownsWriter() = active && writer.owner === this
++    private fun refused() = CompletableDeferred(Result.failure<Unit>(IllegalStateException("Draft owner has retired")))
++
++    private class Writer(val file: File, dispatcher: CoroutineDispatcher) {
++        val atomic = AtomicFile(file)
++        private val scope = CoroutineScope(SupervisorJob() + dispatcher)
++        var owner: EntryDraftAtomicStore? = null
++        var tail: Job? = null
++        val endedDrafts = mutableSetOf<String>()
++
++        // Caller holds registryLock, including when installing this job as the accepted tail.
++        fun <T> enqueue(block: () -> T): Deferred<T> {
++            val previous = tail
++            // The registry keeps a Unit barrier, not a result Deferred that could retain a draft.
++            val finished = CompletableDeferred<Unit>()
++            tail = finished
++            // Cancelling the exposed result must not cancel accepted IO or strand the barrier.
++            val result = CompletableDeferred<T>()
++            scope.launch {
++                try {
++                    previous?.join() // A failed operation never cancels the next operation.
++                    result.complete(block())
++                } catch (failure: Exception) {
++                    result.completeExceptionally(failure)
++                } finally {
++                    finished.complete(Unit)
++                }
++            }
++            return result
++        }
++
++        fun exists() = file.exists() || File(file.path + ".bak").exists()
++
++        fun read(): DraftLoadResult {
++            if (!exists()) return DraftLoadResult.Missing
++            return try {
++                val bytes = atomic.openRead().use { input ->
++                    val output = ByteArrayOutputStream()
++                    val buffer = ByteArray(8192)
++                    var size = 0
++                    while (true) {
++                        val read = input.read(buffer)
++                        if (read < 0) break
++                        size += read
++                        require(size <= MAX_BYTES) { "Draft is too large" }
++                        output.write(buffer, 0, read)
++                    }
++                    output.toByteArray()
++                }
++                val text = Charsets.UTF_8.newDecoder()
++                    .onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT)
++                    .decode(ByteBuffer.wrap(bytes)).toString()
++                DraftLoadResult.Loaded(DraftJson.decode(text))
++            } catch (_: Exception) {
++                // No payload or parse exception is logged, exposed, rewritten or automatically cleared.
++                DraftLoadResult.Unreadable
++            }
++        }
++
++        fun write(bytes: ByteArray) {
++            require(bytes.size <= MAX_BYTES) { "Draft is too large" }
++            val parent = requireNotNull(file.parentFile)
++            check(parent.mkdirs() || parent.isDirectory) { "Draft directory is unavailable" }
++            val output = atomic.startWrite()
++            try {
++                output.write(bytes)
++                output.fd.sync()
++                atomic.finishWrite(output)
++            } catch (failure: Exception) {
++                atomic.failWrite(output)
++                throw failure
++            }
++        }
++    }
++
++    companion object {
++        const val MAX_BYTES = 512 * 1024
++        private val registryLock = Any()
++        private val writers = mutableMapOf<String, Writer>()
++
++        /** Pass the actual Room database filename; never an account display name or external path. */
++        fun open(directory: File, databaseFileName: String,
++            ioDispatcher: CoroutineDispatcher = Dispatchers.IO): EntryDraftAtomicStore {
++            require(databaseFileName.length <= 200 &&
++                Regex("[A-Za-z0-9][A-Za-z0-9._-]*\\.db").matches(databaseFileName)) { "Invalid ledger filename" }
++            val root = directory.canonicalFile
++            val file = File(root, "$databaseFileName.draft.json")
++            require(file.canonicalFile.parentFile == root &&
++                File(file.path + ".bak").canonicalFile.parentFile == root &&
++                File(file.path + ".new").canonicalFile.parentFile == root) { "Draft path leaves its private directory" }
++            return synchronized(registryLock) {
++                val writer = writers.getOrPut(file.canonicalPath) { Writer(file, ioDispatcher) }
++                writer.owner?.active = false
++                EntryDraftAtomicStore(writer).also { writer.owner = it }
++            }
++        }
++
++        private inline fun operation(block: () -> Unit): Result<Unit> = try {
++            block()
++            Result.success(Unit)
++        } catch (_: Exception) {
++            // Validation/IO failures do not poison the queue or disclose user-controlled strings.
++            Result.failure(IOException("Entry draft could not be persisted"))
++        }
++    }
++}
+diff --git a/app/src/main/java/com/vaibhav/kharchapaani/data/drafts/DraftJson.kt b/app/src/main/java/com/vaibhav/kharchapaani/data/drafts/DraftJson.kt
+new file mode 100644
+--- /dev/null
++++ b/app/src/main/java/com/vaibhav/kharchapaani/data/drafts/DraftJson.kt
+@@ -0,0 +1,392 @@
++package com.vaibhav.kharchapaani.data.drafts
++
++import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
++import com.vaibhav.kharchapaani.data.model.ShareInput
++import com.vaibhav.kharchapaani.data.model.SplitMode
++import com.vaibhav.kharchapaani.domain.*
++import kotlinx.serialization.Serializable
++import kotlinx.serialization.json.Json
++import java.nio.CharBuffer
++import java.nio.charset.CodingErrorAction
++
++/** Internal wire DTOs keep existing ledger/draft models free of persistence annotations. */
++internal object DraftJson {
++    private val json = Json { encodeDefaults = true }
++    private val uuid = Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
++    private val hash = Regex("[0-9a-f]{64}")
++
++    fun requireIdentity(value: String) = require(uuid.matches(value)) { "Invalid draft identity" }
++
++    fun encode(snapshot: RecoverableEntryDraft): ByteArray {
++        validate(snapshot)
++        val text = json.encodeToString(Envelope.serializer(), Envelope(1, SnapshotPayload.from(snapshot)))
++        require(text.length <= EntryDraftAtomicStore.MAX_BYTES) { "Draft is too large" }
++        val encoded = Charsets.UTF_8.newEncoder()
++            .onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT)
++            .encode(CharBuffer.wrap(text))
++        require(encoded.remaining() <= EntryDraftAtomicStore.MAX_BYTES) { "Draft is too large" }
++        return ByteArray(encoded.remaining()).also { encoded.get(it) }
++    }
++
++    fun decode(text: String): RecoverableEntryDraft {
++        require(text.length <= EntryDraftAtomicStore.MAX_BYTES) { "Draft is too large" }
++        // Avoid recursively parsing attacker/corruption-created nesting up to the whole byte cap.
++        var depth = 0
++        var quoted = false
++        var escaped = false
++        for (char in text) {
++            if (quoted) {
++                if (escaped) escaped = false
++                else if (char == '\\') escaped = true
++                else if (char == '"') quoted = false
++            } else when (char) {
++                '"' -> quoted = true
++                '{', '[' -> { depth++; require(depth <= 32) { "Draft nesting is too deep" } }
++                '}', ']' -> { depth--; require(depth >= 0) { "Invalid draft nesting" } }
++            }
++        }
++        val envelope = json.decodeFromString(Envelope.serializer(), text)
++        require(envelope.version == 1) { "Unsupported draft version" }
++        return envelope.snapshot.domain().also(::validate)
++    }
++
++    private fun validate(snapshot: RecoverableEntryDraft) {
++        var characters = 0L
++        fun text(value: String) {
++            characters += value.length
++            require(characters <= EntryDraftAtomicStore.MAX_BYTES) { "Draft is too large" }
++            var index = 0
++            while (index < value.length) {
++                val char = value[index]
++                if (Character.isHighSurrogate(char)) {
++                    require(index + 1 < value.length && Character.isLowSurrogate(value[index + 1])) { "Invalid draft text encoding" }
++                    index++
++                } else require(!Character.isLowSurrogate(char)) { "Invalid draft text encoding" }
++                index++
++            }
++        }
++        fun fields(entry: EntryDraft) {
++            listOf(entry.type, entry.amount, entry.merchant, entry.category, entry.paymentMethod, entry.note).forEach(::text)
++            require(entry.shares.size <= EntryDraftAtomicStore.MAX_BYTES / 16) { "Too many draft participants" }
++            entry.shares.forEach { text(it.personName) }
++        }
++        fun editFields(edit: DraftEditTarget?) { edit?.let { fields(it.baseline) } }
++        fun lockedFields(shares: List<SplitShareEntity>?) {
++            require((shares?.size ?: 0) <= EntryDraftAtomicStore.MAX_BYTES / 16) { "Too many locked shares" }
++            shares?.forEach { it.guestName?.let(::text) }
++        }
++        fields(snapshot.entry); editFields(snapshot.edit); lockedFields(snapshot.lockedShares)
++        snapshot.savingEntry?.let { fields(it.entry); editFields(it.edit); lockedFields(it.lockedShares) }
++        requireIdentity(snapshot.draftId)
++        requireIdentity(snapshot.saveRemoteId)
++        require(snapshot.revision > 0) { "Invalid draft revision" }
++        validateEntry(snapshot.entry)
++        snapshot.edit?.let(::validateEdit)
++        snapshot.lockedShares?.let(::validateLocked)
++        validatePhoto(snapshot.photo)
++        snapshot.savingEntry?.let {
++            require(it.revision in 1..snapshot.revision) { "Invalid save checkpoint revision" }
++            requireIdentity(it.transactionRemoteId)
++            validateEntry(it.entry)
++            it.edit?.let(::validateEdit)
++            it.lockedShares?.let(::validateLocked)
++            validatePhoto(it.photo)
++        }
++    }
++
++    private fun person(id: Long) = require(id == -1L || id > 0) { "Invalid participant id" }
++
++    private fun validateEntry(entry: EntryDraft) {
++        require(entry.type in setOf("expense", "income")) { "Invalid draft type" }
++        require(entry.groupId == null || entry.groupId > 0) { "Invalid draft group" }
++        person(entry.paidByPersonId)
++        require(entry.shares.map { it.personId }.toSet().size == entry.shares.size) { "Duplicate draft participants" }
++        entry.shares.forEach {
++            person(it.personId)
++            // Working input can be incomplete or temporarily out of range, but never NaN/infinite.
++            require(it.amount.isFinite() && it.percentage.isFinite()) { "Invalid draft share number" }
++        }
++    }
++
++    private fun validateEdit(edit: DraftEditTarget) {
++        require(edit.transactionId > 0 && edit.createdAt >= 0) { "Invalid edit target" }
++        requireIdentity(edit.remoteId)
++        require(hash.matches(edit.originalFingerprint)) { "Invalid edit fingerprint" }
++        validateEntry(edit.baseline)
++    }
++
++    private fun validateLocked(shares: List<SplitShareEntity>) {
++        require(shares.map { it.id }.toSet().size == shares.size) { "Duplicate locked share identity" }
++        shares.forEach {
++            require(it.id > 0 && it.splitId > 0) { "Invalid locked share identity" }
++            person(it.personId)
++            it.guestPersonId?.let(::person)
++            require(it.shareAmount.isFinite() && (it.percentage == null || it.percentage.isFinite())) { "Invalid locked share number" }
++        }
++    }
++
++    private fun validatePhoto(photo: DraftPhotoState) {
++        if (photo is DraftPhotoState.Staged) {
++            require(photo.fileName.length in 1..128 && photo.fileName != "." && photo.fileName != ".." &&
++                photo.fileName.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' || it in "._-" }) { "Invalid draft photo leaf" }
++            require(photo.width in 1..2000 && photo.height in 1..2000 && photo.bytes > 0) { "Invalid draft photo metadata" }
++            require(hash.matches(photo.sha256)) { "Invalid draft photo hash" }
++        }
++    }
++}
++
++private fun EntryDraft.frozen() = copy(shares = shares.toList())
++private fun DraftEditTarget.frozen() = copy(baseline = baseline.frozen())
++internal fun RecoverableEntryDraft.frozenCopy(): RecoverableEntryDraft = copy(
++    entry = entry.frozen(),
++    edit = edit?.frozen(),
++    lockedShares = lockedShares?.toList(),
++    savingEntry = savingEntry?.let { checkpoint -> checkpoint.copy(
++        entry = checkpoint.entry.frozen(), edit = checkpoint.edit?.frozen(),
++        lockedShares = checkpoint.lockedShares?.toList(),
++    ) },
++)
++
++@Serializable
++private data class Envelope(val version: Int, val snapshot: SnapshotPayload)
++
++@Serializable
++private data class EntryPayload(
++    val type: String,
++    val amount: String,
++    val merchant: String,
++    val category: String,
++    val paymentMethod: String,
++    val note: String,
++    val date: Long,
++    val groupId: Long?,
++    val isSplit: Boolean,
++    val splitMode: String,
++    val paidByPersonId: Long,
++    val shares: List<SharePayload>,
++) {
++    fun domain() = EntryDraft(
++        type = type,
++        amount = amount,
++        merchant = merchant,
++        category = category,
++        paymentMethod = paymentMethod,
++        note = note,
++        date = date,
++        groupId = groupId,
++        isSplit = isSplit,
++        splitMode = SplitMode.valueOf(splitMode),
++        paidByPersonId = paidByPersonId,
++        shares = shares.map { it.domain() },
++    )
++    companion object {
++        fun from(s: EntryDraft) = EntryPayload(
++            type = s.type,
++            amount = s.amount,
++            merchant = s.merchant,
++            category = s.category,
++            paymentMethod = s.paymentMethod,
++            note = s.note,
++            date = s.date,
++            groupId = s.groupId,
++            isSplit = s.isSplit,
++            splitMode = s.splitMode.name,
++            paidByPersonId = s.paidByPersonId,
++            shares = s.shares.map(SharePayload::from),
++        )
++    }
++}
++
++@Serializable
++private data class SharePayload(
++    val personId: Long,
++    val personName: String,
++    val amount: Double,
++    val percentage: Double,
++    val isSelected: Boolean,
++    val isGuest: Boolean,
++) {
++    fun domain() = ShareInput(
++        personId = personId,
++        personName = personName,
++        amount = amount,
++        percentage = percentage,
++        isSelected = isSelected,
++        isGuest = isGuest,
++    )
++    companion object {
++        fun from(s: ShareInput) = SharePayload(
++            personId = s.personId,
++            personName = s.personName,
++            amount = s.amount,
++            percentage = s.percentage,
++            isSelected = s.isSelected,
++            isGuest = s.isGuest,
++        )
++    }
++}
++
++@Serializable
++private data class LockedPayload(
++    val id: Long,
++    val splitId: Long,
++    val personId: Long,
++    val shareAmount: Double,
++    val percentage: Double?,
++    val guestName: String?,
++    val guestPersonId: Long?,
++) {
++    fun domain() = SplitShareEntity(
++        id = id,
++        splitId = splitId,
++        personId = personId,
++        shareAmount = shareAmount,
++        percentage = percentage,
++        guestName = guestName,
++        guestPersonId = guestPersonId,
++    )
++    companion object {
++        fun from(s: SplitShareEntity) = LockedPayload(
++            id = s.id,
++            splitId = s.splitId,
++            personId = s.personId,
++            shareAmount = s.shareAmount,
++            percentage = s.percentage,
++            guestName = s.guestName,
++            guestPersonId = s.guestPersonId,
++        )
++    }
++}
++
++@Serializable
++private data class EditPayload(
++    val transactionId: Long,
++    val remoteId: String,
++    val createdAt: Long,
++    val originalFingerprint: String,
++    val baseline: EntryPayload,
++) {
++    fun domain() = DraftEditTarget(
++        transactionId = transactionId,
++        remoteId = remoteId,
++        createdAt = createdAt,
++        originalFingerprint = originalFingerprint,
++        baseline = baseline.domain(),
++    )
++    companion object {
++        fun from(s: DraftEditTarget) = EditPayload(
++            transactionId = s.transactionId,
++            remoteId = s.remoteId,
++            createdAt = s.createdAt,
++            originalFingerprint = s.originalFingerprint,
++            baseline = EntryPayload.from(s.baseline),
++        )
++    }
++}
++
++@Serializable
++private data class SavePayload(
++    val revision: Long,
++    val transactionRemoteId: String,
++    val entry: EntryPayload,
++    val photo: PhotoPayload,
++    val edit: EditPayload?,
++    val lockedShares: List<LockedPayload>?,
++    val hadBillPhotoOnOpen: Boolean,
++    val groupChoiceIsExplicit: Boolean,
++) {
++    fun domain() = EntrySaveCheckpoint(
++        revision = revision,
++        transactionRemoteId = transactionRemoteId,
++        entry = entry.domain(),
++        photo = photo.domain(),
++        edit = edit?.domain(),
++        lockedShares = lockedShares?.map { it.domain() },
++        hadBillPhotoOnOpen = hadBillPhotoOnOpen,
++        groupChoiceIsExplicit = groupChoiceIsExplicit,
++    )
++    companion object {
++        fun from(s: EntrySaveCheckpoint) = SavePayload(
++            revision = s.revision,
++            transactionRemoteId = s.transactionRemoteId,
++            entry = EntryPayload.from(s.entry),
++            photo = PhotoPayload.from(s.photo),
++            edit = s.edit?.let(EditPayload::from),
++            lockedShares = s.lockedShares?.map(LockedPayload::from),
++            hadBillPhotoOnOpen = s.hadBillPhotoOnOpen,
++            groupChoiceIsExplicit = s.groupChoiceIsExplicit,
++        )
++    }
++}
++
++@Serializable
++private data class SnapshotPayload(
++    val draftId: String,
++    val revision: Long,
++    val saveRemoteId: String,
++    val entry: EntryPayload,
++    val edit: EditPayload?,
++    val groupChoiceIsExplicit: Boolean,
++    val lockedShares: List<LockedPayload>?,
++    val hadBillPhotoOnOpen: Boolean,
++    val photo: PhotoPayload,
++    val savingEntry: SavePayload?,
++) {
++    fun domain() = RecoverableEntryDraft(
++        draftId = draftId,
++        revision = revision,
++        saveRemoteId = saveRemoteId,
++        entry = entry.domain(),
++        edit = edit?.domain(),
++        groupChoiceIsExplicit = groupChoiceIsExplicit,
++        lockedShares = lockedShares?.map { it.domain() },
++        hadBillPhotoOnOpen = hadBillPhotoOnOpen,
++        photo = photo.domain(),
++        savingEntry = savingEntry?.domain(),
++    )
++    companion object {
++        fun from(s: RecoverableEntryDraft) = SnapshotPayload(
++            draftId = s.draftId,
++            revision = s.revision,
++            saveRemoteId = s.saveRemoteId,
++            entry = EntryPayload.from(s.entry),
++            edit = s.edit?.let(EditPayload::from),
++            groupChoiceIsExplicit = s.groupChoiceIsExplicit,
++            lockedShares = s.lockedShares?.map(LockedPayload::from),
++            hadBillPhotoOnOpen = s.hadBillPhotoOnOpen,
++            photo = PhotoPayload.from(s.photo),
++            savingEntry = s.savingEntry?.let(SavePayload::from),
++        )
++    }
++}
++
++@Serializable
++private data class PhotoPayload(
++    val kind: String,
++    val fileName: String? = null,
++    val width: Int? = null,
++    val height: Int? = null,
++    val bytes: Long? = null,
++    val sha256: String? = null,
++) {
++    fun domain(): DraftPhotoState {
++        if (kind != "STAGED") require(fileName == null && width == null && height == null && bytes == null && sha256 == null) { "Invalid photo intent" }
++        return when (kind) {
++            "NONE" -> DraftPhotoState.None
++            "EXISTING" -> DraftPhotoState.Existing
++            "MISSING" -> DraftPhotoState.Missing
++            "STAGED" -> DraftPhotoState.Staged(requireNotNull(fileName), requireNotNull(width),
++                requireNotNull(height), requireNotNull(bytes), requireNotNull(sha256))
++            else -> throw IllegalArgumentException("Invalid photo intent")
++        }
++    }
++    companion object {
++        fun from(photo: DraftPhotoState) = when (photo) {
++            DraftPhotoState.None -> PhotoPayload("NONE")
++            DraftPhotoState.Existing -> PhotoPayload("EXISTING")
++            DraftPhotoState.Missing -> PhotoPayload("MISSING")
++            is DraftPhotoState.Staged -> PhotoPayload("STAGED", photo.fileName, photo.width,
++                photo.height, photo.bytes, photo.sha256)
++        }
++    }
++}

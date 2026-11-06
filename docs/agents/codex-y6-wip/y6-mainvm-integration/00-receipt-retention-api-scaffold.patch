@@ -1,0 +1,25 @@
+diff --git a/app/src/main/java/com/vaibhav/kharchapaani/data/repository/ReceiptRepository.kt b/app/src/main/java/com/vaibhav/kharchapaani/data/repository/ReceiptRepository.kt
+--- a/app/src/main/java/com/vaibhav/kharchapaani/data/repository/ReceiptRepository.kt
++++ b/app/src/main/java/com/vaibhav/kharchapaani/data/repository/ReceiptRepository.kt
+@@ -28,7 +28,7 @@
+     }
+ 
+     /** Makes [photo] the expense's one photo, replacing any it had. False if it couldn't be kept. */
+-    suspend fun attach(transactionId: Long, photo: ReceiptStore.Staged): Boolean = withContext(Dispatchers.IO) {
++    suspend fun attach(transactionId: Long, photo: ReceiptStore.Staged, preserveForDraftRecovery: Boolean = false): Boolean = withContext(Dispatchers.IO) {
+         val fileName = store.commit(photo) ?: return@withContext false.also { store.discard(photo) }
+         val replaced = try {
+             db.withTransaction {
+diff --git a/app/src/main/java/com/vaibhav/kharchapaani/data/receipts/ReceiptStore.kt b/app/src/main/java/com/vaibhav/kharchapaani/data/receipts/ReceiptStore.kt
+--- a/app/src/main/java/com/vaibhav/kharchapaani/data/receipts/ReceiptStore.kt
++++ b/app/src/main/java/com/vaibhav/kharchapaani/data/receipts/ReceiptStore.kt
+@@ -56,6 +56,9 @@
+         return if (photo.file.renameTo(target)) target.name else null
+     }
+ 
++    /** API scaffold only: recovery is deliberately not implemented in the red stage. */
++    suspend fun recoverStaged(fileName: String, width: Int, height: Int, bytes: Long, sha256: String): Staged? = null
++
+     fun discard(photo: Staged) {
+         photo.file.delete()
+     }

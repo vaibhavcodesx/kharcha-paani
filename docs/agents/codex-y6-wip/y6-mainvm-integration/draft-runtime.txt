@@ -1,0 +1,171 @@
+    // One private file per actual Room identity. In-memory test ledgers have no durable identity.
+    private val draftStore = db.openHelper.databaseName?.let { name ->
+        EntryDraftAtomicStore.open(File(getApplication<Application>().filesDir, "entry-drafts"), File(name).name)
+    }
+    private val draftLedger = EntryDraftRecoveryLedger(db)
+    private var draftId = java.util.UUID.randomUUID().toString()
+    private var draftRevision = 0L
+    private var draftSaveRemoteId = java.util.UUID.randomUUID().toString()
+    private var draftEdit: DraftEditTarget? = null
+    private var draftSaving: EntrySaveCheckpoint? = null
+    private var draftPhoto: DraftPhotoState = DraftPhotoState.None
+    private var photoGeneration = 0L
+    private val _draftRecoveryProblem = MutableStateFlow<String?>(null)
+    val draftRecoveryProblem: StateFlow<String?> = _draftRecoveryProblem.asStateFlow()
+    private val _isRestoringDraft = MutableStateFlow(draftStore != null)
+    val isRestoringDraft: StateFlow<Boolean> = _isRestoringDraft.asStateFlow()
+
+    private fun beginEntryDraft() {
+        draftId = java.util.UUID.randomUUID().toString()
+        draftRevision = 0
+        draftSaveRemoteId = java.util.UUID.randomUUID().toString()
+        draftEdit = null
+        draftSaving = null
+        draftPhoto = DraftPhotoState.None
+        _draftRecoveryProblem.value = null
+    }
+
+    private fun durableSnapshot() = RecoverableEntryDraft(draftId, draftRevision, draftSaveRemoteId,
+        currentDraft(), draftEdit, groupChoiceIsExplicit, lockedShares?.toList(), hadBillPhotoOnOpen, draftPhoto, draftSaving)
+
+    /** Called after a complete mutation, including recalculated shares; never from touched(). */
+    private fun captureEntryDraft() {
+        if (!_isConfirmSheetOpen.value) return
+        draftRevision++
+        val write = draftStore?.save(durableSnapshot()) ?: return
+        viewModelScope.launch {
+            if (write.await().isFailure) _statusMessage.value = uiText(R.string.draft_recovery_write_failed)
+        }
+    }
+
+    private fun recoveryMessage(issue: DraftRecoveryIssue): String = uiText(when (issue) {
+        DraftRecoveryIssue.StaleEdit -> R.string.draft_recovery_stale_edit
+        DraftRecoveryIssue.MissingPerson -> R.string.draft_recovery_missing_person
+        DraftRecoveryIssue.GroupUnavailable -> R.string.draft_recovery_group_unavailable
+        DraftRecoveryIssue.PhotoMissing -> R.string.draft_recovery_photo_missing
+    })
+
+    private suspend fun directDraftProblem(entry: EntryDraft, edit: DraftEditTarget?, locked: List<SplitShareEntity>?, photo: DraftPhotoState): DraftRecoveryIssue? {
+        draftLedger.problem(entry, edit, locked)?.let { return it }
+        if (photo is DraftPhotoState.Staged && receipts.store.recoverStaged(photo.fileName, photo.width, photo.height, photo.bytes, photo.sha256) == null)
+            return DraftRecoveryIssue.PhotoMissing
+        return null
+    }
+
+    private fun applyRecoveredFields(snapshot: RecoverableEntryDraft) {
+        val e = snapshot.entry
+        _type.value = e.type
+        _amount.value = e.amount
+        _merchant.value = e.merchant
+        _category.value = e.category
+        _paymentMethod.value = e.paymentMethod
+        _note.value = e.note
+        _date.value = e.date
+        _groupId.value = e.groupId
+        _isSplit.value = e.isSplit
+        _splitMode.value = e.splitMode
+        _paidByPersonId.value = e.paidByPersonId
+        _shares.value = e.shares
+        groupChoiceIsExplicit = snapshot.groupChoiceIsExplicit
+        lockedShares = snapshot.lockedShares
+        _splitLocked.value = snapshot.lockedShares != null
+        draftId = snapshot.draftId
+        draftRevision = snapshot.revision
+        draftSaveRemoteId = snapshot.saveRemoteId
+        draftEdit = snapshot.edit
+        draftSaving = snapshot.savingEntry
+        draftPhoto = snapshot.photo
+        _editingTransactionId.value = snapshot.edit?.transactionId
+        editBaseline = snapshot.edit?.baseline
+        hadBillPhotoOnOpen = snapshot.hadBillPhotoOnOpen
+        // Jobs, consent, parsing and AI state are deliberately never replayed.
+        stopImprovingWithAi()
+        _parseNotice.value = null
+        _isConfirmSheetOpen.value = true
+    }
+
+    private suspend fun restoreDraftPhoto(snapshot: RecoverableEntryDraft) {
+        _billPhoto.value = when (val photo = snapshot.photo) {
+            is DraftPhotoState.Staged -> receipts.store.recoverStaged(photo.fileName, photo.width, photo.height, photo.bytes, photo.sha256)
+                ?.let { BillPhoto.Kept(it.file, it) } ?: BillPhoto.Missing
+            DraftPhotoState.Existing, DraftPhotoState.Missing -> snapshot.edit?.let { receipts.photoOf(it.transactionId) }
+                ?.let { (_, file) -> if (file.isFile) BillPhoto.Kept(file, null) else BillPhoto.Missing } ?: BillPhoto.Missing
+            DraftPhotoState.None -> {
+                // A process may stop before openEdit's photo query finishes. Explicit removal has hadPhoto=true.
+                if (!snapshot.hadBillPhotoOnOpen) snapshot.edit?.let { receipts.photoOf(it.transactionId) }
+                    ?.let { (_, file) ->
+                        hadBillPhotoOnOpen = true
+                        draftPhoto = if (file.isFile) DraftPhotoState.Existing else DraftPhotoState.Missing
+                        if (file.isFile) BillPhoto.Kept(file, null) else BillPhoto.Missing
+                    } ?: BillPhoto.None else BillPhoto.None
+            }
+        }
+    }
+
+    private fun pinnedPhotos(snapshot: RecoverableEntryDraft?): Set<String> = listOfNotNull(
+        (snapshot?.photo as? DraftPhotoState.Staged)?.fileName,
+        (snapshot?.savingEntry?.photo as? DraftPhotoState.Staged)?.fileName,
+    ).toSet()
+
+    /** Pure recovery: inspect committed money, but never insert/update it or invoke a parser. */
+    private suspend fun reconcileInterruptedSave(snapshot: RecoverableEntryDraft): RecoverableEntryDraft {
+        val checkpoint = snapshot.savingEntry ?: return snapshot
+        val committed = checkpoint.edit?.let { draftLedger.full(it.transactionId) }
+            ?: if (checkpoint.edit == null) draftLedger.byRemoteId(checkpoint.transactionRemoteId) else null
+        if (committed == null) return snapshot
+        // For an edit that never committed, keep its original target/baseline. Save will validate it again.
+        if (checkpoint.edit != null && EntryDraftRecoveryLedger.fingerprint(committed) == checkpoint.edit.originalFingerprint &&
+            committed.transaction.remoteId == checkpoint.edit.remoteId && committed.transaction.createdAt == checkpoint.edit.createdAt) return snapshot
+        val matches = EntryDraftRecoveryLedger.matches(committed, checkpoint)
+        val fingerprint = if (matches) EntryDraftRecoveryLedger.fingerprint(committed) else "interrupted-save-requires-review"
+        val target = DraftEditTarget(committed.transaction.id, committed.transaction.remoteId, committed.transaction.createdAt, fingerprint, checkpoint.entry)
+        // Retain all latest typed fields, with an explicit EDIT identity so retry can never insert again.
+        return snapshot.copy(edit = target, saveRemoteId = committed.transaction.remoteId, savingEntry = null)
+    }
+
+    init {
+        viewModelScope.launch {
+            val loaded = draftStore?.load() ?: DraftLoadResult.Missing
+            var pins = emptySet<String>()
+            if (loaded is DraftLoadResult.Loaded) {
+                pins = pinnedPhotos(loaded.snapshot)
+                val epoch = draftRevision
+                val restored = withContext(Dispatchers.IO) { reconcileInterruptedSave(loaded.snapshot) }
+                // A new user action during disk/Room reads wins over a late startup load.
+                if (epoch == 0L && draftRevision == epoch && !_isConfirmSheetOpen.value) {
+                    val photo = restored.photo
+                    val problem = withContext(Dispatchers.IO) { db.withTransaction {
+                        directDraftProblem(restored.entry, restored.edit, restored.lockedShares, photo)
+                    } }
+                    if (draftRevision == 0L && !_isConfirmSheetOpen.value) {
+                        applyRecoveredFields(restored)
+                        val restoredId = draftId
+                        val restoredRevision = draftRevision
+                        restoreDraftPhoto(restored)
+                        if (draftId == restoredId && draftRevision == restoredRevision) {
+                            _draftRecoveryProblem.value = problem?.let(::recoveryMessage)
+                            // Rebased interrupted saves must themselves become durable before any retry.
+                            if (restored != loaded.snapshot) draftStore?.save(durableSnapshot())?.await()
+                        }
+                    }
+                }
+            } else if (loaded is DraftLoadResult.Unreadable) {
+                _statusMessage.value = uiText(R.string.draft_recovery_unreadable)
+            }
+            _isRestoringDraft.value = false
+            // Corrupt drafts may still name a valid photo: keep files until the person can recover/discard.
+            if (loaded !is DraftLoadResult.Unreadable) {
+                pins = pins + pinnedPhotos(if (_isConfirmSheetOpen.value) durableSnapshot() else null)
+                try { receipts.sweepOrphans(protectedNames = pins) }
+                catch (e: CancellationException) { throw e }
+                catch (_: Exception) { Log.w("MainViewModel", "Bill photo sweep failed") }
+            }
+        }
+    }
+
+    override fun onCleared() {
+        // Accepted writes belong to the store's IO queue, so VM cancellation cannot lose the last draft.
+        draftStore?.retire()
+        super.onCleared()
+    }
+

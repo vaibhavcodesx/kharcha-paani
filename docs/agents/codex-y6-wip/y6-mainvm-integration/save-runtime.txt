@@ -1,0 +1,131 @@
+    fun saveCurrentTransaction(askForGroup: Boolean = true) {
+        if (_isRestoringDraft.value) return
+        val entry = currentDraft()
+        val total = Money.parseInput(entry.amount) ?: 0.0
+        if (total <= 0) return
+        stopImprovingWithAi()
+        val splitting = entry.isSplit && entry.type != "income"
+        if (splitting) splitProblem(getApplication<Application>(), entry.amount, entry.splitMode, entry.shares)?.let {
+            _statusMessage.value = it
+            return
+        }
+        if (askForGroup && splitting && !isSharedGroup(entry.groupId)) {
+            val participants = entry.shares.filter { it.isSelected }.map { it.personId } + entry.paidByPersonId
+            val options = SharedRecordGroups.optionsFor(participants, people.value, groups.value, splitPayerId = entry.paidByPersonId)
+            if (options.involvesGroupmates) {
+                _splitGroupPrompt.value = options
+                return
+            }
+        }
+        val locked = lockedShares?.toList()
+        if (locked != null && abs(total - locked.sumOf { it.shareAmount }) >= 0.005) {
+            _statusMessage.value = uiText(R.string.action_notice_guest_edit)
+            return
+        }
+        val savingId = draftId
+        val savingRevision = draftRevision
+        val savingRemoteId = draftSaveRemoteId
+        val editing = draftEdit
+        val photoJob = billPhotoJob
+        val photoVersion = photoGeneration
+        val explicitGroup = groupChoiceIsExplicit
+        submissions.launch(Submit.SaveEntry) {
+            photoJob?.join()
+            if (draftId != savingId || photoGeneration != photoVersion || _billPhoto.value == BillPhoto.Processing) {
+                _statusMessage.value = uiText(R.string.draft_recovery_save_changed)
+                return@launch
+            }
+            val photo = _billPhoto.value
+            val photoState = draftPhoto
+            val hadPhoto = hadBillPhotoOnOpen
+            val checkpoint = EntrySaveCheckpoint(savingRevision, savingRemoteId, entry, photoState, editing, locked, hadPhoto, explicitGroup)
+            draftSaving = checkpoint
+            // The file contains BOTH the captured write and any more recent typed fields.
+            val journal = draftStore?.save(durableSnapshot())?.await()
+            if (journal?.isFailure == true) {
+                _statusMessage.value = uiText(R.string.draft_recovery_write_failed)
+                return@launch
+            }
+            val saved = try {
+                withContext(Dispatchers.IO) { db.withTransaction {
+                    directDraftProblem(entry, editing, locked, photoState)?.let { throw DraftSaveBlocked(it) }
+                    val already = if (editing == null) draftLedger.byRemoteId(savingRemoteId) else null
+                    val savedId = if (already != null) {
+                        if (!EntryDraftRecoveryLedger.matches(already, checkpoint)) throw DraftSaveBlocked(DraftRecoveryIssue.StaleEdit)
+                        already.transaction.id
+                    } else {
+                        val tx = EntryDraftRecoveryLedger.transaction(entry, editing?.transactionId ?: 0L, savingRemoteId)
+                        val shares = EntryDraftRecoveryLedger.shares(entry, locked)
+                        if (editing != null) {
+                            ledgerRepo.updateTransactionWithSplits(tx, entry.paidByPersonId, shares, entry.splitMode.name.lowercase(Locale.ROOT))
+                            editing.transactionId
+                        } else ledgerRepo.saveTransactionWithSplits(tx, entry.paidByPersonId, shares, entry.splitMode.name.lowercase(Locale.ROOT))
+                    }
+                    val actual = draftLedger.full(savedId) ?: throw DraftSaveBlocked(DraftRecoveryIssue.StaleEdit)
+                    // Repository updates deliberately return Unit even when refusing a stale edit.
+                    if (!EntryDraftRecoveryLedger.matches(actual, checkpoint)) throw DraftSaveBlocked(DraftRecoveryIssue.StaleEdit)
+                    actual
+                } }
+            } catch (e: DraftSaveBlocked) {
+                _draftRecoveryProblem.value = recoveryMessage(e.issue)
+                _statusMessage.value = _draftRecoveryProblem.value
+                return@launch
+            } catch (e: ArchivedGroupException) {
+                _statusMessage.value = archivedMessage(e)
+                return@launch
+            }
+            val photoSettled = settleCapturedPhoto(saved.transaction.id, photo, hadPhoto)
+            val storedPhoto = if (photoSettled) receipts.photoOf(saved.transaction.id) else null
+            if (draftId == savingId) {
+                val unchanged = currentDraft() == entry && photoGeneration == photoVersion
+                draftEdit = DraftEditTarget(saved.transaction.id, saved.transaction.remoteId, saved.transaction.createdAt,
+                    EntryDraftRecoveryLedger.fingerprint(saved), entry)
+                draftSaveRemoteId = saved.transaction.remoteId
+                _editingTransactionId.value = saved.transaction.id
+                editBaseline = entry
+                draftSaving = null
+                if (photoSettled && photoGeneration == photoVersion) {
+                    hadBillPhotoOnOpen = storedPhoto != null
+                    _billPhoto.value = storedPhoto?.let { (_, file) -> if (file.exists()) BillPhoto.Kept(file, null) else BillPhoto.Missing } ?: BillPhoto.None
+                    draftPhoto = when (_billPhoto.value) {
+                        is BillPhoto.Kept -> DraftPhotoState.Existing
+                        BillPhoto.Missing -> DraftPhotoState.Missing
+                        else -> DraftPhotoState.None
+                    }
+                }
+                if (unchanged && photoSettled) {
+                    val clearingRevision = draftRevision
+                    // Any typing while clear is on IO starts a new explicit edit identity. The
+                    // store closes the cleared identity, so it must never receive those new edits.
+                    val continuationId = java.util.UUID.randomUUID().toString()
+                    draftId = continuationId
+                    draftRevision = 0L
+                    val clear = draftStore?.conditionalClear(savingId, clearingRevision)?.await()
+                    if (clear?.isFailure == true) {
+                        _statusMessage.value = uiText(R.string.draft_recovery_write_failed)
+                        captureEntryDraft()
+                    } else if (draftId == continuationId && draftRevision == 0L) {
+                        _isConfirmSheetOpen.value = false
+                        _billPhoto.value = BillPhoto.None
+                        hadBillPhotoOnOpen = false
+                        _draftRecoveryProblem.value = null
+                    } else if (draftId == continuationId) captureEntryDraft()
+                } else {
+                    if (!photoSettled) _draftRecoveryProblem.value = recoveryMessage(DraftRecoveryIssue.PhotoMissing)
+                    captureEntryDraft()
+                }
+            }
+            _moneyConfirmations.tryEmit(Unit)
+            SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
+        }
+    }
+
+    private suspend fun settleCapturedPhoto(transactionId: Long, photo: BillPhoto, hadPhoto: Boolean): Boolean =
+        when (photo) {
+            is BillPhoto.Kept -> photo.staged?.let { receipts.attach(transactionId, it) } ?: true
+            BillPhoto.None -> { if (hadPhoto) receipts.remove(transactionId); true }
+            BillPhoto.Missing -> true
+            BillPhoto.Processing -> false
+        }
+
+    private class DraftSaveBlocked(val issue: DraftRecoveryIssue) : Exception()
