@@ -15,6 +15,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Added
 
+- Use without an account keeps an isolated on-phone ledger, with explicit account switching and no local cloud sync or shared-group writes (owner review).
+
 - Recover cleanly from corrupted app settings with ReplaceFileCorruptionHandler (reliability audit L14, Y1).
 - Search and frequent-people-first in split and payer pickers (Y15, TODOS 6).
 - LazyColumn for long person ledger sheet lists (Y16, REL M8).
@@ -22,6 +24,8 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Pull-to-refresh on Home and Splits triggering sync via requestSync and stopping when isSyncing is false (Y14, REL M11).
 
 - A device-wide Use AI switch stops Gemini reads everywhere, keeps manual capture available and labels AI-powered capture.
+
+- Export everything to a portable file and restore into an empty local ledger, including stored records, settings and bill photos, with interrupted-restore recovery.
 
 - Debug-only StrictMode to log main-thread I/O, network calls, and resource leaks during development without interrupting execution (Y11).
 - Personal data breach incident response plan with 72-hour DPDP Board notification lifecycle and communication templates (D3).

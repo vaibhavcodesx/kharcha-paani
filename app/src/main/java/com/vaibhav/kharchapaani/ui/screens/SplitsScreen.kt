@@ -42,6 +42,7 @@ import com.vaibhav.kharchapaani.domain.GroupSort
 import com.vaibhav.kharchapaani.data.settings.GroupSortPreferences
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -129,7 +130,7 @@ fun SplitsScreen(
     var section by rememberSaveable { mutableStateOf(SplitsSection.Friends) }
     val context = LocalContext.current
     val sortPreferences = remember(context) { GroupSortPreferences(context) }
-    var groupSort by remember(sortPreferences) { mutableStateOf(sortPreferences.read()) }
+    val groupSort by sortPreferences.sort.collectAsStateWithLifecycle(initialValue = sortPreferences.read())
     val sortedGroups = remember(groups, groupSort) { groupSort.apply(groups) }
     var friendToDelete by remember { mutableStateOf<PersonBalance?>(null) }
     // Who needs attention first: the biggest balances either way, then everyone who's settled.
@@ -295,7 +296,6 @@ fun SplitsScreen(
                 }
                 item(key = "group_sort") {
                     GroupSortPicker(groupSort) {
-                        groupSort = it
                         sortPreferences.write(it)
                     }
                 }
