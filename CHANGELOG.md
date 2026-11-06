@@ -84,6 +84,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 
 ### Changed
+- The release build is shrunk with R8, so the app downloads and installs smaller. Crash reports stay readable through the mapping attached to each release.
 
 - Move AuthViewModel colour and account deletion error messages into string resources (M1).
 - DeleteAccountSheet user-facing text, confirmations, and pluralized sync warnings moved into string and plural resources (M1).
