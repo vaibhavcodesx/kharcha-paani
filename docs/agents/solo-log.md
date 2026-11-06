@@ -13,6 +13,8 @@ owner or Claude go at the bottom.
 
 ## Log
 
+- 2026-11-06 · #265 · W1 / Finish T3.11 move remaining strings to strings.xml & guard Compose text literals · in review; extracted remaining AccountSheet copy to strings.xml, added NoHardcodedTextLiteralsTest scanning app/src/main/java with brand allow-list and extended AccountSheetStringResourcesTest. CI gates merge.
+
 - 2026-11-04 · #225 · T14 CSV formula injection test & security report · in review; characterized CsvExport quoting behavior with exact payload preservation examples across 17 test cases, source-confirmed leading whitespace and LF starter omissions, and corrected report claims to distinguish serialized output from unverified downstream spreadsheet execution.
 - 2026-11-04 · #229 · Y1 / DataStore corruption handler · in review; ReplaceFileCorruptionHandler recovers default emptyPreferences on corrupted prefs without throwing CorruptionException; AppSettingsCorruptionTest verifies baseline exception and recovery/persistence with isolated scopes. CI gates merge.
 
