@@ -246,6 +246,9 @@ class MainViewModel(
         SyncStatus(unsynced, failed, lastSyncedAt?.toLongOrNull(), isSyncing)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SyncStatus())
 
+    /** True for the no-account ledger, where nothing ever syncs. */
+    val isLocalLedger: Boolean get() = isLocal
+
     fun requestSync() {
         if (isLocal) return
         SyncScheduler.requestSync(getApplication(), userId)

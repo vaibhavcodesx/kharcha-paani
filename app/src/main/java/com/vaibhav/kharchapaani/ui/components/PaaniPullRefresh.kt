@@ -95,6 +95,8 @@ fun PaaniPullRefresh(
     onRequestSync: () -> Unit,
     modifier: Modifier = Modifier,
     tagPrefix: String,
+    /** No account: there's nothing to sync, so the pull says so instead of waiting for a sync. */
+    localOnly: Boolean = false,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val state = rememberPullToRefreshState()
@@ -105,7 +107,11 @@ fun PaaniPullRefresh(
     LaunchedEffect(phase) {
         when (val now = phase) {
             PullPhase.Resting -> Unit
-            PullPhase.Syncing -> {
+            PullPhase.Syncing -> if (localOnly) {
+                delay(LOCAL_BEAT_MS)
+                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                phase = PullPhase.Done(PullResult.LocalOnly, holding = true)
+            } else {
                 val seen = awaitRequestedSync { currentStatus.isSyncing }
                 val failed = currentStatus.failedChanges
                 val result = when {
@@ -141,7 +147,7 @@ fun PaaniPullRefresh(
         isRefreshing = phase == PullPhase.Syncing || (phase as? PullPhase.Done)?.holding == true,
         onRefresh = {
             phase = PullPhase.Syncing
-            onRequestSync()
+            if (!localOnly) onRequestSync()
         },
         state = state,
         modifier = modifier.testTag("${tagPrefix}_pull_to_refresh"),
@@ -178,6 +184,7 @@ private sealed interface PullResult {
     data object CaughtUp : PullResult
     data object OnThisPhone : PullResult
     data object StillGoing : PullResult
+    data object LocalOnly : PullResult
     data class CouldNotSync(val count: Int) : PullResult
 }
 
@@ -186,6 +193,9 @@ private val REVEAL: Dp = 78.dp
 private val GLASS: Dp = 28.dp
 private const val TOP_PAD_DP = 10f
 private const val RESULT_HOLD_MS = 1_100L
+
+/** In local mode the glass still fills and ripples for a beat, so the pull feels answered. */
+private const val LOCAL_BEAT_MS = 450L
 
 /** A full glass still shows its surface, so the ripple has somewhere to be. */
 private const val FULL = 0.82f
@@ -309,6 +319,7 @@ private fun indicatorLine(phase: PullPhase, armed: Boolean): String = when (phas
         PullResult.CaughtUp -> stringResource(R.string.pull_sync_caught_up)
         PullResult.OnThisPhone -> stringResource(R.string.pull_sync_on_this_phone)
         PullResult.StillGoing -> stringResource(R.string.pull_sync_still_going)
+        PullResult.LocalOnly -> stringResource(R.string.pull_sync_local_only)
         is PullResult.CouldNotSync -> pluralStringResource(R.plurals.pull_sync_could_not, result.count, result.count)
     }
 }

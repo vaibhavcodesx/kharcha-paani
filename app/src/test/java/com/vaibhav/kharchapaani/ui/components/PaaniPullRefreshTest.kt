@@ -109,4 +109,19 @@ class PaaniPullRefreshTest {
         assertTrue("but each step gives less", b < a)
         assertTrue("and never runs away", pullResistance(50f) < 1.5f)
     }
+@Test fun `without an account the pull asks for nothing and says there's nothing to sync`() {
+        compose.setContent {
+            SplitFlowTheme {
+                PaaniPullRefresh(syncStatus = status, onRequestSync = { requests++ }, tagPrefix = "test", localOnly = true) {
+                    LazyColumn(Modifier.fillMaxSize().testTag("list")) { items(30) { Text("Row $it") } }
+                }
+            }
+        }
+        compose.mainClock.autoAdvance = false
+        compose.mainClock.advanceTimeBy(100)
+        pull()
+        compose.mainClock.advanceTimeBy(600)
+        assertEquals(0, requests)
+        compose.onNodeWithContentDescription("Everything's on this phone. Nothing to sync.").assertExists()
+    }
 }

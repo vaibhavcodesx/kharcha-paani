@@ -129,6 +129,7 @@ fun HomeScreen(
     onShowMessage: (String) -> Unit = {},
     onAiOff: (com.vaibhav.kharchapaani.ui.viewmodel.AiFeature) -> Unit = {},
     onRequestSync: () -> Unit = {},
+    localOnly: Boolean = false,
 ) {
     var showSearch by rememberSaveable { mutableStateOf(searchQuery.isNotEmpty()) }
     val days = remember(activity, today) { ActivityDays.group(activity, today, ZoneId.systemDefault()) }
@@ -143,6 +144,7 @@ fun HomeScreen(
             .fillMaxSize()
             .background(CharcoalBg),
         tagPrefix = "home",
+        localOnly = localOnly,
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),

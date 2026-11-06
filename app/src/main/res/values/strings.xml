@@ -1059,6 +1059,7 @@
     <string name="pull_sync_syncing">Syncing…</string>
     <string name="pull_sync_caught_up">All caught up</string>
     <string name="pull_sync_on_this_phone">Saved on this phone. It\'ll sync when it can.</string>
+    <string name="pull_sync_local_only">Everything\'s on this phone. Nothing to sync.</string>
     <string name="pull_sync_still_going">Still syncing. Carry on, it\'ll finish on its own.</string>
     <plurals name="pull_sync_could_not">
         <item quantity="one">%d change couldn\'t sync</item>

@@ -118,6 +118,7 @@ fun SplitsScreen(
     // Ask-to-pay: person id to when you last asked them, for friends who still owe you.
     askedAt: Map<Long, Long> = emptyMap(),
     onRequestSync: () -> Unit = {},
+    localOnly: Boolean = false,
 ) {
     val owedToMe = personBalances.filter { it.netBalance > 0 }.sumOf { it.netBalance }
     val iOwe = abs(personBalances.filter { it.netBalance < 0 }.sumOf { it.netBalance })
@@ -149,6 +150,7 @@ fun SplitsScreen(
             .fillMaxSize()
             .background(CharcoalBg),
         tagPrefix = "splits",
+        localOnly = localOnly,
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
