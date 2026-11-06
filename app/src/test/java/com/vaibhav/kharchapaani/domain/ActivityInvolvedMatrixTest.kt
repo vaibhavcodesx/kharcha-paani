@@ -9,6 +9,7 @@ import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
+import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.data.model.ActivityItem
 import com.vaibhav.kharchapaani.data.model.FullTransaction
@@ -53,7 +54,7 @@ class ActivityInvolvedMatrixTest {
         private const val PROFILE_BOB = "profile_bob_123"
     }
 
-    private val group = GroupEntity(id = GROUP_ID, name = "Goa Trip", isShared = true)
+    private val group = GroupEntity(id = GROUP_ID, name = "Goa Trip", syncState = SyncState.SYNCED)
     private val bobPerson = PersonEntity(id = BOB, name = "Bob", avatarColor = "#2196F3", profileId = PROFILE_BOB)
     private val carolPerson = PersonEntity(id = CAROL, name = "Carol", avatarColor = "#4CAF50")
 
