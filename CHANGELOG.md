@@ -80,6 +80,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Move AuthViewModel colour and account deletion error messages into string resources (M1).
 - DeleteAccountSheet user-facing text, confirmations, and pluralized sync warnings moved into string and plural resources (M1).
 - AccountSheet profile, avatar, cloud status and sync status copy use string resources with unchanged English, formatted plurals and exact relative sync time (M1).
+- Person ledger sheet flow in MainActivity is remembered by person ID, preventing redundant Flow creation and repeated database queries on recomposition (REL M8, Y9).
 
 - Home's empty capture line rotates every few seconds from "What did you spend on?" through examples that teach it ("Try: chai 40 cash", "dinner 1200 with Rohan", "auto 5 sau", "kal sabzi 180", "salary 50000 received", "cab 450 split with Aaru", "rent 12k"). Every example is a line quick add reads with an amount (tested); a screen reader still hears the question only.
 

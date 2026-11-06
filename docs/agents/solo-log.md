@@ -19,6 +19,7 @@ owner or Claude go at the bottom.
 - 2026-11-04 · #244 · Y11 / Debug-only StrictMode · in review; added AppStrictMode.configure() to KharchaPaaniApp.onCreate() with penaltyLog in debug mode, verified observable guard behavior and policy restoration in Robolectric tests. CI gates merge.
 - 2026-11-04 · #245 · Y12 / SEC L-10 export warning line · in review; added plaintext export warning in the app's voice ("This file contains your ledger in plain text. Share it only with yourself or people you trust.") to ExportSheet. Scoped to ExportSheet (covers personal/range exports); note that group CSV export via MainActivity exportGroupCsv bypasses ExportSheet, leaving that entry path as a documented remaining warning gap.
 - 2026-11-04 · #251 · M1 DeleteAccountSheet string resources · in review; extracted hardcoded delete account strings to res/values/strings.xml with matching plural placeholders and verified with DeleteAccountContentTest.
+- 2026-11-04 · #242 · Y9 / REL M8 remember getPersonLedgerFlow in composition · in review; keyed remember by person.id and viewModel, verified with real Room data and MainViewModel that unrelated recompositions do not re-query flow and selecting another person refreshes flow. CI gates merge.
 
 - 2026-11-04 · #249 · CI test diagnostics · independent actual-script shell review passed failure/success/INT/TERM and bounded inspector tests. Sourcec487ee2 CI41877985849 completed1102tests,0failures/errors/skips (235XML), and lint/release job logs show BUILD SUCCESSFUL; repeated status endpoints lagged as queued despite completed artifacts/logs, so no merge was inferred from those snapshots. Final documentation head still requires exact-head all-three success before squash. Test starts and five bounded worker snapshots preserve full tasks/assertions/30m job; no app behavior change. Local Gradle skipped below4GB free RAM; phone acceptance not claimed.
 
@@ -222,6 +223,7 @@ owner or Claude go at the bottom.
 - 2026-11-05 · #256 · M1 / Auth messages string resources · prepared; moved AuthViewModel colour conflict/offline and account deletion error strings into strings.xml resources; verified with AuthMessagesStringResourcesTest. Exact-head CI gates merge.
 - 2026-11-04 · M1 DeleteAccountSheet copy · opened PR; user-facing copy, confirmations, and pluralized sync warnings moved into string and plural resources with parity assertions; account deletion behavior, test tags and semantics are unchanged.
 - 2026-11-05 · #253 · M1 / AccountSheet copy into strings.xml · prepared; moved 17 hardcoded copy strings covering profile, avatar, cloud status and sync status into string and plural resources; unchanged English copy, formatted plurals and exact relative sync time; verified with AccountSheetStringResourcesTest and SyncStatusTextTest. Exact-head CI gates merge.
+- 2026-11-04 · Y9 remember around getPersonLedgerFlow · prepared; MainActivity.kt wraps getPersonLedgerFlow in remember(person.id), preventing redundant Room queries on recomposition. PersonLedgerRecompositionTest verifies stabilization.
 
 ## Questions
 
