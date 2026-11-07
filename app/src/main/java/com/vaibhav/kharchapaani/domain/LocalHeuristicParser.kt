@@ -50,6 +50,11 @@ object LocalHeuristicParser {
     )
 
     private val DAY_BEFORE = Regex("""day\s+before\s+yesterday""", RegexOption.IGNORE_CASE)
+
+    // The names after "split with" end at a word that starts the place: in "split with Amit at
+    // Starbucks" the friend is Amit and Starbucks stays the merchant.
+    private val SPLIT_WITH_NAMES =
+        Regex("""split\s+(?:with\s+)?((?:(?!\b(?:at|from|for|in|on|via|using|by|paid|to)\b)[a-zA-Z\s,&])+)""")
     private const val DAY_MILLIS = 24L * 60 * 60 * 1000
 
     /** "yesterday" / "kal" (an expense being logged is past, so never tomorrow) and "parso", in days back. */
@@ -111,7 +116,7 @@ object LocalHeuristicParser {
             .filter { first -> splitFriends.none { it.trim().substringBefore(' ').equals(first, ignoreCase = true) } }
             .forEach { splitFriends.add(it) }
         if (splitFriends.isEmpty()) {
-            Regex("""split\s+(?:with\s+)?([a-zA-Z\s,&]+)""").find(lower)?.let { match ->
+            SPLIT_WITH_NAMES.find(lower)?.let { match ->
                 match.groupValues[1].split(Regex(""",|&|\band\b"""))
                     .map { it.trim().capitalizeWord() }
                     .filter { it.length > 1 }
@@ -124,13 +129,22 @@ object LocalHeuristicParser {
         val commonWords = setOf(
             "split", "with", "gpay", "phonepe", "paytm", "cash", "card", "paid",
             "received", "rs", "inr", "for", "to", "at", "the", "and", "lent", "a",
+            // Multi-word payment method words: stay out of the merchant (W11).
+            "google", "pay", "bank", "transfer", "credit", "debit",
             // Hinglish and day words: said around the amount, never the merchant.
             "ka", "ke", "ki", "ko", "se", "me", "mein", "par", "rupaye", "rupee", "rupees", "rupya", "kal", "aaj", "parso", "today",
             "yesterday", "mila", "mili", "mile", "saath", "sau", "hazaar", "hazar", "thousand", "dedh", "dhai"
         )
+        // The people the line splits with aren't the merchant: "dinner 1200 with Rohan" is Dinner.
+        // Only names found above count, so "chai with Amit" (no friend Amit, no split) keeps Amit.
+        val splitNamesWords = splitFriends
+            .flatMap { it.lowercase(Locale.getDefault()).split(Regex("""\s+""")) }
+            .map { it.replace(Regex("[^a-z0-9]"), "") }
+            .filter { it.isNotBlank() }
+            .toSet()
         val tokens = text.replace(DAY_BEFORE, " ").trim().split(Regex("""\s+""")).filter { token ->
             val clean = token.lowercase(Locale.getDefault()).replace(Regex("[^a-z0-9]"), "")
-            clean.isNotBlank() && !commonWords.contains(clean) && !clean.matches(Regex("""\d+(\.\d+)?""")) &&
+            clean.isNotBlank() && !commonWords.contains(clean) && !splitNamesWords.contains(clean) && !clean.matches(Regex("""\d+(\.\d+)?""")) &&
                 !clean.matches(Regex("""\d+k""")) && !clean.matches(Regex("""(rs|inr)?\d+"""))
         }
 

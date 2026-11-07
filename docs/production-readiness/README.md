@@ -351,7 +351,7 @@ are never asked for permission and never see "payment to confirm" (NOTIF G1).
   a direct PATCH of `share_amount` or `amount` is refused; `save_group_expense` still passes; a
   soft-delete still passes. (SEC H-2, verified: no such trigger exists.)
 
-**T2.2 Abuse limits** · M · **[owner review]**
+**T2.2 Abuse limits** · M · **[owner review]** · **part 1 (text limits) done in #272; invite-guess and write-rate limits not started**
 - `char_length` checks on profile, transaction, settlement and group text (names 1–60/64, notes 500?
   owner decides); matching `maxLength` on the app's fields (REL L9) so the client never sends what the
   server refuses.
@@ -376,7 +376,7 @@ are never asked for permission and never see "payment to confirm" (NOTIF G1).
 - Retract settlement, delete IOU, delete group: the existing undo-snackbar pattern (`PendingDeletes`)
   or a dialog that states the consequence: "Rohan will owe you ₹5,000 again, on both phones." (REL M4)
 
-**T2.6 Privacy on the device** · S · **parts 1–2 done in #115; sign-out data removal not started**
+**T2.6 Privacy on the device** · S · **parts 1–2 done in #115; sign-out data removal done in #271**
 - `setRecentsScreenshotEnabled(false)` on API 33+ (don't force `FLAG_SECURE`; people screenshot splits
   on purpose). Notifications with amounts get `VISIBILITY_PRIVATE` + a public version (SEC M-3, L-5).
 - Shared files: accept only `content://` URIs that aren't the app's own FileProvider (SEC L-3, the gap

@@ -13,6 +13,9 @@ owner or Claude go at the bottom.
 
 ## Log
 
+- 2026-11-06 · W11 · Quick-add merchant fix for W3 findings 1 & 2 · in review; filtered split friend names and multi-word payment method words from merchant tokens in LocalHeuristicParser, updated QuickAddGoldenTest rows, no amount/date/category/type changes.
+- 2026-11-06 · W12 · Bill photo sync safety net tests (#266) · in review; tests under data/sync verifying replacement delete queuing, expense deletion queue transactions, deduplication, and split unsharing with fake remote.
+
 - 2026-11-06 · W8 / Legal lines & Play Console answers for 1.7.0 · in review; updated privacy policy and Play Console Data safety answers covering voice entry audio, no-account mode isolation, full backup, bill photo cloud storage, sign-out local data removal, and Groq ephemeral processing. Owner review.
 - 2026-11-06 · #281 · W11 / Quick-add merchant fix for W3 findings 1 & 2 · in review; filtered split friend names and multi-word payment method words from merchant tokens in LocalHeuristicParser, updated golden tests. All 3 CI jobs passed.
 - 2026-11-06 · #282 · W12 / Bill photo sync safety net · in review; Room + ReceiptRepository test suite verifying photo replacement queue, expense delete queue, transactionality, deduplication, and split photo sharing toggle off.
