@@ -13,10 +13,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
-## [1.7.0] - 2026-11-06
+## [1.7.0] - 2026-11-07
 
 ### Added
-- Update privacy policy and Play Console Data safety answers for 1.7.0 covering voice audio, no-account mode, full backup, bill photo cloud storage, sign-out data removal, and Groq quick add (W8, owner review).
 - Typed quick adds are read by Groq: in testing it got more lines right and answered faster than Gemini (about 1.3 s). If Groq can't answer, Gemini does, on the same daily read. Voice, bills, statements and Insights stay with Gemini, which now uses Gemini 3.1 Flash Lite (its free tier isn't limited to about 20 reads a day). The AI notice names Groq, and everyone sees it once more before anything reaches Groq.
 - Bill photos back up to your account and, on a split, the others in it see them (a smaller copy; your original stays on your phone). Settings has a switch to stop sharing. A photo someone shared shows as "Bill photo saved in the cloud · Load". Deleting the expense, the photo or your account deletes the cloud copy.
 - Bill photo sync safety net tests verifying replacement delete queuing, expense deletion queue transactions, deduplication, and split unsharing (W12, #266).
@@ -57,13 +56,13 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - Golden test suite for LocalStatementParser and StatementChecks with invented data verifying date parsing, safety anomaly checks, and multi-month grouping (T6).
 - DebtSimplifier invariant tests verifying every net position is preserved down to the paisa and transfers are bounded by at most n - 1 (T2).
 - The Play listing's six screenshots and its 1024×500 feature graphic, in
+- Update privacy policy and Play Console Data safety answers for 1.7.0 covering voice audio, no-account mode, full backup, bill photo cloud storage, sign-out data removal, and Groq quick add (W8, owner review).
   `docs/store-listing/assets/`, rendered from the shipped screens with the listing's fictional
   fixture in a real database, so every figure is the app's own (test-only; Stream C item 3).
 - Group balances sum to zero, shares sum to total amount, and member balances are conserved across random add, edit, delete, and settle sequences (T1).
 
 ### Changed
 - Plainer words in Settings, backup and the on-phone ledger: "Signed in" instead of "Cloud profile ready", no more note about version 1.3, and the backup screens say what they do without terms like "complete archive" or "consent choices".
-- Daily flow chart callout and axis containers in SpendCharts use heightIn(min = ...) so tap hints, amounts, and dates expand gracefully without visual clipping at 200% font scale while preserving exact heights at normal scale (REL M7, W6).
 - Pull to sync on Home and Splits is now a small glass that fills as you pull and ripples while it syncs, then says what happened: all caught up, saved on this phone, or how many changes couldn't sync. It used to spin for five seconds whatever happened.
 - With AI off, tapping something that needs it (a bill, a statement, the mic, an Insights question, a trip review) opens a short sheet instead of a passing line: what stayed on the phone, what AI would do, "Turn on AI and continue", or the feature's own way without AI. The "AI is off" line under quick add leads to it too.
 - The place is capped at 120 characters and the note at 1,000, matching new server limits, so a very long note can never become an entry that won't sync.

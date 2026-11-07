@@ -90,28 +90,17 @@ abstract class UiAuditCapture(private val device: String, private val seeded: Bo
                 )
             }
         }
-        if (seeded) {
-            waitForText("Chai stall", tab = tab)
-        } else {
-            // A new user has no data to wait for; the account button is on every tab once it's drawn.
-            compose.waitUntil(10_000) { compose.onAllNodesWithTag("home_account_button").fetchSemanticsNodes().isNotEmpty() }
-            compose.waitForIdle()
-        }
+        // Wait for the ledger, not for one row's text: the fixture keeps today's entries before
+        // now, so in the morning the later ones move above a given row and, on a short screen,
+        // push it out of the lazy feed. The account button is on every tab once it's drawn.
+        if (seeded) compose.waitUntil(10_000) { viewModel.rawTransactions.value.isNotEmpty() }
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("home_account_button").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitForIdle()
     }
 
     @After
     fun tearDown() {
         if (started) db.close()
-    }
-
-    private fun waitForText(text: String, tab: Int = -1) {
-        // Home shows the feed; the other tabs don't, so wait for the data behind them instead.
-        if (tab > 0) {
-            compose.waitUntil(10_000) { viewModel.rawTransactions.value.isNotEmpty() }
-            compose.waitForIdle()
-            return
-        }
-        compose.waitUntil(10_000) { compose.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().isNotEmpty() }
     }
 
     private fun waitFor(text: String) =
