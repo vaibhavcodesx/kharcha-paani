@@ -100,7 +100,7 @@ class ItemSplitSheetTest {
         show(dinner)
 
         compose.onNodeWithTag("item_split_item_Water").performScrollTo().performClick()
-        compose.onNodeWithTag("item_split_use_button").performScrollTo().performClick()
+        compose.onNodeWithTag("item_split_use_button").performClick()
 
         assertEquals(listOf("water"), toggled)
         assertEquals(1, used)
