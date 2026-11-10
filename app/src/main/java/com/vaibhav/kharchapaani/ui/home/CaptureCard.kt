@@ -65,7 +65,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import com.vaibhav.kharchapaani.domain.StatementPdf
+import com.vaibhav.kharchapaani.ui.components.BillPhotoSource
+import com.vaibhav.kharchapaani.ui.components.SourceMenu
+import java.io.File
+import java.util.UUID
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
@@ -171,6 +176,42 @@ fun CaptureCard(
         }
     }
 
+    // A bill straight from the camera: the system camera writes into cache/camera through the
+    // FileProvider, as the entry sheet's bill photo does, so no CAMERA permission is asked for. The
+    // camera's own file is deleted once it's read.
+    var billMenuOpen by remember { mutableStateOf(false) }
+    var cameraFile by rememberSaveable { mutableStateOf<String?>(null) }
+    val billCamera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
+        val file = cameraFile?.let(::File) ?: return@rememberLauncherForActivityResult
+        cameraFile = null
+        if (!taken) {
+            file.delete()
+            return@rememberLauncherForActivityResult
+        }
+        scope.launch {
+            val bitmap = SharedFiles.decodeImage(context, Uri.fromFile(file))
+            file.delete()
+            bitmap?.let(onParseImage) ?: onCaptureFailed(context.getString(R.string.home_capture_image_unreadable))
+        }
+    }
+    fun billFrom(source: BillPhotoSource) {
+        billMenuOpen = false
+        when (source) {
+            BillPhotoSource.Camera -> {
+                val file = File(File(context.cacheDir, "camera").apply { mkdirs() }, "${UUID.randomUUID()}.jpg")
+                cameraFile = file.path
+                runCatching { billCamera.launch(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)) }
+                    .onFailure {
+                        cameraFile = null
+                        file.delete()
+                        onCaptureFailed(context.getString(R.string.shell_copy_camera_missing))
+                    }
+            }
+            BillPhotoSource.Gallery -> runCatching { imagePicker.launch("image/*") }
+                .onFailure { onCaptureFailed(context.getString(R.string.home_capture_image_unreadable)) }
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -254,9 +295,14 @@ fun CaptureCard(
             )
         }
         Row(Modifier.padding(Spacing.xs)) {
-            CaptureMode(KpIcons.Scan, stringResource(R.string.home_capture_bill_photo), Modifier.testTag("scan_receipt_button")) {
-                runCatching { imagePicker.launch("image/*") }
-                    .onFailure { onCaptureFailed(context.getString(R.string.home_capture_image_unreadable)) }
+            // Take a photo of the bill on the table, or pick one already on the phone.
+            Box(Modifier.weight(1f)) {
+                Row(Modifier.fillMaxWidth()) {
+                    CaptureMode(KpIcons.Scan, stringResource(R.string.home_capture_bill_photo), Modifier.testTag("scan_receipt_button")) {
+                        billMenuOpen = true
+                    }
+                }
+                SourceMenu(expanded = billMenuOpen, onDismiss = { billMenuOpen = false }, onPick = ::billFrom, tagPrefix = "scan_receipt")
             }
             CaptureMode(KpIcons.Statement, stringResource(R.string.home_capture_statement), Modifier.testTag("upload_pdf_statement_button")) {
                 runCatching { pdfPicker.launch("application/pdf") }

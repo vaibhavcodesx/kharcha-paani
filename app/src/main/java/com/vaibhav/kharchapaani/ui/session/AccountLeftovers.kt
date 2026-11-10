@@ -13,13 +13,14 @@ import java.io.File
  *   and the same number means a different payment in the next account's.
  * - Files written for sharing: CSV exports (MainViewModel, `cache/exports`) and ask-to-pay QR
  *   images (AskShare, `cache/asks`). Each names people and amounts from that account.
+ * - A bill being split by items and not yet saved (ItemSplitStore, `cache/item-split`).
  */
 object AccountLeftovers {
 
     private const val TAG = "AccountLeftovers"
 
     /** The cache folders above, relative to cacheDir. */
-    internal val SHARED_FILE_DIRS = listOf("exports", "asks")
+    internal val SHARED_FILE_DIRS = listOf("exports", "asks", "item-split")
 
     fun clear(context: Context) {
         NotificationManagerCompat.from(context).cancelAll()

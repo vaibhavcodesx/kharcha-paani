@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Split a bill by items (docs/designs/split-by-items.md). -->
+<resources>
+    <!-- The entry sheet -->
+    <string name="item_split_entry_button">Split by items</string>
+    <string name="item_split_entry_hint">Everyone pays for what they had</string>
+    <string name="item_split_used">Split by what everyone had. Have a look, then save.</string>
+    <string name="item_split_left_out">%1$s can\'t be in this group\'s split, so that part isn\'t assigned yet.</string>
+    <string name="item_split_host_fallback">Your friend</string>
+
+    <!-- The sheet -->
+    <string name="item_split_title">Split by items</string>
+    <string name="item_split_supporting">Pick a person, then tap what they had. A dish that was shared is divided between everyone who taps it.</string>
+    <string name="item_split_table">At the table</string>
+    <string name="item_split_you">You</string>
+    <string name="item_split_person_done">%1$s ✓</string>
+    <string name="item_split_add_person">Add someone</string>
+    <string name="item_split_remove_person">Take %1$s off the table</string>
+    <string name="item_split_items_you">What you had</string>
+    <string name="item_split_items_for">What %1$s had</string>
+    <string name="item_split_reading">Reading the bill…</string>
+    <string name="item_split_empty">Nothing on the bill yet. Add what was ordered, one line at a time.</string>
+    <string name="item_split_read_photo">Read the bill photo</string>
+    <string name="item_split_add_item">Add an item</string>
+    <string name="item_split_edit_item">Change %1$s</string>
+    <string name="item_split_item_with_quantity">%1$s  ×%2$d</string>
+    <string name="item_split_nobody_yet">Nobody yet</string>
+    <string name="item_split_part_you">%1$s · your part %2$s</string>
+    <string name="item_split_part_other">%1$s · %2$s\'s part %3$s</string>
+    <string name="item_split_state_picked">%1$s had this</string>
+    <string name="item_split_state_not_picked">Not picked for %1$s</string>
+    <string name="item_split_how_many_you">How many did you have?</string>
+    <string name="item_split_how_many">How many did %1$s have?</string>
+    <string name="item_split_fewer">One fewer</string>
+    <string name="item_split_more">One more</string>
+    <string name="item_split_sum_items">Items</string>
+    <string name="item_split_sum_extras">Tax and charges</string>
+    <string name="item_split_sum_discount">Discount</string>
+    <string name="item_split_sum_total">Bill total</string>
+    <string name="item_split_mismatch">The items are a long way from the bill\'s total. Check the prices before you split.</string>
+    <string name="item_split_shares">Who pays what</string>
+    <plurals name="item_split_unpicked">
+        <item quantity="one">%1$d item isn\'t picked yet (%2$s). It\'s shared between everyone when you use this split.</item>
+        <item quantity="other">%1$d items aren\'t picked yet (%2$s). They\'re shared between everyone when you use this split.</item>
+    </plurals>
+    <plurals name="item_split_people_count">
+        <item quantity="one">%1$d person</item>
+        <item quantity="other">%1$d people</item>
+    </plurals>
+    <string name="item_split_use">Use this split</string>
+    <string name="item_split_use_need_items">Add the items first</string>
+    <string name="item_split_use_need_people">Add who was there</string>
+    <string name="item_split_cancel">Cancel</string>
+
+    <!-- Adding someone -->
+    <string name="item_split_add_person_title">Who else was there?</string>
+    <string name="item_split_add_person_name">Name</string>
+    <string name="item_split_add_person_hint">A friend, or anyone at the table</string>
+    <string name="item_split_add_person_add">Add</string>
+
+    <!-- Adding or changing an item -->
+    <string name="item_split_item_new">Add an item</string>
+    <string name="item_split_item_change">Change this item</string>
+    <string name="item_split_item_name">Item</string>
+    <string name="item_split_item_name_hint">Paneer tikka</string>
+    <string name="item_split_item_quantity">How many</string>
+    <string name="item_split_item_price">Price</string>
+    <string name="item_split_item_price_note">The price for all of them together, as the bill shows it.</string>
+    <string name="item_split_item_save">Save</string>
+    <string name="item_split_item_remove">Remove</string>
+
+    <!-- Sharing the link -->
+    <string name="item_split_share_title">Let everyone pick their own</string>
+    <string name="item_split_share_body">Friends open a link and tap what they had. No app, no sign-up.</string>
+    <string name="item_split_share_button">Share with the table</string>
+    <string name="item_split_share_starting">Making the link…</string>
+    <string name="item_split_share_scan">Scan to pick your items</string>
+    <string name="item_split_share_expires">The link works for 24 hours, or until you save this expense.</string>
+    <string name="item_split_share_send">Send the link</string>
+    <string name="item_split_share_stop">Stop sharing</string>
+    <string name="item_split_share_local">Sign in to let friends pick from a link. You can still split it here yourself.</string>
+    <!-- Sent to friends, so it stays light: nobody is being asked for money here. -->
+    <string name="item_split_share_message">Splitting the %1$s bill by who had what. Tap your items here: %2$s</string>
+    <string name="item_split_share_message_plain">Splitting the bill by who had what. Tap your items here: %1$s</string>
+
+    <!-- Things that can go wrong -->
+    <string name="item_split_read_none">Couldn\'t find any items on that bill. Add them by hand.</string>
+    <string name="item_split_too_many_items">That\'s 100 items, the most a bill can take.</string>
+    <string name="item_split_table_full">The table is full: 30 people is the most a bill can take.</string>
+    <string name="item_split_share_needs_account">Sign in to share a link. You can still split it here yourself.</string>
+    <string name="item_split_share_needs_items">Add the items first, then share.</string>
+    <string name="item_split_share_too_many">You already have 10 bills open for sharing. Save or close one first.</string>
+    <string name="item_split_share_failed">Couldn\'t make the link. Check your connection and try again.</string>
+    <string name="item_split_sync_failed">Couldn\'t reach the table just now, so that change wasn\'t kept. Try again.</string>
+    <string name="item_split_link_ended">The link has run out. Share again for a new one.</string>
+
+    <!-- Home, after the app was closed mid-split -->
+    <string name="item_split_pending_title">A bill is still being split</string>
+    <string name="item_split_pending_body">Carry on where you left it.</string>
+    <string name="item_split_pending_body_place">%1$s · carry on where you left it.</string>
+    <string name="item_split_pending_resume">Carry on</string>
+    <string name="item_split_pending_discard">Discard</string>
+</resources>

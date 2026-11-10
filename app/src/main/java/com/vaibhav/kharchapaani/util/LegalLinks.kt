@@ -17,6 +17,15 @@ object LegalLinks {
     const val TERMS = BASE + "terms.html"
     const val DELETE_ACCOUNT = BASE + "delete-account.html"
 
+    /** The page friends pick their items on (site/split.html; docs/designs/split-by-items.md). */
+    const val SPLIT = BASE + "split.html"
+
+    /**
+     * A bill split's link. The key rides after "#", which a browser keeps to itself: it never
+     * reaches the server that hosts the page, or its logs.
+     */
+    fun splitLink(token: String): String = "$SPLIT#$token"
+
     /** Opens [url] in the browser; false when the phone has none. */
     fun open(context: Context, url: String): Boolean = try {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

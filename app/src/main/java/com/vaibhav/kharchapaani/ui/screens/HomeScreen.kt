@@ -66,6 +66,8 @@ import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
 import com.vaibhav.kharchapaani.domain.ActivityDay
 import com.vaibhav.kharchapaani.domain.ActivityDays
 import com.vaibhav.kharchapaani.domain.ActivityFeed
+import com.vaibhav.kharchapaani.ui.components.KpButton
+import com.vaibhav.kharchapaani.ui.components.KpButtonTier
 import com.vaibhav.kharchapaani.ui.components.RowPosition
 import com.vaibhav.kharchapaani.ui.components.SettlementItemCard
 import com.vaibhav.kharchapaani.ui.components.TransactionItemCard
@@ -89,6 +91,34 @@ import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
 import java.time.LocalDate
 import java.time.ZoneId
+
+/**
+ * A bill that was being split by items when the app was last closed (docs/designs/split-by-items.md):
+ * friends may still be picking from its link, so it's offered back rather than quietly dropped.
+ */
+@Composable
+private fun PendingItemSplit(place: String, onResume: () -> Unit, onDiscard: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(KpShapes.large)
+            .background(CharcoalCard)
+            .padding(start = Spacing.l, end = Spacing.s, top = Spacing.s, bottom = Spacing.s)
+            .testTag("pending_item_split"),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.item_split_pending_title), style = MaterialTheme.typography.bodyLarge, color = OffWhiteText)
+            Text(
+                text = if (place.isBlank()) stringResource(R.string.item_split_pending_body) else stringResource(R.string.item_split_pending_body_place, place),
+                style = MaterialTheme.typography.bodySmall,
+                color = MutedWarmGray,
+            )
+        }
+        KpButton(label = stringResource(R.string.item_split_pending_discard), onClick = onDiscard, tier = KpButtonTier.Link, testTag = "pending_item_split_discard")
+        KpButton(label = stringResource(R.string.item_split_pending_resume), onClick = onResume, tier = KpButtonTier.Ghost, testTag = "pending_item_split_resume")
+    }
+}
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -130,6 +160,10 @@ fun HomeScreen(
     onAiOff: (com.vaibhav.kharchapaani.ui.viewmodel.AiFeature) -> Unit = {},
     onRequestSync: () -> Unit = {},
     localOnly: Boolean = false,
+    /** The place of a bill split by items left unfinished ("" when it has none), or null. */
+    pendingItemSplit: String? = null,
+    onResumeItemSplit: () -> Unit = {},
+    onDiscardItemSplit: () -> Unit = {},
 ) {
     var showSearch by rememberSaveable { mutableStateOf(searchQuery.isNotEmpty()) }
     val days = remember(activity, today) { ActivityDays.group(activity, today, ZoneId.systemDefault()) }
@@ -166,6 +200,16 @@ fun HomeScreen(
                 onOpenSimplifyDebts = onOpenSimplifyDebts,
                 modifier = Modifier.padding(top = Spacing.l),
             )
+        }
+        if (pendingItemSplit != null) {
+            item(key = "item_split") {
+                PendingItemSplit(
+                    place = pendingItemSplit,
+                    onResume = onResumeItemSplit,
+                    onDiscard = onDiscardItemSplit,
+                    modifier = Modifier.padding(top = Spacing.xl),
+                )
+            }
         }
         item(key = "capture") {
             CaptureCard(

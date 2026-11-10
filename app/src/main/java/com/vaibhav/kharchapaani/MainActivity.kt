@@ -123,6 +123,9 @@ import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
 import com.vaibhav.kharchapaani.data.sync.SupabaseLedgerChanges
 import com.vaibhav.kharchapaani.data.sync.SyncDoorbell
 import com.vaibhav.kharchapaani.ui.groups.JoinGroupSheet
+import com.vaibhav.kharchapaani.ui.itemsplit.ItemSplitActions
+import com.vaibhav.kharchapaani.ui.itemsplit.ItemSplitSheet
+import com.vaibhav.kharchapaani.ui.itemsplit.TableCandidate
 import com.vaibhav.kharchapaani.ui.groups.ShareSplitPrompt
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupPanel
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupsController
@@ -495,6 +498,7 @@ fun SplitFlowApp(
     // Sheets and dialogs are their own windows and still take Back before this does.
     BackHandler(enabled = currentTab != AppTab.Activity.ordinal) { viewModel.setTab(AppTab.Activity.ordinal) }
     val billPhotoIds by viewModel.billPhotoIds.collectAsStateWithLifecycle()
+    val pendingItemSplit by viewModel.pendingItemSplit.collectAsStateWithLifecycle()
     val rawTransactions by viewModel.rawTransactions.collectAsState()
     val homeSnapshot by viewModel.homeSnapshot.collectAsStateWithLifecycle()
     val insightsAnalytics by viewModel.insightsAnalytics.collectAsStateWithLifecycle()
@@ -752,7 +756,10 @@ fun SplitFlowApp(
                             onAiOff = viewModel::showAiOffNudge,
                             onVoiceCaptureStarted = viewModel::onVoiceCaptureStarted,
                             onOpenAccount = { if (!fullBackupModalOpen) isAccountSheetOpen = true },
-                            onRequestSync = { viewModel.requestSync() }, localOnly = viewModel.isLocalLedger
+                            onRequestSync = { viewModel.requestSync() }, localOnly = viewModel.isLocalLedger,
+                            pendingItemSplit = pendingItemSplit,
+                            onResumeItemSplit = { viewModel.resumeItemSplit(authUiState.displayName) },
+                            onDiscardItemSplit = viewModel::discardPendingItemSplit,
                         )
                     }
 
@@ -1076,6 +1083,34 @@ fun SplitFlowApp(
         isImprovingWithAi = isImprovingWithAi,
         updatedByAi = updatedByAi,
         onSaveIntent = viewModel::holdDraftForSave,
+        // Not on a groupmate's expense: its split is theirs to change.
+        onSplitByItems = if (editingAddedBy == null) ({ viewModel.openItemSplit(authUiState.displayName) }) else null,
+    )
+
+    // Split by items, over the entry it belongs to (docs/designs/split-by-items.md).
+    val itemSplitState by viewModel.itemSplit.state.collectAsStateWithLifecycle()
+    val itemSplitActions = remember(viewModel) {
+        ItemSplitActions(
+            onDismiss = viewModel.itemSplit::close,
+            onSetActive = viewModel.itemSplit::setActive,
+            onAddPerson = viewModel.itemSplit::addPerson,
+            onRemovePerson = viewModel.itemSplit::removePerson,
+            onToggle = viewModel.itemSplit::toggle,
+            onSetWeight = viewModel.itemSplit::setWeight,
+            onSaveItem = viewModel.itemSplit::saveItem,
+            onRemoveItem = viewModel.itemSplit::removeItem,
+            onReadItems = viewModel.itemSplit::readItems,
+            onShare = viewModel.itemSplit::share,
+            onStopSharing = viewModel.itemSplit::stopSharing,
+            onSendLink = viewModel::sendItemSplitLink,
+            onUse = viewModel::useItemSplit,
+        )
+    }
+    ItemSplitSheet(
+        state = itemSplitState,
+        // Whoever could be in this entry's split: a shared group's members and guests, or everyone.
+        candidates = shares.filter { it.personId != -1L }.map { TableCandidate(it.personId, it.personName) },
+        actions = itemSplitActions,
     )
 
     val isExportOpen by viewModel.isExportOpen.collectAsState()

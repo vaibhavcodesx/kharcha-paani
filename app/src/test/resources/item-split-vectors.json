@@ -1,0 +1,654 @@
+{
+  "about": "Shared by ItemSplitTest (the app) and scripts/check_split_page.mjs (site/split.html). Amounts are paise.",
+  "rupees": {
+    "0": "₹0",
+    "5": "₹0.05",
+    "42000": "₹420",
+    "97440": "₹974.40",
+    "12345650": "₹1,23,456.50",
+    "-4000": "-₹40"
+  },
+  "cases": [
+    {
+      "name": "a dinner part-way through: shared naan, two of four beers, three items untouched",
+      "split": {
+        "total_paise": 268800,
+        "items": [
+          {
+            "id": "paneer",
+            "amount_paise": 42000
+          },
+          {
+            "id": "naan",
+            "amount_paise": 18000
+          },
+          {
+            "id": "dal",
+            "amount_paise": 36000
+          },
+          {
+            "id": "biryani",
+            "amount_paise": 48000
+          },
+          {
+            "id": "soda",
+            "amount_paise": 24000
+          },
+          {
+            "id": "beer",
+            "amount_paise": 72000
+          }
+        ],
+        "people": [
+          {
+            "id": "vaibhav"
+          },
+          {
+            "id": "rohan"
+          },
+          {
+            "id": "priya"
+          }
+        ],
+        "claims": [
+          {
+            "item_id": "naan",
+            "person_id": "rohan",
+            "weight": 1
+          },
+          {
+            "item_id": "paneer",
+            "person_id": "priya",
+            "weight": 1
+          },
+          {
+            "item_id": "naan",
+            "person_id": "priya",
+            "weight": 1
+          },
+          {
+            "item_id": "beer",
+            "person_id": "priya",
+            "weight": 2
+          },
+          {
+            "item_id": "beer",
+            "person_id": "vaibhav",
+            "weight": 2
+          }
+        ]
+      },
+      "expect": {
+        "people": {
+          "vaibhav": {
+            "items": 36000,
+            "extras": 4320,
+            "total": 40320
+          },
+          "rohan": {
+            "items": 9000,
+            "extras": 1080,
+            "total": 10080
+          },
+          "priya": {
+            "items": 87000,
+            "extras": 10440,
+            "total": 97440
+          }
+        },
+        "unclaimed_count": 3,
+        "unclaimed_paise": 108000,
+        "items_paise": 240000,
+        "extras_paise": 28800
+      }
+    },
+    {
+      "name": "one item three ways: the odd paisa goes to whoever came first",
+      "split": {
+        "total_paise": 10000,
+        "items": [
+          {
+            "id": "thali",
+            "amount_paise": 10000
+          }
+        ],
+        "people": [
+          {
+            "id": "a"
+          },
+          {
+            "id": "b"
+          },
+          {
+            "id": "c"
+          }
+        ],
+        "claims": [
+          {
+            "item_id": "thali",
+            "person_id": "c",
+            "weight": 1
+          },
+          {
+            "item_id": "thali",
+            "person_id": "a",
+            "weight": 1
+          },
+          {
+            "item_id": "thali",
+            "person_id": "b",
+            "weight": 1
+          }
+        ]
+      },
+      "expect": {
+        "people": {
+          "a": {
+            "items": 3334,
+            "extras": 0,
+            "total": 3334
+          },
+          "b": {
+            "items": 3333,
+            "extras": 0,
+            "total": 3333
+          },
+          "c": {
+            "items": 3333,
+            "extras": 0,
+            "total": 3333
+          }
+        },
+        "unclaimed_count": 0,
+        "unclaimed_paise": 0,
+        "items_paise": 10000,
+        "extras_paise": 0
+      }
+    },
+    {
+      "name": "two parts to one: weights divide an item",
+      "split": {
+        "total_paise": 10000,
+        "items": [
+          {
+            "id": "naan",
+            "amount_paise": 10000
+          }
+        ],
+        "people": [
+          {
+            "id": "a"
+          },
+          {
+            "id": "b"
+          }
+        ],
+        "claims": [
+          {
+            "item_id": "naan",
+            "person_id": "a",
+            "weight": 1
+          },
+          {
+            "item_id": "naan",
+            "person_id": "b",
+            "weight": 2
+          }
+        ]
+      },
+      "expect": {
+        "people": {
+          "a": {
+            "items": 3333,
+            "extras": 0,
+            "total": 3333
+          },
+          "b": {
+            "items": 6667,
+            "extras": 0,
+            "total": 6667
+          }
+        },
+        "unclaimed_count": 0,
+        "unclaimed_paise": 0,
+        "items_paise": 10000,
+        "extras_paise": 0
+      }
+    },
+    {
+      "name": "tax and service charge follow the items, and add up to the total",
+      "split": {
+        "total_paise": 118333,
+        "items": [
+          {
+            "id": "x",
+            "amount_paise": 33300
+          },
+          {
+            "id": "y",
+            "amount_paise": 33300
+          },
+          {
+            "id": "z",
+            "amount_paise": 33400
+          }
+        ],
+        "people": [
+          {
+            "id": "a"
+          },
+          {
+            "id": "b"
+          },
+          {
+            "id": "c"
+          }
+        ],
+        "claims": [
+          {
+            "item_id": "x",
+            "person_id": "a",
+            "weight": 1
+          },
+          {
+            "item_id": "y",
+            "person_id": "b",
+            "weight": 1
+          },
+          {
+            "item_id": "z",
+            "person_id": "c",
+            "weight": 1
+          }
+        ]
+      },
+      "expect": {
+        "people": {
+          "a": {
+            "items": 33300,
+            "extras": 6105,
+            "total": 39405
+          },
+          "b": {
+            "items": 33300,
+            "extras": 6105,
+            "total": 39405
+          },
+          "c": {
+            "items": 33400,
+            "extras": 6123,
+            "total": 39523
+          }
+        },
+        "unclaimed_count": 0,
+        "unclaimed_paise": 0,
+        "items_paise": 100000,
+        "extras_paise": 18333
+      }
+    },
+    {
+      "name": "a discount comes off in proportion too",
+      "split": {
+        "total_paise": 90000,
+        "items": [
+          {
+            "id": "x",
+            "amount_paise": 70000
+          },
+          {
+            "id": "y",
+            "amount_paise": 30001
+          }
+        ],
+        "people": [
+          {
+            "id": "a"
+          },
+          {
+            "id": "b"
+          }
+        ],
+        "claims": [
+          {
+            "item_id": "x",
+            "person_id": "a",
+            "weight": 1
+          },
+          {
+            "item_id": "y",
+            "person_id": "b",
+            "weight": 1
+          }
+        ]
+      },
+      "expect": {
+        "people": {
+          "a": {
+            "items": 70000,
+            "extras": -7001,
+            "total": 62999
+          },
+          "b": {
+            "items": 30001,
+            "extras": -3000,
+            "total": 27001
+          }
+        },
+        "unclaimed_count": 0,
+        "unclaimed_paise": 0,
+        "items_paise": 100001,
+        "extras_paise": -10001
+      }
+    },
+    {
+      "name": "no extras: the items are the total",
+      "split": {
+        "total_paise": 50000,
+        "items": [
+          {
+            "id": "x",
+            "amount_paise": 20000
+          },
+          {
+            "id": "y",
+            "amount_paise": 30000
+          }
+        ],
+        "people": [
+          {
+            "id": "a"
+          },
+          {
+            "id": "b"
+          }
+        ],
+        "claims": [
+          {
+            "item_id": "x",
+            "person_id": "a",
+            "weight": 1
+          },
+          {
+            "item_id": "x",
+            "person_id": "b",
+            "weight": 1
+          },
+          {
+            "item_id": "y",
+            "person_id": "b",
+            "weight": 1
+          }
+        ]
+      },
+      "expect": {
+        "people": {
+          "a": {
+            "items": 10000,
+            "extras": 0,
+            "total": 10000
+          },
+          "b": {
+            "items": 40000,
+            "extras": 0,
+            "total": 40000
+          }
+        },
+        "unclaimed_count": 0,
+        "unclaimed_paise": 0,
+        "items_paise": 50000,
+        "extras_paise": 0
+      }
+    },
+    {
+      "name": "nothing picked yet",
+      "split": {
+        "total_paise": 23600,
+        "items": [
+          {
+            "id": "x",
+            "amount_paise": 10000
+          },
+          {
+            "id": "y",
+            "amount_paise": 10000
+          }
+        ],
+        "people": [
+          {
+            "id": "a"
+          },
+          {
+            "id": "b"
+          }
+        ],
+        "claims": []
+      },
+      "expect": {
+        "people": {
+          "a": {
+            "items": 0,
+            "extras": 0,
+            "total": 0
+          },
+          "b": {
+            "items": 0,
+            "extras": 0,
+            "total": 0
+          }
+        },
+        "unclaimed_count": 2,
+        "unclaimed_paise": 20000,
+        "items_paise": 20000,
+        "extras_paise": 3600
+      }
+    },
+    {
+      "name": "a pick for someone who left, an item that was removed and a zero weight count for nothing",
+      "split": {
+        "total_paise": 22000,
+        "items": [
+          {
+            "id": "x",
+            "amount_paise": 10000
+          },
+          {
+            "id": "y",
+            "amount_paise": 10000
+          }
+        ],
+        "people": [
+          {
+            "id": "a"
+          },
+          {
+            "id": "b"
+          }
+        ],
+        "claims": [
+          {
+            "item_id": "x",
+            "person_id": "gone",
+            "weight": 1
+          },
+          {
+            "item_id": "removed",
+            "person_id": "a",
+            "weight": 1
+          },
+          {
+            "item_id": "y",
+            "person_id": "b",
+            "weight": 0
+          },
+          {
+            "item_id": "x",
+            "person_id": "a",
+            "weight": 1
+          }
+        ]
+      },
+      "expect": {
+        "people": {
+          "a": {
+            "items": 10000,
+            "extras": 1000,
+            "total": 11000
+          },
+          "b": {
+            "items": 0,
+            "extras": 0,
+            "total": 0
+          }
+        },
+        "unclaimed_count": 1,
+        "unclaimed_paise": 10000,
+        "items_paise": 20000,
+        "extras_paise": 2000
+      }
+    },
+    {
+      "name": "a wedding caterer's bill: numbers too big for ordinary arithmetic",
+      "split": {
+        "total_paise": 999999999999,
+        "items": [
+          {
+            "id": "x",
+            "amount_paise": 333333333333
+          },
+          {
+            "id": "y",
+            "amount_paise": 444444444444
+          },
+          {
+            "id": "z",
+            "amount_paise": 111111111111
+          }
+        ],
+        "people": [
+          {
+            "id": "a"
+          },
+          {
+            "id": "b"
+          },
+          {
+            "id": "c"
+          }
+        ],
+        "claims": [
+          {
+            "item_id": "x",
+            "person_id": "a",
+            "weight": 7
+          },
+          {
+            "item_id": "x",
+            "person_id": "b",
+            "weight": 13
+          },
+          {
+            "item_id": "y",
+            "person_id": "b",
+            "weight": 1
+          },
+          {
+            "item_id": "y",
+            "person_id": "c",
+            "weight": 1
+          },
+          {
+            "item_id": "z",
+            "person_id": "c",
+            "weight": 20
+          },
+          {
+            "item_id": "z",
+            "person_id": "a",
+            "weight": 19
+          }
+        ]
+      },
+      "expect": {
+        "people": {
+          "a": {
+            "items": 170797720798,
+            "extras": 21349715100,
+            "total": 192147435898
+          },
+          "b": {
+            "items": 438888888888,
+            "extras": 54861111111,
+            "total": 493749999999
+          },
+          "c": {
+            "items": 279202279202,
+            "extras": 34900284900,
+            "total": 314102564102
+          }
+        },
+        "unclaimed_count": 0,
+        "unclaimed_paise": 0,
+        "items_paise": 888888888888,
+        "extras_paise": 111111111111
+      }
+    },
+    {
+      "name": "extras with part of the bill unpicked: only the picked part's share is handed out",
+      "split": {
+        "total_paise": 11111,
+        "items": [
+          {
+            "id": "x",
+            "amount_paise": 3333
+          },
+          {
+            "id": "y",
+            "amount_paise": 3333
+          },
+          {
+            "id": "z",
+            "amount_paise": 3334
+          }
+        ],
+        "people": [
+          {
+            "id": "a"
+          },
+          {
+            "id": "b"
+          }
+        ],
+        "claims": [
+          {
+            "item_id": "x",
+            "person_id": "a",
+            "weight": 1
+          },
+          {
+            "item_id": "y",
+            "person_id": "b",
+            "weight": 1
+          }
+        ]
+      },
+      "expect": {
+        "people": {
+          "a": {
+            "items": 3333,
+            "extras": 371,
+            "total": 3704
+          },
+          "b": {
+            "items": 3333,
+            "extras": 370,
+            "total": 3703
+          }
+        },
+        "unclaimed_count": 1,
+        "unclaimed_paise": 3334,
+        "items_paise": 10000,
+        "extras_paise": 1111
+      }
+    }
+  ]
+}

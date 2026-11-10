@@ -156,6 +156,8 @@ fun ConfirmBottomSheet(
     updatedByAi: Boolean = false,
     // Save was tapped, before any large-amount check: the draft shown is the one to keep.
     onSaveIntent: () -> Unit = {},
+    // Opens "Split by items" for this expense; null where it isn't offered.
+    onSplitByItems: (() -> Unit)? = null,
 ) {
     if (!isOpen) return
     val focusManager = LocalFocusManager.current
@@ -182,6 +184,7 @@ fun ConfirmBottomSheet(
             isImprovingWithAi = isImprovingWithAi,
             updatedByAi = updatedByAi,
             onSaveIntent = onSaveIntent,
+            onSplitByItems = onSplitByItems,
             onSave = {
                 focusManager.clearFocus()
                 onSave()
@@ -254,6 +257,8 @@ fun ConfirmSheetContent(
     isImprovingWithAi: Boolean = false,
     updatedByAi: Boolean = false,
     onSaveIntent: () -> Unit = {},
+    // Opens "Split by items" (docs/designs/split-by-items.md); null where it isn't offered.
+    onSplitByItems: (() -> Unit)? = null,
 ) {
     // An entry keeps its own category or method even when it isn't a choice here (hidden since, or a
     // groupmate's own category), so it's shown and stays selected.
@@ -481,6 +486,19 @@ fun ConfirmSheetContent(
                 testTagFor = { if (it) "split_with_friends_button" else "for_me_button" },
                 modifier = Modifier.fillMaxWidth(),
             )
+            // A restaurant bill, where an even split isn't fair: everyone pays for what they had.
+            if (onSplitByItems != null) {
+                KpButton(
+                    label = stringResource(R.string.item_split_entry_button),
+                    onClick = onSplitByItems,
+                    tier = KpButtonTier.Ghost,
+                    icon = KpIcons.Scan,
+                    fillWidth = true,
+                    onClickLabel = stringResource(R.string.item_split_entry_hint),
+                    modifier = Modifier.fillMaxWidth().padding(top = Spacing.s),
+                    testTag = "split_by_items_button",
+                )
+            }
             AnimatedVisibility(visible = isSplit, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
                 SplitEditor(
                     amount = amount, splitMode = splitMode, paidByPersonId = paidByPersonId, shares = shares,

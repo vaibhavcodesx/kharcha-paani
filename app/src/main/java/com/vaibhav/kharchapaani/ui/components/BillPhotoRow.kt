@@ -151,20 +151,21 @@ fun BillPhotoRow(
     }
 }
 
+/** Camera or gallery, for the bill photo row here and for Home's "Bill photo" ([tagPrefix] tells them apart in tests). */
 @Composable
-private fun SourceMenu(expanded: Boolean, onDismiss: () -> Unit, onPick: (BillPhotoSource) -> Unit) {
+internal fun SourceMenu(expanded: Boolean, onDismiss: () -> Unit, onPick: (BillPhotoSource) -> Unit, tagPrefix: String = "bill_photo") {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss, containerColor = CharcoalElevated, shape = KpShapes.medium) {
         DropdownMenuItem(
             text = { Text(stringResource(R.string.bill_photo_copy_take), style = MaterialTheme.typography.bodyLarge, color = OffWhiteText) },
             leadingIcon = { Icon(Icons.Outlined.PhotoCamera, contentDescription = null, tint = MutedWarmGray) },
             onClick = { onPick(BillPhotoSource.Camera) },
-            modifier = Modifier.testTag("bill_photo_take"),
+            modifier = Modifier.testTag("${tagPrefix}_take"),
         )
         DropdownMenuItem(
             text = { Text(stringResource(R.string.bill_photo_copy_choose), style = MaterialTheme.typography.bodyLarge, color = OffWhiteText) },
             leadingIcon = { Icon(Icons.Outlined.PhotoLibrary, contentDescription = null, tint = MutedWarmGray) },
             onClick = { onPick(BillPhotoSource.Gallery) },
-            modifier = Modifier.testTag("bill_photo_choose"),
+            modifier = Modifier.testTag("${tagPrefix}_choose"),
         )
     }
 }
