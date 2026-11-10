@@ -113,9 +113,12 @@ select public._expect_value('anon can''t read, write or delete any table in publ
       where n.nspname = 'public' and c.relkind in ('r', 'p', 'v') and c.relname not like '\_%'
         and (has_table_privilege('anon', c.oid, 'select') or has_table_privilege('anon', c.oid, 'insert')
           or has_table_privilege('anon', c.oid, 'update') or has_table_privilege('anon', c.oid, 'delete')) $q$, 0);
-select public._expect_value('anon can''t run any function in public',
+-- Since 20261110000000 (split a bill by items) the four functions that take a split's link are the
+-- one exception: see supabase/tests/bill_item_splits_test.sql.
+select public._expect_value('anon can''t run any function in public but the bill-split link ones',
   $q$ select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-      where n.nspname = 'public' and p.proname not like '\_%' and has_function_privilege('anon', p.oid, 'execute') $q$, 0);
+      where n.nspname = 'public' and p.proname not like '\_%' and has_function_privilege('anon', p.oid, 'execute')
+        and p.proname not in ('bill_split_view', 'bill_split_join', 'bill_split_claim', 'bill_split_done') $q$, 0);
 
 create table public.probe_table (x int);
 create function public.probe_fn() returns int language sql as $f$ select 1 $f$;

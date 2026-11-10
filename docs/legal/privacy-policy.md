@@ -1,6 +1,6 @@
 # Kharcha Paani privacy policy
 
-Last updated 6 November 2026.
+Last updated 10 November 2026.
 
 Kharcha Paani is an app for tracking what you spend and splitting it with friends. It's made and
 run by Vaibhav Chauhan ("we", "us"). This page says what the app collects, why, who else handles it,
@@ -36,6 +36,15 @@ photo, or deleting your account deletes the cloud copy.
 
 **Friends who aren't on the app.** When you split with someone who doesn't use Kharcha Paani, the
 name you gave them and what you split with them are stored in your account, visible only to you.
+
+**Splitting a bill by items.** When you split a bill by who had what and share its link, the bill's
+items and prices, its total, your first name and the first name each person types are kept on our
+server, so everyone picks from the same bill. Anyone who has the link can see that bill and tick
+items on it, so send it only to the people who were there. No photo of the bill, phone number or
+account is part of it. The link works for 24 hours. The bill is deleted from our server when you save
+or close the expense, and otherwise after the link has stopped working, the next time anyone shares
+a bill. If you open such a link yourself, the name you type and what you tick are kept the same way,
+and your browser alone remembers which name was yours.
 
 **What stays on your phone only.** When you use the app without an account, everything stays on your
 phone only. When signed in, your subscriptions list, custom categories, daily reminder settings and

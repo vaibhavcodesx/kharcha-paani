@@ -18,7 +18,8 @@ synced when there's a connection.
 - **Your own spending:** quick add by typing or voice ("chai 40 cash"), bill photos, bank or UPI
   statement import, categories, subscriptions, Insights with AI questions, CSV export and a JSON
   backup.
-- **Splitting:** friends, including friends who aren't on the app; shared groups and trips with
+- **Splitting:** friends, including friends who aren't on the app; a bill split by items, with a
+  link friends open in a browser to tap what they had (no app needed); shared groups and trips with
   invite codes; equal, exact and share-based splits with guests; IOUs; debt simplification.
 - **Settling up:** UPI QR and links, settlements the other person confirms, and ask-to-pay messages
   shared to WhatsApp.

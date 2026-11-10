@@ -28,3 +28,26 @@ alter default privileges in schema public grant execute on functions to anon, au
 
 -- Supabase creates this empty publication; migrations add tables to it for Realtime.
 create publication supabase_realtime;
+
+-- Supabase Storage, as far as the migrations touch it (bill photos, 20261106000000): the bucket
+-- list, the objects table their policies sit on, and the folder helper.
+create schema storage;
+create table storage.buckets (
+  id text primary key,
+  name text not null,
+  public boolean not null default false,
+  file_size_limit bigint,
+  allowed_mime_types text[]
+);
+create table storage.objects (
+  id uuid primary key default gen_random_uuid(),
+  bucket_id text references storage.buckets (id),
+  name text,
+  owner uuid
+);
+alter table storage.objects enable row level security;
+create function storage.foldername(name text) returns text[] language sql immutable as $$
+  select (string_to_array(name, '/'))[1 : array_length(string_to_array(name, '/'), 1) - 1]
+$$;
+grant usage on schema storage to anon, authenticated, service_role;
+grant all on storage.objects to anon, authenticated, service_role;

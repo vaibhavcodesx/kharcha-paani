@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src https://tnaehyxzrudpaaoigoak.supabase.co; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta name="theme-color" content="#fbf9f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e0d0c" media="(prefers-color-scheme: dark)">
+<title>Pick what you had · Kharcha Paani</title>
+<!--
+  Split a bill by items: the page a link from the app opens (docs/designs/split-by-items.md).
+  Hand-written, unlike the legal pages beside it. No build step, no libraries, nothing loaded from
+  anywhere else. The split's key is the part of the address after "#", which browsers never send to
+  the server that hosts this page. It talks to four database functions and nothing else.
+  The maths between the "split-math" markers is the same as domain/ItemSplit.kt in the app, and
+  scripts/check_split_page.mjs runs both against app/src/test/resources/item-split-vectors.json.
+-->
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #fbf9f6; --card: #ffffff; --raised: #f3efe8; --line: #e6dfd4;
+  --fg: #1f1d1a; --muted: #6b645b; --faint: #8d857a;
+  --accent: #c4501c; --accent-soft: #fbe9df; --on-accent: #ffffff; --good: #2f7d4f;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e0d0c; --card: #1a1816; --raised: #24211e; --line: #2f2b27;
+    --fg: #f4f0e8; --muted: #a39b90; --faint: #7d766c;
+    --accent: #ff7a3d; --accent-soft: #3a2116; --on-accent: #1a0d06; --good: #7ad19b;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 34rem; margin: 0 auto; padding: 1.25rem 1rem calc(9.5rem + env(safe-area-inset-bottom)); }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.brand { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin: 0 0 1.25rem; }
+h1 { font-size: 1.65rem; line-height: 1.2; margin: 0 0 .35rem; text-wrap: balance; }
+.lede { color: var(--muted); margin: 0 0 1.5rem; }
+h2 { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); font-weight: 600; margin: 1.75rem 0 .6rem; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; }
+.pad { padding: 1rem; }
+
+/* Who are you */
+.names { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1rem; }
+.chip { min-height: 44px; padding: 0 1rem; border-radius: 999px; border: 1px solid var(--line); background: var(--card); display: inline-flex; align-items: center; gap: .5rem; }
+.chip:active { background: var(--raised); }
+.field { display: flex; gap: .5rem; }
+.field input { flex: 1; min-width: 0; min-height: 48px; padding: 0 .9rem; border-radius: 12px; border: 1px solid var(--line); background: var(--card); }
+.primary { min-height: 48px; padding: 0 1.25rem; border-radius: 12px; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600; }
+.primary:disabled { background: var(--raised); color: var(--faint); cursor: default; }
+.quiet { background: none; border: 0; padding: .25rem 0; color: var(--accent); font-weight: 600; min-height: 44px; }
+.problem { color: var(--accent); margin: .6rem 0 0; }
+
+/* Picking as */
+.as { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin: 0 0 .5rem; color: var(--muted); }
+.as strong { color: var(--fg); }
+
+/* Items */
+.items { list-style: none; margin: 0; padding: 0; overflow: hidden; }
+.items > li + li { border-top: 1px solid var(--line); }
+.item { width: 100%; display: flex; align-items: flex-start; gap: .75rem; padding: .85rem 1rem; background: none; border: 0; text-align: left; }
+.item:active { background: var(--raised); }
+.tick { flex: none; width: 24px; height: 24px; margin-top: 1px; border-radius: 8px; border: 1.5px solid var(--faint); display: grid; place-items: center; color: transparent; font-size: 15px; line-height: 1; transition: background .12s, border-color .12s; }
+.mine .tick { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.mine { background: var(--accent-soft); }
+.what { flex: 1; min-width: 0; }
+.name { display: block; overflow-wrap: anywhere; }
+.qty { color: var(--faint); font-variant-numeric: tabular-nums; }
+.who { display: block; color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+.price { flex: none; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.parts { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: 0 1rem .8rem 3.25rem; background: var(--accent-soft); color: var(--muted); font-size: .9rem; }
+.stepper { display: inline-flex; align-items: center; gap: .25rem; }
+.stepper button { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); font-size: 1.2rem; line-height: 1; }
+.stepper button:disabled { color: var(--faint); cursor: default; }
+.stepper output { min-width: 2ch; text-align: center; color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* The table */
+.people { list-style: none; margin: 0; padding: 0; }
+.people li { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; padding: .7rem 1rem; }
+.people li + li { border-top: 1px solid var(--line); }
+.people .tag { color: var(--faint); font-size: .85rem; }
+.people .done { color: var(--good); font-size: .85rem; }
+.people .sum { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.note { color: var(--muted); font-size: .9rem; margin: .75rem 0 0; }
+
+/* Your share */
+.bar { position: fixed; left: 0; right: 0; bottom: 0; padding: .75rem 1rem calc(.75rem + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid var(--line); }
+.bar > div { max-width: 32rem; margin: 0 auto; display: flex; align-items: center; gap: 1rem; }
+.share { flex: 1; min-width: 0; }
+.share small { display: block; color: var(--muted); font-size: .8rem; }
+.share b { display: block; font-size: 1.6rem; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.share span { display: block; color: var(--muted); font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.toast { position: fixed; left: 50%; bottom: calc(7.5rem + env(safe-area-inset-bottom)); transform: translateX(-50%); max-width: calc(100% - 2rem); background: var(--fg); color: var(--bg); padding: .6rem 1rem; border-radius: 12px; font-size: .9rem; z-index: 2; }
+.center { text-align: center; padding: 4rem 0; }
+.center h1 { margin-bottom: .6rem; }
+.skeleton { height: 3.4rem; border-radius: 12px; background: var(--raised); margin: 0 0 .6rem; animation: pulse 1.2s ease-in-out infinite alternate; }
+@keyframes pulse { from { opacity: .5; } to { opacity: 1; } }
+footer { margin-top: 2.5rem; color: var(--faint); font-size: .85rem; }
+footer a { color: inherit; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<main id="app"><p class="brand">Kharcha Paani</p><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></main>
+<noscript><main><h1>Turn on JavaScript to pick what you had.</h1></main></noscript>
+<script>
+"use strict";
+const API = "https://tnaehyxzrudpaaoigoak.supabase.co";
+// A publishable key: it identifies the project and grants nothing by itself.
+const KEY = "sb_publishable_g4bm2y38HtklmQxaBDBNQw_kEztFnAo";
+const POLL_MS = 3000;
+
+/* split-math:start */
+/**
+ * Who pays what, in paise, with nothing lost to rounding. `split` is what the server returns:
+ * {total_paise, items: [{id, amount_paise}], people: [{id}], claims: [{item_id, person_id, weight}]}.
+ *
+ * An item is divided between the people who picked it, by weight. Whatever the bill's total has
+ * beyond its items (tax, service charge, tip, round-off; less than them for a discount) follows the
+ * items: each person carries it in proportion to what they picked. Leftover paise go to whoever was
+ * closest to earning one, earlier people first on a tie.
+ *
+ * Returns {people: {id: {items, extras, total}}, parts: {itemId: {personId: paise}}, unclaimedCount,
+ * unclaimedPaise, itemsPaise, extrasPaise}.
+ */
+function computeShares(split) {
+  const order = split.people.map((p) => p.id);
+  const rank = new Map(order.map((id, i) => [id, i]));
+  const base = new Map(order.map((id) => [id, 0n]));
+  const weights = new Map();
+  for (const c of split.claims) {
+    if (!rank.has(c.person_id) || !(c.weight > 0)) continue;
+    if (!weights.has(c.item_id)) weights.set(c.item_id, []);
+    weights.get(c.item_id).push({ id: c.person_id, w: BigInt(c.weight) });
+  }
+  const partsByItem = {};
+  let itemsPaise = 0n, unclaimedPaise = 0n, unclaimedCount = 0;
+  for (const item of split.items) {
+    const amount = BigInt(item.amount_paise);
+    itemsPaise += amount;
+    const claimers = (weights.get(item.id) || []).sort((a, b) => rank.get(a.id) - rank.get(b.id));
+    if (claimers.length === 0) {
+      unclaimedPaise += amount;
+      unclaimedCount++;
+      continue;
+    }
+    const totalWeight = claimers.reduce((sum, c) => sum + c.w, 0n);
+    const parts = handOut(amount, claimers.map((c) => amount * c.w), totalWeight);
+    partsByItem[item.id] = {};
+    claimers.forEach((c, i) => {
+      base.set(c.id, base.get(c.id) + parts[i]);
+      partsByItem[item.id][c.id] = Number(parts[i]);
+    });
+  }
+  const extrasPaise = BigInt(split.total_paise) - itemsPaise;
+  const size = extrasPaise < 0n ? -extrasPaise : extrasPaise;
+  const sign = extrasPaise < 0n ? -1n : 1n;
+  let extras = order.map(() => 0n);
+  if (itemsPaise > 0n && size > 0n) {
+    const claimed = itemsPaise - unclaimedPaise;
+    // The part of the extras that belongs to picked items, to the nearest paisa.
+    const target = (2n * size * claimed + itemsPaise) / (2n * itemsPaise);
+    extras = handOut(target, order.map((id) => size * base.get(id)), itemsPaise).map((x) => x * sign);
+  }
+  const people = {};
+  order.forEach((id, i) => {
+    const items = base.get(id);
+    people[id] = { items: Number(items), extras: Number(extras[i]), total: Number(items + extras[i]) };
+  });
+  return { people, parts: partsByItem, unclaimedCount, unclaimedPaise: Number(unclaimedPaise), itemsPaise: Number(itemsPaise), extrasPaise: Number(extrasPaise) };
+}
+
+/**
+ * Shares of `target` paise in the ratio numerators[i] / denominator, rounded down, then one paisa
+ * each to the largest remainders (earlier first on a tie) until `target` is reached.
+ */
+function handOut(target, numerators, denominator) {
+  const parts = numerators.map((n) => n / denominator);
+  let left = target - parts.reduce((sum, p) => sum + p, 0n);
+  const byRemainder = numerators
+    .map((n, i) => ({ i, r: n % denominator }))
+    .sort((a, b) => (a.r === b.r ? a.i - b.i : a.r > b.r ? -1 : 1));
+  for (let k = 0; left > 0n && k < byRemainder.length; k++, left--) parts[byRemainder[k].i] += 1n;
+  return parts;
+}
+
+/** ₹1,23,456.50 from paise, in Indian grouping; whole rupees drop the ".00". */
+function rupees(paise) {
+  const negative = paise < 0;
+  const value = Math.abs(paise);
+  const whole = Math.floor(value / 100);
+  const part = value % 100;
+  const text = whole.toLocaleString("en-IN") + (part ? "." + String(part).padStart(2, "0") : "");
+  return (negative ? "-₹" : "₹") + text;
+}
+/* split-math:end */
+
+const token = location.hash.replace(/^#/, "");
+const storeKey = "kp-split-" + token;
+const app = document.getElementById("app");
+const state = { split: null, ended: false, me: remembered(), nameDraft: "", problem: "", switching: false, toast: "", offline: false };
+let writes = 0; // Counts writes, so a poll that started before one can't overwrite its result.
+let toastTimer = 0;
+
+function remembered() {
+  try { return localStorage.getItem(storeKey); } catch (e) { return null; }
+}
+function remember(id) {
+  state.me = id;
+  try { id ? localStorage.setItem(storeKey, id) : localStorage.removeItem(storeKey); } catch (e) { /* private mode: asks again next time */ }
+}
+
+async function rpc(fn, args) {
+  let response;
+  try {
+    response = await fetch(API + "/rest/v1/rpc/" + fn, {
+      method: "POST",
+      headers: { "content-type": "application/json", apikey: KEY, authorization: "Bearer " + KEY },
+      body: JSON.stringify(args),
+    });
+  } catch (e) {
+    throw Object.assign(new Error("offline"), { reason: "offline" });
+  }
+  const body = await response.json().catch(() => null);
+  if (!response.ok) throw Object.assign(new Error("refused"), { reason: (body && body.message) || "refused" });
+  return body;
+}
+
+function h(tag, props, ...children) {
+  const el = document.createElement(tag);
+  for (const [key, value] of Object.entries(props || {})) {
+    if (value == null || value === false) continue;
+    if (key === "class") el.className = value;
+    else if (key.startsWith("on")) el.addEventListener(key.slice(2), value);
+    else if (key in el && key !== "list") el[key] = value;
+    else el.setAttribute(key, value === true ? "" : value);
+  }
+  for (const child of children.flat()) {
+    if (child == null || child === false) continue;
+    el.append(child.nodeType ? child : document.createTextNode(String(child)));
+  }
+  return el;
+}
+
+function take(split) {
+  if (!split) {
+    state.ended = true;
+    state.split = null;
+    return;
+  }
+  // Replies can arrive out of order; the server counts every change, so the higher count wins.
+  if (state.split && split.version < state.split.version) return;
+  state.split = split;
+  if (state.me && !split.people.some((p) => p.id === state.me && !p.is_host)) remember(null);
+}
+
+function showToast(text) {
+  state.toast = text;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { state.toast = ""; render(); }, 4000);
+}
+
+function explain(error) {
+  switch (error.reason) {
+    case "offline": return "Couldn't reach the bill. Check your connection and try again.";
+    case "name_taken": return "That's " + state.split.host_name + "'s name here. Add an initial so we can tell you two apart.";
+    case "too_many_people": return "This table is full: 30 people is the most a bill can take.";
+    case "bad_name": return "Type your name first.";
+    default: return "That didn't go through. Try again.";
+  }
+}
+
+async function load() {
+  if (!/^[0-9a-f]{32}$/.test(token)) {
+    state.ended = true;
+    return render();
+  }
+  const started = writes;
+  try {
+    const split = await rpc("bill_split_view", { p_token: token });
+    state.offline = false;
+    if (started !== writes) return; // Something was picked meanwhile; its reply is newer.
+    const before = JSON.stringify(state.split);
+    take(split);
+    if (JSON.stringify(state.split) !== before || state.ended) render();
+  } catch (e) {
+    if (!state.offline) {
+      state.offline = true;
+      render();
+    }
+  }
+}
+
+/** A write: show it at once, send it, and settle on what the server says. */
+async function write(fn, args, optimistic) {
+  const before = state.split;
+  writes++;
+  if (optimistic) {
+    state.split = optimistic(structuredClone(before));
+    render();
+  }
+  try {
+    const reply = await rpc(fn, { p_token: token, ...args });
+    take(reply && reply.split ? reply.split : reply);
+    state.offline = false;
+    return reply;
+  } catch (e) {
+    if (e.reason === "not_open") {
+      take(null);
+    } else {
+      state.split = before;
+      throw e;
+    }
+  } finally {
+    render();
+  }
+}
+
+async function join(name) {
+  state.problem = "";
+  try {
+    const reply = await write("bill_split_join", { p_name: name });
+    if (reply) {
+      remember(reply.person_id);
+      state.nameDraft = "";
+      state.switching = false;
+    }
+  } catch (e) {
+    state.problem = explain(e);
+  }
+  render();
+}
+
+function pick(itemId, weight) {
+  const me = state.me;
+  write("bill_split_claim", { p_person_id: me, p_item_id: itemId, p_weight: weight }, (split) => {
+    split.claims = split.claims.filter((c) => !(c.item_id === itemId && c.person_id === me));
+    if (weight > 0) split.claims.push({ item_id: itemId, person_id: me, weight });
+    return split;
+  }).catch((e) => showToast(explain(e)));
+}
+
+function setDone(done) {
+  const me = state.me;
+  write("bill_split_done", { p_person_id: me, p_done: done }, (split) => {
+    split.people.forEach((p) => { if (p.id === me) p.done = done; });
+    return split;
+  }).catch((e) => showToast(explain(e)));
+}
+
+function render() {
+  const focused = document.activeElement && document.activeElement.id;
+  app.replaceChildren(h("p", { class: "brand" }, "Kharcha Paani"), ...view().filter((part) => part && part.nodeType));
+  if (state.toast) app.append(h("div", { class: "toast", role: "status" }, state.toast));
+  if (focused) {
+    const again = document.getElementById(focused);
+    if (again) again.focus();
+  }
+}
+
+function view() {
+  if (state.ended) return ended();
+  const split = state.split;
+  if (!split) {
+    return state.offline
+      ? [h("div", { class: "center" }, h("h1", null, "Can't reach the bill"), h("p", { class: "lede" }, "Check your connection. This page keeps trying."))]
+      : [h("div", { class: "skeleton" }), h("div", { class: "skeleton" }), h("div", { class: "skeleton" })];
+  }
+  const me = split.people.find((p) => p.id === state.me && !p.is_host);
+  const title = split.title ? split.title : split.host_name + "'s bill";
+  if (!me || state.switching) return [h("h1", null, title), ...whoAreYou(split, me)];
+  return [h("h1", null, title), ...picking(split, me)];
+}
+
+function ended() {
+  return [h("div", { class: "center" },
+    h("h1", null, "This bill isn't open any more"),
+    h("p", { class: "lede" }, "It's been wrapped up, or the link has run out. If you still need to pick what you had, ask whoever shared it for a new link."))];
+}
+
+function whoAreYou(split, me) {
+  const others = split.people.filter((p) => !p.is_host);
+  const submit = (event) => {
+    event.preventDefault();
+    if (state.nameDraft.trim()) join(state.nameDraft);
+  };
+  return [
+    h("p", { class: "lede" }, split.host_name + " is splitting this bill by who had what. Say who you are, then tap your items."),
+    others.length > 0 && h("h2", null, "Already here? Tap your name"),
+    others.length > 0 && h("div", { class: "names" }, others.map((p) =>
+      h("button", { class: "chip", type: "button", onclick: () => { remember(p.id); state.switching = false; state.problem = ""; render(); } }, p.name))),
+    h("h2", null, others.length > 0 ? "Or add yourself" : "Your name"),
+    h("form", { class: "field", onsubmit: submit },
+      h("input", {
+        id: "name", type: "text", autocomplete: "given-name", maxLength: 40, placeholder: "First name", value: state.nameDraft, "aria-label": "Your name",
+        oninput: (event) => { state.nameDraft = event.target.value; document.getElementById("join").disabled = !state.nameDraft.trim(); },
+      }),
+      h("button", { id: "join", class: "primary", type: "submit", disabled: !state.nameDraft.trim() }, "Join")),
+    state.problem && h("p", { class: "problem", role: "alert" }, state.problem),
+    me && h("button", { class: "quiet", type: "button", onclick: () => { state.switching = false; render(); } }, "Back to " + me.name + "'s picks"),
+    footer(),
+  ];
+}
+
+function picking(split, me) {
+  const shares = computeShares(split);
+  const mine = shares.people[me.id];
+  const nameOf = new Map(split.people.map((p) => [p.id, p.name]));
+  const byItem = new Map();
+  for (const c of split.claims) {
+    if (!byItem.has(c.item_id)) byItem.set(c.item_id, []);
+    byItem.get(c.item_id).push(c);
+  }
+
+  const rows = split.items.map((item) => {
+    const claims = byItem.get(item.id) || [];
+    const myClaim = claims.find((c) => c.person_id === me.id);
+    const others = claims.filter((c) => c.person_id !== me.id).map((c) => nameOf.get(c.person_id)).filter(Boolean);
+    // Your part is said whenever it isn't simply the price, so sharing never has to be worked out.
+    const myPart = myClaim ? shares.parts[item.id][me.id] : 0;
+    const who = others.length === 0 ? "" : myClaim ? "Shared with " + listNames(others) + " · your part " + rupees(myPart) : listNames(others) + " had this";
+    const most = Math.min(item.quantity, 20);
+    return h("li", { class: myClaim ? "mine" : "" },
+      h("button", {
+        class: "item", type: "button", role: "checkbox", "aria-checked": myClaim ? "true" : "false",
+        onclick: () => pick(item.id, myClaim ? 0 : 1),
+      },
+        h("span", { class: "tick", "aria-hidden": "true" }, "✓"),
+        h("span", { class: "what" },
+          h("span", { class: "name" }, item.name, item.quantity > 1 && h("span", { class: "qty" }, "  ×" + item.quantity)),
+          who && h("span", { class: "who" }, who)),
+        h("span", { class: "price" }, rupees(item.amount_paise))),
+      myClaim && item.quantity > 1 && h("div", { class: "parts" },
+        h("span", null, "How many did you have?"),
+        h("span", { class: "stepper" },
+          h("button", { type: "button", "aria-label": "One fewer", disabled: myClaim.weight <= 1, onclick: () => pick(item.id, myClaim.weight - 1) }, "−"),
+          h("output", null, myClaim.weight),
+          h("button", { type: "button", "aria-label": "One more", disabled: myClaim.weight >= most, onclick: () => pick(item.id, myClaim.weight + 1) }, "+"))));
+  });
+
+  const people = split.people.map((p) => h("li", null,
+    h("span", null, p.name, p.is_host && h("span", { class: "tag" }, "  sharing this bill"), p.id === me.id && h("span", { class: "tag" }, "  you"),
+      p.done && h("span", { class: "done" }, "  ✓ done")),
+    h("span", { class: "sum" }, rupees(shares.people[p.id].total))));
+
+  const detail = mine.extras === 0 ? ""
+    : mine.extras > 0 ? "incl. " + rupees(mine.extras) + " tax & charges"
+    : "after " + rupees(-mine.extras) + " off";
+
+  return [
+    h("p", { class: "lede" }, "Tap what you had. Shared a dish? Everyone who had it taps it, and it's divided between you."),
+    h("div", { class: "as" },
+      h("span", null, "Picking as ", h("strong", null, me.name)),
+      h("button", { class: "quiet", type: "button", onclick: () => { state.switching = true; state.problem = ""; render(); } }, "Not you?")),
+    h("ul", { class: "items card" }, rows),
+    h("h2", null, "The table so far"),
+    h("ul", { class: "people card" }, people),
+    shares.unclaimedCount > 0 && h("p", { class: "note" },
+      (shares.unclaimedCount === 1 ? "1 item isn't" : shares.unclaimedCount + " items aren't") + " picked yet (" + rupees(shares.unclaimedPaise) + "). " +
+      split.host_name + " sorts out whatever is left at the end."),
+    state.offline && h("p", { class: "note", role: "status" }, "Reconnecting…"),
+    footer(),
+    h("div", { class: "bar" }, h("div", null,
+      h("div", { class: "share", "aria-live": "polite" },
+        h("small", null, me.done ? "All set. " + split.host_name + " has your share" : "Your share so far"),
+        h("b", null, rupees(mine.total)),
+        detail && h("span", null, detail)),
+      me.done
+        ? h("button", { class: "quiet", type: "button", onclick: () => setDone(false) }, "Change")
+        : h("button", { class: "primary", type: "button", disabled: mine.items === 0, onclick: () => setDone(true) }, "That's everything"))),
+  ];
+}
+
+function listNames(names) {
+  if (names.length <= 2) return names.join(" and ");
+  return names.slice(0, 2).join(", ") + " and " + (names.length - 2) + " more";
+}
+
+function footer() {
+  return h("footer", null, "Only first names and what's on this bill are kept, and only until it's settled. ",
+    h("a", { href: "privacy.html" }, "Privacy"));
+}
+
+render();
+load();
+setInterval(() => { if (document.visibilityState === "visible" && !state.ended) load(); }, POLL_MS);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && !state.ended) load(); });
+</script>
+</body>
+</html>

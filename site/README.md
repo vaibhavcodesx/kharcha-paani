@@ -26,6 +26,14 @@ These are the addresses the app opens (`util/LegalLinks.kt`) and the ones the Pl
 (`docs/legal/play-console-answers.md`). If you choose another address (your own domain, say), change
 `LegalLinks.BASE` and those answers to match.
 
+## The bill-split page
+
+`split.html` is different: it is written by hand (it is a small app, not a document), so edit it
+directly. It is the page a "Split by items" link opens (docs/designs/split-by-items.md). Copy it into
+`kharcha-paani-site` beside the others; the app's links point at
+https://vaibhavcodesx.github.io/kharcha-paani-site/split.html. After changing its arithmetic, run
+`node scripts/check_split_page.mjs`.
+
 ## After a change
 
 Edit `docs/legal/*.md`, run `python scripts/legal_site.py`, copy the HTML into the

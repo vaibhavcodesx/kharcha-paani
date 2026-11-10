@@ -322,6 +322,40 @@ class GeminiRepository(
     """.trimIndent()
 
     /**
+     * Reads a bill's lines for splitting it by who had what (docs/designs/split-by-items.md): each
+     * thing ordered with its price, and the total paid. Tax, service charge, tip and discounts are
+     * not lines: they're the gap between the lines and the total, which the split shares out.
+     */
+    suspend fun readBillItems(bitmap: Bitmap): BillItemsReadResult = withContext(Dispatchers.IO) {
+        if (!configured) return@withContext BillItemsReadResult.Failed(AiFailure.NoKey)
+
+        val parts = listOf(
+            textPart(BILL_ITEMS_PROMPT),
+            JSONObject().put("inlineData", JSONObject().put("mimeType", "image/jpeg").put("data", bitmapToBase64(bitmap))),
+        )
+        when (val outcome = call(jsonRequest(parts, temperature = 0.0, json = true, thinking = QUICK_THINKING), FEATURE_BILL, RECEIPT_TIMEOUT_SECONDS, "bill items")) {
+            is CallOutcome.Failed -> BillItemsReadResult.Failed(outcome.reason)
+            is CallOutcome.Ok -> {
+                val parsed = outcome.json() ?: return@withContext BillItemsReadResult.Failed(AiFailure.Unreadable)
+                val lines = parsed.optJSONArray("items")
+                val items = (0 until (lines?.length() ?: 0)).mapNotNull { index ->
+                    val line = lines?.optJSONObject(index) ?: return@mapNotNull null
+                    val name = line.optString("name").trim().take(BillItemLine.MAX_NAME)
+                    val price = line.opt("amount")
+                    val amount = AiParse.amountField(price)
+                    // A discount listed as a line: amountField drops the sign, and a discount is part
+                    // of the gap between the lines and the total, not something anyone had.
+                    val takenOff = (price as? Number)?.let { it.toDouble() < 0 } ?: (price as? String)?.trim()?.startsWith("-") ?: false
+                    // A line with no name or no price isn't something anyone can pick.
+                    if (name.isEmpty() || takenOff || amount <= 0 || amount > BillItemLine.MAX_AMOUNT) return@mapNotNull null
+                    BillItemLine(name = name, quantity = line.optInt("quantity", 1).coerceIn(1, BillItemLine.MAX_QUANTITY), amount = amount)
+                }.take(BillItemLine.MAX_LINES)
+                BillItemsReadResult.Read(items = items, total = AiParse.amountField(parsed.opt("total")).takeIf { it > 0 })
+            }
+        }
+    }
+
+    /**
      * An unread bill fills in nothing. The old fallback invented a merchant ("Scanned Receipt"), a
      * payment method (GPay) and sometimes a category, and put developer text in the note.
      */
@@ -725,6 +759,24 @@ class GeminiRepository(
             "\"chai pachaas rupaye cash\" or \"dinner twelve hundred with Rohan\". Listen to it and treat what " +
             "is said as the line. It may be noisy, or have no money in it at all."
 
+        internal const val BILL_ITEMS_PROMPT = """This image is a restaurant, bar, cafe or shop bill from India. List what was ordered so friends can
+split it by who had what.
+
+Fill in:
+- items: one entry for each line of the bill that is something ordered or bought, in the order
+  printed. For each:
+  - name: the item as printed, tidied ("Paneer Tikka", not "PNR TKA 1 420.00"). Keep it short.
+  - quantity: how many, as a whole number; 1 if the bill doesn't say.
+  - amount: the line's total price as a plain number (quantity times rate), not the rate for one.
+  Leave out everything that isn't an item: subtotal, total, GST, CGST, SGST, VAT, service charge,
+  packing or delivery charges, tip, round-off, discounts, offers, payment and change lines.
+  Never invent a line, and never merge two lines into one. [] if nothing is itemised.
+- total: the grand total actually payable, after tax, charges and discounts, as a plain number.
+  0 if the bill shows none.
+
+Return only this JSON:
+{"items":[{"name":"Paneer Tikka","quantity":1,"amount":420},{"name":"Butter Naan","quantity":3,"amount":180}],"total":661.5}"""
+
         /** One photo up and a short answer back, on a phone network. */
         internal const val RECEIPT_TIMEOUT_SECONDS = 45L
 
@@ -837,6 +889,24 @@ data class ParseChoices(val expenseCategories: List<String>, val incomeCategorie
 
 /** What reading a typed or spoken line produced. [failure] is set only when the AI was tried and not used. */
 data class TextParseOutcome(val result: ParsedTransactionResult, val failure: AiFailure?)
+
+/** One line of a bill as read from its photo: [amount] is the line's total in rupees. */
+data class BillItemLine(val name: String, val quantity: Int, val amount: Double) {
+    companion object {
+        const val MAX_NAME = 80
+        const val MAX_QUANTITY = 99
+        const val MAX_LINES = 100
+        /** The ledger's own ceiling (numeric(12,2)). */
+        const val MAX_AMOUNT = 9_999_999_999.99
+    }
+}
+
+/** What reading a bill's lines produced. An empty [Read.items] is a bill with nothing itemised on it. */
+sealed interface BillItemsReadResult {
+    /** [total]: what the bill says was paid, or null when it shows none. */
+    data class Read(val items: List<BillItemLine>, val total: Double?) : BillItemsReadResult
+    data class Failed(val reason: AiFailure) : BillItemsReadResult
+}
 
 /** What reading a bill or payment screenshot produced. */
 sealed interface ReceiptReadResult {

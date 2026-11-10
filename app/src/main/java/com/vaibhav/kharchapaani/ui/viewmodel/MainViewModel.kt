@@ -16,6 +16,15 @@ import com.vaibhav.kharchapaani.domain.AiFailure
 import com.vaibhav.kharchapaani.domain.CalendarDay
 import com.vaibhav.kharchapaani.domain.AiAskResult
 import com.vaibhav.kharchapaani.data.repository.ReceiptReadResult
+import com.vaibhav.kharchapaani.data.repository.BillItemsReadResult
+import com.vaibhav.kharchapaani.data.itemsplit.FileItemSplitStore
+import com.vaibhav.kharchapaani.data.db.LedgerDatabases
+import com.vaibhav.kharchapaani.data.sync.SupabaseBillSplitRemote
+import com.vaibhav.kharchapaani.domain.Hues
+import com.vaibhav.kharchapaani.domain.ItemSplitMath
+import com.vaibhav.kharchapaani.domain.PersonColours
+import com.vaibhav.kharchapaani.ui.itemsplit.ItemSplitController
+import com.vaibhav.kharchapaani.ui.itemsplit.ItemSplitSeed
 import com.vaibhav.kharchapaani.data.repository.ReceiptRepository
 import com.vaibhav.kharchapaani.data.receipts.BillPhoto
 import com.vaibhav.kharchapaani.data.receipts.ReceiptStore
@@ -949,8 +958,9 @@ class MainViewModel(
         }
     }
 
-    /** A fresh sheet: drop a photo picked and never saved. */
+    /** A fresh sheet: drop a photo picked and never saved, and a split by items that went with it. */
     private fun resetBillPhoto() {
+        dropItemSplit()
         billPhotoJob?.cancel()
         billPhotoJob = null
         (_billPhoto.value as? BillPhoto.Kept)?.staged?.let(receipts.store::discard)
@@ -1029,6 +1039,156 @@ class MainViewModel(
 
     private val _statusMessage = MutableStateFlow<String?>(null)
     val statusMessage: StateFlow<String?> = _statusMessage.asStateFlow()
+
+    // Split a bill by items (docs/designs/split-by-items.md). Declared after _statusMessage, which
+    // it reports to. The split belongs to the entry on the sheet: saving or dropping the entry
+    // ends it, and "Use this split" writes each person's amount into the entry's own split.
+    val itemSplit = ItemSplitController(
+        scope = viewModelScope,
+        remote = if (isLocal) null else SupabaseBillSplitRemote(SupabaseClientProvider.get(application)),
+        store = FileItemSplitStore.forLedger(
+            application,
+            if (isLocal) LedgerDatabases.localDatabaseName(GuestSession(userId)) else LedgerDatabases.databaseName(userId),
+        ),
+        showMessage = { _statusMessage.value = it },
+        resolveText = { id, args -> application.getString(id, *args) },
+        failureText = { application.getString(it.receiptNoticeResource) },
+    )
+
+    /** True while the split in [itemSplit] is the open entry's own, not one left from before. */
+    private val itemSplitAttached = MutableStateFlow(false)
+
+    /**
+     * The place of a split by items that was in progress when the app was last closed, so Home can
+     * offer it back; "" when it has no place; null when there's nothing to come back to.
+     */
+    val pendingItemSplit: StateFlow<String?> = combine(itemSplit.state, itemSplitAttached) { split, attached ->
+        split.draft?.takeIf { !attached }?.title
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    /** "Split by items" on the entry sheet. [hostName] is what friends see on the page: a first name. */
+    fun openItemSplit(hostName: String?) {
+        if (_type.value == "income" || _splitLocked.value || fullBackupBlocksActions()) return
+        // A split left from an entry that's gone isn't this one's.
+        if (!itemSplitAttached.value) itemSplit.discard()
+        itemSplitAttached.value = true
+        val photo = (_billPhoto.value as? BillPhoto.Kept)?.file
+        // The bill was already read once to fill the sheet, so its notice has been answered.
+        val read: (suspend () -> BillItemsReadResult)? = if (photo != null && canUseAi() && aiAvailable && aiNoticeAccepted.value) {
+            {
+                val bitmap = withContext(Dispatchers.IO) { android.graphics.BitmapFactory.decodeFile(photo.path) }
+                if (bitmap == null) BillItemsReadResult.Failed(AiFailure.Unreadable) else geminiRepo.readBillItems(bitmap)
+            }
+        } else null
+        itemSplit.open(
+            ItemSplitSeed(
+                hostName = hostName?.trim()?.substringBefore(' ')?.take(ItemSplitController.MAX_NAME)?.takeIf { it.isNotEmpty() }
+                    ?: uiText(R.string.item_split_host_fallback),
+                title = _merchant.value.trim(),
+                totalPaise = ItemSplitMath.paise(Money.parseInput(_amount.value) ?: 0.0),
+                friends = _shares.value.filter { it.isSelected && it.personId != -1L }.map { it.personId to it.personName },
+            ),
+            read,
+        )
+    }
+
+    /** Home's "carry on" for a split that outlived the app being closed: its entry, then its sheet. */
+    fun resumeItemSplit(hostName: String?) {
+        val draft = itemSplit.state.value.draft ?: return
+        if (fullBackupBlocksActions()) return
+        openManualAdd("expense")
+        itemSplitAttached.value = true
+        if (draft.billTotalPaise > 0) _amount.value = Money.input(ItemSplitMath.rupees(draft.billTotalPaise))
+        _merchant.value = draft.title
+        openItemSplit(hostName)
+    }
+
+    /** Home's "discard" for the same. */
+    fun discardPendingItemSplit() {
+        itemSplit.discard()
+        itemSplitAttached.value = false
+    }
+
+    /** The entry is gone (saved, or closed without saving): so is its split, and its link. */
+    private fun dropItemSplit() {
+        if (!itemSplitAttached.value) return
+        itemSplitAttached.value = false
+        itemSplit.discard()
+    }
+
+    /** Sends the split's link through whatever the person picks: WhatsApp, mostly. */
+    fun sendItemSplitLink(link: String) {
+        val title = itemSplit.state.value.draft?.title.orEmpty()
+        val message = if (title.isBlank()) uiText(R.string.item_split_share_message_plain, link) else uiText(R.string.item_split_share_message, title, link)
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, message)
+        }
+        _shareIntents.trySend(Intent.createChooser(send, uiText(R.string.item_split_share_send)))
+    }
+
+    /**
+     * "Use this split": everyone's amount goes into the entry as a split by amount, adding up to
+     * the bill to the paisa. Whatever nobody picked is shared between everyone at the table. A
+     * name with no friend behind it (someone who joined from the link) becomes a friend.
+     */
+    fun useItemSplit() {
+        val draft = itemSplit.state.value.draft ?: return
+        if (fullBackupBlocksActions() || draft.items.isEmpty()) return
+        launchAction {
+            val amounts = ItemSplitMath.finalAmounts(draft.split)
+            val owed = LinkedHashMap<Long, Long>()
+            val added = mutableListOf<ShareInput>()
+            for (person in draft.people) {
+                val paise = amounts[person.id] ?: 0L
+                if (paise <= 0L) continue
+                val known = person.ledgerId
+                val ledgerId = when {
+                    person.isHost -> -1L
+                    known != null && _shares.value.any { it.personId == known } -> known
+                    else -> _shares.value.firstOrNull { it.personId != -1L && it.personName.equals(person.name, ignoreCase = true) }?.personId
+                        ?: people.value.firstOrNull { it.name.equals(person.name, ignoreCase = true) }?.id
+                        ?: newFriendFor(person.name).also { id ->
+                            added += ShareInput(personId = id, personName = person.name, isGuest = isSharedGroup(_groupId.value))
+                        }
+                }
+                owed[ledgerId] = (owed[ledgerId] ?: 0L) + paise
+            }
+
+            // Theirs now: an AI reading still on its way must not change the split or the amount.
+            touched(EntryField.Amount)
+            touched(EntryField.Split)
+            _amount.value = Money.input(ItemSplitMath.rupees(draft.totalPaise))
+            if (_merchant.value.isBlank() && draft.title.isNotBlank()) _merchant.value = draft.title
+            _shares.value = (_shares.value + added.filter { new -> _shares.value.none { it.personId == new.personId } }).map { share ->
+                val paise = owed[share.personId]
+                if (paise != null) share.copy(isSelected = true, amount = ItemSplitMath.rupees(paise), percentage = 0.0)
+                else share.copy(isSelected = false, amount = 0.0, percentage = 0.0)
+            }
+            _splitMode.value = SplitMode.EXACT
+            _isSplit.value = owed.keys.any { it != -1L }
+            itemSplit.close()
+
+            // Someone who can't be in this group's split (a member of another group): their part is
+            // left unassigned, which the sheet shows and Save waits for, rather than guessed at.
+            val leftOut = owed.keys.filter { id -> _shares.value.none { it.personId == id } }
+                .mapNotNull { id -> people.value.firstOrNull { it.id == id }?.name }
+            _statusMessage.value = if (leftOut.isEmpty()) uiText(R.string.item_split_used) else uiText(R.string.item_split_left_out, leftOut.joinToString())
+            if (added.isNotEmpty()) SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
+        }
+    }
+
+    /** A friend for a name from the table, in a colour clear of everyone already on this phone. */
+    private suspend fun newFriendFor(name: String): Long {
+        val taken = people.value.mapNotNull { Hues.slotOf(it.avatarColor) }
+        val colour = Hues.firstFreeSlot(name, taken)?.hex ?: PersonColours.stable(name)
+        return try {
+            ledgerRepo.addPerson(name, colour)
+        } catch (e: DuplicateFriendException) {
+            // Added between the look-up and now (a sync, a second tap): that friend is the one.
+            db.groupSyncDao().localPersonByName(name)?.id ?: throw e
+        }
+    }
 
     fun setTab(tab: Int) {
         _currentTab.value = tab
@@ -1942,6 +2102,8 @@ class MainViewModel(
                 return@launch
             }
             settleBillPhoto(savedId)
+            // Saved: the split by items has done its job, and its link comes down.
+            dropItemSplit()
             _isConfirmSheetOpen.value = false
             _moneyConfirmations.tryEmit(Unit)
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())

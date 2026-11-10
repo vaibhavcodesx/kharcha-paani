@@ -13,6 +13,14 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ## [Unreleased]
 
+### Added
+- Split by items: on an expense, "Split by items" reads the bill photo's lines, and each person pays for what they had, with tax, service charge and tip shared in proportion and nothing lost to rounding. "Share with the table" gives a link and QR code that friends open in any browser, with no app or account, to tap their own items; their picks show on your phone in a few seconds. "Use this split" fills in the expense's split. Design and the decisions made: docs/designs/split-by-items.md. **Needs the staged migration applied and site/split.html published before sharing works.**
+- "Bill photo" on Home asks whether to take a photo or choose one from the gallery.
+- **(server, staged, not applied; owner review)** `20261110000000_bill_item_splits.sql`: bills being split by items, reached only through eight functions. Four of them take a split's link and are the first thing a signed-out caller can run. 56 checks in `supabase/tests/bill_item_splits_test.sql` pass on a local Postgres.
+
+### Changed
+- The local SQL test runner has a stand-in for Supabase Storage, so it can replay the bill-photo migration again.
+
 ## [1.7.0] - 2026-11-07
 
 ### Added
