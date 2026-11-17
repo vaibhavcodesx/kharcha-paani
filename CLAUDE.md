@@ -3,6 +3,12 @@
 A native Android app (Kotlin + Jetpack Compose + Room + Supabase + Gemini API), originally built in
 Google AI Studio. Since then it has been through many Claude Code sessions; v1.0–v1.4 have shipped.
 
+**Start here (2026-11-17): the launch audit replaced the older plans.** Claude is Lead; Codex is
+paused. Read `docs/audits/2026-11-17/NEXT-STEPS.md`, then `OWNER-ANSWERS.md` section 6 (the owner's
+final decisions win over everything else). Take work from GitHub issues in milestone `1.8.0`
+(`gh issue list -m 1.8.0 -L 30`); do issue #316 (agent system v2) first. Where the list below
+disagrees, the audit wins.
+
 Before starting any work, read:
 1. **PRD.md**, a short page on what the product is and which rules hold.
 2. **docs/production-readiness/README.md**, the current work order. Read §0 "Start here" and §10

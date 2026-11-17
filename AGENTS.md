@@ -1,5 +1,11 @@
 # Kharcha Paani: instructions for coding agents
 
+> **Start here (2026-11-17).** The launch audit in `docs/audits/2026-11-17/` replaced the older
+> plans. **Claude is Lead; the "Codex leads until 2026-11-06" line below is out of date.** Read
+> `docs/audits/2026-11-17/NEXT-STEPS.md` and `OWNER-ANSWERS.md` section 6, then take work only from
+> GitHub issues in milestone `1.8.0`. Hard stops below still apply. The rest of this page is
+> rewritten by issue #316.
+
 A native Android app: Kotlin, Jetpack Compose, Room, Supabase, Gemini. Package
 `com.vaibhav.kharchapaani`, everything under `app/`.
 

@@ -18,7 +18,7 @@ record**. It overrides the work order's §10 where they disagree (section 3 list
 | A-02 | Opens the account **after 1.8.0**, which is to be the near-production build. Not now. |
 | A-03 | "You decide." → section 2. |
 | A-04 | Not answered. About 4–5 people use the app today (I-03). |
-| A-05 | **India only on day one. US and UAE about two weeks later**, then UK and Canada (E-02). The app must be multi-currency from the first Play release: country and currency chosen from the phone's locale or by asking, and the app adapts. |
+| A-05 | *(Changed later, see section 6: no currency in 1.8.0, no UK for now.)* **India only on day one. US and UAE about two weeks later**, then UK and Canada (E-02). The app must be multi-currency from the first Play release: country and currency chosen from the phone's locale or by asking, and the app adapts. |
 | A-06 | 1.8.0 goes up first for testing; the final tested build is the first public release. Also asked how releasing to several countries works → section 5. |
 | A-07 | Asked whether friends can simply install the Play version. → section 5. None of them use guest mode. |
 | A-08 | "You suggest." → section 2. |
@@ -37,7 +37,7 @@ record**. It overrides the work order's §10 where they disagree (section 3 list
 | B-05 | Asked why it is needed. "You decide, but make it changeable." → section 2. |
 | B-06 | Groq is on the free plan. That it keeps nothing is **assumed, not checked**. |
 | B-07 | Firebase not checked. "You decide." → section 2. |
-| B-08 | Will buy a domain (or use Vercel/Cloudflare hosting). Wants invite links that open the app and join the group when tapped in WhatsApp. |
+| B-08 | Will buy a domain (or use Vercel/Cloudflare hosting). Wants invite links that open the app and join the group when tapped in WhatsApp. Also: add existing friends straight into a group, and add a friend by QR code; after the scan, offer to create a common group or add them to an existing one, kept in sync. |
 | B-09 | Keep the current email for now; log a dedicated support address as a later task. |
 
 ### C. Security
