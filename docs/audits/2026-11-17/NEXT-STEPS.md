@@ -93,3 +93,15 @@ re-plan; do not quietly cut tests or review to make the date.
 [OWNER-ANSWERS.md](OWNER-ANSWERS.md) section 6 for the order in which 1.8.0's scope is cut to fit:
 hardening and free-plan mitigations first, small UX fixes second, guest mode and listing third, and
 budgets, tutorial and app lock only if they are finished and tested by day ten.
+
+## Update: done in the housekeeping pass (later on 2026-11-17)
+
+- Repository settings: squash-only, branches deleted on merge, Dependabot alerts and security
+  updates, private vulnerability reporting. **Not done:** the ruleset on `main` (do it with the bot
+  account, see `06a-agent-system-review.md` item 1, and check first that CI runs on docs-only PRs).
+- 149 branches of merged PRs deleted (each tip was exactly the merged commit). 18 remain.
+- #139 and #276 closed with a note; their work is to be re-filed for 1.8.0.
+- The owner's local `main` is up to date. The old untracked `tools/` is in
+  `scratch/tools-local-backup-2026-11-17` (identical to upstream; safe to delete).
+- New report: `07-sync-and-backup.md`. **Add DATA-01 to DATA-04 to the top of 1.8.0's list**, with
+  the hardening: each is a small fix with a named test.
