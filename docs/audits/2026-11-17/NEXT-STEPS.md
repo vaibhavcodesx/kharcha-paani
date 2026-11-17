@@ -13,7 +13,8 @@ Supabase project by an agent.
 - No GitHub repository settings were changed (H-01 to H-05 are approved; see package 0).
 - The owner's local `main` was not updated (H-08 approved).
 - No issues were filed; the backlog is still the tables in `README.md`.
-- The agent-system proposal (`06-agent-system.md`) is a first draft. The owner approved it in
+- The agent-system proposal (`06-agent-system.md`) is a first draft, now reviewed in
+  `06a-agent-system-review.md`; version 2 applying that review is still to be written. The owner approved it in
   outline **on condition that it is reviewed before it is built** (G-01).
 - Not audited in depth: backup restore, `GroupSyncEngine`, `LocalLedgerSyncEngine`,
   `ReceiptSyncEngine`, `AccountSheet`, the widgets; the deployed Edge Function was not compared
@@ -66,7 +67,8 @@ milestones `1.8.0`, `1.9.0`, `After launch`.
 - Store listing and README rewrites (P-01, F-10); CI runs the SQL and Deno tests (ENG-21).
 - Then: the owner opens the Play account, uploads 1.8.0, starts the closed test.
 
-**4. 1.9.0: country and currency (Opus designs, then build).** `docs/designs/multi-currency.md`
+**4. 1.9.0: country and currency (Opus designs, then build).** A draft skeleton exists at
+`docs/designs/multi-currency.md`; complete it
 first, approved by the owner: currency per user and per group, country at first run, payment links
 (PayPal, Venmo) where there is no UPI, statement import India-only, Hinglish moved to `en-IN`,
 AI caps reset per user's day. Update `PRD.md` in the same PR as the design. Released into the

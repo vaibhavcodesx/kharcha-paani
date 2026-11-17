@@ -23,6 +23,8 @@ checking settings. Each report ends with what needs a phone or a build to confir
 | 6 | [The multi-agent system](06-agent-system.md) | 9 problems, a replacement system, 13 migration tasks |
 | | [Questions for the owner](QUESTIONS-FOR-OWNER.md) | Every open decision and permission |
 | | [Owner answers](OWNER-ANSWERS.md) | The answers of 2026-11-17, the decisions made on the owner's behalf, and the conflicts to resolve. **The current decision record.** |
+| 6a | [Review of the agent-system proposal](06a-agent-system-review.md) | 15 changes and a cut list; wins over report 6 where they differ |
+| | [Multi-currency design skeleton](../../designs/multi-currency.md) | Draft for 1.9.0, not approved; five questions for the owner |
 | | [Next steps](NEXT-STEPS.md) | The work packages for the next agents, in order |
 
 **Next step:** the owner answers `QUESTIONS-FOR-OWNER.md` (the starred ones first). Work that
