@@ -105,3 +105,8 @@ budgets, tutorial and app lock only if they are finished and tested by day ten.
   `scratch/tools-local-backup-2026-11-17` (identical to upstream; safe to delete).
 - New report: `07-sync-and-backup.md`. **Add DATA-01 to DATA-04 to the top of 1.8.0's list**, with
   the hardening: each is a small fix with a named test.
+- **The board exists now.** 15 labels, milestones `1.8.0`, `1.9.0` and `After launch`, and issues
+  #292 to #319 are filed. Package 2 is done for the findings that matter for 1.8.0; take work from
+  the issues, not from the report tables. #316 is the agent system v2, #317 lists the owner's own
+  actions, #318 (multi-currency) and #319 (sync of phone-only data) are in 1.9.0.
+- Still open: PR #252 (Codex, conflicting) was left alone.

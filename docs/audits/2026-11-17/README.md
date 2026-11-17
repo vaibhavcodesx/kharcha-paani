@@ -61,6 +61,9 @@ Russia in particular is a poor choice for revenue. See report 3.
 
 ## The backlog, in order
 
+> The work is now tracked as GitHub issues #292 to #319, in milestones `1.8.0`, `1.9.0` and
+> `After launch`. Take it from the issues; this table is the record of how they were ranked.
+
 Sizes: S = hours, M = a day or two, L = a week or more. "Owner" means only the owner can do it.
 **OR** = owner-review hard stop (RLS, auth, security, `supabase/`): open the PR, do not merge.
 
