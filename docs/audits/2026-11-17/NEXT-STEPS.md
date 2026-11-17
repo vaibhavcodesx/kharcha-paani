@@ -86,3 +86,10 @@ ten weeks on three subscriptions, and the 14-day closed test starts only after t
 opened. The split above (1.8.0 without currency, 1.9.0 with it, built during the test) is the
 fastest honest path. If the owner insists on currency in the first Play build, say so plainly and
 re-plan; do not quietly cut tests or review to make the date.
+
+## Update: the owner settled the timeline (later on 2026-11-17)
+
+1.8.0 ships **within two weeks, without multi-currency**. No UK for now. See
+[OWNER-ANSWERS.md](OWNER-ANSWERS.md) section 6 for the order in which 1.8.0's scope is cut to fit:
+hardening and free-plan mitigations first, small UX fixes second, guest mode and listing third, and
+budgets, tutorial and app lock only if they are finished and tested by day ten.

@@ -254,3 +254,27 @@ country; you do not publish separate versions.
 
 These are as I know Play to work; the agent doing the launch should confirm each on the current
 Play Console help pages.
+
+## 6. Section 3 resolved by the owner (later on 2026-11-17)
+
+These settle conflicts 1 to 4 of section 3 and override anything above that disagrees.
+
+| Conflict | The owner's decision |
+|---|---|
+| 1. Timeline | **No multi-currency in 1.8.0. 1.8.0 is released within two weeks.** Currency and country are 1.9.0, built while the closed test runs. |
+| 2 and 3. UK | **No UK for now.** After India: the US, UAE and Canada. |
+| 5. Naming the AI vendors | Agreed: "AI" on ordinary screens; Google and Groq stay named in the one-time notice and the privacy policy. |
+| 4. Free Supabase | Stay on the free plan and do what is needed: shrink bill photos to about 200 KB, a per-user photo cap, a manual database dump before every migration, and a staging project. |
+
+**What "1.8.0 in two weeks" means for scope.** Two weeks does not fit everything listed for 1.8.0
+in `NEXT-STEPS.md` package 3. The Lead cuts 1.8.0 to what protects users and passes review, in this
+order, and moves the rest to 1.9.0 without asking again:
+
+1. Server hardening that is owner review (S-01, S-04, S-05, S-06), and the free-plan mitigations above.
+2. The small UX fixes (UX-06, UX-02, UX-31, UX-21, UX-22, tappable group expenses, "AI" wording,
+   UPI reassurance text, renamed "IOU", general default categories, reminder caps).
+3. Guest mode repair, the store listing and README.
+4. Then, only if time remains, in the owner's stated priority: budgets, the tutorial, app lock.
+
+Anything in 4 that is not finished and tested by day ten goes to 1.9.0. The date wins over the
+feature list; tests and review are never what gets cut.
