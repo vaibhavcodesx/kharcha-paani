@@ -27,6 +27,11 @@ In this file the audit IDs carry a prefix so they don't collide: **SEC-** (secur
 
 ## 0. Start here (next agent)
 
+**Superseded on 2026-11-17 by the launch audit:
+[`docs/audits/2026-11-17/NEXT-STEPS.md`](../audits/2026-11-17/NEXT-STEPS.md).** The work order is now
+GitHub issues in milestones `1.8.0`, `1.9.0` and `After launch`. This page is kept for its history
+and the finding details it links.
+
 **Where things stand and what's next (2026-10-27): [`docs/plan-1.6-to-launch.md`](../plan-1.6-to-launch.md).**
 Read it before this page's tiers; who builds what is in `docs/agents/work-split.md`.
 
