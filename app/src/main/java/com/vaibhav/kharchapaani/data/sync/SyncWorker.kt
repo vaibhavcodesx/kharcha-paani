@@ -23,6 +23,7 @@ import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Syncs one account's ledger. Queued work only acts while that account is the one signed in:
@@ -124,12 +125,23 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 // The status code only: the server's message can quote the row it refused.
                 CrashReporting.recordProblem("Sync request failed: HTTP ${e.statusCode}")
                 ListenableWorker.Result.retry()
+            } catch (e: CancellationException) {
+                // WorkManager stopping the worker. CancellationException is an IllegalStateException,
+                // so it has to be rethrown before the catch below can mistake it for a bug.
+                throw e
             } catch (e: IllegalStateException) {
                 // Expected only when a sign-out closes the database mid-run; anything else is a bug,
                 // so it's logged loudly. Rows stay queued either way and the next trigger resyncs.
                 Log.e(TAG, "Sync stopped", e)
                 CrashReporting.recordProblem("Sync stopped", e)
                 ListenableWorker.Result.failure()
+            } catch (e: Exception) {
+                // Catch-all (S-06): a decoding error after a server change, or anything else not named
+                // above, used to escape and end the worker as a bare failure with no report. Rows stay
+                // queued; retry with WorkManager's backoff so the next pass can try again.
+                Log.e(TAG, "Sync failed unexpectedly", e)
+                CrashReporting.recordProblem("Sync failed unexpectedly", e)
+                ListenableWorker.Result.retry()
             }
         }
     }
