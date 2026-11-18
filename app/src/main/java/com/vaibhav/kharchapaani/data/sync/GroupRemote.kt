@@ -185,7 +185,7 @@ class SupabaseGroupRemote(private val supabase: SupabaseClient) : GroupRemote {
         try {
             block()
         } catch (e: RestException) {
-            val retryable = e.statusCode == 401 || e.statusCode >= 500
+            val retryable = isRetryableStatus(e.statusCode)
             if (retryable) throw e
             throw RowsRejectedException(e.statusCode, e.error)
         }
