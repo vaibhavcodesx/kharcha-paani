@@ -63,19 +63,26 @@ class ReceiptSyncEngine(
             val path = CloudCopy.path(selfId, tx.remoteId, copy.extension)
             remote.upload(path, copy.bytes, copy.contentType)
             dao.setRemotePath(row.id, path)
-            if (tx.groupId == null || shareInSplits) remote.setSharedPath(tx.remoteId, path)
         }
     }
 
-    /** When the switch changed since it was last applied, set or clear the path on our group expenses. */
+    /** Retry publishing uploaded paths every pass; remember a path only after publication succeeds. */
     private suspend fun applySharing(transactions: Map<Long, TransactionEntity>) {
-        val applied = db.syncDao().meta(SHARING_APPLIED)?.toBooleanStrictOrNull()
-        if (applied == shareInSplits) return
-        dao.all().forEach { row ->
-            val path = row.remotePath ?: return@forEach
-            val tx = transactions[row.transactionId] ?: return@forEach
-            if (tx.groupId == null || !tx.isOwnedByMe || !path.startsWith("$selfId/")) return@forEach
-            remote.setSharedPath(tx.remoteId, if (shareInSplits) path else null)
+        // Photos from before this acknowledgement existed all look unpublished once; a cap per pass
+        // spreads that over several passes instead of one burst that could be rate limited.
+        var publishes = 0
+        for (row in dao.all()) {
+            val path = row.remotePath ?: continue
+            val tx = transactions[row.transactionId] ?: continue
+            if (!tx.isOwnedByMe || tx.syncState != SyncState.SYNCED || !path.startsWith("$selfId/")) continue
+            val sharedPath = if (tx.groupId == null || shareInSplits) path else ""
+            // One photo per expense. A replacement or switch change invalidates this acknowledgement.
+            val key = "$PUBLISHED_PATH_PREFIX${tx.remoteId}"
+            if (db.syncDao().meta(key) == sharedPath) continue
+            if (publishes >= MAX_PUBLISHES_PER_PASS) break
+            publishes++
+            remote.setSharedPath(tx.remoteId, sharedPath.ifEmpty { null })
+            db.syncDao().putMeta(SyncMetaEntity(key, sharedPath))
         }
         db.syncDao().putMeta(SyncMetaEntity(SHARING_APPLIED, shareInSplits.toString()))
     }
@@ -115,6 +122,8 @@ class ReceiptSyncEngine(
     companion object {
         private const val TAG = "ReceiptSync"
         const val MAX_UPLOADS_PER_PASS = 10
+        private const val MAX_PUBLISHES_PER_PASS = 25
+        private const val PUBLISHED_PATH_PREFIX = "receipts_published_"
         const val SHARING_APPLIED = "receipts_sharing_applied"
         const val RESTORED_ONCE = "receipts_restored_once"
 
