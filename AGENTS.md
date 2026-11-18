@@ -18,7 +18,7 @@ choices, and put real questions on the board.
 
 ```bash
 # role = lead | builder | worker ; try p0, then p1, then p2 until one prints
-gh issue list -l for:<role> -l p0 -m 1.8.0 -S "-label:blocked -label:needs-owner -label:wip:claude -label:wip:codex -label:wip:antigravity" -L 5 --json number,title --jq '.[]|"\(.number) \(.title)"'
+gh issue list -l for:<role> -l p0 -m 1.8.0 -S '-label:blocked -label:needs-owner -label:"wip:claude" -label:"wip:codex" -label:"wip:antigravity"' -L 5 --json number,title --jq '.[]|"\(.number) \(.title)"'
 ```
 
 Empty for every priority: say so in one line and stop. Do not invent work.
