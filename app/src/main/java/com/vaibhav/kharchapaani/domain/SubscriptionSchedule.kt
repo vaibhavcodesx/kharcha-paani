@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.domain
 
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
 /**
  * A subscription's dates (start, charged-through, cancelled) are calendar days, stored as epoch
@@ -35,15 +36,17 @@ enum class SubscriptionCycle { WEEKLY, MONTHLY, YEARLY }
 object SubscriptionSchedule {
 
     /** Every due date from [start] up to and including [today], oldest first. Never the future. */
-    fun dueDates(start: LocalDate, cycle: SubscriptionCycle, today: LocalDate, cancelled: LocalDate? = null): List<LocalDate> {
+    fun dueDates(start: LocalDate, cycle: SubscriptionCycle, today: LocalDate, cancelled: LocalDate? = null, after: LocalDate? = null): List<LocalDate> {
         if (start.isAfter(today)) return emptyList()
         val last = if (cancelled != null && cancelled.isBefore(today)) cancelled else today
         val dates = mutableListOf<LocalDate>()
-        var occurrence = 0L
+        // Jump to the checkpoint's period rather than constructing years of discarded dates.
+        // Starting in that period also handles short months and leap years without moving the anchor.
+        var occurrence = after?.let { occurrenceAt(start, cycle, it) } ?: 0L
         while (true) {
             val date = advance(start, cycle, occurrence)
             if (date.isAfter(last)) break
-            dates += date
+            if (after == null || date.isAfter(after)) dates += date
             occurrence++
         }
         return dates
@@ -52,13 +55,20 @@ object SubscriptionSchedule {
     /** The first due date after [after], for showing what's coming. Null once cancelled. */
     fun nextDue(start: LocalDate, cycle: SubscriptionCycle, after: LocalDate, cancelled: LocalDate? = null): LocalDate? {
         if (cancelled != null && !cancelled.isAfter(after)) return null
-        var occurrence = 0L
+        var occurrence = occurrenceAt(start, cycle, after)
         while (true) {
             val date = advance(start, cycle, occurrence)
             if (date.isAfter(after)) return if (cancelled != null && date.isAfter(cancelled)) null else date
             occurrence++
         }
     }
+
+    private fun occurrenceAt(start: LocalDate, cycle: SubscriptionCycle, after: LocalDate): Long =
+        when (cycle) {
+            SubscriptionCycle.WEEKLY -> ChronoUnit.WEEKS.between(start, after)
+            SubscriptionCycle.MONTHLY -> ChronoUnit.MONTHS.between(start, after)
+            SubscriptionCycle.YEARLY -> ChronoUnit.YEARS.between(start, after)
+        }.coerceAtLeast(0L)
 
     /**
      * The nth charge after [start]. A monthly one keeps its day of the month where the month is long

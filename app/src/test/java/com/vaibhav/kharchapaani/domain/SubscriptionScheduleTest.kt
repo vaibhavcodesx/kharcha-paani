@@ -7,6 +7,23 @@ import java.time.LocalDate
 
 class SubscriptionScheduleTest {
 
+    @Test(timeout = 2000)
+    fun `checkpoint bounds an ancient schedule and preserves month end and leap day`() {
+        assertEquals(d("2026-09-30"), SubscriptionSchedule.nextDue(
+            d("0001-01-31"), SubscriptionCycle.MONTHLY, after = d("2026-09-18")))
+        assertEquals(d("2028-02-29"), SubscriptionSchedule.nextDue(
+            d("0004-02-29"), SubscriptionCycle.YEARLY, after = d("2027-03-01")))
+        assertEquals(listOf(d("2026-09-30")), SubscriptionSchedule.dueDates(
+            d("0001-01-31"), SubscriptionCycle.MONTHLY, d("2026-09-30"), after = d("2026-09-18")))
+        assertEquals(listOf(d("2028-02-29")), SubscriptionSchedule.dueDates(
+            d("0004-02-29"), SubscriptionCycle.YEARLY, d("2028-02-29"), after = d("2027-03-01")))
+        assertEquals(listOf(d("2026-09-22")), SubscriptionSchedule.dueDates(
+            d("2026-09-01"), SubscriptionCycle.WEEKLY, d("2026-09-22"), after = d("2026-09-18")))
+        assertEquals(emptyList<LocalDate>(), SubscriptionSchedule.dueDates(
+            d("0001-01-31"), SubscriptionCycle.MONTHLY, d("2026-09-30"),
+            cancelled = d("2026-09-01"), after = d("2026-09-18")))
+    }
+
     private fun d(text: String) = LocalDate.parse(text)
 
     @Test
