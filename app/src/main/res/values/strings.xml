@@ -1123,4 +1123,8 @@
         <item quantity="one">%d change couldn\'t sync</item>
         <item quantity="other">%d changes couldn\'t sync</item>
     </plurals>
+    <string name="everything_backup_discard">Discard this restore</string>
+    <string name="everything_backup_discard_title">Discard this restore?</string>
+    <string name="everything_backup_discard_description">Stop trying to finish this restore. Entries already restored will stay. Keep your backup file.</string>
+    <string name="fullbackup_vm_discarded">Restore discarded.</string>
 </resources>

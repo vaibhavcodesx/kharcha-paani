@@ -36,6 +36,34 @@ class EverythingBackupDialogTest {
         }
     }
 
+    @Test fun `discard needs confirmation and cancelling keeps the pending restore`() {
+        var discards = 0
+        compose.setContent { SplitFlowTheme {
+            EverythingBackupDialog(null, true, false, false, {}, {}, hasReadError = true,
+                recoveryPending = true, onDiscard = { discards++ })
+        } }
+        compose.onNodeWithTag("everything_restore_discard").performClick()
+        assertEquals(0, discards)
+        compose.onNodeWithTag("everything_discard_dialog").assertExists()
+        compose.onNodeWithText("Cancel").performClick()
+        compose.onNodeWithTag("everything_discard_dialog").assertDoesNotExist()
+        assertEquals(0, discards)
+        compose.onNodeWithTag("everything_restore_discard").performClick()
+        compose.onNodeWithTag("everything_discard_confirm").performClick()
+        assertEquals(1, discards)
+    }
+
+    @Test fun `a pending restore cannot be discarded while working`() {
+        var discards = 0
+        compose.setContent { SplitFlowTheme {
+            EverythingBackupDialog(backup, true, true, true, {}, {},
+                recoveryPending = true, onDiscard = { discards++ })
+        } }
+        compose.onNodeWithTag("everything_restore_discard").assertIsNotEnabled().performClick()
+        assertEquals(0, discards)
+        compose.onNodeWithTag("everything_discard_dialog").assertDoesNotExist()
+    }
+
     @Test fun `preview counts duplicate names separately and restore waits for confirmation`() {
         var restores = 0
         var dismisses = 0
