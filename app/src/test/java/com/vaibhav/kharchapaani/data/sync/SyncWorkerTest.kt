@@ -8,11 +8,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -44,6 +46,19 @@ class SyncWorkerTest {
     @Test
     fun `an unexpected state error stops this run instead of retrying forever`() = runBlocking {
         assertEquals(Result.failure(), SyncWorker.syncIfSignedIn("alice", "alice") { error("database closed") })
+    }
+
+    @Test
+    fun `an unexpected exception retries instead of ending the worker as a bare failure`() = runBlocking {
+        // A decoding error after a server change is not an IOException, RestException or state error.
+        assertEquals(Result.retry(), SyncWorker.syncIfSignedIn("alice", "alice") { throw RuntimeException("bad json") })
+    }
+
+    @Test
+    fun `cancellation is passed on, not turned into a failure`() {
+        assertThrows(CancellationException::class.java) {
+            runBlocking { SyncWorker.syncIfSignedIn("alice", "alice") { throw CancellationException("stopped") } }
+        }
     }
 
     @Test
