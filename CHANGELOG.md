@@ -14,6 +14,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 ## [Unreleased]
 
 ### Added
+- **(server, staged, not applied; owner review)** `20261119000000_app_config.sql`: a one-row `public.app_config` with `min_version_code` and `recommended_version_code`, readable by anyone, writable only from the dashboard. The app reads it at the start of each sync pass and, below the minimum, stops syncing (reading and exporting still work). Both default to 0, so applying it changes nothing until the owner raises the number (S-06, #299). The "Update to keep syncing" screen is still to build.
 - Launch audit of 2026-11-17 in `docs/audits/2026-11-17/`: security, Play Store readiness, international readiness, UX and feature gaps, and engineering, with a prioritised backlog (docs only).
 - Split by items: on an expense, "Split by items" reads the bill photo's lines, and each person pays for what they had, with tax, service charge and tip shared in proportion and nothing lost to rounding. "Share with the table" gives a link and QR code that friends open in any browser, with no app or account, to tap their own items; their picks show on your phone in a few seconds. "Use this split" fills in the expense's split. Design and the decisions made: docs/designs/split-by-items.md. **Needs the staged migration applied and site/split.html published before sharing works.**
 - "Bill photo" on Home asks whether to take a photo or choose one from the gallery.

@@ -40,6 +40,11 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         // Not auth.awaitInitialization(): in the background that waits until the app is next opened.
         val signedInUserId = BackgroundAuth.sessionForNetwork(applicationContext)
 
+        // Below the server's minimum version this phone stops syncing (reading and exporting keep
+        // working). Refreshing is best effort: a failure keeps the cached minimum (S-06).
+        if (signedInUserId == userId) AppVersionGate.refreshQuietly(applicationContext, supabase)
+        if (AppVersionGate.updateRequired(applicationContext)) return Result.success()
+
         if (mode.choice == LedgerMode.Choice.LOCAL) return Result.success()
         return syncIfSignedIn(requestedUserId = userId, signedInUserId = signedInUserId) {
             if (mode.choice == LedgerMode.Choice.LOCAL) return@syncIfSignedIn
