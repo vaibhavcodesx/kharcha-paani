@@ -1,3 +1,5 @@
+> **Archived 2026-11-19. Superseded by `AGENTS.md`, `docs/agents/PLAYBOOK.md` and the GitHub board. Do not take work from this page.**
+
 # Claude cloud session, 2026-11-03: what was done and what's next
 
 Written at the end of the session for the next Claude Code cloud session. Read

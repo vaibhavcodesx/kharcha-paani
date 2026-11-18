@@ -1,3 +1,5 @@
+> **Archived 2026-11-19. Superseded by `AGENTS.md`, `docs/agents/PLAYBOOK.md` and the GitHub board. Do not take work from this page.**
+
 # From 1.6 to the Play Store: the plan
 
 Written 2026-10-27; §1's table and §2's PR list predate Codex's solo period. Since then T1.1 (#103), T2.3

@@ -1,3 +1,5 @@
+> **Archived 2026-11-19. Superseded by `AGENTS.md`, `docs/agents/PLAYBOOK.md` and the GitHub board. Do not take work from this page.**
+
 # Two agents, one repo: who does what
 
 From 2026-10-26 the remaining work is split between **Claude** (Claude Code, on the owner's laptop,

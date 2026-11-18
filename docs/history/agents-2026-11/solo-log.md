@@ -1,3 +1,5 @@
+> **Archived 2026-11-19. Superseded by `AGENTS.md`, `docs/agents/PLAYBOOK.md` and the GitHub board. Do not take work from this page.**
+
 # Codex solo log (2026-10-27 →)
 
 One line per PR merged or parked during the solo period (rules in `work-split.md`). Questions for the

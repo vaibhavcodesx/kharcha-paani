@@ -4,7 +4,7 @@ globs: "**/ui/**/*.kt, **/res/values/*.xml, **/widget/*.kt, **/MainActivity.kt"
 description: "Kharcha Paani UI limits: no design decisions, existing tokens and components only, friendly copy."
 ---
 
-Read `docs/antigravity/HANDBOOK.md` section 4 before changing UI.
+Read `docs/history/agents-2026-11/antigravity-HANDBOOK.md` section 4 (the UI rules still hold) before changing UI.
 
 - You don't make visual decisions: no new screens, colours, sizes, radii, fonts, icons, animation or layouts. Copy the nearest existing screen. If that isn't enough, park the item.
 - Use `Spacing`, `KpShapes`, `MoneyText`, theme colours and `ui/components/`. Never a raw `Color(...)`, `.dp` or `.sp` you chose yourself.

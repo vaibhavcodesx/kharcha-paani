@@ -1,3 +1,5 @@
+> **Archived 2026-11-19. Superseded by `AGENTS.md`, `docs/agents/PLAYBOOK.md` and the GitHub board. Do not take work from this page.**
+
 # Handoff for Claude Code cloud sessions
 
 Written 2026-11-03. The owner, Vaibhav, is funding cloud sessions to merge what's pending and to do the hard and creative

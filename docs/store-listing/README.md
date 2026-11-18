@@ -18,11 +18,11 @@ table and the quoted headline in the graphic brief. Internal production notes ar
 
 ## Basis and boundaries
 
-Follow [the lane contract](../agents/work-split.md), X1, and the
+Follow the rules in [AGENTS.md](../../AGENTS.md) and the
 [Play audit](../production-readiness/audits/play-store.md), §4 (financial wording) and §9
 (listing assets). Specs below are the repo's acceptance criteria, not a new policy audit.
 [PRD](../../PRD.md) supplies product scope; owner decisions §10 D2/D5 in the
-[work order](../production-readiness/README.md#10-owner-decisions-2026-10-24-these-override-the-tiers-above)
+[owner decisions](../product/decisions.md) (and D2/D5 in the archived work order)
 control AI disclosure and pricing. No pricing or upcoming features are advertised.
 
 The listing describes records and splits. UPI opens the user's own payment app; Kharcha Paani
