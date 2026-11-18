@@ -1,0 +1,11 @@
+# Paths where the owner is the named reviewer. A ruleset on `main` that requires Code Owner review
+# (see docs/agents/PLAYBOOK.md section 3) makes this binding; until then it marks the owner as the
+# default reviewer and documents the red paths in one place.
+/supabase/                  @vaibhavcodesx
+/.github/                   @vaibhavcodesx
+/app/schemas/               @vaibhavcodesx
+/AGENTS.md                  @vaibhavcodesx
+/CLAUDE.md                  @vaibhavcodesx
+/docs/agents/STATE.md       @vaibhavcodesx
+/.github/CODEOWNERS         @vaibhavcodesx
+release.yml                 @vaibhavcodesx

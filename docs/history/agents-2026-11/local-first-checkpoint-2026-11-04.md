@@ -1,3 +1,5 @@
+> **Archived 2026-11-19. Superseded by `AGENTS.md`, `docs/agents/PLAYBOOK.md` and the GitHub board. Do not take work from this page.**
+
 # Local-first restart checkpoint, November 4
 
 **AI is merged. Local mode and complete backup have passed their full source test runs. Both remaining PRs require owner review and stay unmerged. No 1.7 build was published.** Live PR checks/comments are authoritative if they are newer than this snapshot.

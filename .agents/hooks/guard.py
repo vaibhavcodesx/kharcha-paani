@@ -8,7 +8,7 @@ Reads the hook payload on stdin and prints {"decision": ..., "reason": ...} on s
 
 It fails closed: if anything here breaks, the call is denied. It is a seatbelt, not a sandbox. Determined
 shell tricks could get past a regex, which is why the rules and code review still exist.
-Don't weaken this file. See docs/antigravity/HANDBOOK.md section 2.
+Don't weaken this file. See AGENTS.md and docs/agents/roles/worker.md.
 """
 import ctypes
 import json
@@ -28,7 +28,7 @@ NO_WRITE = re.compile(
     r"(^|[\\/])(supabase|\.github|\.agents)([\\/]|$)"
     r"|(^|[\\/])(PRD\.md|CLAUDE\.md|AGENTS\.md|GEMINI\.md|gradlew|gradlew\.bat)$"
     r"|docs[\\/]production-readiness[\\/]README\.md$"
-    r"|docs[\\/]agents[\\/]work-split\.md$"
+    r"|docs[\\/]agents[\\/](STATE|PLAYBOOK)\.md$"
     r"|docs[\\/]antigravity[\\/]HANDBOOK\.md$",
     re.I,
 )
@@ -167,15 +167,15 @@ def check_file(tool, args, payload):
             if inside(path, [root]):
                 relative = os.path.relpath(os.path.abspath(path), root)
         if NO_WRITE.search(relative):
-            finish("deny", "This file is read-only for you. See docs/antigravity/HANDBOOK.md section 2.")
+            finish("deny", "This file is read-only for you. See docs/agents/roles/worker.md.")
     finish("allow")
 
 
 def session_start():
     message = (
-        "Kharcha Paani. Before anything else, read docs/antigravity/HANDBOOK.md section 0 and the latest comment on issue #188, "
-        "then continue the queue. You never merge. A guard script blocks merges, Supabase, secrets and destructive commands. "
-        "A denied command is a limit, not a bug: never work around it. Skip the item and note it on #188."
+        "Kharcha Paani. Before anything else, read AGENTS.md and docs/agents/roles/worker.md, "
+        "then say start and take the top for:worker issue. You never merge. A guard script blocks merges, Supabase, secrets and destructive commands. "
+        "A denied command is a limit, not a bug: never work around it. Skip the item, comment once on the issue and add the blocked label."
     )
     print(json.dumps({"injectSteps": [{"systemMessage": {"systemMessage": message}}]}))
 

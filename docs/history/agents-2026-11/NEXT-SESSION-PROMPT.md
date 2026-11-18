@@ -1,3 +1,5 @@
+> **Archived 2026-11-19. Superseded by `AGENTS.md`, `docs/agents/PLAYBOOK.md` and the GitHub board. Do not take work from this page.**
+
 # Prompt for the next Claude Code cloud session
 
 Copy everything inside the fence into a new cloud session on `vaibhavcodesx/kharcha-paani`, fill in

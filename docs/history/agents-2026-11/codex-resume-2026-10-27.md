@@ -1,3 +1,5 @@
+> **Archived 2026-11-19. Superseded by `AGENTS.md`, `docs/agents/PLAYBOOK.md` and the GitHub board. Do not take work from this page.**
+
 # Codex checkpoint — active queue finished 30 October 2026
 
 Read the [owner progress report](../production-readiness/solo-progress-2026-10-27.md) first. **56 product PRs merged, 0 prepared, 4 parked.** The owner resumed work on 30 October; PRs 179–184 are now merged. This replaces the earlier pause instructions; that snapshot remains in Git history.

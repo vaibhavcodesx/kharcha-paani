@@ -1,7 +1,7 @@
 # Kharcha Paani: product spec (current)
 
 Last reviewed 2026-10-24. This page is short on purpose: it says what the product is and which
-rules hold. **The work to do next lives in [docs/production-readiness/README.md](docs/production-readiness/README.md)**,
+rules hold. **The work to do next lives on the GitHub board (`gh issue list -m 1.8.0`); start at [AGENTS.md](AGENTS.md)**,
 and what has changed lives in [CHANGELOG.md](CHANGELOG.md).
 
 The original September brief (cloud migration, robustness, premium UI pass) is archived at

@@ -1,3 +1,5 @@
+> **Archived 2026-11-19. Superseded by `AGENTS.md`, `docs/agents/PLAYBOOK.md` and the GitHub board. Do not take work from this page.**
+
 # Production readiness plan: Kharcha Paani on the Play Store
 
 Written 2026-10-24 against `main` at 7a1342a, plus the open PRs #61–#77. This is the work order for

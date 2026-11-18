@@ -1,3 +1,5 @@
+> **Archived 2026-11-19. Superseded by `AGENTS.md`, `docs/agents/PLAYBOOK.md` and the GitHub board. Do not take work from this page.**
+
 # Codex: you lead, 2026-11-03 to 2026-11-06
 
 Claude is away for 3 days and the owner has given you the lead, with merge rights and a large quota. You know this repo:
