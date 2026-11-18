@@ -21,6 +21,7 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 
 ### Fixed
 - Sync: an unexpected error (for example a decoding failure after a server change) now retries with backoff and is reported, instead of ending the worker with no record (S-06, #299).
+- Bill photos: retry publishing an uploaded photo's path after a failed sync, so it becomes visible to groupmates and can be restored on a new phone without changing the sharing switch (DATA-02, #293).
 - Sync: a write the server answers with 408 (timeout) or 429 (rate limit) stays pending and is retried, instead of being marked rejected for good. One shared rule, `isRetryableStatus`, now serves personal, group and local-ledger writes (DATA-01, #292).
 
 ### Changed

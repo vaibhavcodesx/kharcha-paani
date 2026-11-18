@@ -47,11 +47,24 @@ class ReceiptSyncEngineTest {
         val objects = mutableMapOf<String, ByteArray>()
         val paths = mutableMapOf<String, String?>()
         val deleted = mutableListOf<String>()
-        override suspend fun upload(path: String, bytes: ByteArray, contentType: String) { objects[path] = bytes }
+        var failNextPublish = false
+        var uploadCount = 0
+        var publishCount = 0
+        override suspend fun upload(path: String, bytes: ByteArray, contentType: String) {
+            uploadCount++
+            objects[path] = bytes
+        }
         override suspend fun download(path: String): ByteArray = objects.getValue(path)
         override suspend fun delete(paths: List<String>) { deleted += paths; paths.forEach { objects.remove(it) } }
         override suspend fun deleteFolder(ownerId: String) { objects.keys.removeAll { it.startsWith("$ownerId/") } }
-        override suspend fun setSharedPath(transactionRemoteId: String, path: String?) { paths[transactionRemoteId] = path }
+        override suspend fun setSharedPath(transactionRemoteId: String, path: String?) {
+            publishCount++
+            if (failNextPublish) {
+                failNextPublish = false
+                throw java.io.IOException("publish failed")
+            }
+            paths[transactionRemoteId] = path
+        }
         override suspend fun sharedPaths(transactionRemoteIds: List<String>) =
             transactionRemoteIds.mapNotNull { id -> paths[id]?.let { id to it } }.toMap()
     }
@@ -85,6 +98,38 @@ class ReceiptSyncEngineTest {
         assertEquals(path, remote.paths["20000000-0000-4000-8000-000000000001"])
     }
 
+    @Test fun `a failed group photo publication retries with the sharing switch unchanged`() = runBlocking {
+        group(7)
+        assertPublicationRetries(groupId = 7)
+    }
+
+    @Test fun `a failed personal photo publication retries for backup`() = runBlocking {
+        assertPublicationRetries()
+    }
+
+    private suspend fun assertPublicationRetries(groupId: Long? = null) {
+        // The switch was already applied before this new photo arrived.
+        engine().sync()
+        val remoteId = "20000000-0000-4000-8000-000000000001"
+        expense(1, remoteId, groupId = groupId)
+        photo(1, "a.jpg")
+        remote.failNextPublish = true
+        ReceiptSyncEngine.runQuietly(engine())
+        val path = db.receiptDao().forTransaction(1).single().remotePath!!
+        assertTrue(remote.objects.containsKey(path))
+        assertNull(remote.paths[remoteId])
+        assertEquals(1, remote.publishCount)
+
+        // A fresh engine must remember the upload, but retry the failed publication.
+        engine().sync()
+        assertEquals(path, remote.paths[remoteId])
+        assertEquals(2, remote.publishCount)
+        assertEquals("retry must not upload the photo again", 1, remote.uploadCount)
+
+        engine().sync()
+        assertEquals("a successful publication is remembered", 2, remote.publishCount)
+    }
+
     @Test fun `with sharing off a group photo backs up but the split can't see it`() = runBlocking {
         group(7)
         expense(1, "20000000-0000-4000-8000-000000000001", groupId = 7)
@@ -102,6 +147,9 @@ class ReceiptSyncEngineTest {
         engine(share = false).sync()
         engine(share = true).sync()
         assertEquals(db.receiptDao().forTransaction(1).single().remotePath, remote.paths["20000000-0000-4000-8000-000000000001"])
+        remote.failNextPublish = true
+        ReceiptSyncEngine.runQuietly(engine(share = false))
+        assertNotNull("failed unsharing still needs a retry", remote.paths["20000000-0000-4000-8000-000000000001"])
         engine(share = false).sync()
         assertNull("turning it off again unshares", remote.paths["20000000-0000-4000-8000-000000000001"])
     }
