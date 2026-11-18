@@ -15,6 +15,16 @@ import kotlin.time.ExperimentalTime
  */
 class RowsRejectedException(val statusCode: Int, message: String) : Exception(message)
 
+/**
+ * Whether a failed write should be retried later (the rows stay PENDING) rather than marked rejected.
+ * 401 is an expired session, 408 and 429 are the server asking us to slow down, 5xx is its own fault.
+ * [retryForbidden] is for personal rows, where a 403 is a session problem; group rows keep 403 final
+ * because RLS refuses writes to an archived group.
+ */
+internal fun isRetryableStatus(statusCode: Int, retryForbidden: Boolean = false): Boolean =
+    statusCode == 401 || statusCode == 408 || statusCode == 429 || statusCode >= 500 ||
+        (retryForbidden && statusCode == 403)
+
 interface TransactionRemote {
     /**
      * Insert-or-update by id. Safe to repeat: the id is the device-generated remoteId.
@@ -41,7 +51,7 @@ class SupabaseTransactionRemote(
         try {
             supabase.from(TABLE).upsert(rows) { onConflict = "id" }
         } catch (e: RestException) {
-            val retryable = e.statusCode == 401 || e.statusCode == 403 || e.statusCode >= 500
+            val retryable = isRetryableStatus(e.statusCode, retryForbidden = true)
             if (retryable) throw e
             throw RowsRejectedException(e.statusCode, e.error)
         }
@@ -62,7 +72,7 @@ class SupabaseTransactionRemote(
         } catch (e: RestException) {
             // A soft delete of a row we may change can only be refused by an RLS check (the row's group
             // is archived or we left it), which retrying never fixes. Expired sessions are 401.
-            if (e.statusCode == 401 || e.statusCode >= 500) throw e
+            if (isRetryableStatus(e.statusCode)) throw e
             throw RowsRejectedException(e.statusCode, e.error)
         }
     }

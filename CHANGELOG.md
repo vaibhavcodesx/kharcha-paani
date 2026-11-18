@@ -19,6 +19,9 @@ is archived in [`docs/history/prd-status-log-2026-09.md`](docs/history/prd-statu
 - "Bill photo" on Home asks whether to take a photo or choose one from the gallery.
 - **(server, staged, not applied; owner review)** `20261110000000_bill_item_splits.sql`: bills being split by items, reached only through eight functions. Four of them take a split's link and are the first thing a signed-out caller can run. 56 checks in `supabase/tests/bill_item_splits_test.sql` pass on a local Postgres.
 
+### Fixed
+- Sync: a write the server answers with 408 (timeout) or 429 (rate limit) stays pending and is retried, instead of being marked rejected for good. One shared rule, `isRetryableStatus`, now serves personal, group and local-ledger writes (DATA-01, #292).
+
 ### Changed
 - The local SQL test runner has a stand-in for Supabase Storage, so it can replay the bill-photo migration again.
 

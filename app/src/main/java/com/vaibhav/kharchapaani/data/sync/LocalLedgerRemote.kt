@@ -186,11 +186,11 @@ class SupabaseLocalLedgerRemote(
             limit(limit.toLong())
         }.decodeList()
 
-    /** Same split as the other remotes: auth and server errors retry, anything else is final. */
+    /** Same split as the other remotes: auth, rate-limit, timeout and server errors retry, anything else is final. */
     private suspend fun <T> rejecting(block: suspend () -> T): T = try {
         block()
     } catch (e: RestException) {
-        if (e.statusCode == 401 || e.statusCode >= 500) throw e
+        if (isRetryableStatus(e.statusCode)) throw e
         throw RowsRejectedException(e.statusCode, e.error)
     }
 
