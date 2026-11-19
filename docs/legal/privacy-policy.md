@@ -1,6 +1,6 @@
 # Kharcha Paani privacy policy
 
-Last updated 10 November 2026.
+Last updated 19 November 2026.
 
 Kharcha Paani is an app for tracking what you spend and splitting it with friends. It's made and
 run by Vaibhav Chauhan ("we", "us"). This page says what the app collects, why, who else handles it,
@@ -64,8 +64,17 @@ bar is on screen. If you've accepted the AI notice and you're online, the app re
 server, which reads it and hands back the entry. The recording is not saved on your phone, and we
 don't keep it. Otherwise (offline, or before you've accepted the notice) your phone's own speech
 service turns your words into text and the app receives only the text. You can always type instead,
-and you can refuse the microphone permission: the mic button then uses your phone's system speech
-dialog. The app never listens in the background.
+and you can refuse the microphone permission: the mic button then asks you to type instead. Before the first request the app explains why it needs the
+microphone. The app never listens in the background.
+
+**The camera.** Only when you tap Scan (to read a group invite QR code) or Bill photo (to photograph a bill),
+and after the app explains why. A scanned code is read on your phone and the picture is discarded; only the invite
+code is used. A bill photo is handled as described under Bill photos. The app never uses the camera in the
+background.
+
+**Android backups.** If you use Android's own backup (Google backup or a phone-to-phone transfer),
+your offline records may be included in it, so they can come back when you set up a new phone. It never includes your
+sign-in or your bill photos. You control Android backup in your phone's settings.
 
 **Things we don't collect.** We don't read your SMS, contacts, location or device files, and the app
 asks for no permission to do so. Photos and PDFs reach the app only when you explicitly pick or share
@@ -81,7 +90,9 @@ us.
   Data is sent over encrypted connections, and access rules ensure each person reads only their own
   data and the groups and shared splits they belong to.
 - **Groq** processes typed quick-add lines through our proxy to quickly extract amounts and details.
-  Groq processes requests ephemerally and does not retain submitted text or use it to train models.
+  By default Groq does not keep what it processes for inference. It may keep logs of requests for up to 30 days, in
+  the United States, only to troubleshoot failures or investigate abuse (see Groq's data documentation at
+  console.groq.com/docs/your-data).
 - **Google Gemini** reads what you choose to have read: spoken voice audio (sent as audio, see
   "The microphone" above), a bill photo, a bank or UPI statement, or spending summaries behind an
   Insights question or trip read. That's how the app fills in amounts for you. **While Kharcha Paani
