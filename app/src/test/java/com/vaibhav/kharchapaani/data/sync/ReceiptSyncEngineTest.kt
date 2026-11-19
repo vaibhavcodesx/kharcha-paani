@@ -220,4 +220,20 @@ class ReceiptSyncEngineTest {
         val decoded = android.graphics.BitmapFactory.decodeByteArray(webp.bytes, 0, webp.bytes.size)
         assertEquals(1280, maxOf(decoded.width, decoded.height))
     }
+
+    @Test fun `a detailed photo fits within 200 KB in both cloud formats`() {
+        val side = 1280
+        val random = java.util.Random(300)
+        val pixels = IntArray(side * side) { random.nextInt() or 0xFF000000.toInt() }
+        val detailed = Bitmap.createBitmap(pixels, side, side, Bitmap.Config.ARGB_8888)
+        val file = File(dir, "detailed.jpg")
+        file.outputStream().use { detailed.compress(Bitmap.CompressFormat.JPEG, 95, it) }
+        detailed.recycle()
+
+        for (sdk in listOf(28, 34)) {
+            val encoded = checkNotNull(CloudCopy.encode(file, sdk = sdk))
+            assertTrue("sdk $sdk: ${encoded.bytes.size} bytes", encoded.bytes.size in 1..200_000)
+            assertNotNull(android.graphics.BitmapFactory.decodeByteArray(encoded.bytes, 0, encoded.bytes.size))
+        }
+    }
 }
