@@ -1,2 +1,2 @@
 kind: changed
-Records what is now applied on the live database (app_config, the plan and ceiling tables) and what is still waiting (the take_ai_read replacement).
+Records that every staged migration up to 20261119000400, plus the admin page SQL (S1 to S4), is now applied on the live database by hand. None is recorded in the live history.
