@@ -195,6 +195,6 @@ private fun AddButton(onClick: () -> Unit) {
             .testTag("dock_add"),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(imageVector = KpIcons.Add, contentDescription = null, tint = CharcoalBg, modifier = Modifier.size(26.dp))
+        Icon(imageVector = KpIcons.Add, contentDescription = label, tint = CharcoalBg, modifier = Modifier.size(26.dp))
     }
 }
