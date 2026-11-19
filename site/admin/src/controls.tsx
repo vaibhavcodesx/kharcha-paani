@@ -13,10 +13,31 @@ export function Segmented<T extends string>({ value, options, onChange, label, d
   label: string
   disabled?: boolean
 }) {
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const i = options.findIndex((o) => o.id === value)
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault()
+      const next = options[(i + 1) % options.length]
+      if (next && !disabled) onChange(next.id)
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      const prev = options[(i + options.length - 1) % options.length]
+      if (prev && !disabled) onChange(prev.id)
+    }
+  }
+
   return (
-    <div className="seg" role="radiogroup" aria-label={label}>
+    <div className="seg" role="radiogroup" aria-label={label} onKeyDown={onKeyDown}>
       {options.map((o) => (
-        <button key={o.id} role="radio" aria-checked={value === o.id} disabled={disabled} className="seg-btn" onClick={() => value !== o.id && onChange(o.id)}>
+        <button
+          key={o.id}
+          role="radio"
+          aria-checked={value === o.id}
+          tabIndex={value === o.id ? 0 : -1}
+          disabled={disabled}
+          className="seg-btn"
+          onClick={() => value !== o.id && onChange(o.id)}
+        >
           {o.label}
         </button>
       ))}
@@ -127,7 +148,7 @@ export function ConfirmSheet({ open, onClose, title, children, expected, confirm
       {expected !== undefined && (
         <div className="fieldrow">
           <label htmlFor={id}>Type <strong className="num">{expected}</strong> to confirm</label>
-          <input id={id} className="field num" value={typed} autoComplete="off" autoCapitalize="off" spellCheck={false} onChange={(e) => setTyped(e.target.value)} />
+          <input id={id} className="field num" value={typed} autoComplete="off" autoCapitalize="off" spellCheck={false} required aria-required="true" onChange={(e) => setTyped(e.target.value)} />
         </div>
       )}
       {error && <p className="fielderr" role="alert">{error}</p>}
