@@ -48,9 +48,11 @@ class ReceiptSyncEngineTest {
         val paths = mutableMapOf<String, String?>()
         val deleted = mutableListOf<String>()
         var failNextPublish = false
+        var failUploads = false
         var uploadCount = 0
         var publishCount = 0
         override suspend fun upload(path: String, bytes: ByteArray, contentType: String) {
+            if (failUploads) throw java.io.IOException("upload refused")
             uploadCount++
             objects[path] = bytes
         }
@@ -152,6 +154,24 @@ class ReceiptSyncEngineTest {
         assertNotNull("failed unsharing still needs a retry", remote.paths["20000000-0000-4000-8000-000000000001"])
         engine(share = false).sync()
         assertNull("turning it off again unshares", remote.paths["20000000-0000-4000-8000-000000000001"])
+    }
+
+    @Test fun `a refused upload still lets me turn off sharing for a previously uploaded photo`() = runBlocking {
+        group(7)
+        val sharedExpense = "20000000-0000-4000-8000-000000000001"
+        expense(1, sharedExpense, groupId = 7)
+        photo(1, "shared.jpg")
+        engine().sync()
+        assertNotNull(remote.paths[sharedExpense])
+
+        expense(2, "20000000-0000-4000-8000-000000000002")
+        val waiting = photo(2, "waiting.jpg")
+        remote.failUploads = true
+        ReceiptSyncEngine.runQuietly(engine(share = false))
+
+        assertNull(remote.paths[sharedExpense])
+        assertNull(db.receiptDao().forTransaction(2).single().remotePath)
+        assertTrue(store.file(waiting.fileName).exists())
     }
 
     @Test fun `nothing uploads before the expense is on the server, or for someone else's expense`() = runBlocking {
