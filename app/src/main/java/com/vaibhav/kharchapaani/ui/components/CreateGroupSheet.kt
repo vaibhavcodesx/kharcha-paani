@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
+import com.vaibhav.kharchapaani.data.model.GroupWithDetails
 import com.vaibhav.kharchapaani.domain.TextLimits
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
@@ -59,9 +60,11 @@ fun CreateGroupSheet(
     initialShared: Boolean = false,
     onSaveGroup: (name: String, description: String, emoji: String, colorHex: String, memberIds: List<Long>, shared: Boolean) -> Unit,
     onDismiss: () -> Unit,
+    // A local group being edited (UX-19): the form opens filled in, has no Share switch, and saves in place.
+    editing: GroupWithDetails? = null,
 ) {
     if (!isOpen) return
-    KpModalSheet(onDismiss = onDismiss) { CreateGroupContent(allPeople, initialShared, onSaveGroup) }
+    KpModalSheet(onDismiss = onDismiss) { CreateGroupContent(allPeople, initialShared, onSaveGroup, editing = editing) }
 }
 
 /**
@@ -76,12 +79,14 @@ fun CreateGroupContent(
     initialShared: Boolean,
     onSaveGroup: (name: String, description: String, emoji: String, colorHex: String, memberIds: List<Long>, shared: Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    editing: GroupWithDetails? = null,
 ) {
-    var name by rememberSaveable { mutableStateOf("") }
-    var about by rememberSaveable { mutableStateOf("") }
-    var icon by rememberSaveable { mutableStateOf(GroupIcons.first()) }
-    var shared by rememberSaveable { mutableStateOf(initialShared) }
-    val memberIds = remember { emptyList<Long>().toMutableStateList() }
+    val isEditing = editing != null
+    var name by rememberSaveable { mutableStateOf(editing?.group?.name.orEmpty()) }
+    var about by rememberSaveable { mutableStateOf(editing?.group?.description.orEmpty()) }
+    var icon by rememberSaveable { mutableStateOf(editing?.group?.emoji ?: GroupIcons.first()) }
+    var shared by rememberSaveable { mutableStateOf(initialShared && !isEditing) }
+    val memberIds = remember { (editing?.members?.map { it.id }.orEmpty()).toMutableStateList() }
     // The server caps shared group names at 60 characters.
     val tooLong = shared && name.trim().length > MAX_SHARED_NAME
 
@@ -89,15 +94,18 @@ fun CreateGroupContent(
         modifier = modifier,
         actionBar = {
             GlassActionBar(
-                label = stringResource(R.string.create_group_save),
+                label = stringResource(if (isEditing) R.string.edit_group_save else R.string.create_group_save),
                 disabledLabel = if (tooLong) stringResource(R.string.create_group_too_long) else stringResource(R.string.create_group_disabled),
                 enabled = name.isNotBlank() && !tooLong,
-                onClick = { onSaveGroup(name.trim(), about.trim(), icon, DEFAULT_COLOUR, if (shared) emptyList() else memberIds.toList(), shared) },
+                onClick = { onSaveGroup(name.trim(), about.trim(), icon, editing?.group?.colorHex ?: DEFAULT_COLOUR, if (shared) emptyList() else memberIds.toList(), shared) },
                 buttonTestTag = "save_group_button",
             )
         },
     ) {
-        SheetTitle(title = stringResource(R.string.create_group_title), supporting = stringResource(R.string.create_group_supporting))
+        SheetTitle(
+            title = stringResource(if (isEditing) R.string.edit_group_title else R.string.create_group_title),
+            supporting = stringResource(if (isEditing) R.string.edit_group_supporting else R.string.create_group_supporting),
+        )
 
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             SheetRow(label = stringResource(R.string.create_group_name), position = RowPosition.First) {
@@ -138,7 +146,7 @@ fun CreateGroupContent(
             }
         }
 
-        Row(
+        if (!isEditing) Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .padding(top = Spacing.xl)
