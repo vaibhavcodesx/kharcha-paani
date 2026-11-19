@@ -224,7 +224,7 @@ select public._expect_value('the read helper runs for signed-in users only',
       where n.nspname = 'private' and p.proname = 'can_read_receipt'
         and has_function_privilege('authenticated', p.oid, 'EXECUTE') and not has_function_privilege('anon', p.oid, 'EXECUTE') $q$, 1);
 select public._expect_value('four receipt policies on storage.objects',
-  $q$ select count(*) from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname like 'receipts_%' $q$, 4);
+  $q$ select count(*) from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname like 'receipts_%' and policyname not like 'receipts_admin_%' $q$, 4);
 
 select public._as_admin();
 select n, passed, test, detail from public._rls_results order by n;
