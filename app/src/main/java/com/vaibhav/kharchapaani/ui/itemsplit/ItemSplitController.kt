@@ -246,16 +246,19 @@ class ItemSplitController(
     // The table
     // ------------------------------------------------------------------------------------------
 
-    /** Adds someone and makes them the one being picked for. A name already there is just selected. */
+    /** Adds or selects the person being picked for. Known ledger friends match by id first. */
     fun addPerson(name: String, ledgerId: Long? = null) {
         val clean = name.trim().replace(SPACES, " ").take(MAX_NAME)
         val current = draft ?: return
         if (holding() || clean.isEmpty()) return
-        val existing = current.people.firstOrNull { (ledgerId != null && it.ledgerId == ledgerId) || it.name.equals(clean, ignoreCase = true) }
+        val existing = current.people.firstOrNull { ledgerId != null && it.ledgerId == ledgerId }
+            ?: current.people.firstOrNull {
+                (ledgerId == null || it.ledgerId == null) && (it.ledgerName ?: it.name).equals(clean, ignoreCase = true)
+            }
         if (existing != null) {
             // Typed as a name before, now picked as a friend: remember which friend.
             val people = if (ledgerId != null && existing.ledgerId == null) {
-                current.people.map { if (it.id == existing.id) it.copy(ledgerId = ledgerId) else it }
+                current.people.map { if (it.id == existing.id) it.copy(ledgerId = ledgerId, ledgerName = clean) else it }
             } else {
                 current.people
             }
@@ -266,7 +269,7 @@ class ItemSplitController(
             showMessage(text(R.string.item_split_table_full))
             return
         }
-        val person = SplitPerson(id = newId(), name = clean, ledgerId = ledgerId)
+        val person = SplitPerson(id = newId(), name = clean, ledgerId = ledgerId, ledgerName = clean)
         put(current.copy(people = current.people + person, activePersonId = person.id))
         push { remote, link ->
             val (serverId, split) = remote.addPerson(link.token, person.id, person.name)
@@ -479,7 +482,12 @@ class ItemSplitController(
         lastVersion = split.version
         val known = current.people.associateBy { it.id }
         val people = split.people.map {
-            SplitPerson(id = it.id, name = it.name, isHost = it.isHost, done = it.done, ledgerId = if (it.isHost) ME else known[it.id]?.ledgerId)
+            val local = known[it.id]
+            SplitPerson(
+                id = it.id, name = it.name, isHost = it.isHost, done = it.done,
+                ledgerId = if (it.isHost) ME else local?.ledgerId,
+                ledgerName = local?.ledgerName,
+            )
         }
         put(
             current.copy(
