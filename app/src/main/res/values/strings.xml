@@ -12,7 +12,7 @@
     <string name="home_activity">Activity</string>
     <string name="home_search_close">Close search</string>
     <string name="home_search_action">Search activity</string>
-    <string name="home_search_hint">Merchant, category or note</string>
+    <string name="home_search_hint">Search by name, merchant, category, note or amount</string>
     <string name="home_search_empty_title">Nothing matches that</string>
     <string name="home_filter_empty_title">Nothing here yet</string>
     <string name="home_empty_title">Your first entry goes here</string>
