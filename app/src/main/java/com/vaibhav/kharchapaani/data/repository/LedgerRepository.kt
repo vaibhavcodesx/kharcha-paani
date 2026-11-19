@@ -443,14 +443,17 @@ class LedgerRepository(
     ) = withContext(Dispatchers.IO) {
         requireSavable(tx.amount)
         val isSplit = shares.isNotEmpty()
-        db.withTransaction {
-            val existing = db.transactionDao().getTransactionByIdDirect(tx.id) ?: return@withTransaction
+        val result = db.withTransaction {
+            val existing = db.transactionDao().getTransactionByIdDirect(tx.id)
+                ?: return@withTransaction ExpenseWriteResult.Missing
             val existingSplit = db.groupSyncDao().splitForTransaction(tx.id)
             // The adder or, for a group expense, the payer (item 11). The payer can't hand the payment
             // to someone else, unsplit it or move it out of its group; the server refuses those too.
             // The UI hides what isn't allowed; this keeps a stray call from queueing a refused edit.
-            if (!FullTransaction(existing, existingSplit).canEdit) return@withTransaction
-            if (!existing.isOwnedByMe && (paidByPersonId != -1L || shares.isEmpty() || tx.groupId != existing.groupId)) return@withTransaction
+            if (!FullTransaction(existing, existingSplit).canEdit) return@withTransaction ExpenseWriteResult.NotAllowed
+            if (!existing.isOwnedByMe && (paidByPersonId != -1L || shares.isEmpty() || tx.groupId != existing.groupId)) {
+                return@withTransaction ExpenseWriteResult.PayerEditRestricted
+            }
             requireWritableGroup(existing.groupId)
             requireWritableGroup(tx.groupId)
             val syncState = syncStateFor(
@@ -502,15 +505,18 @@ class LedgerRepository(
                     splitRemoteId,
                 )
             }
+            ExpenseWriteResult.Applied
         }
-        onLocalTransactionChange()
+        if (result == ExpenseWriteResult.Applied) onLocalTransactionChange()
+        result
     }
 
     suspend fun deleteTransaction(txId: Long) = withContext(Dispatchers.IO) {
-        db.withTransaction {
-            val existing = db.transactionDao().getTransactionByIdDirect(txId) ?: return@withTransaction
+        val result = db.withTransaction {
+            val existing = db.transactionDao().getTransactionByIdDirect(txId)
+                ?: return@withTransaction ExpenseWriteResult.Missing
             val split = db.groupSyncDao().splitForTransaction(txId)
-            if (!FullTransaction(existing, split).canEdit) return@withTransaction
+            if (!FullTransaction(existing, split).canEdit) return@withTransaction ExpenseWriteResult.NotAllowed
             requireWritableGroup(existing.groupId)
             if (existing.syncState != SyncState.LOCAL_ONLY) {
                 db.syncDao().insertPendingDelete(PendingRemoteDeleteEntity(existing.remoteId))
@@ -520,8 +526,10 @@ class LedgerRepository(
                 if (existing.groupId == null && split != null) queueSplitRetraction(existing.remoteId)
             }
             db.transactionDao().deleteTransactionById(txId)
+            ExpenseWriteResult.Applied
         }
-        onLocalTransactionChange()
+        if (result == ExpenseWriteResult.Applied) onLocalTransactionChange()
+        result
     }
 
     private suspend fun insertSplit(

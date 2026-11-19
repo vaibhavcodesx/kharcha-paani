@@ -9,6 +9,7 @@ import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.repository.ArchivedGroupException
+import com.vaibhav.kharchapaani.data.repository.ExpenseWriteResult
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -48,6 +49,44 @@ class SharedGroupRepositoryTest {
 
     private suspend fun groupmate(profileId: String = "00000000-0000-4000-8000-0000000000b1") =
         db.personDao().insertPerson(PersonEntity(name = "Bob", avatarColor = "#70C1FF", profileId = profileId))
+
+    @Test
+    fun `refused expense mutations preserve the ledger and request no sync`() = runBlocking {
+        val owner = "00000000-0000-4000-8000-0000000000b1"
+        val groupId = sharedGroupBy(owner)
+        val groupmate = personalTransaction("Dinner", amount = 800.0).copy(
+            groupId = groupId, ownerProfileId = owner, syncState = SyncState.SYNCED,
+        )
+        val id = db.transactionDao().insertTransaction(groupmate)
+        val before = db.transactionDao().getTransactionByIdDirect(id)!!
+
+        assertEquals(ExpenseWriteResult.NotAllowed, repository.updateTransactionWithSplits(before.copy(amount = 900.0)))
+        assertEquals(ExpenseWriteResult.NotAllowed, repository.deleteTransaction(id))
+
+        assertEquals(before, db.transactionDao().getTransactionByIdDirect(id))
+        assertEquals(emptyList<String>(), db.syncDao().pendingDeletes(10))
+        assertEquals(0, syncRequests)
+    }
+
+    @Test
+    fun `a permitted expense edit still saves and requests sync`() = runBlocking {
+        val id = repository.saveTransactionWithSplits(personalTransaction("Lunch", amount = 100.0))
+        val before = db.transactionDao().getTransactionByIdDirect(id)!!
+        val syncBefore = syncRequests
+
+        assertEquals(ExpenseWriteResult.Applied, repository.updateTransactionWithSplits(before.copy(amount = 120.0)))
+
+        assertEquals(120.0, db.transactionDao().getTransactionByIdDirect(id)!!.amount, 0.0)
+        assertEquals(syncBefore + 1, syncRequests)
+    }
+
+    @Test
+    fun `a missing entry reports that it is gone without requesting sync`() = runBlocking {
+        val missing = personalTransaction("Lunch", amount = 100.0).copy(id = 1L)
+        assertEquals(ExpenseWriteResult.Missing, repository.updateTransactionWithSplits(missing))
+        assertEquals(ExpenseWriteResult.Missing, repository.deleteTransaction(missing.id))
+        assertEquals(0, syncRequests)
+    }
 
     @Test
     fun `a new shared group is queued with only this account as a member`() = runBlocking {
