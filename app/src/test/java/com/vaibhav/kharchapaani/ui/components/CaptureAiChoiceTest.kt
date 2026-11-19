@@ -51,14 +51,14 @@ class CaptureAiChoiceTest {
         assertNull(shadowOf(compose.activity).nextStartedActivityForResult)
     }
 
-    @Test fun `capture identifies Gemini while AI is on`() {
+    @Test fun `capture shows no vendor status line while AI is on`() {
         compose.setContent {
             SplitFlowTheme {
                 CaptureCard(isParsing = false, onParseText = {}, onParseImage = {}, onParsePdf = { _, _ -> },
                     onOpenIou = {}, aiEnabled = true)
             }
         }
-        compose.onNodeWithTag("capture_ai_status").assertTextEquals("Typed lines use Groq · bills, statements and voice use Google Gemini")
+        compose.onNodeWithTag("capture_ai_status").assertDoesNotExist()
     }
 
     @Test fun `settings exposes a labelled off switch and asks to enable it explicitly`() {

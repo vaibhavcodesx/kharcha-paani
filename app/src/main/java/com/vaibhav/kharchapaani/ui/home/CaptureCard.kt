@@ -269,14 +269,7 @@ fun CaptureCard(
             }
         }
         Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.l).height(1.dp).background(CharcoalBorder))
-        if (aiEnabled) {
-            Text(
-                text = stringResource(R.string.ai_choice_capture_on),
-                style = MaterialTheme.typography.bodySmall,
-                color = SubMutedWarmGray,
-                modifier = Modifier.padding(horizontal = Spacing.l, vertical = Spacing.s).testTag("capture_ai_status"),
-            )
-        } else {
+        if (!aiEnabled) {
             // AI off is a choice, so the line stays quiet; it just leads to what AI would add.
             val whatAiAdds = stringResource(R.string.ai_off_nudge_capture_action)
             Text(
