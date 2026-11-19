@@ -71,7 +71,8 @@ class AppVersionGateTest {
     @Test
     fun `failed sync stores only a reason code and success clears it`() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build().use { db ->
+        val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
+        try {
             val dao = db.syncDao()
             val failure = IOException("opaque network failure detail")
             val thrown = runCatching { SyncPassStatus.record(dao) { throw failure } }.exceptionOrNull()
@@ -81,6 +82,8 @@ class AppVersionGateTest {
 
             SyncPassStatus.record(dao) {}
             assertEquals(null, dao.observeMeta(SyncPassStatus.LAST_SYNC_ERROR).first())
+        } finally {
+            db.close()
         }
     }
 
