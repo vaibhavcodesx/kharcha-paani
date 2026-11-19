@@ -70,6 +70,7 @@ fun JoinGroupSheet(
     val requestCamera = rememberCameraAccess(
         onGranted = { scanning = true },
         onDenied = { cameraError = R.string.shared_group_qr_camera_denied },
+        reason = stringResource(R.string.shared_group_qr_permission_reason),
     )
     KpModalSheet(onDismiss = onDismiss) {
         JoinGroupContent(
@@ -147,7 +148,6 @@ fun JoinGroupContent(
             TextButton(onClick = onScan, enabled = !state.isJoining) {
                 Text(stringResource(R.string.shared_group_qr_scan))
             }
-            Text(stringResource(R.string.shared_group_qr_permission_reason), style = MaterialTheme.typography.bodySmall)
         }
         (cameraError ?: state.error)?.let {
             Text(
