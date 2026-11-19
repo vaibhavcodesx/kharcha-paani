@@ -17,9 +17,11 @@ import com.vaibhav.kharchapaani.domain.SplitPerson
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -155,6 +157,7 @@ class ItemSplitController(
 
     /** The sheet closed. The split stays, to be used or come back to. */
     fun close() {
+        cancelRead()
         pollJob?.cancel()
         _state.update { it.copy(isOpen = false) }
     }
@@ -183,9 +186,11 @@ class ItemSplitController(
         val read = reader ?: return
         if (_state.value.reading || holding()) return
         _state.update { it.copy(reading = true) }
-        readJob = scope.launch {
+        readJob = scope.launch(start = CoroutineStart.UNDISPATCHED) {
             try {
-                when (val result = read()) {
+                val result = read()
+                ensureActive()
+                when (result) {
                     is BillItemsReadResult.Failed -> showMessage(failureText(result.reason))
                     is BillItemsReadResult.Read -> {
                         val current = draft
@@ -208,6 +213,10 @@ class ItemSplitController(
                 _state.update { it.copy(reading = false) }
             }
         }
+    }
+
+    fun cancelRead() {
+        readJob?.cancel()
     }
 
     /** Adds a line, or changes the one with [id]. */

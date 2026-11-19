@@ -1109,6 +1109,7 @@ fun SplitFlowApp(
             onStopSharing = viewModel.itemSplit::stopSharing,
             onSendLink = viewModel::sendItemSplitLink,
             onUse = viewModel::useItemSplit,
+            onCancelRead = viewModel.itemSplit::cancelRead,
         )
     }
     ItemSplitSheet(

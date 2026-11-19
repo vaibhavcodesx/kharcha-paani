@@ -100,6 +100,7 @@ class ItemSplitActions(
     val onStopSharing: () -> Unit,
     val onSendLink: (link: String) -> Unit,
     val onUse: () -> Unit,
+    val onCancelRead: () -> Unit,
 )
 
 /** A friend who could be added to the table: their id in the ledger and their name. */
@@ -224,6 +225,12 @@ fun ItemSplitContent(
         when {
             state.reading -> Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
                 Text(stringResource(R.string.item_split_reading), style = MaterialTheme.typography.bodyMedium, color = MutedWarmGray, modifier = Modifier.padding(bottom = Spacing.s))
+                KpButton(
+                    label = stringResource(R.string.item_split_cancel),
+                    onClick = actions.onCancelRead,
+                    tier = KpButtonTier.Link,
+                    testTag = "item_split_cancel_read",
+                )
                 repeat(4) { Box(Modifier.fillMaxWidth().height(56.dp).clip(KpShapes.medium).background(CharcoalCard).shimmerLoading()) }
             }
             draft.items.isEmpty() -> Column(

@@ -78,6 +78,8 @@ draft is one small file in the cache folder; if the app is closed mid-split, Hom
 
 **D10. Reading the items is a second AI read.** It uses one of the day's 10 bill reads and takes a
 couple of seconds, only for people who tap Split by items. The existing bill prompt is unchanged.
+Cancel from the reading state to keep the draft and enter the items by hand. Closing the sheet
+also stops the read.
 *(One combined read would save the second call but slow every bill and screenshot for everyone, and
 change a prompt the benchmark was run against.)*
 

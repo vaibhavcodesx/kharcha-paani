@@ -307,6 +307,19 @@ class ItemSplitControllerTest {
     }
 
     @Test
+    fun `cancelling the read immediately leaves the sheet ready for manual entry`() = runTest {
+        val controller = controller()
+        controller.open(dinner) { awaitCancellation() }
+        controller.cancelRead()
+        settle()
+
+        assertTrue(controller.state.value.isOpen)
+        assertFalse(controller.state.value.reading)
+        controller.saveItem(null, "Dinner", 1, dinner.totalPaise)
+        assertEquals(dinner.totalPaise, controller.draft().items.single().amountPaise)
+    }
+
+    @Test
     fun `a daily bill cap still lets me enter items by hand`() = runTest {
         val controller = controller()
         controller.open(dinner) { BillItemsReadResult.Failed(AiFailure.DailyLimit) }
@@ -328,6 +341,25 @@ class ItemSplitControllerTest {
         assertTrue(said(R.string.item_split_too_many_items))
         assertEquals(100, controller.draft().items.size)
         assertEquals(10_000L, controller.draft().items.sumOf { it.amountPaise })
+    }
+
+    @Test
+    fun `editing the table after an item is picked keeps a complete split`() = runTest {
+        val controller = controller()
+        controller.open(dinner, null)
+        controller.saveItem(null, "Dinner", 1, dinner.totalPaise)
+        val originalGuest = controller.person("Rohan")
+        controller.setActive(originalGuest)
+        controller.toggle(controller.item("Dinner"))
+
+        controller.addPerson("Priya")
+        assertTrue(controller.draft().claims.any { it.personId == originalGuest })
+        controller.removePerson(originalGuest)
+
+        val split = controller.draft().split
+        assertEquals(setOf("Vaibhav", "Priya"), split.people.map { it.name }.toSet())
+        assertTrue(split.claims.none { it.personId == originalGuest })
+        assertEquals(dinner.totalPaise, ItemSplitMath.finalAmounts(split).values.sum())
     }
 
     @Test
