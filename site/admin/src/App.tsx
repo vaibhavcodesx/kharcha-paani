@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { AuthProvider, useAuth } from './auth'
 import { Icon, type IconName } from './icons'
-import { Soon } from './pages/Soon'
+import { Limits } from './pages/Limits'
+import { Log } from './pages/Log'
+import { People } from './pages/People'
+import { Release } from './pages/Release'
 import { Today } from './pages/Today'
 import { TABS, useTab, type TabId } from './router'
 import { ToastProvider } from './ui'
@@ -114,7 +117,11 @@ function Shell() {
         </nav>
       <main className="main" id="view" role="tabpanel" aria-labelledby={`tab-${tab}`}>
         <div className="view" key={tab}>
-          {tab === 'today' ? <Today go={go} /> : <Soon tab={tab} />}
+          {tab === 'today' && <Today go={go} />}
+          {tab === 'people' && <People />}
+          {tab === 'limits' && <Limits />}
+          {tab === 'release' && <Release />}
+          {tab === 'log' && <Log />}
         </div>
       </main>
     </div>

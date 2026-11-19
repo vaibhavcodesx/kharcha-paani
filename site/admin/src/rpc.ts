@@ -51,3 +51,35 @@ export interface Overview {
   db: { bytes: number }
   versions: { min: number; recommended: number; update_screen: number | null; latest_published: number | null }
 }
+
+export interface UserRow {
+  user_id: string
+  email: string | null
+  display_name: string | null
+  plan: 'free' | 'friends' | 'paid'
+  created_at: string
+  last_sign_in_at: string | null
+  deleted: boolean
+  ai_today: number
+  photos: number
+  photo_bytes: number
+  groups: number
+  total_count: number
+}
+
+export interface Limits {
+  caps: { feature: string; free: number; friends: number }[]
+  ceilings: { feature: string; per_day: number | null; used_today: number }[]
+  paused: boolean
+}
+
+export interface AuditRow {
+  id: number
+  at: string
+  admin_email: string
+  action: string
+  target_user: string | null
+  target: string | null
+  before: Record<string, unknown> | null
+  after: Record<string, unknown> | null
+}

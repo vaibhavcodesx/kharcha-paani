@@ -73,3 +73,18 @@ export function peopleSentence(p: People): { text: string; num: boolean }[] {
   }
   return parts
 }
+
+const when = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' })
+
+/** "19 Nov, 22:14" in India time, which is the day the daily limits count in. */
+export function formatWhen(iso: string): string {
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '' : when.format(d)
+}
+
+/** "joined 3 Nov" style date without a time. */
+export function formatDay(iso: string | null): string {
+  if (!iso) return 'never'
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? 'never' : new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' }).format(d)
+}
