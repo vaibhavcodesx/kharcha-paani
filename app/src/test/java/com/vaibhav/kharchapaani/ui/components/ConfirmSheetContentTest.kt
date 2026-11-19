@@ -34,6 +34,7 @@ class ConfirmSheetContentTest {
         notice: String? = null,
         amount: String = "370",
         category: String = "Food",
+        paymentMethod: String = "GPay",
         onCategoryChange: (String) -> Unit = {},
         onIsSplitChange: (Boolean) -> Unit = {},
         onSave: () -> Unit = {},
@@ -49,7 +50,7 @@ class ConfirmSheetContentTest {
                 isImprovingWithAi = isImprovingWithAi,
                 updatedByAi = updatedByAi,
                 isParsing = false, isEditing = false, notice = notice, type = "expense", amount = amount, merchant = "McDonald's",
-                category = category, paymentMethod = "GPay", note = "", date = 0L, groupId = null,
+                category = category, paymentMethod = paymentMethod, note = "", date = 0L, groupId = null,
                 availableGroups = emptyList(), isSplit = isSplit, splitMode = splitMode, paidByPersonId = -1L,
                 shares = shares, onTypeChange = {}, onAmountChange = {}, onMerchantChange = {},
                 onCategoryChange = onCategoryChange, onPaymentMethodChange = {}, onNoteChange = {}, onDateChange = {},
@@ -63,15 +64,17 @@ class ConfirmSheetContentTest {
     @Test
     fun `your own categories are offered, and an entry's hidden or unknown category still shows`() {
         val mine = com.vaibhav.kharchapaani.domain.Categories.expenseCategories(
-            com.vaibhav.kharchapaani.domain.CategoryPrefs(customExpense = listOf("Pets"), hiddenCategories = setOf("Team Payment")),
+            com.vaibhav.kharchapaani.domain.CategoryPrefs(customExpense = listOf("Pets")),
         )
-        composeTestRule.setContent { Sheet(category = "Team Payment", categories = mine) }
+        composeTestRule.setContent { Sheet(category = "Team Payment", categories = mine, paymentMethod = "PopUPI") }
 
         composeTestRule.onNodeWithText("Category").performClick()
 
         composeTestRule.onNodeWithText("Pets").assertExists()
-        // Hidden from new entries, but this one has it, so it's still there to keep.
+        // Older entries keep their stored choices in both menus.
         composeTestRule.onAllNodesWithText("Team Payment").fetchSemanticsNodes().let { assertEquals(2, it.size) }
+        composeTestRule.onNodeWithText("Paid with").performClick()
+        composeTestRule.onAllNodesWithText("PopUPI").fetchSemanticsNodes().let { assertEquals(2, it.size) }
     }
 
     @Test

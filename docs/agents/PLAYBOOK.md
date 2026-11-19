@@ -111,4 +111,4 @@ Each Lead session ends with a five-line digest in chat: merged, open, blocked, n
 ## 12. Parallel machine limits
 
 Several Gradle builds crashed the owner's laptop. Agents run no local Gradle, no emulator. At most three
-sub-agents, at most five open Worker PRs; at the cap, fix your own red or conflicting PRs first.
+sub-agents, at most fifteen open Worker PRs; at the cap, fix your own red or conflicting PRs first.

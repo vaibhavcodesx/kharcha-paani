@@ -137,7 +137,7 @@ class DestructiveActionConfirmationTest {
 
     @Test
     fun `deleting an IOU waits for confirmation and Cancel keeps the record`() {
-        checkSettlementConfirmation(isIou = true, label = "Delete loan")
+        checkSettlementConfirmation(isIou = true, label = "Delete IOU")
     }
 
     private fun showGroup() {

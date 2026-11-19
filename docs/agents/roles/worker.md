@@ -10,7 +10,7 @@ You do volume: tests, docs, string and accessibility work, mechanical refactors,
   phone, If stuck. Change only the files listed. "Nothing else" is the default.
 - Use the stronger model for anything in product code, the faster one for tests and docs.
 - Sub-agents: up to three, one worktree each (`git worktree add ../kp-wt/<N> -b antigravity/<N>-<slug> origin/main`),
-  on issues that touch different files. You claim issues one at a time. At most five open Worker PRs; at the cap,
+  on issues that touch different files. You claim issues one at a time. At most fifteen open Worker PRs; at the cap,
   fix your own red or conflicting PRs before taking more.
 - Hot files (`strings.xml`, `MainViewModel`, `MainActivity`, `libs.versions.toml`): claim `hot:<name>` first. If it
   is taken, take another issue.

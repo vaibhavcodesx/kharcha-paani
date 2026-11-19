@@ -847,7 +847,7 @@ class MainViewModel(
     private val _category = MutableStateFlow("Food")
     val category: StateFlow<String> = _category.asStateFlow()
 
-    private val _paymentMethod = MutableStateFlow("PopUPI")
+    private val _paymentMethod = MutableStateFlow(Categories.DEFAULT_PAYMENT_METHOD)
     val paymentMethod: StateFlow<String> = _paymentMethod.asStateFlow()
 
     private val _note = MutableStateFlow("")
