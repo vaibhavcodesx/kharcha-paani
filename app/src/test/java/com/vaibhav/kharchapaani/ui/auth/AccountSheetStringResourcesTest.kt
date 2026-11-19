@@ -122,7 +122,7 @@ class AccountSheetStringResourcesTest {
 
     @Test
     fun `account help and reminder string resources match exact copy`() {
-        assertEquals("Help & about", resources.getString(R.string.account_eyebrow_help))
+        assertEquals("About", resources.getString(R.string.account_eyebrow_help))
         assertEquals("Send feedback", resources.getString(R.string.account_help_feedback_title))
         assertEquals("Privacy policy", resources.getString(R.string.account_help_privacy_title))
         assertEquals("Terms of use", resources.getString(R.string.account_help_terms_title))
