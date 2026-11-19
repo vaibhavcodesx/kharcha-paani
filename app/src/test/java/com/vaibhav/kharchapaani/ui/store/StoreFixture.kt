@@ -57,9 +57,18 @@ object StoreFixture {
     internal fun stamp(daysAgo: Long, hour: Int, minute: Int = 0, now: Long = System.currentTimeMillis(), zone: ZoneId = ZoneId.systemDefault()): Long {
         val today = java.time.Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
         val firstOfMonth = today.withDayOfMonth(1)
-        val day = today.minusDays(daysAgo).coerceAtLeast(firstOfMonth)
+        val rawDay = today.minusDays(daysAgo)
+        val day = rawDay.coerceAtLeast(firstOfMonth)
+        val dayStart = day.atStartOfDay(zone).toInstant().toEpochMilli()
         val at = day.atTime(hour, minute).atZone(zone).toInstant().toEpochMilli()
-        val beforeNow = at.coerceAtMost(now - (daysAgo + 1) * 5 * 60_000L)
+        val capped = now - (daysAgo + 1) * 5 * 60_000L
+        val beforeNow = if (capped >= dayStart) {
+            at.coerceAtMost(capped)
+        } else if (rawDay < firstOfMonth) {
+            dayStart + (10 - daysAgo).coerceAtLeast(0) * 1_000L
+        } else {
+            at
+        }
         // Seconds after the month starts, the most recent latest, so the order holds there too.
         val monthStart = firstOfMonth.atStartOfDay(zone).toInstant().toEpochMilli() + (10 - daysAgo).coerceAtLeast(0) * 1_000L
         return beforeNow.coerceAtLeast(monthStart)

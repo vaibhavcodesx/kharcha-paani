@@ -37,4 +37,19 @@ class StoreFixtureDatesTest {
         // Later today than now: pulled back to before now, still today.
         assertEquals(at("2026-11-15T11:55:00"), StoreFixture.stamp(0, 13, 0, now, zone))
     }
+
+    @Test
+    fun `two minutes after midnight, today entries stay today in UTC and Asia Kolkata`() {
+        listOf(ZoneId.of("UTC"), ZoneId.of("Asia/Kolkata")).forEach { z ->
+            val now = LocalDateTime.parse("2026-11-19T00:02:00").atZone(z).toInstant().toEpochMilli()
+            val expectedToday = LocalDateTime.parse("2026-11-19T00:02:00").atZone(z).toLocalDate()
+
+            val stamp0 = StoreFixture.stamp(0, 9, 10, now, z)
+            val stamp1 = StoreFixture.stamp(0, 8, 0, now, z)
+
+            assertEquals("Zone $z: stamp(0, 9, 10) day", expectedToday, Instant.ofEpochMilli(stamp0).atZone(z).toLocalDate())
+            assertEquals("Zone $z: stamp(0, 8, 0) day", expectedToday, Instant.ofEpochMilli(stamp1).atZone(z).toLocalDate())
+            assertTrue("Zone $z: more recent entry sorts later", stamp0 > stamp1)
+        }
+    }
 }
