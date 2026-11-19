@@ -9,6 +9,20 @@ import org.junit.Test
 class CategoriesTest {
 
     @Test
+    fun `new accounts get the general defaults`() {
+        val prefs = CategoryPrefs()
+        assertEquals(
+            listOf("Food", "Transport", "Shopping", "Bills", "Entertainment", "Health", "Rent", "Investment", "Other"),
+            Categories.expenseCategories(prefs),
+        )
+        assertEquals(listOf("Income (Salary)", "Income (Other)"), Categories.incomeCategories(prefs))
+        assertEquals(
+            listOf("UPI", "GPay", "PhonePe", "Paytm", "Debit Card", "Credit Card", "Cash", "Bank Transfer", "Other"),
+            Categories.paymentMethods(prefs),
+        )
+    }
+
+    @Test
     fun `beverages, packaged goods and self-care are offered, before Other`() {
         val expense = Categories.expenseCategories(CategoryPrefs())
 

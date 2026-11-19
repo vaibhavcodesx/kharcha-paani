@@ -14,6 +14,7 @@ import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.data.model.FullTransaction
 import com.vaibhav.kharchapaani.data.repository.GeminiRepository
 import com.vaibhav.kharchapaani.data.settings.AppSettings
+import com.vaibhav.kharchapaani.domain.MonthAnalytics
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -41,6 +42,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.ZoneOffset
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
@@ -269,6 +273,34 @@ class SheetFirstQuickAddTest {
         assertEquals("40", viewModel.amount.value)
         assertEquals("Chai", viewModel.merchant.value)
         assertFalse(viewModel.isImprovingWithAi.value)
+    }
+
+    @Test
+    fun `editing an older expense preserves its category and payment method in Room and insights`() = runBlocking {
+        val day = LocalDate.of(2026, 10, 4)
+        val original = TransactionEntity(
+            type = "expense", amount = 100.0, merchant = "Team expense", category = "Team Payment",
+            paymentMethod = "PopUPI", date = day.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+        )
+        val id = db.transactionDao().insertTransaction(original)
+
+        viewModel.openEditTransaction(FullTransaction(original.copy(id = id)))
+        assertEquals("Team Payment", viewModel.category.value)
+        assertEquals("PopUPI", viewModel.paymentMethod.value)
+        viewModel.updateAmount("125")
+        viewModel.saveCurrentTransaction()
+        until { !viewModel.isConfirmSheetOpen.value }
+
+        val rows = db.transactionDao().getAllTransactionsDirect()
+        val saved = rows.single()
+        assertEquals(id, saved.id)
+        assertEquals("Team Payment", saved.category)
+        assertEquals("PopUPI", saved.paymentMethod)
+        val category = MonthAnalytics.of(
+            rows, emptyList(), emptyList(), YearMonth.from(day), day, ZoneOffset.UTC,
+        ).categorySummaries.single()
+        assertEquals("Team Payment", category.category)
+        assertEquals(125.0, category.amount, 0.001)
     }
 
     @Test

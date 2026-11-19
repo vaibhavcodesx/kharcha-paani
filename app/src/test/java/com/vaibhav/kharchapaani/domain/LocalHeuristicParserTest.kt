@@ -7,6 +7,13 @@ import org.junit.Test
 class LocalHeuristicParserTest {
 
     @Test
+    fun `old team and client keywords use general categories`() {
+        assertEquals("Other", LocalHeuristicParser.parse("team hosting 900").category)
+        assertEquals("Income (Other)", LocalHeuristicParser.parse("client paid 4500").category)
+        assertEquals("Other", LocalHeuristicParser.parse("teammate project 300").category)
+    }
+
+    @Test
     fun `keywords match whole words`() {
         // "vi" (the telecom) inside "movie" put it under Bills; "tea" matched "team".
         assertEquals("Entertainment", LocalHeuristicParser.parse("movie 400").category)
