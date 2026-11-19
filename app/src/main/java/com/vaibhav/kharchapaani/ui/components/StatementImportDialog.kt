@@ -287,7 +287,7 @@ private fun TickBox(checked: Boolean, description: String, onToggle: (Boolean) -
                 .background(if (checked) WarmAmberPrimary else CharcoalCard)
                 .border(1.dp, if (checked) WarmAmberPrimary else OutlineInteractive, TickShape),
         ) {
-            if (checked) Icon(KpIcons.Check, contentDescription = null, tint = CharcoalBg, modifier = Modifier.size(15.dp))
+            if (checked) Icon(KpIcons.Check, contentDescription = description, tint = CharcoalBg, modifier = Modifier.size(15.dp))
         }
     }
 }
