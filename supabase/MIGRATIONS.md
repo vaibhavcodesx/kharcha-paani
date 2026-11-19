@@ -36,6 +36,7 @@ name's timestamp is the version the live history uses. Update this table wheneve
 | `20261119000400_receipt_quota.sql` | **staged, not applied** |
 | `20261120000000_admin_core.sql` | **staged, not applied** (admin page S1; apply after `...000100`) |
 | `20261120000100_admin_writes.sql` | **staged, not applied** (admin page S2; apply after admin_core) |
+| `20261120000200_admin_delete_account.sql` | **staged, not applied** (admin page S3; REPLACES the live `delete_my_account` body with a wrapper; apply after admin_writes) |
 
 Staged files are applied by the owner, by hand, in file order, after a database dump
 (`docs/engineering/runbooks/migration.md`). Some staged files need an app change first; their header says so.
