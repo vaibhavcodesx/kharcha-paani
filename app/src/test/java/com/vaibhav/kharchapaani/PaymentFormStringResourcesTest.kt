@@ -61,10 +61,10 @@ class PaymentFormStringResourcesTest {
             IouContent(people, groupOptionsFor = { local }, onCreateGroup = {}, onConfirm = vm::recordIou)
         } }
         compose.waitUntil(10000) { dispatcher.scheduler.runCurrent(); compose.onAllNodesWithText("Rohan").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText("Log an IOU").assertExists()
+        compose.onNodeWithText("Log a loan").assertExists()
         compose.onNodeWithTag("iou_person_2").performClick()
         compose.onNodeWithTag("iou_amount_input").performTextInput("125.50")
-        compose.onNodeWithTag("confirm_iou_button").assertTextEquals("Record IOU").performClick()
+        compose.onNodeWithTag("confirm_iou_button").assertTextEquals("Record a loan").performClick()
         until { vm.submitting.value.isEmpty() }
         val saved = db.settlementDao().getAllSettlements().first().single()
         assertTrue(saved.isIou)
