@@ -3,7 +3,6 @@ package com.vaibhav.kharchapaani.ui.home
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -41,10 +40,10 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.vaibhav.kharchapaani.R
+import com.vaibhav.kharchapaani.ui.components.rememberExplainedPermission
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
@@ -62,7 +61,7 @@ enum class VoicePhase { Idle, Recording, LiveWords }
 /**
  * Saying an entry out loud. One tap on the mic and, depending on what's possible (see [VoiceMode]),
  * either the app records and sends the audio for Gemini to read, or Android's recogniser shows the
- * words as they're said; with no permission or no recogniser, the system dialog as before.
+ * words as they're said. Typing stays available if microphone access is declined.
  * [state] drives the listening bar; everything stops when the card leaves the screen or the app
  * goes to the background, so the microphone is never left open.
  */
@@ -114,7 +113,7 @@ fun rememberVoiceCapture(
         reset()
     }
 
-    // The last resort, and what a phone with no microphone permission still gets.
+    // Fallback if the in-app recogniser is unavailable after the user allows microphone access.
     val dialog = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.takeIf { it.isNotBlank() }?.let(sendText)
@@ -171,13 +170,14 @@ fun rememberVoiceCapture(
         }
     }
 
-    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) begin() else openDialog()
-    }
+    val askForMicrophone by rememberUpdatedState(rememberExplainedPermission(
+        permission = Manifest.permission.RECORD_AUDIO,
+        reason = stringResource(R.string.voice_permission_reason),
+        onGranted = ::begin,
+        onDenied = { tell(context.getString(R.string.voice_permission_declined)) },
+    ))
     fun listen() {
-        if (phase != VoicePhase.Idle) return
-        val allowed = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-        if (allowed) begin() else permission.launch(Manifest.permission.RECORD_AUDIO)
+        if (phase == VoicePhase.Idle) askForMicrophone()
     }
 
     fun finish() {
