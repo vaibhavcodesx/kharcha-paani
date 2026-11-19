@@ -276,7 +276,7 @@ select public._expect_value('the host herself can''t be removed',
 -- ------------------------------------------------------------
 select public._as_anon();
 select public._expect_ok('the table fills to 30 people',
-  $q$ select public.bill_split_join((select value from public._ids where key = 't'), 'Guest ' || g) from generate_series(1, 27) g $q$);
+  $q$ select public.bill_split_join((select value from public._ids where key = 't'), 'Guest' || g) from generate_series(1, 27) g $q$);
 select public._expect_state('and the 31st is refused',
   $q$ select public.bill_split_join((select value from public._ids where key = 't'), 'One too many') $q$, 'P0001');
 
@@ -376,7 +376,7 @@ select public._expect_value('an existing link shows the host and guest by first 
   $q$ select ((s ->> 'host_name') = 'Asha' and (s -> 'people' -> 1 ->> 'name') = 'Rohan')::int
       from public.bill_split_view((select value from public._ids where key = 'same_names')) s $q$, 1);
 select public._expect_value('a guest with a matching first name gets a distinct entry',
-  $q$ select (public.bill_split_join((select value from public._ids where key = 'same_names'), 'Rohan Das',
+  $q$ select (public.bill_split_join((select value from public._ids where key = 'same_names'), 'Rohan Kumar',
         '30000000-0000-4000-8000-0000000000a8') ->> 'person_id' = '30000000-0000-4000-8000-0000000000a8')::int $q$, 1);
 select public._expect_value('retrying a join by its id keeps the same entry',
   $q$ select (public.bill_split_join((select value from public._ids where key = 'same_names'), 'Rohan Das',
