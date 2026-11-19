@@ -267,6 +267,12 @@ fun AccountSheetContent(
         // No brand mark appeared anywhere in the app, which is a real part of why a settings page
         // reads as generic (backlog item 19).
         BrandMark(Modifier.padding(bottom = Spacing.l))
+        Text(
+            text = stringResource(R.string.account_eyebrow_settings),
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(bottom = Spacing.l).semantics { heading() },
+        )
+        Eyebrow(stringResource(R.string.account_eyebrow_account))
         if (isLocal) {
             Eyebrow(stringResource(R.string.guest_on_this_phone))
             Text(
@@ -391,7 +397,6 @@ fun AccountSheetContent(
                 modifier = Modifier.padding(bottom = Spacing.l),
                 onLinkUnavailable = onNoApp,
             )
-            Eyebrow(stringResource(R.string.account_eyebrow_account))
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 CloudStatusRow(
                     profile = state.profile,
@@ -441,7 +446,6 @@ fun AccountSheetContent(
                 modifier = Modifier.padding(bottom = Spacing.xl))
         }
 
-        Eyebrow(stringResource(R.string.account_eyebrow_settings))
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             SettingRow(
                 title = stringResource(R.string.account_setting_upi_title),
@@ -462,15 +466,80 @@ fun AccountSheetContent(
             SettingRow(
                 title = stringResource(R.string.account_setting_categories_title),
                 detail = stringResource(R.string.account_setting_categories_detail),
-                position = RowPosition.Middle,
+                position = RowPosition.Last,
                 modifier = Modifier.clickable(onClickLabel = stringResource(R.string.account_setting_categories_click_label), onClick = onOpenCategories).testTag("setting_categories"),
             ) {
                 Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
             }
+        }
+
+        if (!isLocal) {
+            OutlinedButton(
+                onClick = onSignOut,
+                shape = KpShapes.medium,
+                // SubMutedWarmGray, not CharcoalBorder: the boundary needs 3:1 against the sheet (3.17 vs 1.28).
+                border = BorderStroke(1.dp, SubMutedWarmGray),
+                modifier = Modifier
+                    .padding(top = Spacing.xl)
+                    .fillMaxWidth()
+                    .heightIn(min = 52.dp)
+                    .testTag("account_sign_out"),
+            ) {
+                Text(text = stringResource(R.string.shell_copy_ledger_sign_out), style = MaterialTheme.typography.titleMedium.copy(color = OffWhiteText))
+            }
+            // Play requires deleting an account to be easy to find in the app (plan T1.1).
+            TextButton(
+                onClick = onDeleteAccount,
+                modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("account_delete"),
+            ) {
+                Text(stringResource(R.string.delete_account_action_delete), style = MaterialTheme.typography.labelLarge, color = DestructiveText)
+            }
+        }
+
+        Spacer(Modifier.height(Spacing.xl))
+        Eyebrow(stringResource(R.string.account_eyebrow_notifications))
+        val reminderTime = ReminderSchedule.label(reminder.minuteOfDay, android.text.format.DateFormat.is24HourFormat(LocalContext.current))
+        SettingRow(
+            title = stringResource(R.string.account_setting_notifications_title),
+            detail = when {
+                !notificationsAllowed -> stringResource(R.string.account_setting_notifications_off)
+                reminder.enabled -> stringResource(R.string.account_setting_notifications_reminder_and_payments, reminderTime)
+                else -> stringResource(R.string.account_setting_notifications_payments_only)
+            },
+            position = RowPosition.Single,
+            modifier = Modifier.clickable(onClickLabel = stringResource(R.string.account_setting_notifications_click_label), onClick = onOpenNotifications).testTag("setting_notifications"),
+        ) {
+            Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
+        }
+
+        Spacer(Modifier.height(Spacing.xl))
+        Eyebrow(stringResource(R.string.account_eyebrow_ai))
+        SettingRow(
+            title = stringResource(R.string.ai_choice_title),
+            detail = stringResource(if (isLocal) R.string.guest_ai_needs_account else if (aiEnabled) R.string.ai_choice_enabled_detail else R.string.ai_choice_disabled_detail),
+            position = RowPosition.Single,
+            modifier = Modifier.toggleable(value = aiEnabled, role = Role.Switch, onValueChange = onAiEnabledChange)
+                .testTag("setting_ai_enabled"),
+        ) {
+            Switch(checked = aiEnabled, onCheckedChange = null, colors = SwitchDefaults.colors(
+                checkedTrackColor = WarmAmberPrimary, checkedThumbColor = CharcoalBg,
+                uncheckedTrackColor = CharcoalElevated, uncheckedThumbColor = MutedWarmGray,
+                uncheckedBorderColor = OutlineInteractive,
+            ))
+        }
+
+        Spacer(Modifier.height(Spacing.xl))
+        Eyebrow(stringResource(R.string.account_eyebrow_data))
+        val context = LocalContext.current
+        fun openPage(url: String) {
+            if (!LegalLinks.open(context, url)) onNoApp(context.getString(R.string.account_help_no_browser, url))
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             SettingRow(
                 title = stringResource(R.string.account_setting_discard_prompt_title),
                 detail = stringResource(R.string.account_setting_discard_prompt_detail),
-                position = RowPosition.Middle,
+                position = RowPosition.First,
                 modifier = Modifier
                     .toggleable(value = askBeforeDiscarding, role = Role.Switch, onValueChange = onAskBeforeDiscardingChange)
                     .testTag("setting_ask_before_discarding"),
@@ -508,42 +577,9 @@ fun AccountSheetContent(
                 )
             }
             SettingRow(
-                title = stringResource(R.string.ai_choice_title),
-                detail = stringResource(if (isLocal) R.string.guest_ai_needs_account else if (aiEnabled) R.string.ai_choice_enabled_detail else R.string.ai_choice_disabled_detail),
-                position = RowPosition.Middle,
-                modifier = Modifier.toggleable(value = aiEnabled, role = Role.Switch, onValueChange = onAiEnabledChange)
-                    .testTag("setting_ai_enabled"),
-            ) {
-                Switch(checked = aiEnabled, onCheckedChange = null, colors = SwitchDefaults.colors(
-                    checkedTrackColor = WarmAmberPrimary, checkedThumbColor = CharcoalBg,
-                    uncheckedTrackColor = CharcoalElevated, uncheckedThumbColor = MutedWarmGray,
-                    uncheckedBorderColor = OutlineInteractive,
-                ))
-            }
-            val reminderTime = ReminderSchedule.label(reminder.minuteOfDay, android.text.format.DateFormat.is24HourFormat(LocalContext.current))
-            SettingRow(
-                title = stringResource(R.string.account_setting_notifications_title),
-                detail = when {
-                    !notificationsAllowed -> stringResource(R.string.account_setting_notifications_off)
-                    reminder.enabled -> stringResource(R.string.account_setting_notifications_reminder_and_payments, reminderTime)
-                    else -> stringResource(R.string.account_setting_notifications_payments_only)
-                },
-                position = RowPosition.Last,
-                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.account_setting_notifications_click_label), onClick = onOpenNotifications).testTag("setting_notifications"),
-            ) {
-                Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
-            }
-        }
-
-        // What leaves or comes back to this phone, apart from the switches above: these are
-        // actions you run now and then, not settings.
-        Spacer(Modifier.height(Spacing.xl))
-        Eyebrow(stringResource(R.string.account_eyebrow_data))
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            SettingRow(
                 title = stringResource(R.string.account_setting_export_title),
                 detail = stringResource(R.string.account_setting_export_detail),
-                position = RowPosition.First,
+                position = RowPosition.Middle,
                 modifier = Modifier.clickable(onClickLabel = stringResource(R.string.account_setting_export_click_label), onClick = onOpenExport).testTag("setting_export"),
             ) {
                 Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
@@ -563,77 +599,11 @@ fun AccountSheetContent(
             SettingRow(
                 title = stringResource(R.string.full_backup_ui_restore_title),
                 detail = stringResource(R.string.full_backup_ui_restore_detail),
-                position = RowPosition.Last,
+                position = RowPosition.Middle,
                 modifier = Modifier.clickable(onClickLabel = stringResource(R.string.full_backup_ui_restore_title), onClick = onRestore).testTag("setting_restore"),
             ) {
                 Icon(KpIcons.ChevronDown, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(20.dp).rotate(-90f))
             }
-        }
-
-        HelpAndAbout(
-            onOpenLicences = onOpenLicences,
-            onNoApp = onNoApp,
-            crashReports = crashReports,
-            onCrashReportsChange = onCrashReportsChange,
-            modifier = Modifier.padding(top = Spacing.xl),
-        )
-
-        if (!isLocal) {
-            OutlinedButton(
-                onClick = onSignOut,
-                shape = KpShapes.medium,
-                // SubMutedWarmGray, not CharcoalBorder: the boundary needs 3:1 against the sheet (3.17 vs 1.28).
-                border = BorderStroke(1.dp, SubMutedWarmGray),
-                modifier = Modifier
-                    .padding(top = Spacing.xl)
-                    .fillMaxWidth()
-                    .heightIn(min = 52.dp)
-                    .testTag("account_sign_out"),
-            ) {
-                Text(text = stringResource(R.string.shell_copy_ledger_sign_out), style = MaterialTheme.typography.titleMedium.copy(color = OffWhiteText))
-            }
-            // Play requires deleting an account to be easy to find in the app (plan T1.1).
-            TextButton(
-                onClick = onDeleteAccount,
-                modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).testTag("account_delete"),
-            ) {
-                Text(stringResource(R.string.delete_account_action_delete), style = MaterialTheme.typography.labelLarge, color = DestructiveText)
-            }
-        }
-    }
-}
-
-/**
- * Help & about (plan T1.2, REL H5): a way to write to us with the details a report needs, the
- * policy and terms the sign-in screen agreed to, the licences, and which version this is.
- */
-@Composable
-private fun HelpAndAbout(
-    onOpenLicences: () -> Unit,
-    onNoApp: (String) -> Unit,
-    crashReports: Boolean?,
-    onCrashReportsChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalContext.current
-    fun openPage(url: String) {
-        if (!LegalLinks.open(context, url)) onNoApp(context.getString(R.string.account_help_no_browser, url))
-    }
-    Column(modifier) {
-        Eyebrow(stringResource(R.string.account_eyebrow_help))
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            SettingRow(
-                title = stringResource(R.string.account_help_feedback_title),
-                detail = stringResource(R.string.account_help_feedback_detail),
-                position = RowPosition.First,
-                modifier = Modifier
-                    .clickable(onClickLabel = stringResource(R.string.account_help_feedback_click_label)) {
-                        if (!Support.email(context, subject = context.getString(R.string.account_help_feedback_subject), body = "")) {
-                            onNoApp(context.getString(R.string.account_help_no_email, Support.EMAIL))
-                        }
-                    }
-                    .testTag("help_feedback"),
-            ) { HelpChevron() }
             SettingRow(
                 title = stringResource(R.string.account_help_privacy_title),
                 detail = stringResource(R.string.account_help_privacy_detail),
@@ -643,7 +613,7 @@ private fun HelpAndAbout(
             SettingRow(
                 title = stringResource(R.string.account_help_terms_title),
                 detail = stringResource(R.string.account_help_terms_detail),
-                position = RowPosition.Middle,
+                position = if (crashReports == null) RowPosition.Last else RowPosition.Middle,
                 modifier = Modifier.clickable(onClickLabel = stringResource(R.string.account_help_terms_click_label)) { openPage(LegalLinks.TERMS) }.testTag("help_terms"),
             ) { HelpChevron() }
             if (crashReports != null) {
@@ -651,7 +621,7 @@ private fun HelpAndAbout(
                 SettingRow(
                     title = stringResource(R.string.account_help_crash_title),
                     detail = stringResource(R.string.account_help_crash_detail),
-                    position = RowPosition.Middle,
+                    position = RowPosition.Last,
                     modifier = Modifier
                         .toggleable(value = crashReports, role = Role.Switch, onValueChange = onCrashReportsChange)
                         .testTag("help_crash_reports"),
@@ -669,6 +639,38 @@ private fun HelpAndAbout(
                     )
                 }
             }
+        }
+
+        AboutSettings(
+            onOpenLicences = onOpenLicences,
+            onNoApp = onNoApp,
+            modifier = Modifier.padding(top = Spacing.xl),
+        )
+    }
+}
+
+@Composable
+private fun AboutSettings(
+    onOpenLicences: () -> Unit,
+    onNoApp: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    Column(modifier) {
+        Eyebrow(stringResource(R.string.account_eyebrow_help))
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            SettingRow(
+                title = stringResource(R.string.account_help_feedback_title),
+                detail = stringResource(R.string.account_help_feedback_detail),
+                position = RowPosition.First,
+                modifier = Modifier
+                    .clickable(onClickLabel = stringResource(R.string.account_help_feedback_click_label)) {
+                        if (!Support.email(context, subject = context.getString(R.string.account_help_feedback_subject), body = "")) {
+                            onNoApp(context.getString(R.string.account_help_no_email, Support.EMAIL))
+                        }
+                    }
+                    .testTag("help_feedback"),
+            ) { HelpChevron() }
             SettingRow(
                 title = stringResource(R.string.account_help_licences_title),
                 detail = stringResource(R.string.account_help_licences_detail),
