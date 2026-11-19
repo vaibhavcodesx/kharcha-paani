@@ -47,7 +47,7 @@
 
 6. **OWNER REVIEW:** enforce "shares add up to the amount" in the database itself. Today only the `save_group_expense` RPC checks it, and direct table writes bypass the RPC. See finding H-2.
 7. **OWNER REVIEW:** revoke the project's default privileges from `anon`.
-   - Migration comments confirm that every new table and function in `public` is granted to `anon` by default (`20260923000000_owner_private_local_ledger.sql:141-144`, `20260914033124_groups_invites_rls.sql:656-657, 675-678`).
+   - Migration comments confirm that every new table and function in `public` is granted to `anon` by default (`20260924173011_owner_private_local_ledger.sql:141-144`, `20260914033124_groups_invites_rls.sql:656-657, 675-678`).
    - Every migration so far has remembered to revoke. The next one might not. See M-4.
 8. Fix the hue-clash trigger. A groupmate with no display name disables the check. See L-9.
 9. Dashboard checks that can't be seen from the repo (**OWNER REVIEW**, auth):
@@ -111,9 +111,9 @@ The Edge Function (owner list) should not log request bodies.
 ### H-2 (High, OWNER REVIEW: RLS/trigger): the share-sum invariant is enforced only inside an RPC; direct table writes bypass it
 
 **Evidence:**
-- `save_group_expense` checks `sum(shares) = amount = split.total` (`20260926000100_group_expense_guests.sql:61-68`).
+- `save_group_expense` checks `sum(shares) = amount = split.total` (`20260927073436_group_expense_guests.sql:61-68`).
 - But `transactions_update_owner_or_payer` lets the owner **or the payer** PATCH `transactions.amount` directly (`20260918073251_payer_can_edit_group_expenses.sql:53-60`).
-- `split_shares_update` lets either of them PATCH `share_amount` directly (`20260926000100_group_expense_guests.sql:217-239`).
+- `split_shares_update` lets either of them PATCH `share_amount` directly (`20260927073436_group_expense_guests.sql:217-239`).
 - `splits_update` allows `total_amount` (`20260918073251…:104-114`).
 - No table constraint or trigger re-checks the sum.
 
@@ -189,7 +189,7 @@ The Edge Function (owner list) should not log request bodies.
 
 ### M-4 (Medium, OWNER REVIEW: privileges): defaults grant `anon` ALL on every new object
 
-**Evidence:** migration comments say so (`20260923000000…:141-144`; `20260914033124…:656-657, 675-678`). The core tables still carry `anon` INSERT, UPDATE and SELECT grants. They are safe today only because every policy is `to authenticated`.
+**Evidence:** migration comments say so (`20260924173011…:141-144`; `20260914033124…:656-657, 675-678`). The core tables still carry `anon` INSERT, UPDATE and SELECT grants. They are safe today only because every policy is `to authenticated`.
 
 **Failure scenario:** a future migration adds a table or a `public` function and forgets the revoke. The function becomes callable without signing in, and any `security definer` function becomes a hole.
 
@@ -289,7 +289,7 @@ This is by design (backlog item 11), but combined with H-2 there is no audit tra
 
 ### L-9 (Low, OWNER REVIEW: trigger): the hue-clash check is skipped when the clashing groupmate has no display name
 
-**Evidence:** `20260927000000_profile_hue.sql:79-95` runs `select p.display_name into v_clash … limit 1`, then `if v_clash is not null`. A clashing profile with `display_name is null` (possible: `handle_new_user` coalesces Google metadata that may be missing, `20260913144006…:46`) yields a null `v_clash`, and the clash is allowed.
+**Evidence:** `20260927073454_profile_hue.sql:79-95` runs `select p.display_name into v_clash … limit 1`, then `if v_clash is not null`. A clashing profile with `display_name is null` (possible: `handle_new_user` coalesces Google metadata that may be missing, `20260913144006…:46`) yields a null `v_clash`, and the clash is allowed.
 
 **Fix:** `select coalesce(p.display_name, 'a groupmate') into v_clash`, or use `if found`. Add a test with a null-name groupmate.
 
@@ -310,8 +310,8 @@ This is by design (backlog item 11), but combined with H-2 there is no audit tra
 - RPCs that write as the caller are SECURITY INVOKER: `save_group_expense`, `save_local_split`, `respond_to_settlement`.
 - Every `public` RPC revokes `anon` / `public` and grants `authenticated`.
 - `handle_new_user` is revoked from all client roles (`20260913144030`).
-- DELETE and TRUNCATE are revoked from client roles (`20260914033124…:679-690`). The private-ledger tables `revoke all` and grant back only select, insert, update (`20260923000000…:146-147, 268-269`).
-- Profiles are readable only by self and current groupmates (`20260914033124…:202-205`). Memberships are created only by RPCs (`:224`). Settlements are immutable except for status and retraction (`20260926000000…:104-167`). A group expense can't leave its group (`20260914142135…:122-146`). The owner is locked (`20260918073251…:62-82`).
+- DELETE and TRUNCATE are revoked from client roles (`20260914033124…:679-690`). The private-ledger tables `revoke all` and grant back only select, insert, update (`20260924173011…:146-147, 268-269`).
+- Profiles are readable only by self and current groupmates (`20260914033124…:202-205`). Memberships are created only by RPCs (`:224`). Settlements are immutable except for status and retraction (`20260927073400…:104-167`). A group expense can't leave its group (`20260914142135…:122-146`). The owner is locked (`20260918073251…:62-82`).
 - `upi_id` is format-constrained so it can't inject `upi://` parameters (`20260918210646…:18-21`), and the client re-validates (`UpiLink.kt:21-34`).
 - Realtime publishes only `transactions`, `settlements` and `groups`, all RLS-filtered (`20260914034325…:66`).
 - **No storage buckets** are defined anywhere. `receipt_storage_path` is unused, and receipts are local-only (PR #76).

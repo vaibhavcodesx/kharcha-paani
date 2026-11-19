@@ -1,4 +1,4 @@
--- Checks for migration 20260920000000_local_participant_shares, applied to live on 2026-09-20.
+-- Checks for migration 20260920030201_local_participant_shares, applied to live on 2026-09-20.
 --
 -- Ran 12/12 here and 12/12 against the live project, which rolled back leaving nothing behind.
 --

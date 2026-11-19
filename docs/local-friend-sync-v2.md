@@ -6,7 +6,7 @@ the 1.3.0 release build: a pre-1.3 split and IOU stayed on the phone through the
 sync; a new split and IOU reached the server, came back after clearing the app's data and signing
 in (balance exact), and are invisible to another account under RLS.
 
-- Migration: `supabase/migrations/20260923000000_owner_private_local_ledger.sql`, applied
+- Migration: `supabase/migrations/20260924173011_owner_private_local_ledger.sql`, applied
   2026-09-24.
 - **Caught just before applying:** the reviewed version granted privileges to `authenticated`
   without revoking first. This project's default privileges give `authenticated` ALL on new
@@ -23,7 +23,7 @@ in (balance exact), and are invisible to another account under RLS.
 
 I got this wrong in the 2026-09-20 design, and I'm saying so up front.
 
-`20260920000000_local_participant_shares` gave `split_shares` a `local_name` and is live. Its
+`20260920030201_local_participant_shares` gave `split_shares` a `local_name` and is live. Its
 12 tests all used a **group** expense, and so did the design. But the common case is not a
 group expense. It's "Rohan and I had dinner, I paid": a personal expense split with a friend
 who has no account. That case still can't be stored, because the share hangs off a `splits` row:

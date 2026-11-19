@@ -5,7 +5,7 @@
 -- Design: docs/design-v1.4-groups-settlements-colours.md, item 9.
 --
 -- What it is for. A group expense can already *hold* a share for a friend with no account
--- (split_shares.local_name, 20260920000000), but save_group_expense ignored local_name, so the app
+-- (split_shares.local_name, 20260920030201), but save_group_expense ignored local_name, so the app
 -- never sent one. This version accepts them. A friend without an account in a group expense is a
 -- *guest* of the member who added it (the transaction's owner): the host covers their guests, so
 -- groupmates only ever settle with members.

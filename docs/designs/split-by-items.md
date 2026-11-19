@@ -95,7 +95,7 @@ expose, reached only through eight functions:
 | `bill_split_view`, `bill_split_join`, `bill_split_claim`, `bill_split_done` | anyone with the link, **signed out included** | see the bill, add a name, pick, say "that's everything" |
 
 **This is the first thing a signed-out caller can run**, which is why the PR is for the owner's
-review. Until now `anon` could execute nothing (20261025000300, audit M-4). The four link functions
+review. Until now `anon` could execute nothing (20261026203844, audit M-4). The four link functions
 are granted to `anon` by name; `database_hygiene_test.sql` now asserts that these four are the only
 ones. What bounds them:
 

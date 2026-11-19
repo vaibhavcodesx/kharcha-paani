@@ -17,7 +17,7 @@ import kotlin.time.ExperimentalTime
 /**
  * Whether splits and IOUs with friends who have no account sync to the owner's private tables.
  *
- * **On since 1.3.0** (owner decision, after `20260923000000_owner_private_local_ledger` was applied
+ * **On since 1.3.0** (owner decision, after `20260924173011_owner_private_local_ledger` was applied
  * and verified on 2026-09-24). Only records made from then on sync: anything already on a phone as
  * LOCAL_ONLY stays there, even when edited (see LedgerRepository.syncStateFor). Turning this off
  * again stops new records syncing and leaves the tables untouched. docs/local-friend-sync-v2.md.

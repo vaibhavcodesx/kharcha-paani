@@ -19,7 +19,7 @@
 --    shown to groupmates; every existing one already fits.
 --
 -- Additive in effect; the revokes take away only what nothing uses. Rollback: grant the privileges
--- back to anon (see the audit), restore private.check_profile_hue from 20260927000000, drop the
+-- back to anon (see the audit), restore private.check_profile_hue from 20260927073454, drop the
 -- constraint profiles_avatar_url_https.
 
 begin;

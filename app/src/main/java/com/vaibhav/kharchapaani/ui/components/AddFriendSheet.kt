@@ -38,7 +38,7 @@ import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.SquircleShape
 
-/** Server caps local_name at 64 characters (supabase/migrations/20260923000000_owner_private_local_ledger.sql). */
+/** Server caps local_name at 64 characters (supabase/migrations/20260924173011_owner_private_local_ledger.sql). */
 const val MAX_FRIEND_NAME_LENGTH = 64
 
 /**

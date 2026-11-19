@@ -22,7 +22,7 @@
 --
 -- Additive except one thing, which the owner should read: `create or replace function public.take_ai_read`
 -- replaces the live function body. Behaviour is identical for everyone until a plan or a ceiling is set.
--- Rollback: re-run the function body from 20261025000000_ai_daily_reads.sql, then
+-- Rollback: re-run the function body from 20261026154229_ai_daily_reads.sql, then
 --   drop table private.ai_project_reads, private.ai_project_ceilings, private.ai_plan_caps, private.user_plans;
 
 begin;

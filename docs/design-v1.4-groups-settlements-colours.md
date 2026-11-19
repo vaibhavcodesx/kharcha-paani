@@ -46,7 +46,7 @@ guest of the member who added the expense.
 - Only the host adds, changes or removes guests. The payer can still edit a groupmate's expense
   (20260918073251), but must send the guests back unchanged.
 
-### Staged: `20260926000100_group_expense_guests.sql` (unchanged by the decisions)
+### Staged: `20260927073436_group_expense_guests.sql` (unchanged by the decisions)
 
 - `save_group_expense` accepts `local_name` shares. Each share names exactly one member or one
   guest; shares still add up to the amount exactly; a guest change by anyone but the owner is
@@ -107,7 +107,7 @@ other party answers it.
 - The person who has to answer can't delete it: a disagreement stays visible instead of vanishing.
 - A confirmed settlement can still be retracted by either party, as today.
 
-### Staged: `20260926000000_settlement_confirmation.sql` (unchanged by the decisions)
+### Staged: `20260927073400_settlement_confirmation.sql` (unchanged by the decisions)
 
 It already has no auto-confirm, no expiry, recorder-only withdraw and clear, and answering only by
 the other party. The reminders need nothing on the server. Five new columns: `status`,
@@ -159,7 +159,7 @@ on every screen and every phone.
 - **Friends not on the app** keep a colour stored on your phone. The same picker checks it against
   the other people on your phone.
 
-### Staged: `20260927000000_profile_hue.sql` (new)
+### Staged: `20260927073454_profile_hue.sql` (new)
 
 One column with a range check, and a trigger that enforces the rules above. Who can write the
 column is unchanged, because `profiles_update_own` already limits updates to your own row.

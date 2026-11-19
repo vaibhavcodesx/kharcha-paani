@@ -1,7 +1,7 @@
 package com.vaibhav.kharchapaani.domain
 
 /**
- * The longest text the server accepts, per field (plan T2.2, migration 20261106000100_text_limits).
+ * The longest text the server accepts, per field (plan T2.2, migration 20261106130938_text_limits).
  * The app caps typing at these and trims anything filled in for it (AI, statements), so a long note
  * can never become an expense that refuses to sync.
  */

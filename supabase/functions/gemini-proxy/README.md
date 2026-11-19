@@ -25,7 +25,7 @@ roughly six typed lines a minute across everyone. Past that, Groq answers 429 an
 
 Order matters: the app release that uses the proxy must not reach people before the function is live.
 
-1. **Apply the migration** `supabase/migrations/20261025000000_ai_daily_reads.sql` (the caps and the
+1. **Apply the migration** `supabase/migrations/20261026154229_ai_daily_reads.sql` (the caps and the
    `take_ai_read` function). Its tests are in `supabase/tests/ai_daily_reads_test.sql`.
 2. **A new Gemini key, for the server only.** Google Cloud console → APIs & Services → Credentials →
    Create API key. Restrict it to the **Generative Language API**, with no application restriction
