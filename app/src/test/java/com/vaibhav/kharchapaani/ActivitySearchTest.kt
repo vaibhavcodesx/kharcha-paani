@@ -110,7 +110,8 @@ class ActivitySearchTest {
         assertEquals(setOf("tx_1"), search("2469", expectedKeys = setOf("tx_1")))
 
         vm.setSelectedFilter(ActivityFeed.EXPENSES)
-        assertTrue(search("2469", expectedKeys = emptySet()).isEmpty())
+        assertEquals(setOf("tx_1"), search("2469", expectedKeys = setOf("tx_1")))
+        assertTrue(search("123456.78", expectedKeys = emptySet()).isEmpty())
     }
 
     @Test fun `merchant category note and clearing search still work`() {
