@@ -184,6 +184,8 @@
     <string name="entry_group">Group</string>
     <string name="entry_none">None</string>
     <string name="entry_whos_it_for">WHO\'S IT FOR</string>
+    <string name="entry_visibility_private">Only you can see this entry.</string>
+    <string name="entry_visibility_group">Everyone in %1$s will see this entry.</string>
     <string name="entry_note">Note</string>
     <string name="entry_optional">Optional</string>
     <string name="entry_close_choices">Close choices</string>
