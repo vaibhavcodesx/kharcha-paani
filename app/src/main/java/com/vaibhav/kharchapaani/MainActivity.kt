@@ -767,6 +767,7 @@ fun SplitFlowApp(
                             syncStatus = syncStatus,
                             onShowMessage = viewModel::showMessage,
                             onAiOff = viewModel::showAiOffNudge,
+                            guardAi = viewModel::guardAiRead,
                             onVoiceCaptureStarted = viewModel::onVoiceCaptureStarted,
                             onOpenAccount = { if (!fullBackupModalOpen) isAccountSheetOpen = true },
                             onRequestSync = { viewModel.requestSync() }, localOnly = viewModel.isLocalLedger,

@@ -733,6 +733,7 @@
     <string name="ai_display_receipt_ratelimited">The AI is busy right now, so the bill wasn\'t read. Fill in the details, or try again in a few minutes.</string>
     <string name="ai_display_receipt_servererror">The AI service is having trouble, so the bill wasn\'t read. Fill in the details, or try again.</string>
     <string name="ai_display_receipt_blocked">Couldn\'t read that bill. Fill in the details, or try a clearer photo.</string>
+    <string name="ai_paused_now">AI is paused for now. You can still add entries by hand.</string>
     <string name="ai_display_receipt_dailylimit">That\'s today\'s bill reads used up. Fill in the details; they\'re back tomorrow.</string>
     <string name="ai_display_receipt_needssignin">Sign out and back in to read bills again. Fill in the details for now.</string>
     <string name="ai_display_local_filled">Filled in on your phone. Check the amount and details.</string>
