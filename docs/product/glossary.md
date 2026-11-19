@@ -73,7 +73,7 @@ The table below catalogs strings that deviate from the chosen canonical vocabula
 | **Group Participant** | **member** | `strings.xml:create_group_local` | "Only on this phone. The friends in it don't need the app." | Replace "friends" with "members". |
 | **Group Participant** | **member** | `strings.xml:splits_groups_empty_body` | "...join one with the code a friend sends." | Replace "a friend sends" with "a member sends" (or leave if invite is from a friend). |
 | **Group Participant** | **member** | `strings.xml:upi_copy_supporting` | "People in your shared groups can see it too." | Replace "People" with "Members". |
-| **Non-App Participant** | **guest** | `strings.xml:delete_account_goes_body` | "...splits and IOUs with friends who aren't on the app..." | Replace with "...splits and loans with guests...". |
+| **Non-App Participant** | **guest** | `strings.xml:delete_account_goes_body` | "...splits and IOUs with friends who aren't on the app..." | Replace "friends who aren't on the app" with "guests"; keep IOUs.
 | **Non-App Participant** | **guest** | `strings.xml:friend_form_supporting` | "...and they don't need the app." | Clarify that non-app participants function as guests in groups. |
 | **Shared Space** | **group** | `strings.xml:splits_subtitle` | "Who owes whom, with friends and on trips" | Replace "on trips" with "in groups". |
 | **Shared Space** | **group** | `strings.xml:group_detail_trip` | "How did this trip go?" | Replace with "How did this group go?" |
