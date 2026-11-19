@@ -70,7 +70,7 @@ class PaymentFormStringResourcesTest {
         assertTrue(saved.isIou)
         assertEquals(-1L, saved.fromPersonId); assertEquals(2L, saved.toPersonId)
         assertEquals(125.5, saved.amount, 0.0)
-        assertEquals("Informal Loan", saved.note)
+        assertEquals("Loan", saved.note)
     }
     @Test fun `settlement resource names and direction still clear the real balance`(): Unit = runBlocking {
         db.transactionDao().insertTransaction(TransactionEntity(id = 1, type = "expense", amount = 200.0,
