@@ -2,7 +2,7 @@
 <resources>
     <string name="fullbackup_vm_read_failed">Couldn\'t read that file. Pick a backup saved by Kharcha Paani.</string>
     <string name="fullbackup_vm_operation_failed">The backup didn\'t finish. Nothing you had is lost. Try again.</string>
-    <string name="fullbackup_vm_recovery_pending">The last restore didn\'t finish. Keep your backup file, then close and reopen the app to finish it.</string>
+    <string name="fullbackup_vm_recovery_pending">The last restore did not finish. Retry or discard it.</string>
     <string name="fullbackup_vm_busy">One moment, the backup is still going.</string>
     <string name="fullbackup_vm_exported">Backup saved.</string>
     <string name="fullbackup_vm_restored">Backup restored.</string>

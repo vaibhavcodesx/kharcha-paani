@@ -484,6 +484,7 @@ fun SplitFlowApp(
     val fullBackupBusy by viewModel.fullBackupBusy.collectAsStateWithLifecycle()
     val fullBackupPreview by viewModel.fullBackupPreview.collectAsStateWithLifecycle()
     val fullBackupReadError by viewModel.fullBackupReadError.collectAsStateWithLifecycle()
+    val fullBackupRecoveryPending by viewModel.fullBackupRecoveryPending.collectAsStateWithLifecycle()
     val fullBackupTargetEmpty by viewModel.fullBackupTargetEmpty.collectAsStateWithLifecycle()
     val fullBackupExportOpen by viewModel.fullBackupExportOpen.collectAsStateWithLifecycle()
     val fullBackupModalOpen = fullBackupBusy || fullBackupPreview != null || fullBackupReadError || fullBackupExportOpen
@@ -1323,6 +1324,8 @@ fun SplitFlowApp(
         isEmptyLedger = fullBackupTargetEmpty,
         isWorking = fullBackupBusy && !fullBackupExportOpen,
         hasReadError = fullBackupReadError,
+        recoveryPending = fullBackupRecoveryPending,
+        onDiscard = viewModel::discardEverythingRestore,
         onRestore = viewModel::confirmEverythingRestore,
         onDismiss = viewModel::dismissEverythingRestore,
     )

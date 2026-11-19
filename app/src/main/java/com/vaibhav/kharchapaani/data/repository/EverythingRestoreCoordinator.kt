@@ -62,6 +62,15 @@ class EverythingRestoreCoordinator(
         }
     }
 
+    /** Abandon recovery without decoding it or removing any committed ledger rows. */
+    suspend fun discard(isLocal: Boolean) = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            require(isLocal) { "Complete restore requires a local session" }
+            journal.delete()
+            check(!hasJournal()) { "Could not discard restore journal" }
+        }
+    }
+
     private suspend fun finish(pending: Pending, reuseMatchingReceipts: Boolean) {
         val marker = db.syncDao().meta(EVERYTHING_RESTORE_MARKER)
         require(marker == null || marker == pending.hash) { "Restore journal does not match this ledger" }

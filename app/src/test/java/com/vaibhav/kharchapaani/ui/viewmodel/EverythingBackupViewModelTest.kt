@@ -226,7 +226,7 @@ class EverythingBackupViewModelTest {
         }
     }
 
-    @Test fun `startup preserves a broken recovery before maintenance and resumes the matching archive once repaired`(): Unit = runBlocking {
+    @Test fun `startup keeps a broken recovery but runs maintenance and resumes the matching archive once repaired`(): Unit = runBlocking {
         val backup = archive(due = true)
         val journal = File(app.filesDir, "backup-recovery/local-${guest.id}.json")
         val coordinator = EverythingRestoreCoordinator(db, EverythingBackupRepository(db, ReceiptStore.forLocal(app, guest)), journal) {
@@ -240,11 +240,14 @@ class EverythingBackupViewModelTest {
         val first = vm()
         assertTrue(first.fullBackupBusy.value)
         until { !first.fullBackupBusy.value && first.fullBackupReadError.value }
-        assertEquals(2, db.transactionDao().getAllTransactionsDirect().size) // No due subscription charge yet.
-        assertEquals(friend, db.personDao().getAllPeopleDirect().single()) // No colour rewrite yet.
+        assertEquals(3, db.transactionDao().getAllTransactionsDirect().size)
+        assertEquals(1, db.transactionDao().getAllTransactionsDirect().count { it.merchant == "Subscription" })
+        val repaired = PersonColours.respace(people = listOf(PersonColour(
+            friend.id, friend.profileId ?: friend.name, friend.avatarColor, friend.createdAt, friend.hue)))
+        assertEquals(friend.copy(avatarColor = repaired[friend.id] ?: friend.avatarColor), db.personDao().getAllPeopleDirect().single())
         first.openManualAdd(); first.updateAmount("999"); first.saveCurrentTransaction(false)
         main.scheduler.runCurrent()
-        assertEquals(2, db.transactionDao().getAllTransactionsDirect().size)
+        assertEquals(3, db.transactionDao().getAllTransactionsDirect().size)
         assertTrue(journal.exists())
         clearOwnedVms()
         journal.writeBytes(original)
@@ -257,6 +260,74 @@ class EverythingBackupViewModelTest {
         assertEquals(1, db.transactionDao().getAllTransactionsDirect().count { it.merchant == "Subscription" })
         assertEquals("Groceries", settings.collectEverythingSettings(guest.settingsId).defaultCategory)
         assertFalse(AiSettings(app).enabledNow)
+    }
+
+    @Test fun `discarding an unreadable journal clears its atomic backup and unblocks real ledger actions`(): Unit = runBlocking {
+        val backup = archive(due = true)
+        val journal = File(app.filesDir, "backup-recovery/local-${guest.id}.json")
+        try {
+            EverythingRestoreCoordinator(db, EverythingBackupRepository(db, ReceiptStore.forLocal(app, guest)), journal) {
+                throw IOException("Settings cannot finish")
+            }.restore(backup, true)
+            fail("Expected interrupted settings")
+        } catch (expected: IOException) { }
+        journal.writeText("unreadable")
+        val atomicBackup = File(journal.path + ".bak").apply { writeText("also unreadable") }
+        settings.setReminderEnabled(true)
+        val vm = vm()
+        vm.discardEverythingRestore() // Startup owns the journal until its attempt finishes.
+        assertTrue(vm.fullBackupBusy.value)
+        assertTrue(journal.exists())
+        until { !vm.fullBackupBusy.value && vm.fullBackupReadError.value }
+        assertTrue(vm.fullBackupRecoveryPending.value)
+        assertEquals(3, db.transactionDao().getAllTransactionsDirect().size)
+        assertEquals(47.0, LedgerRepository(db).personBalances.first().single().netBalance, 0.0)
+        assertTrue(androidx.work.WorkManager.getInstance(app).getWorkInfosForUniqueWork("daily-reminder")
+            .get().any { !it.state.isFinished })
+        vm.openEverythingExport()
+        assertFalse(vm.fullBackupExportOpen.value)
+        val rows = db.transactionDao().getAllTransactionsDirect()
+        atomicBackup.writeText("still unreadable") // AtomicFile.openRead consumed the earlier backup.
+        vm.discardEverythingRestore()
+        assertTrue(vm.fullBackupBusy.value)
+        vm.discardEverythingRestore() // A repeated click cannot race journal deletion.
+        until { !vm.fullBackupBusy.value }
+        assertFalse(journal.exists())
+        assertFalse(atomicBackup.exists())
+        assertFalse(vm.fullBackupRecoveryPending.value)
+        assertFalse(vm.fullBackupReadError.value)
+        assertNull(vm.fullBackupPreview.value)
+        assertEquals(rows, db.transactionDao().getAllTransactionsDirect())
+        vm.openEverythingExport()
+        assertTrue(vm.fullBackupExportOpen.value)
+        vm.dismissEverythingExport()
+        vm.openManualAdd(); vm.updateAmount("999"); vm.saveCurrentTransaction(false)
+        until { db.transactionDao().getAllTransactionsDirect().size == 4 }
+        assertEquals(1, db.transactionDao().getAllTransactionsDirect().count { it.amount == 999.0 })
+        clearOwnedVms()
+        val reopened = vm()
+        awaitActualStartup(reopened)
+        assertFalse(reopened.fullBackupRecoveryPending.value)
+        assertFalse(reopened.fullBackupReadError.value)
+        assertEquals(4, db.transactionDao().getAllTransactionsDirect().size)
+    }
+
+    @Test fun `a journal that cannot be deleted keeps recovery blocked`() = runBlocking {
+        val journal = File(app.filesDir, "backup-recovery/local-${guest.id}.json")
+        assertTrue(journal.mkdirs())
+        val keep = File(journal, "keep").apply { writeText("fixture") }.also(files::add)
+        files += journal
+        val vm = vm()
+        until { !vm.fullBackupBusy.value && vm.fullBackupReadError.value }
+        vm.discardEverythingRestore()
+        until { !vm.fullBackupBusy.value }
+        assertTrue(journal.exists())
+        assertEquals("fixture", keep.readText())
+        assertTrue(vm.fullBackupRecoveryPending.value)
+        assertTrue(vm.fullBackupReadError.value)
+        vm.openEverythingExport()
+        assertFalse(vm.fullBackupExportOpen.value)
+        assertTrue(db.transactionDao().getAllTransactionsDirect().isEmpty())
     }
 
     @Test fun `manual confirmation after a blocked startup also runs maintenance once`(): Unit = runBlocking {

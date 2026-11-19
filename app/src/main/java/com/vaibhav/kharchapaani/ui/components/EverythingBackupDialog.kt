@@ -39,8 +39,11 @@ fun EverythingBackupDialog(
     onRestore: () -> Unit,
     onDismiss: () -> Unit,
     hasReadError: Boolean = false,
+    recoveryPending: Boolean = false,
+    onDiscard: () -> Unit = {},
 ) {
-    if (backup == null && !isWorking && !hasReadError) return
+    if (backup == null && !isWorking && !hasReadError && !recoveryPending) return
+    val confirmingDiscard = remember(recoveryPending) { mutableStateOf(false) }
     val validation = remember(backup) { mutableStateOf<Boolean?>(null) }
     LaunchedEffect(backup) {
         validation.value = withContext(Dispatchers.Default) {
@@ -98,13 +101,26 @@ fun EverythingBackupDialog(
         dismissButton = {
             TextButton(
                 enabled = !isWorking,
-                onClick = { if (!isWorking) onDismiss() },
-                modifier = Modifier.testTag("everything_restore_cancel"),
-            ) { Text(stringResource(R.string.everything_backup_cancel), color = MutedWarmGray) }
+                onClick = { if (!isWorking) {
+                    if (recoveryPending) confirmingDiscard.value = true else onDismiss()
+                } },
+                modifier = Modifier.testTag(if (recoveryPending) "everything_restore_discard" else "everything_restore_cancel"),
+            ) { Text(stringResource(if (recoveryPending) R.string.everything_backup_discard else R.string.everything_backup_cancel), color = MutedWarmGray) }
         },
         titleContentColor = OffWhiteText,
         textContentColor = OffWhiteText,
     )
+    if (confirmingDiscard.value && recoveryPending && !isWorking) {
+        RemovalConfirmationDialog(
+            title = stringResource(R.string.everything_backup_discard_title),
+            description = stringResource(R.string.everything_backup_discard_description),
+            confirmLabel = stringResource(R.string.everything_backup_discard),
+            dialogTag = "everything_discard_dialog",
+            confirmTag = "everything_discard_confirm",
+            onConfirm = { confirmingDiscard.value = false; onDiscard() },
+            onDismiss = { confirmingDiscard.value = false },
+        )
+    }
 }
 
 /** Warn before launching the document picker; export does not alter ledger rows. */

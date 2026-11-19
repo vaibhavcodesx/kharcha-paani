@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.ui.viewmodel
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ensureActive
 import com.vaibhav.kharchapaani.diagnostics.CrashReporting
 import com.vaibhav.kharchapaani.ui.format.receiptNoticeResource
 import com.vaibhav.kharchapaani.ui.format.quickAddNoticeResource
@@ -194,7 +195,11 @@ class MainViewModel(
     private val recoveryJournal = if (isLocal) File(application.filesDir, "backup-recovery/local-$userId.json") else null
     private fun hasRecoveryJournal(): Boolean = recoveryJournal?.let { it.exists() || File(it.path + ".bak").exists() } == true
     private var backupStartupJob: Job? = null
-    private var recoveryBlocked = hasRecoveryJournal()
+    private val _fullBackupRecoveryPending = MutableStateFlow(hasRecoveryJournal())
+    val fullBackupRecoveryPending: StateFlow<Boolean> = _fullBackupRecoveryPending.asStateFlow()
+    private var recoveryBlocked: Boolean
+        get() = _fullBackupRecoveryPending.value
+        set(value) { _fullBackupRecoveryPending.value = value }
     private val _fullBackupBusy = MutableStateFlow(recoveryBlocked)
     val fullBackupBusy: StateFlow<Boolean> = _fullBackupBusy.asStateFlow()
     private val _fullBackupPreview = MutableStateFlow<EverythingBackup?>(null)
@@ -2959,6 +2964,32 @@ class MainViewModel(
         _fullBackupTargetEmpty.value = false
     }
 
+    /** Called only after the discard confirmation; an unreadable preview must also be escapable. */
+    fun discardEverythingRestore() {
+        if (_fullBackupBusy.value || !recoveryBlocked) return
+        _fullBackupBusy.value = true
+        viewModelScope.launch {
+            try {
+                backupStartupJob?.join()
+                requireCurrentLocalSession()
+                everythingCoordinator.discard(isLocal = true)
+                recoveryBlocked = false
+                _fullBackupPreview.value = null
+                _fullBackupReadError.value = false
+                _fullBackupTargetEmpty.value = false
+                _statusMessage.value = uiText(R.string.fullbackup_vm_discarded)
+                runBackupMaintenance(replaceReminder = false)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                recoveryBlocked = hasRecoveryJournal()
+                _statusMessage.value = uiText(if (recoveryBlocked) R.string.fullbackup_vm_recovery_pending else R.string.fullbackup_vm_operation_failed)
+            } finally {
+                _fullBackupBusy.value = false
+            }
+        }
+    }
+
     private fun restoreDeleteWorkPending(): Boolean =
         pendingDeletes.ids.value.isNotEmpty() ||
             deleteScope.coroutineContext[Job]?.children?.any { !it.isCompleted } == true
@@ -3050,17 +3081,18 @@ class MainViewModel(
         EverythingBackup.decode(Charsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).toString())
     }
 
-    /** Run after either startup recovery or a successful in-place recovery confirmation. */
+    /** Ledger and reminder maintenance also runs when startup recovery fails. */
     private suspend fun runBackupMaintenance(replaceReminder: Boolean) {
         if (ledgerRepo.runDueSubscriptions() > 0) SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
         ledgerRepo.repairPersonColours()
-        runCatching { receipts.sweepOrphans() }.onFailure { Log.w("MainViewModel", "Bill photo sweep failed", it) }
+        // A pending restore may have staged photos whose Room rows have not committed yet.
+        if (!recoveryBlocked) runCatching { receipts.sweepOrphans() }.onFailure { Log.w("MainViewModel", "Bill photo sweep failed", it) }
         publishUpiIfMissing()
         ReminderScheduler.apply(getApplication(), settings.reminder.first(), replace = replaceReminder)
     }
 
     // Last: all state above is initialized before recovery can run, including on Unconfined Main.
-    // No automatic charge, colour rewrite or receipt sweep may run before a pending restore resumes.
+    // Attempt recovery first, then maintain the ledger even if the journal cannot be resumed.
     init {
         val startupRecovery = recoveryBlocked
         backupStartupJob = viewModelScope.launch {
@@ -3072,7 +3104,6 @@ class MainViewModel(
                     recoveryBlocked = false
                     _fullBackupPreview.value = null
                 }
-                runBackupMaintenance(replaceReminder = false)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
@@ -3083,7 +3114,17 @@ class MainViewModel(
                 }
                 _statusMessage.value = uiText(if (recoveryBlocked) R.string.fullbackup_vm_recovery_pending else R.string.fullbackup_vm_operation_failed)
             } finally {
-                if (startupRecovery) _fullBackupBusy.value = false
+                try {
+                    // Cancellation still stops this session; a recovery failure does not.
+                    kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                    runBackupMaintenance(replaceReminder = false)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    Log.w("MainViewModel", "Backup maintenance failed", failure)
+                } finally {
+                    if (startupRecovery) _fullBackupBusy.value = false
+                }
             }
         }
     }
