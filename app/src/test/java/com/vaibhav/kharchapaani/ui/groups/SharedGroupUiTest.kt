@@ -89,6 +89,7 @@ class SharedGroupUiTest {
             }
         }
 
+        composeTestRule.onNodeWithText("Reset link").assertIsDisplayed()
         composeTestRule.onNodeWithText("AB2C D3EF").assertIsDisplayed()
         composeTestRule.onNodeWithText("Share link").performClick()
         assertEquals("kharchapaani://join/AB2CD3EF", shared)
