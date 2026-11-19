@@ -308,7 +308,7 @@
     <string name="payment_them">them</string>
     <string name="payment_you_lent">You lent</string>
     <string name="payment_you_borrowed">You borrowed</string>
-    <string name="payment_lent_note">Informal Loan</string>
+    <string name="payment_lent_note">Loan</string>
     <string name="payment_borrowed_note">Borrowed Amount</string>
     <string name="payment_iou_upi_note">Kharcha Paani IOU</string>
     <string name="payment_they">They</string>
@@ -633,7 +633,7 @@
     <string name="upi_copy_name_needed">Add a name</string>
     <string name="upi_copy_saved">Saved</string>
     <string name="upi_copy_title">Get paid by UPI</string>
-    <string name="upi_copy_supporting">Friends settling up with you can scan your code or copy your ID. People in your shared groups can see it too.</string>
+    <string name="upi_copy_supporting">Friends settling up with you can scan your code or copy your ID. People in your shared groups can see it too. This does not connect to your bank account. It is only the address friends send money to, so it is safe to share.</string>
     <string name="upi_copy_id">UPI ID</string>
     <string name="upi_copy_placeholder">name@bank</string>
     <string name="upi_copy_name">Name</string>

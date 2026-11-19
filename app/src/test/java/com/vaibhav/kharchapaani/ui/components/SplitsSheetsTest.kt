@@ -125,7 +125,7 @@ class SplitsSheetsTest {
         composeTestRule.onNodeWithTag("iou_person_3").performClick()
         composeTestRule.onNodeWithTag("confirm_iou_button").assertIsEnabled().performClick()
 
-        assertEquals(listOf(listOf(-1L, 3L, 500.0, "Informal Loan", null)), recorded)
+        assertEquals(listOf(listOf(-1L, 3L, 500.0, "Loan", null)), recorded)
     }
 
     @Test
