@@ -1,5 +1,8 @@
 package com.vaibhav.kharchapaani.data.sync
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.vaibhav.kharchapaani.data.db.AppDatabase
@@ -10,6 +13,9 @@ import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncMetaEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
+import com.vaibhav.kharchapaani.domain.NotificationPrefs
+import com.vaibhav.kharchapaani.reminder.GroupJoinNotices
+import com.vaibhav.kharchapaani.util.NotificationHelper
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -21,6 +27,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.math.BigDecimal
+import java.time.Instant
+import java.time.ZoneOffset
 import java.util.UUID
 
 /** The group sync rules against real Room (runs on CI) and a fake server with the schema's rules. */
@@ -96,12 +104,54 @@ class GroupSyncEngineTest {
         engine.pullGroups()
         assertEquals("pending", sync.meta(carolNotice))
 
-        sync.putMeta(SyncMetaEntity(carolNotice, "shown"))
+        sync.putMeta(SyncMetaEntity(carolNotice, "seen"))
         remote.leave(goa, carol)
         engine.pullGroups()
         remote.join(goa, carol)
         engine.pullGroups()
-        assertEquals("shown", sync.meta(carolNotice))
+        assertEquals("seen", sync.meta(carolNotice))
+    }
+
+    @Test
+    fun `quiet hours delay the notice until morning and a repeat pull does not post it again`() = runBlocking {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        remote.groupCreatedBy(bob, goa, "Goa trip", alice)
+        engine.pullGroups()
+        remote.join(goa, carol)
+        engine.pullGroups()
+
+        val quiet = Instant.parse("2026-11-19T23:00:00Z").toEpochMilli()
+        val morning = Instant.parse("2026-11-20T09:00:00Z").toEpochMilli()
+        val prefs = NotificationPrefs()
+        assertEquals(0, GroupJoinNotices.deliver(context, db, prefs, quiet, ZoneOffset.UTC))
+        assertEquals("pending", db.syncDao().meta("group_join:$goa:$carol"))
+
+        assertEquals(1, GroupJoinNotices.deliver(context, db, prefs, morning, ZoneOffset.UTC))
+        val notice = manager.activeNotifications.single().notification
+        assertEquals("Carol joined Goa trip", notice.extras.getCharSequence(Notification.EXTRA_TITLE).toString())
+        assertEquals(Notification.VISIBILITY_PRIVATE, notice.visibility)
+        manager.cancelAll()
+        engine.pullGroups()
+        assertEquals(0, GroupJoinNotices.deliver(context, db, prefs, morning, ZoneOffset.UTC))
+        assertTrue(manager.activeNotifications.isEmpty())
+    }
+
+    @Test
+    fun `a disabled group notification channel leaves the notice pending`() = runBlocking {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        NotificationHelper.createChannels(context)
+        manager.createNotificationChannel(NotificationChannel(
+            NotificationHelper.CHANNEL_GROUP_JOINS, "New group members", NotificationManager.IMPORTANCE_NONE,
+        ))
+        remote.groupCreatedBy(bob, goa, "Goa trip", alice)
+        engine.pullGroups()
+        remote.join(goa, carol)
+        engine.pullGroups()
+
+        val noon = Instant.parse("2026-11-19T12:00:00Z").toEpochMilli()
+        assertEquals(0, GroupJoinNotices.deliver(context, db, NotificationPrefs(), noon, ZoneOffset.UTC))
+        assertEquals("pending", db.syncDao().meta("group_join:$goa:$carol"))
+        assertTrue(manager.activeNotifications.isEmpty())
     }
 
     @Test

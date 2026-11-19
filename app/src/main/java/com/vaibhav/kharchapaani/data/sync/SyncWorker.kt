@@ -15,6 +15,7 @@ import com.vaibhav.kharchapaani.data.settings.AppSettings
 import kotlinx.coroutines.flow.first
 import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
+import com.vaibhav.kharchapaani.reminder.GroupJoinNotices
 import com.vaibhav.kharchapaani.reminder.SettlementReminders
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 import io.github.jan.supabase.SupabaseClient
@@ -67,6 +68,15 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                         SettlementReminders.remind(applicationContext, database, userId, prefs = prefs)
                     }
                         .onFailure { Log.w(TAG, "Settlement reminders skipped", it) }
+
+                    try {
+                        val prefs = AppSettings(applicationContext).notificationPrefs.first()
+                        GroupJoinNotices.deliver(applicationContext, database, prefs)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Group join notices skipped", e)
+                    }
                 }
             }
         }
