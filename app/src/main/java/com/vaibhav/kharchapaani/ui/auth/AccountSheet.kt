@@ -405,10 +405,20 @@ fun AccountSheetContent(
                 modifier = Modifier.padding(top = Spacing.s, bottom = Spacing.xl),
             )
 
+            var confirmUseLocal by rememberSaveable { mutableStateOf(false) }
             TextButton(
-                onClick = onUseLocal,
+                onClick = { confirmUseLocal = true },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("account_use_local"),
             ) { Text(stringResource(R.string.guest_use_local)) }
+            if (confirmUseLocal) {
+                UseLocalDialog(
+                    onConfirm = {
+                        confirmUseLocal = false
+                        onUseLocal()
+                    },
+                    onDismiss = { confirmUseLocal = false },
+                )
+            }
             Text(stringResource(R.string.guest_separate_ledgers), style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(bottom = Spacing.xl))
         }
