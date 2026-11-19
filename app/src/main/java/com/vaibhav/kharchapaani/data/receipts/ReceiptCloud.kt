@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import android.os.Build
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.storage.SortOrder
 import io.github.jan.supabase.storage.storage
 import io.ktor.http.ContentType
 import kotlinx.serialization.SerialName
@@ -14,6 +15,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.IOException
 import java.util.UUID
 
 /**
@@ -120,12 +122,27 @@ class SupabaseReceiptRemote(private val supabase: SupabaseClient) : ReceiptRemot
     }
 
     override suspend fun deleteFolder(ownerId: String) {
-        // <owner>/<transaction>/<photo>: one listing for the transactions, one per transaction.
-        val transactions = bucket.list(ownerId) { limit = LIST_LIMIT }.map { it.name }
-        val files = transactions.flatMap { tx ->
-            bucket.list("$ownerId/$tx") { limit = LIST_LIMIT }.map { "$ownerId/$tx/${it.name}" }
+        // Collect paths before deleting so removing an object cannot shift a later listing page.
+        val files = listNames(ownerId).flatMap { transaction ->
+            val folder = "$ownerId/$transaction"
+            listNames(folder).map { "$folder/$it" }
         }
-        files.chunked(CHUNK).forEach { bucket.delete(it) }
+        files.chunked(CHUNK).forEach { delete(it) }
+        if (files.isNotEmpty() && bucket.list(ownerId) { limit = 1 }.isNotEmpty()) {
+            throw IOException("Bill photo cleanup did not empty the account folder")
+        }
+    }
+
+    private suspend fun listNames(folder: String): List<String> = buildList {
+        do {
+            val start = size
+            val page = bucket.list(folder) {
+                limit = CHUNK
+                offset = start
+                sortBy("name", SortOrder.ASC)
+            }
+            addAll(page.map { it.name })
+        } while (page.size == CHUNK)
     }
 
     override suspend fun setSharedPath(transactionRemoteId: String, path: String?) {
@@ -152,6 +169,5 @@ class SupabaseReceiptRemote(private val supabase: SupabaseClient) : ReceiptRemot
         const val TABLE = "transactions"
         const val COLUMN = "receipt_storage_path"
         const val CHUNK = 100
-        const val LIST_LIMIT = 1000
     }
 }

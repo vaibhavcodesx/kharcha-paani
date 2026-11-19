@@ -40,6 +40,13 @@ private class FakeMembershipRemote : GroupMembershipRemote {
     val joined = mutableListOf<String>()
     val left = mutableListOf<String>()
     val revoked = mutableListOf<String>()
+    val removed = mutableListOf<Pair<String, String>>()
+    val resets = mutableListOf<String>()
+    var inviteLimitsAvailable = false
+    var currentInvite: GroupInvite? = null
+    var invitesCreated = 0
+    val inviteLookups = mutableListOf<Pair<String, String>>()
+    var resetRpcAvailable = true
     var online = true
     /** A newer server answers join_group with null for a code it no longer accepts (used up, revoked, expired). */
     var joinRefusesCode = false
@@ -50,10 +57,27 @@ private class FakeMembershipRemote : GroupMembershipRemote {
 
     override suspend fun createInvite(groupRemoteId: String): GroupInvite {
         check()
-        return GroupInvite("AB2CD3EF", "2026-09-21T10:00:00+00:00")
+        invitesCreated++
+        val invite = GroupInvite("AB2CD3EF", "2026-09-21T10:00:00+00:00")
+        if (inviteLimitsAvailable) currentInvite = invite.copy(usedCount = 0, maxUses = 20)
+        return invite
     }
 
-    override suspend fun activeInvites(groupRemoteId: String) = emptyList<GroupInvite>()
+    override suspend fun resetInvite(groupRemoteId: String): GroupInvite? {
+        check()
+        resets += groupRemoteId
+        if (!resetRpcAvailable) return null
+        val invite = GroupInvite("ZX8WV7UT", "2026-09-22T10:00:00+00:00")
+        currentInvite = invite.copy(usedCount = 0, maxUses = 20)
+        return invite
+    }
+
+    override suspend fun activeInvite(groupRemoteId: String, creatorProfileId: String, code: String?): GroupInvite? {
+        check()
+        if (!inviteLimitsAvailable) throw IOException("Invite counts unavailable")
+        inviteLookups += groupRemoteId to creatorProfileId
+        return currentInvite?.takeIf { code == null || it.code == code }
+    }
 
     override suspend fun revokeInvite(code: String) {
         check()
@@ -70,6 +94,13 @@ private class FakeMembershipRemote : GroupMembershipRemote {
         if (joinRefusesCode) throw InvalidInviteException()
         joined += code
         return previews.getValue(code).groupId
+    }
+
+    override suspend fun supportsInviteLimits(groupRemoteId: String): Boolean = inviteLimitsAvailable
+
+    override suspend fun removeMember(groupRemoteId: String, memberProfileId: String) {
+        check()
+        removed += groupRemoteId to memberProfileId
     }
 
     override suspend fun leaveGroup(groupRemoteId: String, selfProfileId: String) {
@@ -104,6 +135,40 @@ class SharedGroupsControllerTest {
 
     private fun awaitState(predicate: (SharedGroupsUiState) -> Boolean): SharedGroupsUiState = runBlocking {
         withTimeout(5_000) { controller.state.first(predicate) }
+    }
+
+    @Test
+    fun `creator can remove a shared member and refresh the list`() = runBlocking {
+        val group = GroupEntity(id = 31, name = "Goa", remoteId = "group", createdByProfileId = self,
+            syncState = SyncState.SYNCED)
+        remote.inviteLimitsAvailable = true
+
+        controller.checkMemberRemoval(group)
+        assertEquals(group.id, controller.state.value.removableGroupId)
+        controller.removeMember(group, "other-profile")
+
+        awaitState { it.message != null && !it.isRemovingMember }
+        assertEquals(listOf("group" to "other-profile"), remote.removed)
+        assertEquals(1, syncRequests)
+    }
+
+    @Test
+    fun `removal needs server support, an active group and the creator`() = runBlocking {
+        val group = GroupEntity(id = 31, name = "Goa", remoteId = "group", createdByProfileId = self,
+            syncState = SyncState.SYNCED)
+
+        controller.checkMemberRemoval(group)
+        assertNull(controller.state.value.removableGroupId)
+        controller.removeMember(group, "other-profile")
+        remote.inviteLimitsAvailable = true
+        controller.checkMemberRemoval(group)
+        controller.removeMember(group.copy(createdByProfileId = "creator"), "other-profile")
+        controller.removeMember(group.copy(archivedAt = 1L), "other-profile")
+        controller.removeMember(group, self)
+
+        assertTrue(remote.removed.isEmpty())
+        assertFalse(controller.state.value.isRemovingMember)
+        assertEquals(0, syncRequests)
     }
 
     @Test
@@ -205,6 +270,73 @@ class SharedGroupsControllerTest {
         controller.openJoin("AB2CD3EF")
 
         assertEquals(context.getString(SharedGroupsController.OFFLINE), awaitState { it.join?.error != null }.join?.error)
+    }
+
+    @Test
+    fun `reset replaces the code and share link for an ordinary member`() {
+        val group = GroupEntity(id = 7, name = "Flat", remoteId = "group",
+            syncState = SyncState.SYNCED, createdByProfileId = "another-member")
+        remote.inviteLimitsAvailable = true
+        controller.createInvite(group)
+        val previous = awaitState { it.invite?.code != null }.invite!!
+        assertTrue(previous.canReset)
+
+        controller.resetInvite(group)
+
+        val current = awaitState { it.invite?.code == "ZX8WV7UT" }.invite!!
+        assertEquals(listOf(group.remoteId), remote.resets)
+        assertEquals("kharchapaani://join/ZX8WV7UT", current.link)
+        assertEquals(GroupInviteUsage(0, 20), current.usage)
+        assertTrue(current.expiresAtMillis!! > previous.expiresAtMillis!!)
+    }
+
+    @Test
+    fun `missing reset RPC hides the action and preserves the existing invite`() {
+        val group = GroupEntity(id = 7, name = "Flat", remoteId = "group",
+            syncState = SyncState.SYNCED, createdByProfileId = self)
+        controller.createInvite(group)
+        val oldServerInvite = awaitState { it.invite?.code != null }.invite!!
+        assertFalse(oldServerInvite.canReset)
+        assertNull(oldServerInvite.usage)
+        controller.resetInvite(group)
+        assertTrue(remote.resets.isEmpty())
+
+        remote.inviteLimitsAvailable = true
+        remote.resetRpcAvailable = false
+        controller.createInvite(group)
+        awaitState { it.invite?.canReset == true }
+        controller.resetInvite(group)
+
+        val unchanged = awaitState { it.invite?.error != null && it.invite?.isLoading == false }.invite!!
+        assertEquals(oldServerInvite.link, unchanged.link)
+        assertFalse(unchanged.canReset)
+        assertEquals(listOf(group.remoteId), remote.resets)
+
+        controller.createInvite(group)
+        assertFalse(awaitState { it.invite?.code != null }.invite!!.canReset)
+    }
+
+    @Test
+    fun `opening an existing invite shows its current use count on the same code`() {
+        val group = GroupEntity(id = 7, name = "Flat", remoteId = "group",
+            syncState = SyncState.SYNCED, createdByProfileId = "creator")
+        remote.inviteLimitsAvailable = true
+        val active = GroupInvite("AB2CD3EF", "2026-09-21T10:00:00+00:00", usedCount = 3, maxUses = 20)
+        remote.currentInvite = active
+
+        controller.createInvite(group)
+        val first = awaitState { it.invite?.code != null }.invite!!
+        assertEquals(GroupInviteUsage(3, 20), first.usage)
+
+        controller.dismissInvite()
+        remote.currentInvite = active.copy(usedCount = 4)
+        controller.createInvite(group)
+        val reopened = awaitState { it.invite?.code != null }.invite!!
+
+        assertEquals(first.link, reopened.link)
+        assertEquals(GroupInviteUsage(4, 20), reopened.usage)
+        assertEquals(0, remote.invitesCreated)
+        assertEquals(listOf(group.remoteId to self, group.remoteId to self), remote.inviteLookups)
     }
 
     @Test

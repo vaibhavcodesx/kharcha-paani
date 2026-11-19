@@ -101,6 +101,8 @@ import com.vaibhav.kharchapaani.ui.session.AccountSessionHolder
 import com.vaibhav.kharchapaani.ui.session.AccountSessionState
 import com.vaibhav.kharchapaani.ui.session.LedgerOpenFailedScreen
 import com.vaibhav.kharchapaani.data.auth.AuthState
+import com.vaibhav.kharchapaani.data.sync.AppVersionGate
+import com.vaibhav.kharchapaani.data.sync.SyncPassStatus
 import com.vaibhav.kharchapaani.ui.auth.AccountSheet
 import com.vaibhav.kharchapaani.ui.auth.DeleteAccountSheet
 import com.vaibhav.kharchapaani.ui.auth.NotificationOfferSheet
@@ -128,6 +130,7 @@ import com.vaibhav.kharchapaani.ui.itemsplit.ItemSplitActions
 import com.vaibhav.kharchapaani.ui.itemsplit.ItemSplitSheet
 import com.vaibhav.kharchapaani.ui.itemsplit.TableCandidate
 import com.vaibhav.kharchapaani.ui.groups.ShareSplitPrompt
+import com.vaibhav.kharchapaani.domain.GroupBalances
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupPanel
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupsController
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupsViewModel
@@ -342,7 +345,9 @@ class MainActivity : ComponentActivity() {
                 val lifecycle = LocalLifecycleOwner.current.lifecycle
                 LaunchedEffect(session.isLocal, session.userId, lifecycle) {
                     if (session.isLocal) return@LaunchedEffect
-                    val changes = SupabaseLedgerChanges(SupabaseClientProvider.get(application), session.userId)
+                    val supabase = SupabaseClientProvider.get(application)
+                    launch { AppVersionGate.refreshQuietly(application, supabase) }
+                    val changes = SupabaseLedgerChanges(supabase, session.userId)
                     lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                         SyncDoorbell(changes = changes::changes, ring = viewModel::requestSync).run()
                     }
@@ -359,6 +364,10 @@ class MainActivity : ComponentActivity() {
                         onIntentHandled()
                     }
                 }
+                val syncErrorFlow = remember(session.database) {
+                    session.database.syncDao().observeMeta(SyncPassStatus.LAST_SYNC_ERROR)
+                }
+                val lastSyncError by syncErrorFlow.collectAsStateWithLifecycle(initialValue = null)
                 // Your own colour, everywhere the app draws "you" (design item 11). Provided around
                 // the whole app: the screens, the sheets and the dock all read it.
                 val myColour = authUiState.hue?.let { MyColour(hueColour(it), Hues.hex(it)) } ?: LocalMyColour.current
@@ -377,6 +386,7 @@ class MainActivity : ComponentActivity() {
                     isLocal = session.isLocal,
                     onSignInFromLocal = onSignInFromLocal,
                     onUseLocal = onUseLocal,
+                    lastSyncError = lastSyncError,
                 )
                 }
             }
@@ -468,6 +478,7 @@ fun SplitFlowApp(
     isLocal: Boolean = false,
     onSignInFromLocal: () -> Unit = {},
     onUseLocal: () -> Unit = {},
+    lastSyncError: String? = null,
 ) {
     var isAccountSheetOpen by rememberSaveable { mutableStateOf(false) }
     var isDeleteAccountOpen by rememberSaveable { mutableStateOf(false) }
@@ -864,6 +875,7 @@ fun SplitFlowApp(
             onSaveHue = { onSaveHue(it, false) },
             state = authUiState,
             syncStatus = syncStatus,
+            lastSyncError = lastSyncError,
             askBeforeDiscarding = askBeforeDiscarding,
             aiEnabled = aiEnabled,
             onAiEnabledChange = viewModel::setAiEnabled,
@@ -1232,6 +1244,18 @@ fun SplitFlowApp(
         },
         sharedGroupPanel = { details ->
             val group = details.group
+            LaunchedEffect(group.id, group.isArchived, group.syncState, group.createdByProfileId) {
+                sharedGroups.checkMemberRemoval(group)
+            }
+            val allowMemberRemoval = sharedGroupsState.removableGroupId == group.id
+            val outstandingMembers = remember(allowMemberRemoval, details.transactions, details.settlements) {
+                if (allowMemberRemoval) GroupBalances.netPositions(details.transactions, details.settlements).keys
+                else emptySet()
+            }
+            // Me is person id -1 in every ledger. What I am owed or owe here, shown before leaving.
+            val myBalance = remember(details.transactions, details.settlements) {
+                GroupBalances.netPositions(details.transactions, details.settlements)[-1L] ?: 0.0
+            }
             SharedGroupPanel(
                 group = group,
                 members = details.members,
@@ -1243,8 +1267,13 @@ fun SplitFlowApp(
                 onCreateInvite = { sharedGroups.createInvite(group) },
                 onShareInvite = { link -> shareInviteLink(context, group.name, link) },
                 onRevokeInvite = { sharedGroups.revokeInvite() },
+                onResetInvite = { sharedGroups.resetInvite(group) },
                 onSetArchived = { sharedGroups.setArchived(group, it) },
                 onLeave = { sharedGroups.leaveGroup(group) { viewModel.dismissGroupDetail() } },
+                onRemoveMember = if (allowMemberRemoval) ({ profileId -> sharedGroups.removeMember(group, profileId) }) else null,
+                isRemovingMember = sharedGroupsState.isRemovingMember,
+                outstandingMembers = outstandingMembers,
+                myBalance = myBalance,
             )
         },
     )
@@ -1269,7 +1298,7 @@ fun SplitFlowApp(
     if (selectedPersonForLedger != null) {
         val person = selectedPersonForLedger!!
         val ledgerFlow = remember(person.id, viewModel) { viewModel.getPersonLedgerFlow(person.id) }
-        val ledgerItems by ledgerFlow.collectAsState(initial = emptyList())
+        val ledgerItems by ledgerFlow.collectAsState(initial = null)
         PersonLedgerSheet(
             person = person,
             ledgerItems = ledgerItems,

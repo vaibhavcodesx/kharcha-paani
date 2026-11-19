@@ -38,3 +38,13 @@ https://vaibhavcodesx.github.io/kharcha-paani-site/split.html. After changing it
 
 Edit `docs/legal/*.md`, run `python scripts/legal_site.py`, copy the HTML into the
 `kharcha-paani-site` repository and push. Update "Last updated" at the top of the page you changed.
+
+## The owner admin page (`admin/`)
+
+The owner admin page source lives at `site/admin/`. Unlike the static legal pages on GitHub Pages, it is a Vite + React + TypeScript app deployed to **Vercel** as its own project under the owner's Vercel account (owner decision 2026-11-19, docs/designs/admin-page.md).
+
+To publish:
+1. In Vercel, create a new project importing this repository with Root Directory set to `site/admin`.
+2. Vercel runs `npm ci && npm run build` and serves `dist/` using headers configured in `vercel.json`.
+3. Add the deployed production URL to Supabase Auth > URL Configuration > Redirect URLs.
+4. Follow [docs/engineering/runbooks/admin-page.md](../docs/engineering/runbooks/admin-page.md) for full apply, verify, and rollback steps.

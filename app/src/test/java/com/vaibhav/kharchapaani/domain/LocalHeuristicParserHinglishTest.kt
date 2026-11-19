@@ -43,8 +43,8 @@ class LocalHeuristicParserHinglishTest {
 
     @Test
     fun `everyday Hinglish words find a category`() {
-        assertEquals("Groceries", LocalHeuristicParser.parse("sabzi 120").category)
-        assertEquals("Groceries", LocalHeuristicParser.parse("doodh 54").category)
+        assertEquals("Shopping", LocalHeuristicParser.parse("sabzi 120").category)
+        assertEquals("Shopping", LocalHeuristicParser.parse("doodh 54").category)
         assertEquals("Food", LocalHeuristicParser.parse("samosa 30").category)
         assertEquals("Food", LocalHeuristicParser.parse("nashta 60").category)
         assertEquals("Rent", LocalHeuristicParser.parse("kiraya 12000").category)

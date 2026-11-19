@@ -9,17 +9,22 @@ import org.junit.Test
 class CategoriesTest {
 
     @Test
-    fun `beverages, packaged goods and self-care are offered, before Other`() {
-        val expense = Categories.expenseCategories(CategoryPrefs())
-
-        assertTrue(expense.containsAll(listOf("Beverages", "Packaged goods", "Self-care")))
-        assertEquals("Other", expense.last())
+    fun `new accounts get the general defaults`() {
+        val prefs = CategoryPrefs()
+        assertEquals(
+            listOf("Food", "Transport", "Shopping", "Bills", "Entertainment", "Health", "Rent", "Investment", "Other"),
+            Categories.expenseCategories(prefs),
+        )
+        assertEquals(listOf("Income (Salary)", "Income (Other)"), Categories.incomeCategories(prefs))
+        assertEquals(
+            listOf("UPI", "GPay", "PhonePe", "Paytm", "Debit Card", "Credit Card", "Cash", "Bank Transfer", "Other"),
+            Categories.paymentMethods(prefs),
+        )
     }
 
     @Test
     fun `the statement importer's categories are ordinary choices now`() {
         val prefs = CategoryPrefs()
-        assertTrue("Groceries" in Categories.expenseCategories(prefs))
         assertTrue("Investment" in Categories.expenseCategories(prefs))
         assertTrue("Income (Salary)" in Categories.incomeCategories(prefs))
     }
@@ -30,17 +35,17 @@ class CategoriesTest {
 
         val expense = Categories.expenseCategories(prefs)
         assertEquals(listOf("Pets", "Gym", "Other"), expense.takeLast(3))
-        assertEquals(listOf("Income (Salary)", "Income (Client)", "Rent received", "Income (Other)"), Categories.incomeCategories(prefs))
+        assertEquals(listOf("Income (Salary)", "Rent received", "Income (Other)"), Categories.incomeCategories(prefs))
     }
 
     @Test
     fun `hidden defaults leave the pickers, but Other can't be hidden`() {
-        val prefs = CategoryPrefs(hiddenCategories = setOf("Team Payment", "Other", "Income (Other)"), hiddenPaymentMethods = setOf("PopUPI", "Other"))
+        val prefs = CategoryPrefs(hiddenCategories = setOf("Transport", "Other", "Income (Other)"), hiddenPaymentMethods = setOf("GPay", "Other"))
 
-        assertFalse("Team Payment" in Categories.expenseCategories(prefs))
+        assertFalse("Transport" in Categories.expenseCategories(prefs))
         assertTrue("Other" in Categories.expenseCategories(prefs))
         assertTrue("Income (Other)" in Categories.incomeCategories(prefs))
-        assertFalse("PopUPI" in Categories.paymentMethods(prefs))
+        assertFalse("GPay" in Categories.paymentMethods(prefs))
         assertTrue("Other" in Categories.paymentMethods(prefs))
     }
 
@@ -48,8 +53,8 @@ class CategoriesTest {
     fun `a parsed category matches a choice whatever its case or spacing`() {
         val choices = Categories.expenseCategories(CategoryPrefs(customExpense = listOf("Pets")))
 
-        assertEquals("Groceries", Categories.match(" groceries ", choices, Categories.OTHER))
-        assertEquals("Team Payment", Categories.match("team  payment", choices, Categories.OTHER))
+        assertEquals("Food", Categories.match(" food ", choices, Categories.OTHER))
+        assertEquals("Bank Transfer", Categories.match("bank  transfer", Categories.defaultPaymentMethods, Categories.OTHER))
         assertEquals("Pets", Categories.match("PETS", choices, Categories.OTHER))
     }
 
@@ -85,6 +90,19 @@ class CategoriesTest {
     }
 
     @Test
+    fun `a remembered choice that is no longer offered gives way to the configured default`() {
+        val prefs = CategoryPrefs(
+            lastExpenseChoices = LastEntryChoices("Transport", "Cash"),
+            hiddenCategories = setOf("Transport"),
+            hiddenPaymentMethods = setOf("Cash"),
+            defaultCategory = "Shopping",
+            defaultPaymentMethod = "Credit Card",
+        )
+        assertEquals("Shopping", Categories.defaultCategory("expense", prefs))
+        assertEquals("Credit Card", Categories.defaultPaymentMethod(prefs))
+    }
+
+    @Test
     fun `a chosen default that is later hidden gives way to the first one still offered`() {
         val prefs = CategoryPrefs(defaultPaymentMethod = "Cash", hiddenPaymentMethods = setOf("Cash"), defaultCategory = "Transport", hiddenCategories = setOf("Transport"))
         assertEquals(Categories.paymentMethods(prefs).first(), Categories.defaultPaymentMethod(prefs))
@@ -93,11 +111,11 @@ class CategoriesTest {
 
     @Test
     fun `income never starts on the spending default`() {
-        assertEquals("Income (Client)", Categories.defaultCategory("income", CategoryPrefs(defaultCategory = "Transport")))
+        assertEquals("Income (Other)", Categories.defaultCategory("income", CategoryPrefs(defaultCategory = "Transport")))
     }
 
     @Test
-    fun `income categories are the income defaults and your own income ones`() {
+    fun `income categories include legacy client income and custom income`() {
         val prefs = CategoryPrefs(customIncome = listOf("Tutoring"), customExpense = listOf("Pets"))
 
         assertTrue(Categories.isIncomeCategory("Income (Client)", prefs))

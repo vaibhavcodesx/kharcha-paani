@@ -486,6 +486,16 @@ fun ConfirmSheetContent(
                 testTagFor = { if (it) "split_with_friends_button" else "for_me_button" },
                 modifier = Modifier.fillMaxWidth(),
             )
+            // Who will see this entry, said before Save instead of after it (audit UX-22).
+            Text(
+                text = if (group?.isShared == true) stringResource(R.string.entry_visibility_group, group.name) else stringResource(R.string.entry_visibility_private),
+                style = MaterialTheme.typography.bodySmall,
+                color = MutedWarmGray,
+                modifier = Modifier
+                    .padding(top = Spacing.s)
+                    .semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("entry_visibility_line"),
+            )
             // A restaurant bill, where an even split isn't fair: everyone pays for what they had.
             if (onSplitByItems != null) {
                 KpButton(

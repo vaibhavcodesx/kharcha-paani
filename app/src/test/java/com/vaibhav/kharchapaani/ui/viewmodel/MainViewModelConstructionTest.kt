@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.ui.viewmodel
 
 import android.app.Application
+import androidx.lifecycle.ViewModelStore
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
@@ -46,6 +47,7 @@ class MainViewModelConstructionTest {
 
     private lateinit var db: AppDatabase
     private val dispatcher = StandardTestDispatcher()
+    private val store = ViewModelStore()
 
     @Before
     fun setUp() {
@@ -64,15 +66,26 @@ class MainViewModelConstructionTest {
 
     @After
     fun tearDown() {
-        db.close()
-        Dispatchers.resetMain()
+        try {
+            store.clear()
+            dispatcher.scheduler.advanceUntilIdle()
+            if (::db.isInitialized) {
+                db.close()
+            }
+        } finally {
+            Dispatchers.resetMain()
+        }
     }
 
-    private fun viewModel() = MainViewModel(
-        application = ApplicationProvider.getApplicationContext<Application>(),
-        db = db,
-        userId = "11111111-2222-3333-4444-555555555555",
-    )
+    private fun viewModel(): MainViewModel {
+        val vm = MainViewModel(
+            application = ApplicationProvider.getApplicationContext<Application>(),
+            db = db,
+            userId = "11111111-2222-3333-4444-555555555555",
+        )
+        store.put("vm_${System.identityHashCode(vm)}", vm)
+        return vm
+    }
 
     @Test
     fun `the view model can be constructed at all`() {

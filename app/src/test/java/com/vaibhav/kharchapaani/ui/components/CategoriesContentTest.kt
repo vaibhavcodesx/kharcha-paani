@@ -53,7 +53,7 @@ class CategoriesContentTest {
     fun `a name that's already a category can't be added`() {
         show()
 
-        composeTestRule.onNodeWithTag("add_expense_input").performScrollTo().performTextReplacement("groceries")
+        composeTestRule.onNodeWithTag("add_expense_input").performScrollTo().performTextReplacement(" food ")
 
         composeTestRule.onNodeWithTag("add_expense_button").assertIsNotEnabled()
         composeTestRule.onNodeWithText("That one's already there.").assertExists()
@@ -63,11 +63,11 @@ class CategoriesContentTest {
     fun `a default can be hidden and shown again, but Other stays`() {
         show()
 
-        composeTestRule.onNodeWithTag("choice_expense_Team Payment").performScrollTo().performClick()
-        assertFalse("Team Payment" in Categories.expenseCategories(prefs))
+        composeTestRule.onNodeWithTag("choice_expense_Transport").performScrollTo().performClick()
+        assertFalse("Transport" in Categories.expenseCategories(prefs))
 
-        composeTestRule.onNodeWithTag("choice_expense_Team Payment").performClick()
-        assertTrue("Team Payment" in Categories.expenseCategories(prefs))
+        composeTestRule.onNodeWithTag("choice_expense_Transport").performClick()
+        assertTrue("Transport" in Categories.expenseCategories(prefs))
 
         composeTestRule.onNodeWithTag("choice_expense_Other").performScrollTo().performClick()
         assertTrue("Other" in Categories.expenseCategories(prefs))
@@ -90,9 +90,9 @@ class CategoriesContentTest {
         composeTestRule.onNodeWithTag("categories_tab_PaymentMethods").performClick()
         composeTestRule.onNodeWithTag("add_payment_input").performScrollTo().performTextReplacement("Amex")
         composeTestRule.onNodeWithTag("add_payment_button").performClick()
-        composeTestRule.onNodeWithTag("choice_payment_PopUPI").performScrollTo().performClick()
+        composeTestRule.onNodeWithTag("choice_payment_GPay").performScrollTo().performClick()
 
         assertEquals(listOf("Amex"), prefs.customPaymentMethods)
-        assertEquals(setOf("PopUPI"), prefs.hiddenPaymentMethods)
+        assertEquals(setOf("GPay"), prefs.hiddenPaymentMethods)
     }
 }

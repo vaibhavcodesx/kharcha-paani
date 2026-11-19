@@ -3,6 +3,10 @@
 
 Source for the launch answers: `docs/audits/2026-11-17/OWNER-ANSWERS.md` (read-only; this page is the live list).
 
+- **2026-11-19. Keep the word "IOU"** (not "loan", which sounds too serious); the Log an IOU sheet explains it at the top.
+- **2026-11-19. The owner admin page is hosted on Vercel and built with Vite, React and TypeScript** (not plain files on
+  GitHub Pages), so it gets real security headers. Design: `docs/designs/admin-page.md`.
+- **2026-11-19. Antigravity may have up to 15 open PRs** (was five).
 - **2026-11-19. Work like a product company; the owner does the least.** Claude is Lead, Codex Builder,
   Antigravity Worker. The owner says "start" and the agents find their own work (`AGENTS.md`).
 - **2026-11-19. Merge permission while the owner sleeps and for 1.8.0.** The Lead merges every PR after checking
