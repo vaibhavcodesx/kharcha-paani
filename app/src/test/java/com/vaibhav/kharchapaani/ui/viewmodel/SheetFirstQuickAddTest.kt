@@ -14,6 +14,7 @@ import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.data.model.FullTransaction
 import com.vaibhav.kharchapaani.data.repository.GeminiRepository
 import com.vaibhav.kharchapaani.data.settings.AppSettings
+import com.vaibhav.kharchapaani.domain.ActivityFeed
 import com.vaibhav.kharchapaani.domain.MonthAnalytics
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -279,7 +280,7 @@ class SheetFirstQuickAddTest {
     fun `editing an older expense preserves its category and payment method in Room and insights`() = runBlocking {
         val day = LocalDate.of(2026, 10, 4)
         val original = TransactionEntity(
-            type = "expense", amount = 100.0, merchant = "Team expense", category = "Team Payment",
+            type = "expense", amount = 100.0, merchant = "Hosting", category = "Team Payment",
             paymentMethod = "PopUPI", date = day.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
         )
         val id = db.transactionDao().insertTransaction(original)
@@ -296,6 +297,11 @@ class SheetFirstQuickAddTest {
         assertEquals(id, saved.id)
         assertEquals("Team Payment", saved.category)
         assertEquals("PopUPI", saved.paymentMethod)
+        val filtered = ActivityFeed.build(
+            application, rows.map { FullTransaction(it) }, emptyList(), emptyList(), emptyList(),
+            query = "team payment", filter = ActivityFeed.EXPENSES,
+        )
+        assertEquals(1, filtered.size)
         val category = MonthAnalytics.of(
             rows, emptyList(), emptyList(), YearMonth.from(day), day, ZoneOffset.UTC,
         ).categorySummaries.single()

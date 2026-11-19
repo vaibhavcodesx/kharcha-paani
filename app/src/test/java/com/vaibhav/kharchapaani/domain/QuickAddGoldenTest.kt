@@ -53,8 +53,8 @@ class QuickAddGoldenTest {
         // Mixed Hindi and English with filler words
         TestCase("40 rs ka chai", "expense", 40.0, "Chai", "Food", "", expectedDaysBack = 0),
         TestCase("chai 40 rupaye", "expense", 40.0, "Chai", "Food", "", expectedDaysBack = 0),
-        TestCase("sabzi 120 cash", "expense", 120.0, "Sabzi", "Groceries", "Cash", expectedDaysBack = 0),
-        TestCase("doodh 54 paytm", "expense", 54.0, "Doodh", "Groceries", "Paytm", expectedDaysBack = 0),
+        TestCase("sabzi 120 cash", "expense", 120.0, "Sabzi", "Shopping", "Cash", expectedDaysBack = 0),
+        TestCase("doodh 54 paytm", "expense", 54.0, "Doodh", "Shopping", "Paytm", expectedDaysBack = 0),
         TestCase("samosa 30 cash", "expense", 30.0, "Samosa", "Food", "Cash", expectedDaysBack = 0),
         TestCase("kiraya 12000 bank transfer", "expense", 12000.0, "Kiraya", "Rent", "Bank Transfer", expectedDaysBack = 0),
         TestCase("bijli bill 900 gpay", "expense", 900.0, "Bijli Bill", "Bills", "GPay", expectedDaysBack = 0),
@@ -64,10 +64,10 @@ class QuickAddGoldenTest {
         TestCase("dosa 80 phonepe", "expense", 80.0, "Dosa", "Food", "PhonePe", expectedDaysBack = 0),
 
         // Income keywords & mila
-        TestCase("salary mila 50000", "income", 50000.0, "Salary", "Income (Client)", "", expectedDaysBack = 0),
-        TestCase("dost se 500 mila", "income", 500.0, "Dost", "Income (Client)", "", expectedDaysBack = 0),
-        TestCase("cashback mila 100", "income", 100.0, "Cashback", "Income (Client)", "", expectedDaysBack = 0),
-        TestCase("freelance payment received 15k", "income", 15000.0, "Freelance Payment", "Income (Client)", "", expectedDaysBack = 0),
+        TestCase("salary mila 50000", "income", 50000.0, "Salary", "Income (Other)", "", expectedDaysBack = 0),
+        TestCase("dost se 500 mila", "income", 500.0, "Dost", "Income (Other)", "", expectedDaysBack = 0),
+        TestCase("cashback mila 100", "income", 100.0, "Cashback", "Income (Other)", "", expectedDaysBack = 0),
+        TestCase("freelance payment received 15k", "income", 15000.0, "Freelance Payment", "Income (Other)", "", expectedDaysBack = 0),
 
         // Splits and friend recognition
         TestCase("biryani 800 with Rohan and Priya", "expense", 800.0, "Biryani", "Food", "", expectedDaysBack = 0, knownFriends = listOf("Rohan", "Priya"), expectedSplits = listOf("Rohan", "Priya")),

@@ -26,18 +26,18 @@ object LocalHeuristicParser {
     private val categories = listOf(
         listOf("burger", "pizza", "mcd", "mcdonalds", "kfc", "starbucks", "coffee", "tea", "chai", "lunch", "dinner", "breakfast", "swiggy", "zomato", "restaurant", "food", "snack", "subway", "dominos", "biryani",
             "samosa", "nashta", "khana", "paratha", "dosa", "idli", "thali", "vada", "pav", "bhaji", "momos", "sandwich", "pani puri", "golgappe", "chaat") to "Food",
-        listOf("sabzi", "sabji", "doodh", "kirana", "fruits", "vegetables", "atta", "dal") to "Groceries",
-        listOf("juice", "coke", "pepsi", "soda", "cold drink", "lassi", "shake", "smoothie", "energy drink", "water bottle") to "Beverages",
-        listOf("chips", "biscuit", "biscuits", "namkeen", "kurkure", "lays", "maggi", "chocolate", "packaged") to "Packaged goods",
-        listOf("haircut", "hair cut", "salon", "barber", "parlour", "spa", "massage", "manicure", "pedicure", "grooming", "gym", "fitness", "yoga") to "Self-care",
+        listOf("sabzi", "sabji", "doodh", "kirana", "fruits", "vegetables", "atta", "dal") to "Shopping",
+        listOf("juice", "coke", "pepsi", "soda", "cold drink", "lassi", "shake", "smoothie", "energy drink", "water bottle") to "Food",
+        listOf("chips", "biscuit", "biscuits", "namkeen", "kurkure", "lays", "maggi", "chocolate", "packaged") to "Food",
+        listOf("haircut", "hair cut", "salon", "barber", "parlour", "spa", "massage", "manicure", "pedicure", "grooming", "gym", "fitness", "yoga") to "Health",
         listOf("uber", "ola", "rapido", "cab", "auto", "metro", "bus", "train", "flight", "petrol", "diesel", "fuel", "toll", "parking", "transport", "travel") to "Transport",
         listOf("amazon", "flipkart", "myntra", "zara", "h&m", "nike", "clothes", "shoes", "shopping", "mall", "electronics", "blinkit", "zepto", "instamart", "grocery", "groceries") to "Shopping",
         listOf("wifi", "broadband", "electricity", "bijli", "water", "bill", "recharge", "airtel", "jio", "vi", "subscription", "netflix", "spotify", "youtube", "cloud", "aws", "gcp") to "Bills",
         listOf("movie", "cinema", "pvr", "game", "gaming", "steam", "party", "club", "drinks", "beer", "entertainment", "concert") to "Entertainment",
         listOf("pharmacy", "medicine", "doctor", "hospital", "supplement", "health", "dental", "clinic") to "Health",
         listOf("rent", "kiraya", "maintenance", "flat", "apartment", "pg", "hostel", "landlord") to "Rent",
-        listOf("project", "freelance", "salary", "client", "payout", "dividend", "interest", "refund", "cashback", "stipend") to "Income (Client)",
-        listOf("teammate", "team", "hackathon", "bounty", "domain", "hosting", "tool") to "Team Payment"
+        listOf("project", "freelance", "salary", "client", "payout", "dividend", "interest", "refund", "cashback", "stipend") to Categories.OTHER,
+        listOf("teammate", "team", "hackathon", "bounty", "domain", "hosting", "tool") to Categories.OTHER
     )
 
     private val incomeKeywords = listOf(
@@ -92,14 +92,12 @@ object LocalHeuristicParser {
         }
 
         // 4. Detect Category
-        var category = if (type == "income") "Income (Client)" else "Other"
-        for ((keywords, cat) in categories) {
-            // Whole words: as substrings, "vi" (the telecom) put every "movie" under Bills, "tea"
-            // matched "team" and "steam", "bus" matched "business", and "cab" matched "cabbage".
-            if (keywords.any { containsWord(lower, it) }) {
-                category = cat
-                break
-            }
+        // Whole words keep "vi" (the telecom) from matching "movie" and "tea" from matching "team".
+        val category = if (type == "income") {
+            Categories.OTHER_INCOME
+        } else {
+            categories.firstOrNull { (keywords, _) -> keywords.any { containsWord(lower, it) } }
+                ?.second ?: Categories.OTHER
         }
 
         // 5. Detect Split Friends. Known friends first, matched as whole words ("Raj" is not in

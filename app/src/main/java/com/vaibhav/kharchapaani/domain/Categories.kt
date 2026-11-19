@@ -26,27 +26,22 @@ object Categories {
     const val OTHER = "Other"
     const val OTHER_INCOME = "Income (Other)"
     const val MAX_NAME_LENGTH = 24
+    const val DEFAULT_PAYMENT_METHOD = "UPI"
 
-    /**
-     * One list for every picker, the AI prompts and the statement importer. The importer used to offer
-     * Groceries, Investment and Income (Salary), which the rest of the app didn't know, so an imported
-     * grocery run showed with no icon and couldn't be picked again when edited.
-     */
+    /** Shared defaults for new entries, the AI prompts and the statement importer. */
     val defaultExpense = listOf(
-        "Food", "Beverages", "Groceries", "Packaged goods", "Transport", "Shopping", "Self-care",
-        "Bills", "Entertainment", "Health", "Rent", "Investment", "Team Payment", OTHER,
+        "Food", "Transport", "Shopping", "Bills", "Entertainment", "Health", "Rent", "Investment", OTHER,
     )
-    val defaultIncome = listOf("Income (Salary)", "Income (Client)", OTHER_INCOME)
+    val defaultIncome = listOf("Income (Salary)", OTHER_INCOME)
 
     /**
      * Plain "UPI" first: most payments are UPI whichever app sends them, and the list started with one
      * app's name, which new entries then defaulted to. Entries already logged keep theirs.
      */
-    val defaultPaymentMethods = listOf("UPI", "PopUPI", "GPay", "PhonePe", "Paytm", "Debit Card", "Credit Card", "Cash", "Bank Transfer", OTHER)
+    val defaultPaymentMethods = listOf(DEFAULT_PAYMENT_METHOD, "GPay", "PhonePe", "Paytm", "Debit Card", "Credit Card", "Cash", "Bank Transfer", OTHER)
 
     const val DEFAULT_CATEGORY = "Food"
-    const val DEFAULT_PAYMENT_METHOD = "UPI"
-    private const val DEFAULT_INCOME_CATEGORY = "Income (Client)"
+    private const val LEGACY_CLIENT_INCOME = "Income (Client)"
 
     /**
      * The category a new entry starts on: the one chosen in settings, or [DEFAULT_CATEGORY] — unless
@@ -55,7 +50,7 @@ object Categories {
      */
     fun defaultCategory(type: String, prefs: CategoryPrefs): String {
         val choices = categoriesFor(type, prefs)
-        val preferred = if (type == "income") DEFAULT_INCOME_CATEGORY else prefs.defaultCategory ?: DEFAULT_CATEGORY
+        val preferred = if (type == "income") OTHER_INCOME else prefs.defaultCategory ?: DEFAULT_CATEGORY
         return preferred.takeIf { it in choices } ?: choices.firstOrNull() ?: preferred
     }
 
@@ -82,7 +77,7 @@ object Categories {
         if (type == "income") incomeCategories(prefs) else expenseCategories(prefs)
 
     fun isIncomeCategory(name: String, prefs: CategoryPrefs): Boolean =
-        name in defaultIncome || name in prefs.customIncome
+        name == LEGACY_CLIENT_INCOME || name in defaultIncome || name in prefs.customIncome
 
     /** Custom ones go just before "Other", which stays last. */
     private fun withCustom(shown: List<String>, custom: List<String>): List<String> {

@@ -388,7 +388,7 @@ internal fun statementItemListSaver(): Saver<List<StatementTransactionItem>, Bun
                 amount = b.getDouble("amount_$i"),
                 merchant = b.getString("merchant_$i").orEmpty(),
                 category = b.getString("category_$i") ?: "Food",
-                paymentMethod = b.getString("paymentMethod_$i") ?: "PopUPI",
+                paymentMethod = b.getString("paymentMethod_$i") ?: Categories.DEFAULT_PAYMENT_METHOD,
                 note = b.getString("note_$i").orEmpty(),
                 isSelected = b.getBoolean("isSelected_$i"),
                 flag = b.getString("flag_$i"),
