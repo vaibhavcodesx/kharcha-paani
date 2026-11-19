@@ -60,8 +60,8 @@ class ActivityFeedTest {
     }
 
     @Test
-    fun `settlements show under All and Splits but not Expenses or Income`() {
-        assertEquals(listOf("tx_1"), feed(filter = ActivityFeed.EXPENSES).map { it.key })
+    fun `Expenses includes personal and split expenses while Income and Splits keep their rows`() {
+        assertEquals(listOf("tx_1", "tx_2"), feed(filter = ActivityFeed.EXPENSES).map { it.key })
         assertEquals(listOf("tx_3"), feed(filter = ActivityFeed.INCOME).map { it.key })
         assertEquals(listOf("settlement_10", "settlement_11", "tx_2"), feed(filter = ActivityFeed.SPLITS).map { it.key })
     }
