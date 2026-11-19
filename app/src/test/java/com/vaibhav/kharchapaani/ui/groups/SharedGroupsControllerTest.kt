@@ -2,6 +2,7 @@ package com.vaibhav.kharchapaani.ui.groups
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
@@ -10,6 +11,9 @@ import com.vaibhav.kharchapaani.data.sync.GroupInvite
 import com.vaibhav.kharchapaani.data.sync.GroupMembershipRemote
 import com.vaibhav.kharchapaani.data.sync.InvitePreview
 import com.vaibhav.kharchapaani.data.sync.personalTransaction
+import com.vaibhav.kharchapaani.domain.InviteLink
+import com.vaibhav.kharchapaani.domain.decodeQr
+import com.vaibhav.kharchapaani.ui.components.qrMatrix
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -113,6 +117,45 @@ class SharedGroupsControllerTest {
         assertEquals(listOf("AB2CD3EF"), remote.joined)
         assertEquals(1, syncRequests)
         assertTrue(joined.message!!.contains("Goa"))
+    }
+
+    @Test
+    fun `scanning a group QR opens the same preview as tapping its link`() {
+        val link = InviteLink.linkFor("AB2CD3EF")
+        controller.openJoin(link)
+        val linkPreview = awaitState { it.join?.preview != null }.join?.preview
+        controller.dismissJoin()
+
+        controller.openJoin()
+        controller.onInviteQrScanned(scanQr(link))
+        val scan = awaitState { it.join?.preview != null }.join!!
+        assertEquals(linkPreview, scan.preview)
+        assertTrue(scan.canJoin)
+        assertTrue(remote.joined.isEmpty())
+    }
+
+    @Test
+    fun `scanning a foreign or malformed QR shows an error and clears the old preview`() {
+        val invite = InviteLink.linkFor("AB2CD3EF")
+        for (payload in listOf("https://example.test/$invite", "$invite/extra")) {
+            controller.openJoin(invite)
+            awaitState { it.join?.preview != null }
+            controller.onInviteQrScanned(scanQr(payload))
+            val scan = controller.state.value.join!!
+            assertEquals(context.getString(R.string.shared_group_qr_invalid), scan.error)
+            assertFalse(scan.canJoin)
+            assertNull(scan.preview)
+        }
+        assertTrue(remote.joined.isEmpty())
+    }
+
+    private fun scanQr(payload: String): String {
+        val matrix = qrMatrix(payload)
+        val side = matrix.width * 4
+        val luminance = ByteArray(side * side) { index ->
+            if (matrix[index % side / 4, index / side / 4]) 0 else (-1).toByte()
+        }
+        return checkNotNull(decodeQr(luminance, side, side))
     }
 
     @Test

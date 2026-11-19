@@ -69,6 +69,7 @@ import androidx.core.content.FileProvider
 import com.vaibhav.kharchapaani.domain.StatementPdf
 import com.vaibhav.kharchapaani.ui.components.BillPhotoSource
 import com.vaibhav.kharchapaani.ui.components.SourceMenu
+import com.vaibhav.kharchapaani.ui.components.rememberCameraAccess
 import java.io.File
 import java.util.UUID
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
@@ -177,8 +178,7 @@ fun CaptureCard(
     }
 
     // A bill straight from the camera: the system camera writes into cache/camera through the
-    // FileProvider, as the entry sheet's bill photo does, so no CAMERA permission is asked for. The
-    // camera's own file is deleted once it's read.
+    // FileProvider, as the entry sheet's bill photo does. The raw capture is deleted once read.
     var billMenuOpen by remember { mutableStateOf(false) }
     var cameraFile by rememberSaveable { mutableStateOf<String?>(null) }
     val billCamera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
@@ -194,19 +194,23 @@ fun CaptureCard(
             bitmap?.let(onParseImage) ?: onCaptureFailed(context.getString(R.string.home_capture_image_unreadable))
         }
     }
+    val launchBillCamera = rememberCameraAccess(
+        onGranted = {
+            val file = File(File(context.cacheDir, "camera").apply { mkdirs() }, "${UUID.randomUUID()}.jpg")
+            cameraFile = file.path
+            runCatching { billCamera.launch(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)) }
+                .onFailure {
+                    cameraFile = null
+                    file.delete()
+                    onCaptureFailed(context.getString(R.string.shell_copy_camera_missing))
+                }
+        },
+        onDenied = { onCaptureFailed(context.getString(R.string.bill_photo_camera_denied)) },
+    )
     fun billFrom(source: BillPhotoSource) {
         billMenuOpen = false
         when (source) {
-            BillPhotoSource.Camera -> {
-                val file = File(File(context.cacheDir, "camera").apply { mkdirs() }, "${UUID.randomUUID()}.jpg")
-                cameraFile = file.path
-                runCatching { billCamera.launch(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)) }
-                    .onFailure {
-                        cameraFile = null
-                        file.delete()
-                        onCaptureFailed(context.getString(R.string.shell_copy_camera_missing))
-                    }
-            }
+            BillPhotoSource.Camera -> launchBillCamera()
             BillPhotoSource.Gallery -> runCatching { imagePicker.launch("image/*") }
                 .onFailure { onCaptureFailed(context.getString(R.string.home_capture_image_unreadable)) }
         }

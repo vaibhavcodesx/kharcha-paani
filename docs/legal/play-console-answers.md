@@ -11,6 +11,9 @@ Updated 6 November 2026 for 1.7.0. Based on the merged code and the Play researc
 
 ## Data safety
 
+Group invite QR scanning reads camera frames on the phone and discards them after decoding.
+Only the invite code from a valid scan is sent to the group preview service, as with a pasted invite.
+
 **Does your app collect or share any of the required user data types?** Yes.
 
 **Is all of the user data collected by your app encrypted in transit?** Yes (Supabase, Groq, and Gemini

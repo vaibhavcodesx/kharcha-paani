@@ -89,6 +89,23 @@ class SharedGroupsController(
         if (InviteLink.parse(input) != null) loadPreview()
     }
 
+    fun onInviteQrScanned(payload: String) {
+        val code = InviteLink.parseQr(payload)
+        if (code != null) {
+            onJoinInputChange(InviteLink.linkFor(code))
+            return
+        }
+
+        previewJob?.cancel()
+        _state.update { state ->
+            state.copy(join = state.join?.copy(
+                preview = null,
+                isLoadingPreview = false,
+                error = copyText(R.string.shared_group_qr_invalid),
+            ))
+        }
+    }
+
     private fun loadPreview() {
         val network = remote ?: run { blockWithoutAccount(); return }
         val code = _state.value.join?.code ?: return

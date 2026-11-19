@@ -24,5 +24,8 @@ object InviteLink {
         return code.takeIf(::isValid)
     }
 
+    /** A scanned QR must contain only the app's invite link. */
+    fun parseQr(input: String): String? = LINK.matchEntire(input.trim())?.groupValues?.get(1)?.let(::parse)
+
     fun isValid(code: String): Boolean = code.length == LENGTH && code.all { it in ALPHABET }
 }

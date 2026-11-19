@@ -187,6 +187,9 @@ dependencies {
   implementation(libs.androidx.datastore.preferences)
   // QR codes for the UPI payment request (pure Java, no Android dependencies).
   implementation(libs.zxing.core)
+  implementation(libs.androidx.camera.camera2)
+  implementation(libs.androidx.camera.lifecycle)
+  implementation(libs.androidx.camera.view)
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
