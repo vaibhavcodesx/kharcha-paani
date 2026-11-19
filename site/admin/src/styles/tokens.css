@@ -50,6 +50,8 @@
   --glass-rim: rgb(255 255 255 / .09);
   --shadow: 0 1px 0 rgb(255 255 255 / .04) inset, 0 18px 40px -18px rgb(0 0 0 / .7);
   --selection: rgb(255 122 61 / .38);
+  --panel-shadow: 0 1px 0 rgb(255 255 255 / .035) inset;
+  --av-s: 42%; --av-l: 24%; --av-fg: 78%;
 }
 
 @media (prefers-color-scheme: light) {
@@ -76,6 +78,8 @@
     --glass-rim: rgb(31 29 26 / .08);
     --shadow: 0 1px 0 rgb(255 255 255 / .8) inset, 0 14px 32px -20px rgb(60 40 20 / .35);
     --selection: rgb(196 80 28 / .24);
+    --panel-shadow: 0 1px 2px rgb(60 40 20 / .05);
+    --av-s: 62%; --av-l: 88%; --av-fg: 28%;
   }
 }
 
@@ -103,9 +107,11 @@
   --glass-rim: rgb(31 29 26 / .08);
   --shadow: 0 1px 0 rgb(255 255 255 / .8) inset, 0 14px 32px -20px rgb(60 40 20 / .35);
   --selection: rgb(196 80 28 / .24);
+  --panel-shadow: 0 1px 2px rgb(60 40 20 / .05);
+  --av-s: 62%; --av-l: 88%; --av-fg: 28%;
 }
 
-:root[data-theme='dark'] { color-scheme: dark; }
+:root[data-theme='dark'] { color-scheme: dark; --av-s: 42%; --av-l: 24%; --av-fg: 78%; --panel-shadow: 0 1px 0 rgb(255 255 255 / .035) inset; }
 
 @media (min-width: 900px) {
   :root { --gutter: 32px; }

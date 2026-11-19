@@ -25,6 +25,21 @@ const people = [
   { user_id: '00000000-0000-4000-8000-000000000013', email: 'meera@example.com', display_name: 'Meera Nair', plan: 'free', created_at: '2026-11-07T05:00:00Z', last_sign_in_at: null, deleted: false, ai_today: 0, photos: 1, photo_bytes: 90000, groups: 0 },
   { user_id: '00000000-0000-4000-8000-000000000014', email: null, display_name: 'Former member', plan: 'free', created_at: '2026-11-01T05:00:00Z', last_sign_in_at: null, deleted: true, ai_today: 0, photos: 3, photo_bytes: 300000, groups: 0 },
 ]
+const more: [string, string, string, number, number, number, number][] = [
+  ['Kabir Malhotra', 'kabir.m@example.com', 'friends', 31, 6, 1_100_000, 4],
+  ['Ishita Bhatt', 'ishita.bhatt@example.com', 'free', 9, 0, 0, 2],
+  ['Tanmay Iyer', 'tanmay@example.com', 'free', 0, 2, 180000, 1],
+  ['Rhea D’Souza', 'rhea.d@example.com', 'friends', 18, 3, 420000, 5],
+  ['Vikram Singh', 'vikram.singh@example.com', 'free', 4, 0, 0, 0],
+  ['Naina Kapoor', 'naina.k@example.com', 'free', 22, 7, 900000, 3],
+  ['Aarav Menon', 'aarav.menon@example.com', 'free', 1, 1, 95000, 1],
+  ['Sana Qureshi', 'sana.q@example.com', 'friends', 40, 5, 700000, 6],
+]
+more.forEach(([name, email, plan, ai, photos, bytes, groups], i) => people.push({
+  user_id: `00000000-0000-4000-8000-0000000001${String(i).padStart(2, '0')}`, email, display_name: name, plan,
+  created_at: `2026-11-${String(8 + i).padStart(2, '0')}T05:00:00Z`, last_sign_in_at: '2026-11-19T03:00:00Z', deleted: false,
+  ai_today: ai, photos, photo_bytes: bytes, groups,
+}))
 const caps = [
   { feature: 'bill', free: 10, friends: 30 },
   { feature: 'insights', free: 20, friends: 60 },

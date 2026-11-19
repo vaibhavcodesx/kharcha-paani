@@ -1,34 +1,22 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ConfirmSheet, EditableNumber, ErrorPanel } from '../controls'
 import { Icon } from '../icons'
-import { AdminError, callRpc, type Overview } from '../rpc'
-import { checkFacts, planVersionChange, proposeVersions, type Facts } from '../release'
+import { useOverview } from '../overview'
+import { checkFacts, planVersionChange, proposeVersions } from '../release'
+import { AdminError, callRpc } from '../rpc'
 import { supabase } from '../supabase'
 import { Skeleton, useToast } from '../ui'
-
-type Load = { kind: 'loading' } | { kind: 'ready'; facts: Facts } | { kind: 'failed'; error: AdminError }
+import { trackMarks } from '../viz'
 
 const MAX = 1_000_000
 
 export function Release() {
-  const [load, setLoad] = useState<Load>({ kind: 'loading' })
+  const { state, refresh } = useOverview()
   const [raise, setRaise] = useState<{ min: number; recommended: number; sentence: string } | null>(null)
   const toast = useToast()
 
-  const fetchFacts = useCallback(async () => {
-    try {
-      const o = await callRpc<Overview>(supabase, 'admin_overview')
-      setLoad({ kind: 'ready', facts: o.versions })
-    } catch (e) {
-      setLoad({ kind: 'failed', error: e instanceof AdminError ? e : new AdminError('other', 'Something went wrong. Try again.') })
-    }
-  }, [])
-  useEffect(() => {
-    void fetchFacts()
-  }, [fetchFacts])
-
-  if (load.kind === 'failed') return <ErrorPanel title="Release could not load" error={load.error} onRetry={() => { setLoad({ kind: 'loading' }); void fetchFacts() }} />
-  if (load.kind === 'loading') {
+  if (state.kind === 'failed') return <ErrorPanel title="Release could not load" error={state.error} onRetry={() => void refresh()} />
+  if (state.kind === 'loading') {
     return (
       <>
         <header className="pagehead"><h1>Release</h1></header>
@@ -36,11 +24,12 @@ export function Release() {
       </>
     )
   }
-  const f = load.facts
+  const f = state.data.versions
+  const { marks } = trackMarks(f)
 
   const saveVersions = async (min: number, recommended: number) => {
     await callRpc(supabase, 'admin_set_app_versions', { p_min: min, p_recommended: recommended })
-    await fetchFacts()
+    await refresh()
   }
 
   // A lowering is saved at once. A raise states who is affected and asks for the number to be typed.
@@ -61,7 +50,7 @@ export function Release() {
     const problem = checkFacts({ update_screen: f.update_screen, latest_published: f.latest_published }, update, latest)
     if (problem) throw new AdminError('invalid', problem)
     await callRpc(supabase, 'admin_set_release_facts', { p_update_screen: update, p_latest_published: latest })
-    await fetchFacts()
+    await refresh()
   }
 
   return (
@@ -74,6 +63,24 @@ export function Release() {
             : <>Phones below version <span className="num">{f.min}</span> stop syncing until they update. They can still open and export their data.</>}
         </p>
       </header>
+
+      <section className="panel track-panel" aria-labelledby="h-track">
+        <h2 id="h-track">Where the versions sit</h2>
+        {marks.every((m) => m.value === 0) ? (
+          <p className="muted">Nothing is recorded yet. Add the latest version on Play below and the line fills in.</p>
+        ) : (
+          <div className="track" role="img" aria-label={marks.map((m) => `${m.label} ${m.value}`).join(', ')}>
+            <span className="track-line" />
+            {f.min > 0 && <span className="track-danger" style={{ ['--w' as string]: `${marks.find((m) => m.id === 'min')?.pct ?? 0}%` }} />}
+            {marks.map((m, i) => (
+              <span key={m.id} className="mark" data-mark={m.id} data-row={i % 2} style={{ ['--x' as string]: `${m.pct}%` }}>
+                <i />
+                <span className="mark-label"><span>{m.label}</span><b className="num">{m.value}</b></span>
+              </span>
+            ))}
+          </div>
+        )}
+      </section>
 
       <div className="columns">
         <section className="section" aria-labelledby="h-ver">
@@ -118,7 +125,7 @@ export function Release() {
           toast.say(`The minimum is now ${raise.min}. It is in the Log.`)
         }}
       >
-        <p className="warn"><Icon name="warn" />{raise?.sentence}</p>
+        <p className="warn"><Icon name="warn" size={20} /><span>{raise?.sentence}</span></p>
         <p className="muted">Lowering it again is always allowed if something goes wrong.</p>
       </ConfirmSheet>
     </>

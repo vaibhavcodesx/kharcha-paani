@@ -1,6 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { AuthProvider, useAuth } from './auth'
+import { CommandPalette } from './CommandPalette'
+import type { CommandId } from './commands'
+import { FREE_STORAGE_BYTES } from './config'
+import { formatBytes } from './format'
 import { Icon, type IconName } from './icons'
+import { OverviewProvider, useOverview } from './overview'
 import { Limits } from './pages/Limits'
 import { Log } from './pages/Log'
 import { People } from './pages/People'
@@ -50,8 +55,8 @@ function useTheme(): [boolean, () => void] {
 function Gate({ title, body, action, onAction }: { title: string; body: string; action?: string; onAction?: () => void }) {
   return (
     <main className="center">
-      <section className="panel">
-        <p className="brandmark">Kharcha Paani admin</p>
+      <section className="panel gate">
+        <p className="wordmark">Kharcha Paani</p>
         <h2>{title}</h2>
         <p>{body}</p>
         {action && <button className="btn btn-primary" onClick={onAction}>{action}</button>}
@@ -62,13 +67,134 @@ function Gate({ title, body, action, onAction }: { title: string; body: string; 
 
 const TAB_ICON: Record<TabId, IconName> = { today: 'today', people: 'people', limits: 'limits', release: 'release', log: 'log' }
 
-function Shell() {
-  const { state, signIn, signOut } = useAuth()
+function Tabs({ tab, go, variant }: { tab: TabId; go: (t: TabId) => void; variant: 'rail' | 'dock' }) {
+  return (
+    <nav className={variant === 'rail' ? 'tabs-rail' : 'dock'} role="tablist" aria-label="Sections" aria-orientation={variant === 'rail' ? 'vertical' : 'horizontal'}>
+      {TABS.map((t) => (
+        <button
+          key={t.id}
+          role="tab"
+          id={variant === 'rail' ? `tab-${t.id}` : undefined}
+          aria-selected={tab === t.id}
+          aria-controls="view"
+          className="tab"
+          onClick={() => go(t.id)}
+          onKeyDown={(e) => {
+            const i = TABS.findIndex((x) => x.id === tab)
+            const keys = variant === 'rail' ? ['ArrowDown', 'ArrowUp'] : ['ArrowRight', 'ArrowLeft']
+            if (e.key === keys[0]) go(TABS[(i + 1) % TABS.length].id)
+            if (e.key === keys[1]) go(TABS[(i + TABS.length - 1) % TABS.length].id)
+          }}
+        >
+          <Icon name={TAB_ICON[t.id]} filled={tab === t.id} />
+          <span>{t.label}</span>
+        </button>
+      ))}
+    </nav>
+  )
+}
+
+/** The three things worth knowing at a glance, always on screen on a wide display. */
+function StatusBlock({ go }: { go: (t: TabId) => void }) {
+  const { state } = useOverview()
+  if (state.kind !== 'ready') {
+    return (
+      <div className="status" aria-hidden="true">
+        <div className="skel"><i /></div>
+        <div className="skel"><i /></div>
+      </div>
+    )
+  }
+  const o = state.data
+  const storagePct = Math.round((o.storage.bytes / FREE_STORAGE_BYTES) * 100)
+  return (
+    <dl className="status" aria-label="Right now">
+      <button onClick={() => go('limits')} data-tone={o.ai_paused ? 'stop' : 'ok'}>
+        <dt>AI</dt>
+        <dd><Icon name={o.ai_paused ? 'pause' : 'check'} size={16} />{o.ai_paused ? 'Paused' : 'On'}</dd>
+      </button>
+      <button onClick={() => go('release')}>
+        <dt>Minimum app</dt>
+        <dd className="num">{o.versions.min === 0 ? 'none' : `v${o.versions.min}`}</dd>
+      </button>
+      <button onClick={() => go('today')} data-tone={storagePct >= 80 ? 'watch' : 'ok'}>
+        <dt>Photo space</dt>
+        <dd className="num">{storagePct}% <span className="of">of {formatBytes(FREE_STORAGE_BYTES)}</span></dd>
+      </button>
+    </dl>
+  )
+}
+
+function Console() {
+  const { signOut } = useAuth()
+  const { refresh } = useOverview()
   const [tab, go] = useTab()
   const [dark, toggleTheme] = useTheme()
+  const [palette, setPalette] = useState(false)
+
+  useEffect(() => {
+    const on = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPalette((p) => !p)
+      }
+    }
+    window.addEventListener('keydown', on)
+    return () => window.removeEventListener('keydown', on)
+  }, [])
+
+  const run = useCallback((id: CommandId) => {
+    if (id.startsWith('go-')) go(id.slice(3) as TabId)
+    else if (id === 'theme') toggleTheme()
+    else if (id === 'refresh') void refresh()
+    else if (id === 'sign-out') void signOut()
+  }, [go, toggleTheme, refresh, signOut])
+
+  const themeLabel = dark ? 'Switch to light theme' : 'Switch to dark theme'
+  const title = TABS.find((t) => t.id === tab)?.label ?? 'Today'
+
+  return (
+    <div className="console">
+      <aside className="rail">
+        <div className="wordmark">Kharcha Paani<small>Owner console</small></div>
+        <Tabs tab={tab} go={go} variant="rail" />
+        <StatusBlock go={go} />
+        <div className="rail-foot">
+          <button className="iconbtn" onClick={() => setPalette(true)} aria-label="Open the command palette"><Icon name="command" size={20} /></button>
+          <button className="iconbtn" onClick={toggleTheme} aria-label={themeLabel}><Icon name={dark ? 'sun' : 'moon'} size={20} /></button>
+          <button className="iconbtn" onClick={() => void signOut()} aria-label="Sign out"><Icon name="logout" size={20} /></button>
+        </div>
+      </aside>
+
+      <div className="stage">
+        <header className="topbar">
+          <div className="wordmark">Kharcha Paani<small>{title}</small></div>
+          <button className="iconbtn" onClick={() => setPalette(true)} aria-label="Open the command palette"><Icon name="search" size={20} /></button>
+          <button className="iconbtn" onClick={toggleTheme} aria-label={themeLabel}><Icon name={dark ? 'sun' : 'moon'} size={20} /></button>
+          <button className="iconbtn" onClick={() => void signOut()} aria-label="Sign out"><Icon name="logout" size={20} /></button>
+        </header>
+        <main className="main" id="view" role="tabpanel" aria-labelledby={`tab-${tab}`}>
+          <div className="view" key={tab}>
+            {tab === 'today' && <Today go={go} />}
+            {tab === 'people' && <People />}
+            {tab === 'limits' && <Limits />}
+            {tab === 'release' && <Release />}
+            {tab === 'log' && <Log />}
+          </div>
+        </main>
+      </div>
+
+      <Tabs tab={tab} go={go} variant="dock" />
+      <CommandPalette open={palette} onClose={() => setPalette(false)} onRun={run} />
+    </div>
+  )
+}
+
+function Shell() {
+  const { state, signIn } = useAuth()
 
   if (state.kind === 'booting' || state.kind === 'checking') {
-    return <main className="center" aria-busy="true"><p className="brandmark">Kharcha Paani admin</p></main>
+    return <main className="center" aria-busy="true"><p className="wordmark">Kharcha Paani</p></main>
   }
   if (state.kind === 'signed-out') {
     return <Gate title="Owner only." body="Sign in with the Google account that runs Kharcha Paani." action="Sign in with Google" onAction={() => void signIn()} />
@@ -82,49 +208,10 @@ function Shell() {
   if (state.kind === 'error') {
     return <Gate title="Something went wrong." body={state.message} action="Try again" onAction={() => window.location.reload()} />
   }
-
   return (
-    <div className="app">
-      <header className="topbar">
-        <div className="brand">Kharcha Paani <small>admin</small></div>
-        <button className="iconbtn" onClick={toggleTheme} aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}>
-          <Icon name={dark ? 'sun' : 'moon'} />
-        </button>
-        <button className="iconbtn" onClick={() => void signOut()} aria-label="Sign out">
-          <Icon name="logout" />
-        </button>
-      </header>
-        <nav className="dock" role="tablist" aria-label="Sections">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              role="tab"
-              id={`tab-${t.id}`}
-              aria-selected={tab === t.id}
-              aria-controls="view"
-              className="tab"
-              onClick={() => go(t.id)}
-              onKeyDown={(e) => {
-                const i = TABS.findIndex((x) => x.id === tab)
-                if (e.key === 'ArrowRight') go(TABS[(i + 1) % TABS.length].id)
-                if (e.key === 'ArrowLeft') go(TABS[(i + TABS.length - 1) % TABS.length].id)
-              }}
-            >
-              <Icon name={TAB_ICON[t.id]} />
-              {t.label}
-            </button>
-          ))}
-        </nav>
-      <main className="main" id="view" role="tabpanel" aria-labelledby={`tab-${tab}`}>
-        <div className="view" key={tab}>
-          {tab === 'today' && <Today go={go} />}
-          {tab === 'people' && <People />}
-          {tab === 'limits' && <Limits />}
-          {tab === 'release' && <Release />}
-          {tab === 'log' && <Log />}
-        </div>
-      </main>
-    </div>
+    <OverviewProvider>
+      <Console />
+    </OverviewProvider>
   )
 }
 
