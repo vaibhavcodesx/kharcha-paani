@@ -282,8 +282,8 @@ select public._expect_rows('and un-archive it',
 select public._as('00000000-0000-4000-8000-0000000000d1');
 select public._expect_value('an invite from someone who LEFT previews as nothing',
   format($q$ select count(*) from public.preview_invite(%L) $q$, (select value from public._ids where key = 'alice_g1')), 0);
-select public._expect_error('an invite from someone who LEFT cannot be used to join',
-  format($q$ select public.join_group(%L) $q$, (select value from public._ids where key = 'alice_g1')));
+select public._expect_value('an invite from someone who LEFT cannot be used to join (null)',
+  format($q$ select (public.join_group(%L) is null)::int $q$, (select value from public._ids where key = 'alice_g1')), 1);
 select public._expect_value('mallory did not get in',
   $q$ select count(*) from public.group_members where profile_id = '00000000-0000-4000-8000-0000000000d1' $q$, 0);
 select public._expect_value('an invite from a current member still previews',
