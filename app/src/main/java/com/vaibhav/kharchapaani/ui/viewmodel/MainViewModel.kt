@@ -2541,9 +2541,15 @@ class MainViewModel(
         next.invoke()
     }
 
+    /**
+     * "Type it myself": this entry is made on the phone, and AI is switched off so the sheet does
+     * not come back on every entry (UX-02, owner answer D-02). The quiet "AI is off" line under quick
+     * add offers to turn it on again.
+     */
     fun declineAiNotice() {
         val instead = insteadOfAi
         closeAiNotice()
+        setAiEnabled(false)
         instead?.invoke()
     }
 
