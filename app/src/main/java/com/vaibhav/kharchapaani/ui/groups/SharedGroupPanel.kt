@@ -87,6 +87,7 @@ fun SharedGroupPanel(
     outstandingMembers: Set<Long> = emptySet(),
     /** What I am owed (positive) or owe (negative) in this group, in rupees. Shown before leaving. */
     myBalance: Double = 0.0,
+    onResetInvite: (() -> Unit)? = null,
 ) {
     var confirmingLeave by rememberSaveable { mutableStateOf(false) }
     var memberToRemoveId by rememberSaveable(group.id) { mutableStateOf<Long?>(null) }
@@ -140,7 +141,7 @@ fun SharedGroupPanel(
         }
 
         if (!group.isArchived) {
-            InviteSection(invite, onCreateInvite, onShareInvite, onRevokeInvite)
+            InviteSection(invite, onCreateInvite, onShareInvite, onRevokeInvite, onResetInvite)
         } else {
             Text(stringResource(R.string.shared_group_copy_readonly), style = MaterialTheme.typography.bodyMedium)
         }
@@ -243,12 +244,14 @@ fun SharedGroupPanel(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun InviteSection(
     invite: GroupInviteState?,
     onCreateInvite: () -> Unit,
     onShareInvite: (String) -> Unit,
     onRevokeInvite: () -> Unit,
+    onResetInvite: (() -> Unit)?,
 ) {
     val link = invite?.link
     when {
@@ -290,7 +293,16 @@ private fun InviteSection(
                     size = 168.dp,
                 )
             }
-            PanelButton(label = stringResource(R.string.shared_group_copy_revoke), filled = false, onClick = onRevokeInvite, modifier = Modifier.align(Alignment.End))
+            FlowRow(
+                modifier = Modifier.align(Alignment.End),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.s, Alignment.End),
+            ) {
+                if (invite.canReset && onResetInvite != null) {
+                    PanelButton(stringResource(R.string.shared_group_copy_reset), filled = false, onClick = onResetInvite)
+                }
+                PanelButton(stringResource(R.string.shared_group_copy_revoke), filled = false, onClick = onRevokeInvite)
+            }
+            invite.error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = WarmAmberLight) }
         }
         else -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             PanelButton(label = stringResource(R.string.shared_group_copy_invite), filled = false, onClick = onCreateInvite, modifier = Modifier.fillMaxWidth())

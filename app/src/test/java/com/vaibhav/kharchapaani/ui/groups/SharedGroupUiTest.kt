@@ -69,19 +69,23 @@ class SharedGroupUiTest {
     @Test
     fun `a member sees the invite code and can share it, but only the creator can archive`() {
         var shared: String? = null
+        var resets = 0
+        val canReset = androidx.compose.runtime.mutableStateOf(true)
         composeTestRule.setContent {
             SplitFlowTheme {
                 SharedGroupPanel(
                     group = GroupEntity(name = "Goa trip", syncState = SyncState.SYNCED),
                     members = listOf(PersonEntity(name = "Bob", avatarColor = "#70C1FF", profileId = "bob")),
                     isCreator = false,
-                    invite = GroupInviteState(groupId = 1, code = "AB2CD3EF", expiresAtMillis = 1_800_000_000_000),
+                    invite = GroupInviteState(groupId = 1, code = "AB2CD3EF", expiresAtMillis = 1_800_000_000_000,
+                        canReset = canReset.value),
                     isLeaving = false,
                     unsyncedChanges = 0,
                     onSyncNow = {},
                     onCreateInvite = {},
                     onShareInvite = { shared = it },
                     onRemoveMember = { error("Only the creator can remove someone") },
+                    onResetInvite = { resets++ },
                     onRevokeInvite = {},
                     onSetArchived = {},
                     onLeave = {},
@@ -89,6 +93,10 @@ class SharedGroupUiTest {
             }
         }
 
+        composeTestRule.onNodeWithText("Reset link").assertIsDisplayed().performClick()
+        assertEquals(1, resets)
+        composeTestRule.runOnIdle { canReset.value = false }
+        composeTestRule.onNodeWithText("Reset link").assertDoesNotExist()
         composeTestRule.onNodeWithText("AB2C D3EF").assertIsDisplayed()
         composeTestRule.onNodeWithText("Share link").performClick()
         assertEquals("kharchapaani://join/AB2CD3EF", shared)

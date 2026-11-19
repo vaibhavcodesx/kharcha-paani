@@ -5,6 +5,7 @@ import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
+import com.vaibhav.kharchapaani.data.sync.GroupInvite
 import com.vaibhav.kharchapaani.data.sync.GroupMembershipRemote
 import com.vaibhav.kharchapaani.data.sync.InvalidInviteException
 import com.vaibhav.kharchapaani.data.sync.InvitePreview
@@ -39,6 +40,7 @@ data class GroupInviteState(
     val expiresAtMillis: Long? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
+    val canReset: Boolean = false,
 ) {
     val link: String? get() = code?.let(InviteLink::linkFor)
 }
@@ -73,6 +75,7 @@ class SharedGroupsController(
     private val _state = MutableStateFlow(SharedGroupsUiState())
     val state: StateFlow<SharedGroupsUiState> = _state.asStateFlow()
     private var previewJob: Job? = null
+    private var inviteResetUnavailable = false
 
     fun openJoin(prefill: String = "") {
         if (blockWithoutAccount()) return
@@ -154,7 +157,6 @@ class SharedGroupsController(
     }
 
     /** A group created offline has to reach the server before anyone can be invited to it. */
-    @OptIn(ExperimentalTime::class)
     fun createInvite(group: GroupEntity) {
         val network = remote ?: run { blockWithoutAccount(); return }
         if (group.syncState != SyncState.SYNCED) {
@@ -164,34 +166,73 @@ class SharedGroupsController(
             }
             return
         }
+        if (_state.value.invite?.let { it.groupId == group.id && it.isLoading } == true) return
+        val pending = GroupInviteState(group.id, isLoading = true)
+        _state.update { it.copy(invite = pending) }
         scope.launch {
-            _state.update { it.copy(invite = GroupInviteState(group.id, isLoading = true)) }
-            runRemote { network.createInvite(group.remoteId) }.fold(
-                onSuccess = { invite ->
-                    _state.update {
-                        it.copy(
-                            invite = GroupInviteState(
-                                groupId = group.id,
-                                code = invite.code,
-                                expiresAtMillis = runCatching { Instant.parse(invite.expiresAt).toEpochMilliseconds() }.getOrNull(),
-                            )
-                        )
-                    }
+            val result = runRemote { network.createInvite(group.remoteId) }
+            val invite = result.fold(
+                onSuccess = { created ->
+                    val canReset = !inviteResetUnavailable &&
+                        runRemote { network.supportsInviteLimits(group.remoteId) }.getOrDefault(false)
+                    GroupInviteState(group.id, canReset = canReset).withLink(created)
                 },
-                onFailure = { error -> _state.update { it.copy(invite = GroupInviteState(group.id, error = error.message)) } },
+                onFailure = { GroupInviteState(group.id, error = it.message) },
             )
+            _state.update { if (it.invite === pending) it.copy(invite = invite) else it }
         }
     }
+
+    fun resetInvite(group: GroupEntity) {
+        val network = remote ?: return
+        val invite = _state.value.invite ?: return
+        if (!group.isShared || group.isArchived || group.syncState != SyncState.SYNCED ||
+            invite.groupId != group.id || invite.code == null || !invite.canReset ||
+            invite.isLoading || inviteResetUnavailable
+        ) return
+
+        val pending = invite.copy(isLoading = true, error = null)
+        _state.update { it.copy(invite = pending) }
+        scope.launch {
+            val result = runRemote { network.resetInvite(group.remoteId) }
+            val updated = result.fold(
+                onSuccess = { replacement ->
+                    if (replacement == null) {
+                        inviteResetUnavailable = true
+                        invite.copy(canReset = false, error = copyText(R.string.shared_group_notice_reset_unavailable))
+                    } else {
+                        invite.withLink(replacement)
+                    }
+                },
+                onFailure = { invite.copy(error = it.message) },
+            )
+            _state.update { if (it.invite === pending) it.copy(invite = updated) else it }
+        }
+    }
+
+    @OptIn(ExperimentalTime::class)
+    private fun GroupInviteState.withLink(invite: GroupInvite): GroupInviteState = copy(
+        code = invite.code,
+        expiresAtMillis = runCatching { Instant.parse(invite.expiresAt).toEpochMilliseconds() }.getOrNull(),
+        error = null,
+    )
 
     fun revokeInvite() {
         val network = remote ?: run { blockWithoutAccount(); return }
         val invite = _state.value.invite ?: return
         val code = invite.code ?: return
+        if (invite.isLoading) return
+        val pending = invite.copy(isLoading = true, error = null)
+        _state.update { it.copy(invite = pending) }
         scope.launch {
-            runRemote { network.revokeInvite(code) }.fold(
-                onSuccess = { _state.update { it.copy(invite = null, message = copyText(R.string.shared_group_notice_revoked)) } },
-                onFailure = { error -> _state.update { it.copy(invite = invite.copy(error = error.message)) } },
-            )
+            val result = runRemote { network.revokeInvite(code) }
+            _state.update { state ->
+                if (state.invite !== pending) return@update state
+                result.fold(
+                    onSuccess = { state.copy(invite = null, message = copyText(R.string.shared_group_notice_revoked)) },
+                    onFailure = { state.copy(invite = invite.copy(error = it.message)) },
+                )
+            }
         }
     }
 
@@ -206,7 +247,7 @@ class SharedGroupsController(
     suspend fun checkMemberRemoval(group: GroupEntity) {
         val network = remote
         val supported = if (network == null || !canManageMembers(group)) false else try {
-            network.supportsMemberRemoval(group.remoteId)
+            network.supportsInviteLimits(group.remoteId)
         } catch (_: IOException) {
             false
         } catch (_: RestException) {

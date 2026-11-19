@@ -1267,6 +1267,7 @@ fun SplitFlowApp(
                 onCreateInvite = { sharedGroups.createInvite(group) },
                 onShareInvite = { link -> shareInviteLink(context, group.name, link) },
                 onRevokeInvite = { sharedGroups.revokeInvite() },
+                onResetInvite = { sharedGroups.resetInvite(group) },
                 onSetArchived = { sharedGroups.setArchived(group, it) },
                 onLeave = { sharedGroups.leaveGroup(group) { viewModel.dismissGroupDetail() } },
                 onRemoveMember = if (allowMemberRemoval) ({ profileId -> sharedGroups.removeMember(group, profileId) }) else null,
