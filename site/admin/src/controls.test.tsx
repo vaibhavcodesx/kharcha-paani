@@ -1,8 +1,21 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { ConfirmSheet, EditableNumber } from './controls'
+
+beforeAll(() => {
+  HTMLDialogElement.prototype.showModal = function () {
+    this.open = true
+  }
+  HTMLDialogElement.prototype.close = function () {
+    this.open = false
+  }
+})
+
+afterEach(() => {
+  cleanup()
+})
 
 describe('EditableNumber', () => {
   it('shows the value', () => {

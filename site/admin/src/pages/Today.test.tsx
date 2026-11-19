@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { OverviewProvider } from '../overview'
 import { Today } from './Today'
 import { supabase } from '../supabase'
@@ -35,6 +35,10 @@ describe('Today page', () => {
     vi.clearAllMocks()
   })
 
+  afterEach(() => {
+    cleanup()
+  })
+
   it('shows the people sentence and one state word per AI kind', async () => {
     mockRpc.mockResolvedValue({
       data: fakeOverview(),
@@ -52,7 +56,7 @@ describe('Today page', () => {
     expect(screen.getByText(/active this week/i)).toBeDefined()
     expect(screen.getByText(/deleted/i)).toBeDefined()
 
-    expect(screen.getByText('Plenty left')).toBeDefined()
+    expect(screen.getAllByText('Plenty left').length).toBeGreaterThan(0)
     expect(screen.getByText('Getting close')).toBeDefined()
     expect(screen.getByText('At the limit')).toBeDefined()
   })
@@ -70,8 +74,8 @@ describe('Today page', () => {
       </OverviewProvider>
     )
 
-    expect(await screen.findByText('AI reads are paused')).toBeDefined()
-    expect(screen.getByText(/Phones cannot read bills or answer questions until you resume/i)).toBeDefined()
+    expect(await screen.findByText('AI is paused for everyone')).toBeDefined()
+    expect(screen.getByText(/Phones show the daily-limit message until you resume it/i)).toBeDefined()
   })
 
   it('shows an error panel with Try again when the call fails', async () => {

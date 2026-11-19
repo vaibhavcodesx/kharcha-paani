@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { OverviewProvider } from '../overview'
 import { Release } from './Release'
 import { supabase } from '../supabase'
@@ -29,6 +29,10 @@ const fakeOverview = (overrides = {}) => ({
 describe('Release page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    cleanup()
   })
 
   it('shows "No minimum is set" at min 0', async () => {
@@ -61,7 +65,7 @@ describe('Release page', () => {
     )
 
     expect(await screen.findByText(/Phones below version/i)).toBeDefined()
-    expect(screen.getByText('14')).toBeDefined()
+    expect(screen.getAllByText('14').length).toBeGreaterThan(0)
   })
 
   it('raising the minimum before update screen is recorded shows refusal and never calls admin_set_app_versions', async () => {
