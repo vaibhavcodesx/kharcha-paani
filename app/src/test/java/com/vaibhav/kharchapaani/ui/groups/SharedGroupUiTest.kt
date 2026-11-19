@@ -101,7 +101,7 @@ class SharedGroupUiTest {
         composeTestRule.setContent {
             SplitFlowTheme {
                 SharedGroupPanel(
-                    group = GroupEntity(name = "Goa trip", isShared = true, syncState = SyncState.SYNCED),
+                    group = GroupEntity(name = "Goa trip", syncState = SyncState.SYNCED),
                     members = listOf(PersonEntity(id = 12, name = "Bob", avatarColor = "#70C1FF", profileId = "bob")),
                     isCreator = true,
                     invite = null,

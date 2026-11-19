@@ -118,7 +118,7 @@ class SharedGroupsControllerTest {
     @Test
     fun `creator can remove a shared member and refresh the list`() = runBlocking {
         val group = GroupEntity(id = 31, name = "Goa", remoteId = "group", createdByProfileId = self,
-            isShared = true, syncState = SyncState.SYNCED)
+            syncState = SyncState.SYNCED)
         remote.memberRemovalAvailable = true
 
         controller.checkMemberRemoval(group)
@@ -133,7 +133,7 @@ class SharedGroupsControllerTest {
     @Test
     fun `removal needs server support, an active group and the creator`() = runBlocking {
         val group = GroupEntity(id = 31, name = "Goa", remoteId = "group", createdByProfileId = self,
-            isShared = true, syncState = SyncState.SYNCED)
+            syncState = SyncState.SYNCED)
 
         controller.checkMemberRemoval(group)
         assertNull(controller.state.value.removableGroupId)
@@ -141,7 +141,7 @@ class SharedGroupsControllerTest {
         remote.memberRemovalAvailable = true
         controller.checkMemberRemoval(group)
         controller.removeMember(group.copy(createdByProfileId = "creator"), "other-profile")
-        controller.removeMember(group.copy(isArchived = true), "other-profile")
+        controller.removeMember(group.copy(archivedAt = 1L), "other-profile")
         controller.removeMember(group, self)
 
         assertTrue(remote.removed.isEmpty())
