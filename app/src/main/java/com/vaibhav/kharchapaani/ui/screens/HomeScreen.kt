@@ -159,6 +159,7 @@ fun HomeScreen(
     syncStatus: SyncStatus = SyncStatus(),
     onShowMessage: (String) -> Unit = {},
     onAiOff: (com.vaibhav.kharchapaani.ui.viewmodel.AiFeature) -> Unit = {},
+    guardAi: (com.vaibhav.kharchapaani.ui.viewmodel.AiFeature, () -> Unit) -> Unit = { _, go -> go() },
     onRequestSync: () -> Unit = {},
     localOnly: Boolean = false,
     /** The place of a bill split by items left unfinished ("" when it has none), or null. */
@@ -237,6 +238,7 @@ fun HomeScreen(
                 onCaptureFailed = onShowMessage,
                 onVoiceCaptureStarted = onVoiceCaptureStarted,
                 onAiOff = onAiOff,
+                guardAi = guardAi,
                 modifier = Modifier.padding(top = Spacing.xl),
             )
         }

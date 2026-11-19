@@ -114,6 +114,9 @@ import com.vaibhav.kharchapaani.domain.DailySpend
 import com.vaibhav.kharchapaani.domain.GroupInsights
 import com.vaibhav.kharchapaani.ui.format.MonthNames
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.channels.Channel
@@ -193,6 +196,15 @@ class MainViewModel(
         aiAllowed = { AiSettings(application).enabledNow },
     ),
     private val isLocal: Boolean = false,
+    // Asks the server, without spending anything, whether a read of this kind would be allowed right now.
+    // null means the answer could not be had (offline, an error): the caller carries on and lets the
+    // real call decide.
+    private val aiReadAllowed: suspend (String) -> Boolean? = { feature ->
+        runCatching {
+            SupabaseClientProvider.get(application).postgrest
+                .rpc("ai_available", buildJsonObject { put("p_feature", feature) }).data.trim() == "true"
+        }.getOrNull()
+    },
 ) : AndroidViewModel(application), SessionClosingWork {
 
     private val recoveryJournal = if (isLocal) File(application.filesDir, "backup-recovery/local-$userId.json") else null
@@ -780,6 +792,39 @@ class MainViewModel(
 
     fun onVoiceCaptureStarted() {
         _voiceCaptureRequested.value = false
+    }
+
+    /**
+     * Runs [proceed] if a read of this kind is still allowed today, else says so at once. Called when
+     * the mic, Bill photo or Statement button is tapped, so a paused AI or a used-up cap is shown
+     * before anything is recorded, photographed or picked, not after. If the server cannot be asked
+     * quickly, [proceed] runs and the real call decides.
+     */
+    fun guardAiRead(feature: AiFeature, proceed: () -> Unit) {
+        val key = when (feature) {
+            AiFeature.Voice, AiFeature.QuickAdd -> "quick_add"
+            AiFeature.Bill -> "bill"
+            AiFeature.Statement -> "statement"
+            else -> null
+        }
+        if (key == null || isLocal || !aiAvailable || !canUseAi()) {
+            proceed()
+            return
+        }
+        viewModelScope.launch {
+            val allowed = withTimeoutOrNull(AI_CHECK_MS) { aiReadAllowed(key) } ?: true
+            if (allowed) {
+                proceed()
+            } else {
+                _statusMessage.value = uiText(
+                    when (feature) {
+                        AiFeature.Bill -> R.string.ai_display_receipt_dailylimit
+                        AiFeature.Statement -> R.string.action_notice_statement_dailylimit
+                        else -> R.string.ai_display_answermessageresource_dailylimit
+                    },
+                )
+            }
+        }
     }
 
     /**
@@ -3237,6 +3282,7 @@ class MainViewModel(
 
         /** How long "Turn on AI" waits for the choice to be saved before giving up quietly. */
         const val AI_ON_WAIT_MS = 3_000L
+        const val AI_CHECK_MS = 1_500L
 
         /** Debounce window for search input so rapid keystrokes don't re-build the feed synchronously. */
         const val SEARCH_DEBOUNCE_MS = 150L
