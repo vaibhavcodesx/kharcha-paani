@@ -1273,7 +1273,7 @@ fun SplitFlowApp(
     )
 
     // Edit a local group (UX-19)
-    val editingGroup by viewModel.editingGroup.collectAsState()
+    val editingGroup by viewModel.editingGroup.collectAsStateWithLifecycle()
     CreateGroupSheet(
         isOpen = editingGroup != null,
         allPeople = people,
