@@ -90,6 +90,15 @@ class LargeMoneyTextTest {
                 for (amount in listOf(spent, income, balance)) {
                     val visibleAmount = Money.format(amount)
                     val textLayouts = SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult)
+                    val amountText = hasText(visibleAmount) and textLayouts
+                    if (compose.onAllNodes(amountText, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()) {
+                        val layouts = mutableListOf<TextLayoutResult>()
+                        compose.onNode(amountText, useUnmergedTree = true).assertIsDisplayed()
+                            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+                        assertEquals(visibleAmount, layouts.single().layoutInput.text.text)
+                        assertFalse("$visibleAmount clipped at $screen and $scale", layouts.single().hasVisualOverflow)
+                        continue
+                    }
                     val digits = compose.onAllNodes(
                         hasAnyAncestor(hasContentDescription(visibleAmount)) and textLayouts,
                         useUnmergedTree = true,

@@ -24,9 +24,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.TextAutoSize
-import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
@@ -128,7 +125,7 @@ fun CategoryRing(
     ) {
         if (largeText) {
             Text(centreSlice?.category ?: spentLabel, style = MaterialTheme.typography.bodySmall)
-            Text(
+            FittedMoneyText(
                 Money.format(centreSlice?.amount ?: total),
                 style = MoneyText.row,
                 modifier = Modifier.padding(bottom = Spacing.m),
@@ -195,12 +192,9 @@ fun CategoryRing(
                 )
                 // The hole is what it is: a month total in MoneyText.title spilled straight over
                 // the arcs around it.
-                BasicText(
+                FittedMoneyText(
                     text = Money.format(slice?.amount ?: total),
-                    style = MoneyText.row.copy(color = OffWhiteText, textAlign = TextAlign.Center,
-                        lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified),
-                    maxLines = 1, softWrap = false,
-                    autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = MoneyText.row.fontSize),
+                    style = MoneyText.row.copy(color = OffWhiteText, textAlign = TextAlign.Center),
                     modifier = Modifier.width(RingSize - RingStroke * 2 - Spacing.s),
                 )
             }
@@ -363,10 +357,9 @@ fun DailyFlowChart(
                         style = MaterialTheme.typography.bodySmall,
                         color = MutedWarmGray,
                     )
-                    Text(
+                    FittedMoneyText(
                         text = Money.format(pinned.amount),
-                        style = MoneyText.small,
-                        color = OffWhiteText,
+                        style = MoneyText.small.copy(color = OffWhiteText),
                     )
                 }
             }
@@ -504,12 +497,10 @@ private fun DayCell(day: DaySpend, width: Dp, selected: Boolean, onClick: () -> 
             style = MaterialTheme.typography.bodySmall,
             color = if (selected) OffWhiteText else SubMutedWarmGray,
         )
-        Text(
+        FittedMoneyText(
             // Compact, never cut: the cell is a fixed width, and the exact figure is its spoken label.
             text = if (day.amount > 0.0) Money.compactDigits(day.amount) else "—",
-            style = MoneyText.small,
-            color = if (selected) OffWhiteText else MutedWarmGray,
-            maxLines = 1,
+            style = MoneyText.small.copy(color = if (selected) OffWhiteText else MutedWarmGray),
         )
     }
 }
