@@ -45,7 +45,7 @@ import kotlin.math.abs
 @Composable
 fun PersonLedgerSheet(
     person: PersonEntity?,
-    ledgerItems: List<PersonLedgerItem>,
+    ledgerItems: List<PersonLedgerItem>?,
     onSettleUp: (PersonEntity) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -57,12 +57,12 @@ fun PersonLedgerSheet(
 @Composable
 fun PersonLedgerContent(
     person: PersonEntity,
-    ledgerItems: List<PersonLedgerItem>,
+    ledgerItems: List<PersonLedgerItem>?,
     onSettleUp: (PersonEntity) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val dateFormat = remember { SimpleDateFormat("d MMM yyyy", Locale.getDefault()) }
-    val net = ledgerItems.sumOf { it.netChange }
+    val net = ledgerItems?.sumOf { it.netChange } ?: 0.0
 
     LazySheetScaffold(
         modifier = modifier,
@@ -99,17 +99,18 @@ fun PersonLedgerContent(
             }
         }
 
-        item(key = "count") {
-            Text(stringResource(R.string.person_ledger_count, ledgerItems.size), style = MaterialTheme.typography.titleSmall, color = OffWhiteText, modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() })
-        }
-
-        if (ledgerItems.isEmpty()) {
-            item(key = "empty") {
-                Text(stringResource(R.string.person_ledger_empty, person.name), style = MaterialTheme.typography.bodyMedium)
+        if (ledgerItems != null) {
+            item(key = "count") {
+                Text(stringResource(R.string.person_ledger_count, ledgerItems.size), style = MaterialTheme.typography.titleSmall, color = OffWhiteText, modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() })
             }
-        }
 
-        itemsIndexed(ledgerItems, key = { _, item -> item.id }) { index, item ->
+            if (ledgerItems.isEmpty()) {
+                item(key = "empty") {
+                    Text(stringResource(R.string.person_ledger_empty, person.name), style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+
+            itemsIndexed(ledgerItems, key = { _, item -> item.id }) { index, item ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -150,6 +151,7 @@ fun PersonLedgerContent(
                     },
                 )
             }
+        }
         }
     }
 }
