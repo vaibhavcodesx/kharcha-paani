@@ -246,11 +246,11 @@ fun AccountSheetContent(
         actionBar = if (!isLocal && (changed || state.isSavingProfile)) {
             {
                 GlassActionBar(
-                    label = "Save profile",
+                    label = stringResource(R.string.account_profile_save),
                     disabledLabel = when {
-                        state.isSavingProfile -> "Saving…"
-                        name.isBlank() -> "Add your name"
-                        else -> "Name is too long"
+                        state.isSavingProfile -> stringResource(R.string.account_profile_saving)
+                        name.isBlank() -> stringResource(R.string.account_profile_add_name)
+                        else -> stringResource(R.string.account_profile_name_too_long)
                     },
                     enabled = cleanName != null && !state.isSavingProfile,
                     onClick = { onSaveProfile(name, emoji) },
@@ -725,7 +725,7 @@ private fun AvatarGrid(initial: String, selected: String?, onSelect: (String?) -
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 row.forEach { choice ->
                     AvatarTile(
-                        label = choice ?: "Initials",
+                        label = choice ?: stringResource(R.string.account_avatar_initials),
                         selected = selected == choice,
                         onSelect = { onSelect(choice) },
                         testTag = choice?.let { "avatar_$it" } ?: "avatar_initials",

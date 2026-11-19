@@ -19,6 +19,40 @@ import kotlin.math.abs
  */
 object AskMessage {
 
+    data class Strings(
+        val header: String = "Hey %1$s, here's our hisaab:",
+        val carriedOver: String = "• Carried over: %1$s",
+        val earlier: String = "• Earlier: %1$s",
+        val line: String = "• %1$s",
+        val total: String = "Total: %1$s",
+        val partial: String = "Asking %1$s of the %2$s for now.",
+        val upi: String = "UPI: %1$s",
+        val footer: String = "Sent from Kharcha Paani",
+        val theirShare: String = "%1$s, %2$s: your share %3$s",
+        val myShare: String = "%1$s, %2$s: my share of what you paid %3$s",
+        val asGuest: String = "%1$s, %2$s: your share as my guest %3$s",
+        val iSent: String = "I sent you, %1$s: %2$s",
+        val theySent: String = "You sent me, %1$s: %2$s",
+    ) {
+        companion object {
+            fun from(context: Context): Strings = Strings(
+                header = context.getString(R.string.ask_message_header),
+                carriedOver = context.getString(R.string.ask_message_carried_over),
+                earlier = context.getString(R.string.ask_message_earlier),
+                line = context.getString(R.string.ask_message_line),
+                total = context.getString(R.string.ask_message_total),
+                partial = context.getString(R.string.ask_message_partial),
+                upi = context.getString(R.string.ask_message_upi),
+                footer = context.getString(R.string.ask_message_footer),
+                theirShare = context.getString(R.string.ask_message_their_share),
+                myShare = context.getString(R.string.ask_message_my_share),
+                asGuest = context.getString(R.string.ask_message_as_guest),
+                iSent = context.getString(R.string.ask_message_i_sent),
+                theySent = context.getString(R.string.ask_message_they_sent),
+            )
+        }
+    }
+
     private val day = DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH)
 
     /**
@@ -26,19 +60,35 @@ object AskMessage {
      *   whole [hisaab] (eng review D4). The lines always add up to the whole.
      * @param upiId the payer's own UPI ID, or null when they haven't added one.
      */
-    fun build(friendName: String, hisaab: HisaabItemiser.Hisaab, asked: Double, upiId: String?, zone: ZoneId = ZoneId.systemDefault()): String =
+    fun build(
+        friendName: String,
+        hisaab: HisaabItemiser.Hisaab,
+        asked: Double,
+        upiId: String?,
+        zone: ZoneId = ZoneId.systemDefault(),
+        strings: Strings = Strings(),
+    ): String =
         buildString {
-            append("Hey ").append(firstName(friendName)).append(", here's our hisaab:\n")
-            if (hisaab.carriedOver <= -0.005) append("• Carried over: ").append(Money.format(hisaab.carriedOver)).append('\n')
-            if (abs(hisaab.earlier) >= 0.005) append("• Earlier: ").append(Money.format(hisaab.earlier)).append('\n')
-            hisaab.lines.forEach { append("• ").append(describe(it, zone)).append('\n') }
-            append("Total: ").append(Money.format(hisaab.total)).append('\n')
+            append(String.format(strings.header, firstName(friendName))).append('\n')
+            if (hisaab.carriedOver <= -0.005) append(String.format(strings.carriedOver, Money.format(hisaab.carriedOver))).append('\n')
+            if (abs(hisaab.earlier) >= 0.005) append(String.format(strings.earlier, Money.format(hisaab.earlier))).append('\n')
+            hisaab.lines.forEach { append(String.format(strings.line, describe(it, zone, strings))).append('\n') }
+            append(String.format(strings.total, Money.format(hisaab.total))).append('\n')
             if (abs(asked - hisaab.total) >= 0.005) {
-                append("Asking ").append(Money.format(asked)).append(" of the ").append(Money.format(hisaab.total)).append(" for now.\n")
+                append(String.format(strings.partial, Money.format(asked), Money.format(hisaab.total))).append('\n')
             }
-            upiId?.let { append("UPI: ").append(it).append('\n') }
-            append("Sent from Kharcha Paani")
+            upiId?.let { append(String.format(strings.upi, it)).append('\n') }
+            append(strings.footer)
         }
+
+    fun build(
+        friendName: String,
+        hisaab: HisaabItemiser.Hisaab,
+        asked: Double,
+        upiId: String?,
+        context: Context,
+        zone: ZoneId = ZoneId.systemDefault(),
+    ): String = build(friendName, hisaab, asked, upiId, zone, Strings.from(context))
 
     /** "Asked today", "Asked yesterday", "Asked 3 days ago": calendar days, not 24-hour blocks. */
     fun askedLabel(context: Context, askedAt: Long, now: Long, zone: ZoneId = ZoneId.systemDefault()): String {
@@ -50,15 +100,15 @@ object AskMessage {
         }
     }
 
-    private fun describe(line: HisaabItemiser.Line, zone: ZoneId): String {
+    private fun describe(line: HisaabItemiser.Line, zone: ZoneId, strings: Strings): String {
         val date = dateOf(line.date, zone).format(day)
         val amount = Money.format(line.amount)
         return when (line.kind) {
-            HisaabItemiser.Kind.THEIR_SHARE -> "${line.title}, $date: your share $amount"
-            HisaabItemiser.Kind.MY_SHARE -> "${line.title}, $date: my share of what you paid $amount"
-            HisaabItemiser.Kind.AS_GUEST -> "${line.title}, $date: your share as my guest $amount"
-            HisaabItemiser.Kind.I_SENT -> "I sent you, $date: $amount"
-            HisaabItemiser.Kind.THEY_SENT -> "You sent me, $date: $amount"
+            HisaabItemiser.Kind.THEIR_SHARE -> String.format(strings.theirShare, line.title, date, amount)
+            HisaabItemiser.Kind.MY_SHARE -> String.format(strings.myShare, line.title, date, amount)
+            HisaabItemiser.Kind.AS_GUEST -> String.format(strings.asGuest, line.title, date, amount)
+            HisaabItemiser.Kind.I_SENT -> String.format(strings.iSent, date, amount)
+            HisaabItemiser.Kind.THEY_SENT -> String.format(strings.theySent, date, amount)
         }
     }
 
