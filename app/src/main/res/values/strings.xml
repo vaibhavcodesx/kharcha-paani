@@ -764,7 +764,7 @@
     <string name="action_notice_photo_failed">Couldn\'t use that photo.</string>
     <string name="action_notice_photo_not_kept">Saved. The bill photo couldn\'t be kept.</string>
     <string name="action_notice_image_failed">Couldn\'t open that image.</string>
-    <string name="action_notice_statement_manual">Statements are read by Gemini, so this one wasn\'t. You can still add entries yourself.</string>
+    <string name="action_notice_statement_manual">Statements are read by AI, so this one wasn\'t. You can still add entries yourself.</string>
     <string name="action_notice_pdf_failed">Couldn\'t open that PDF.</string>
     <string name="action_notice_guest_edit">Guests are in this split, so only the member who added it can change the amount.</string>
     <string name="action_notice_expense_deleted">Expense deleted</string>
@@ -988,13 +988,12 @@
     <string name="statement_warning_already_in_ledger">Already in your ledger</string>
     <string name="statement_warning_large">Much bigger than the rest of this statement</string>
     <string name="statement_warning_outside">Outside the statement\'s dates (%1$s)</string>
-    <string name="ai_choice_title">Use AI (Groq and Google Gemini)</string>
+    <string name="ai_choice_title">Use AI</string>
     <string name="ai_choice_enabled_detail">Reads quick adds, bills and statements, and answers questions in Insights</string>
     <string name="ai_choice_disabled_detail">Off everywhere. You type entries, and bill photos still attach.</string>
-    <string name="ai_choice_off_notice">AI is off. Nothing was sent to Groq or Gemini. You can turn it on in Settings.</string>
+    <string name="ai_choice_off_notice">AI is off. Nothing was sent. You can turn it on in Settings.</string>
     <string name="ai_choice_using_gemini">Reading it with AI. Check the reading before saving.</string>
     <string name="ai_choice_voice_off">AI is off, including speech recognition. Type an entry instead.</string>
-    <string name="ai_choice_capture_on">Typed lines use Groq · bills, statements and voice use Google Gemini</string>
     <string name="ai_choice_capture_off">AI is off · quick add stays on this phone</string>
     <!-- Auth messages: hue conflict/offline, account deletion errors -->
     <string name="auth_hue_error_offline">You\'re offline, so your colour wasn\'t saved. Try again when you\'re connected.</string>
