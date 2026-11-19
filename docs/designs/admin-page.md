@@ -2,8 +2,9 @@
 # Admin page for the owner (#355)
 
 One page where the owner runs the closed test (12 to 100 people, Supabase free plan) without the table editor.
-Not part of the APK; it does not hold 1.8.0. It lives at `site/admin/` on the public static site (GitHub Pages,
-`kharcha-paani-site/admin/`). The page holds no secret: it signs in with Google and calls database functions that
+Not part of the APK; it does not hold 1.8.0. The source lives at `site/admin/` in this repository. It is deployed to **Vercel** as its own project
+(root directory `site/admin`; plain files, no build step, no server code of our own). Owner decision 2026-11-19: Vercel,
+not GitHub Pages. The page holds no secret: it signs in with Google and calls database functions that
 check the caller against `private.admins`. All SQL here is **staged**: the owner applies it by hand. Agents apply
 nothing to the live project. Planned by an Opus agent, reviewed by the Lead.
 
@@ -99,7 +100,10 @@ owner types the target (email, `PAUSE`, or the number). The server re-checks the
 session.
 
 **XSS, CSRF, CSP.** No cookies (bearer token), so no CSRF. All text through `textContent` or `createElement`; no
-`innerHTML`, `insertAdjacentHTML`, `eval` or inline handlers; a check script greps for them. CSP in a meta tag:
+`innerHTML`, `insertAdjacentHTML`, `eval` or inline handlers; a check script greps for them. Vercel sets real response headers from `site/admin/vercel.json`: the CSP below, `Strict-Transport-Security`,
+`X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex`, and
+`frame-ancestors 'none'` (a meta tag cannot set it, so the clickjacking caveat of Pages disappears). Keep the same CSP in a
+meta tag as a fallback. CSP:
 `default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src
 https://<project>.supabase.co; base-uri 'none'; form-action 'none'; require-trusted-types-for 'script'`.
 `referrer no-referrer`, `robots noindex`, hides itself when framed. One library: `@supabase/supabase-js` 2.49.4 (same
@@ -232,11 +236,13 @@ returns 404. S3 and S4 stay `needs-owner` until the owner has read them.
 Apply the staged files from `supabase/MIGRATIONS.md` first, in file order and honouring each header; then the admin
 files in order (S1, S2, S3, S4). A dump before each file; run each file's test script (it must end with the "all
 passed" error and change nothing). Add yourself once: `insert into private.admins (user_id, email) select id, email
-from auth.users where email = '<your Google email>';`. Add `https://vaibhavcodesx.github.io/kharcha-paani-site/admin/`
+from auth.users where email = '<your Google email>';`. Add the Vercel URL of the admin project
 to Auth > URL Configuration > Redirect URLs; set the Google **web** client ID and secret in Auth > Providers and add
 the Supabase callback URL in Google Cloud. Turn on 2-Step Verification or a passkey on the Google account and 2FA on
-Supabase. Copy `site/admin/` into `kharcha-paani-site`. Before raising the minimum version, set "Update screen from"
-and "Latest on Play" on the Release tab. Rollback: each file's header has drops; remove `admin/` from the site repo;
+Supabase. Create a Vercel project from this repository with root directory `site/admin` (the owner's account; the Lead
+prepares `vercel.json` and does not deploy). Add its URL to Supabase Auth Redirect URLs. Optionally turn on Vercel
+Deployment Protection as a second lock. Before raising the minimum version, set "Update screen from"
+and "Latest on Play" on the Release tab. Rollback: each file's header has drops; delete the Vercel project;
 break-glass `delete from private.admins;`.
 
 ## 6. Questions for the owner (answered with the safe default; file a `needs-owner` issue to change)
