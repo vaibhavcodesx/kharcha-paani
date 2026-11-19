@@ -56,7 +56,7 @@ object NotificationOffer {
 }
 
 /**
- * Quiet hours: payment reminders found during them wait until they end, so nothing buzzes at 2 AM
+ * Quiet hours: group notices and payment reminders wait until they end, so nothing buzzes at 2 AM
  * because a groupmate settled up late. Minutes since midnight; a window may run past midnight
  * (22:30 to 08:00, the default).
  */

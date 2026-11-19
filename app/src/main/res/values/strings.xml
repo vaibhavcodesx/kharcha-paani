@@ -763,7 +763,7 @@
     <string name="notification_screen_payments_off">You won\'t hear when someone says they paid you. Those payments still wait for you in the group, and don\'t count until you answer.</string>
     <string name="notification_screen_private">Nothing here is ever sent to your friends.</string>
     <string name="notification_screen_nudge_title">A nudge at %1$s?</string>
-    <string name="notification_screen_quiet_detail">%1$s to %2$s · payment nudges wait till it\'s over</string>
+    <string name="notification_screen_quiet_detail">%1$s to %2$s · group notices and payment nudges wait till it\'s over</string>
     <!-- Additional screen strings. -->
     <string name="licence_screen_title">Open-source licences</string>
     <string name="licence_screen_supporting">Kharcha Paani is built on these, each used under its licence. Tap one to read it.</string>
@@ -988,6 +988,9 @@
     <!-- Additional screen strings. -->
     <string name="notification_daily_channel">Daily reminder</string>
     <string name="notification_daily_description">A nudge in the evening if nothing\'s been logged that day</string>
+    <string name="notification_group_join_channel">New group members</string>
+    <string name="notification_group_join_description">When someone joins one of your shared groups</string>
+    <string name="notification_group_join_title">%1$s joined %2$s</string>
     <string name="notification_payment_channel">Payments to confirm</string>
     <string name="notification_payment_description">When a member says money changed hands with you, until you confirm it or say it isn\'t right</string>
     <string name="notification_payment_public">A payment is waiting for your answer</string>
