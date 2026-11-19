@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.data.auth
 
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.annotations.SupabaseInternal
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.MemoryCodeVerifierCache
 import io.github.jan.supabase.auth.MemorySessionManager
@@ -103,6 +104,17 @@ class DeleteAccountReceiptsTest {
         assertTrue(fake.rpcCalls.isEmpty())
     }
 
+    @Test
+    fun `a stale account selection cannot list photos or delete an account`() = runBlocking {
+        val fake = FakeServer(listOf("owner/tx/photo.webp"))
+        withRepository(fake) {
+            val error = runCatching { deleteAccount(userId = "other", keepName = false) }.exceptionOrNull()
+            assertTrue(error is IOException)
+        }
+        assertTrue(fake.listRequests.isEmpty())
+        assertTrue(fake.rpcCalls.isEmpty())
+    }
+
     private suspend fun withRepository(fake: FakeServer, block: suspend AuthRepository.() -> Unit) {
         val client = fake.client()
         try {
@@ -132,6 +144,7 @@ class DeleteAccountReceiptsTest {
         var listOffline = false
         var ignoreDeletes = false
 
+        @OptIn(SupabaseInternal::class)
         fun client(): SupabaseClient = createSupabaseClient("https://local.invalid", "test-key") {
             httpEngine = OkHttp.create {
                 config {
@@ -165,6 +178,7 @@ class DeleteAccountReceiptsTest {
                 autoLoadFromStorage = false
                 autoSaveToStorage = false
                 alwaysAutoRefresh = false
+                autoSetupPlatform = false
                 enableLifecycleCallbacks = false
             }
             install(Storage) {
