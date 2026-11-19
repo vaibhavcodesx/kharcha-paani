@@ -4,6 +4,7 @@ import { formatBytes, formatDay, formatInt } from '../format'
 import { AdminError, callRpc, type UserRow } from '../rpc'
 import { supabase } from '../supabase'
 import { Sheet, Skeleton, useToast } from '../ui'
+import { DeleteAccountSheet } from './DeleteAccount'
 
 const PAGE = 50
 
@@ -20,6 +21,7 @@ export function People() {
   const [load, setLoad] = useState<Load>({ kind: 'loading' })
   const [more, setMore] = useState(false)
   const [picked, setPicked] = useState<UserRow | null>(null)
+  const [deleteFor, setDeleteFor] = useState<{ email: string | null } | null>(null)
   const generation = useRef(0)
   const toast = useToast()
 
@@ -71,6 +73,7 @@ export function People() {
         <input id="q" className="field search" type="search" placeholder="Name or email" value={query} autoComplete="off" onChange={(e) => setQuery(e.target.value)} />
         {load.kind === 'ready' && <span className="count num" aria-live="polite">{formatInt(total)} {total === 1 ? 'person' : 'people'}</span>}
       </div>
+      <p className="searchnote">Someone asked for their account to be deleted? <button className="linkbtn" onClick={() => setDeleteFor({ email: null })}>Delete by email</button></p>
 
       {load.kind === 'failed' && <ErrorPanel title="People could not load" error={load.error} onRetry={() => void fetchPage(query, 0)} />}
       {load.kind === 'loading' && <Skeleton rows={6} />}
@@ -106,6 +109,13 @@ export function People() {
         </div>
       )}
 
+      <DeleteAccountSheet
+        open={deleteFor !== null}
+        initialEmail={deleteFor?.email ?? null}
+        onClose={() => setDeleteFor(null)}
+        onDeleted={() => void fetchPage(query, 0)}
+      />
+
       <Sheet open={picked !== null} onClose={() => setPicked(null)} title={picked ? nameOf(picked) : ''}>
         {picked && (
           <>
@@ -131,7 +141,12 @@ export function People() {
                 <p className="muted">Friends get higher daily AI limits. Change takes effect at once.</p>
               </div>
             )}
-            <div className="actions"><button className="btn" onClick={() => setPicked(null)}>Done</button></div>
+            <div className="actions">
+              {!picked.deleted && picked.email && (
+                <button className="btn btn-danger" onClick={() => { setDeleteFor({ email: picked.email }); setPicked(null) }}>Delete account…</button>
+              )}
+              <button className="btn" onClick={() => setPicked(null)}>Done</button>
+            </div>
           </>
         )}
       </Sheet>
