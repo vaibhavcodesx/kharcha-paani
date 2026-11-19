@@ -11,6 +11,7 @@ import androidx.credentials.exceptions.ClearCredentialException
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.NoCredentialException
+import com.vaibhav.kharchapaani.data.receipts.SupabaseReceiptRemote
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -180,17 +181,24 @@ class AuthRepository(
     }
 
     /**
+     * Removes the account's backed-up bill photos before deleting its private rows and sign-in.
+     * If cleanup or deletion fails, the remaining work can be retried with the same account.
+     */
+    suspend fun deleteAccount(userId: String, keepName: Boolean) {
+        requireCurrentAccount(userId)
+        SupabaseReceiptRemote(supabase).deleteFolder(userId)
+        requireCurrentAccount(userId)
+        supabase.postgrest.rpc("delete_my_account", buildJsonObject { put("p_keep_name", keepName) })
+    }
+
+    private fun requireCurrentAccount(userId: String) {
+        if (auth.currentUserOrNull()?.id != userId) throw IOException("Account session changed during deletion")
+    }
+
+    /**
      * Always ends signed out locally. If the server can't be reached, the refresh token stays
      * valid server-side until it expires; that's accepted so sign-out works offline.
      */
-    /**
-     * Deletes this account on the server (decision D1): its private rows and sign-in go, shared
-     * history stays under the name chosen here or "Former member". Throws on failure; nothing is
-     * deleted then.
-     */
-    suspend fun deleteAccount(keepName: Boolean) {
-        supabase.postgrest.rpc("delete_my_account", buildJsonObject { put("p_keep_name", keepName) })
-    }
 
     suspend fun signOut(context: Context) {
         try {

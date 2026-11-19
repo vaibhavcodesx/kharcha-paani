@@ -12,6 +12,7 @@ import com.vaibhav.kharchapaani.data.auth.AuthState
 import com.vaibhav.kharchapaani.data.auth.GoogleSignInFailure
 import com.vaibhav.kharchapaani.data.auth.GoogleSignInResult
 import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
+import com.vaibhav.kharchapaani.data.sync.SyncWorker
 import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -163,17 +164,11 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isDeletingAccount = true, deleteAccountError = null) }
         viewModelScope.launch {
             try {
-                // Bill photos first (docs/designs/bill-photo-sync.md): once the account is gone, nothing
-                // could ever delete them. Offline stops here like the delete itself would.
-                try {
-                    com.vaibhav.kharchapaani.data.receipts.SupabaseReceiptRemote(
-                        com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider.get(getApplication()),
-                    ).deleteFolder(userId)
-                } catch (e: RestException) {
-                    // A storage refusal mustn't trap someone in an account they want gone.
-                    Log.w(TAG, "Bill photos not removed before deletion (${e.statusCode})")
+                // Keep a sync pass from uploading photos on this phone during deletion.
+                SyncWorker.withoutSync {
+                    repository.deleteAccount(userId, keepName)
+                    repository.signOut(context)
                 }
-                repository.deleteAccount(keepName)
             } catch (e: IOException) {
                 _uiState.update { it.copy(isDeletingAccount = false, deleteAccountError = getApplication<Application>().getString(R.string.auth_delete_account_error_offline)) }
                 return@launch
@@ -182,7 +177,6 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update { it.copy(isDeletingAccount = false, deleteAccountError = getApplication<Application>().getString(R.string.auth_delete_account_error_server)) }
                 return@launch
             }
-            repository.signOut(context)
             AccountDeletion.wipeLocal(context, userId)
             _uiState.update { it.copy(isDeletingAccount = false) }
         }

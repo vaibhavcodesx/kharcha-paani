@@ -40,6 +40,8 @@ private class FakeMembershipRemote : GroupMembershipRemote {
     val joined = mutableListOf<String>()
     val left = mutableListOf<String>()
     val revoked = mutableListOf<String>()
+    val removed = mutableListOf<Pair<String, String>>()
+    var memberRemovalAvailable = false
     var online = true
     /** A newer server answers join_group with null for a code it no longer accepts (used up, revoked, expired). */
     var joinRefusesCode = false
@@ -70,6 +72,13 @@ private class FakeMembershipRemote : GroupMembershipRemote {
         if (joinRefusesCode) throw InvalidInviteException()
         joined += code
         return previews.getValue(code).groupId
+    }
+
+    override suspend fun supportsMemberRemoval(groupRemoteId: String): Boolean = memberRemovalAvailable
+
+    override suspend fun removeMember(groupRemoteId: String, memberProfileId: String) {
+        check()
+        removed += groupRemoteId to memberProfileId
     }
 
     override suspend fun leaveGroup(groupRemoteId: String, selfProfileId: String) {
@@ -104,6 +113,40 @@ class SharedGroupsControllerTest {
 
     private fun awaitState(predicate: (SharedGroupsUiState) -> Boolean): SharedGroupsUiState = runBlocking {
         withTimeout(5_000) { controller.state.first(predicate) }
+    }
+
+    @Test
+    fun `creator can remove a shared member and refresh the list`() = runBlocking {
+        val group = GroupEntity(id = 31, name = "Goa", remoteId = "group", createdByProfileId = self,
+            syncState = SyncState.SYNCED)
+        remote.memberRemovalAvailable = true
+
+        controller.checkMemberRemoval(group)
+        assertEquals(group.id, controller.state.value.removableGroupId)
+        controller.removeMember(group, "other-profile")
+
+        awaitState { it.message != null && !it.isRemovingMember }
+        assertEquals(listOf("group" to "other-profile"), remote.removed)
+        assertEquals(1, syncRequests)
+    }
+
+    @Test
+    fun `removal needs server support, an active group and the creator`() = runBlocking {
+        val group = GroupEntity(id = 31, name = "Goa", remoteId = "group", createdByProfileId = self,
+            syncState = SyncState.SYNCED)
+
+        controller.checkMemberRemoval(group)
+        assertNull(controller.state.value.removableGroupId)
+        controller.removeMember(group, "other-profile")
+        remote.memberRemovalAvailable = true
+        controller.checkMemberRemoval(group)
+        controller.removeMember(group.copy(createdByProfileId = "creator"), "other-profile")
+        controller.removeMember(group.copy(archivedAt = 1L), "other-profile")
+        controller.removeMember(group, self)
+
+        assertTrue(remote.removed.isEmpty())
+        assertFalse(controller.state.value.isRemovingMember)
+        assertEquals(0, syncRequests)
     }
 
     @Test

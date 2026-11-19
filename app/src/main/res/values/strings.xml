@@ -562,6 +562,13 @@
     <string name="shared_group_copy_revoke">Turn off</string>
     <string name="shared_group_copy_invite">Invite people</string>
     <string name="shared_group_copy_people">%1$d PEOPLE</string>
+    <string name="shared_group_remove_person">Remove %1$s</string>
+    <string name="shared_group_remove_title">Remove %1$s from the group?</string>
+    <string name="shared_group_remove_detail">They will lose access to this group. Past expenses and payments stay in the group.</string>
+    <string name="shared_group_remove_balance">They have an outstanding balance in this group.</string>
+    <string name="shared_group_remove_button">Remove</string>
+    <string name="shared_group_notice_member_removed">Member removed.</string>
+    <string name="shared_group_notice_remove_unavailable">Removing members is unavailable right now.</string>
     <string name="shared_group_copy_leave_title">Leave %1$s?</string>
     <string name="shared_group_copy_expires">Anyone with this code can join until %1$s.</string>
     <string name="shared_group_copy_record">Record in group</string>

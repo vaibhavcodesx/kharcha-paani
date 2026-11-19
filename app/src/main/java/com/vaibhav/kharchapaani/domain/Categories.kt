@@ -19,7 +19,15 @@ data class CategoryPrefs(
     val defaultCategory: String? = null,
     /** What a new entry is paid with. Null is [Categories.DEFAULT_PAYMENT_METHOD]. */
     val defaultPaymentMethod: String? = null,
-)
+    val lastExpenseChoices: LastEntryChoices? = null,
+    val lastIncomeChoices: LastEntryChoices? = null,
+) {
+    fun lastChoicesFor(type: String): LastEntryChoices? =
+        if (type == "income") lastIncomeChoices else lastExpenseChoices
+}
+
+@Serializable
+data class LastEntryChoices(val category: String?, val paymentMethod: String?)
 
 object Categories {
 
@@ -43,22 +51,22 @@ object Categories {
     const val DEFAULT_CATEGORY = "Food"
     private const val LEGACY_CLIENT_INCOME = "Income (Client)"
 
-    /**
-     * The category a new entry starts on: the one chosen in settings, or [DEFAULT_CATEGORY] — unless
-     * it has since been hidden or removed, when the first one still offered stands in. An income
-     * entry starts on the usual income category, since the spending default can't be one.
-     */
+    /** Reuse a saved category for this type while it remains available, then use the configured defaults. */
     fun defaultCategory(type: String, prefs: CategoryPrefs): String {
         val choices = categoriesFor(type, prefs)
         val preferred = if (type == "income") OTHER_INCOME else prefs.defaultCategory ?: DEFAULT_CATEGORY
-        return preferred.takeIf { it in choices } ?: choices.firstOrNull() ?: preferred
+        val remembered = prefs.lastChoicesFor(type)?.category
+        return remembered?.takeIf { it in choices }
+            ?: preferred.takeIf { it in choices } ?: choices.firstOrNull() ?: preferred
     }
 
-    /** The payment method a new entry starts on, with the same fallback as [defaultCategory]. */
-    fun defaultPaymentMethod(prefs: CategoryPrefs): String {
+    /** Reuse a saved method for this type while it remains available. */
+    fun defaultPaymentMethod(prefs: CategoryPrefs, type: String = "expense"): String {
         val choices = paymentMethods(prefs)
         val preferred = prefs.defaultPaymentMethod ?: DEFAULT_PAYMENT_METHOD
-        return preferred.takeIf { it in choices } ?: choices.firstOrNull() ?: preferred
+        val remembered = prefs.lastChoicesFor(type)?.paymentMethod
+        return remembered?.takeIf { it in choices }
+            ?: preferred.takeIf { it in choices } ?: choices.firstOrNull() ?: preferred
     }
 
     /** "Other" is where anything unrecognised lands, so it can't be hidden. */

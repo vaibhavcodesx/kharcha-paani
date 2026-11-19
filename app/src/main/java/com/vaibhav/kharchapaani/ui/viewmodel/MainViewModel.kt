@@ -128,6 +128,7 @@ import com.vaibhav.kharchapaani.domain.CsvFile
 import com.vaibhav.kharchapaani.domain.DebtSimplifier
 import com.vaibhav.kharchapaani.domain.ExportRange
 import com.vaibhav.kharchapaani.domain.Categories
+import com.vaibhav.kharchapaani.domain.LastEntryChoices
 import com.vaibhav.kharchapaani.domain.CategoryPrefs
 import com.vaibhav.kharchapaani.domain.EntryDraft
 import com.vaibhav.kharchapaani.domain.UpiPayee
@@ -148,6 +149,7 @@ import com.vaibhav.kharchapaani.util.NotificationHelper
 import com.vaibhav.kharchapaani.util.SharedFiles
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 import java.io.File
+import java.io.IOException
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -317,7 +319,24 @@ class MainViewModel(
 
     fun updateCategoryPrefs(change: (CategoryPrefs) -> CategoryPrefs) {
         if (fullBackupBlocksActions()) return
-        viewModelScope.launch { settings.updateCategoryPrefs(settingsId, change) }
+        viewModelScope.launch {
+            settings.updateCategoryPrefs(settingsId) { current ->
+                val updated = change(current)
+                val newCategory = updated.defaultCategory != current.defaultCategory
+                val newMethod = updated.defaultPaymentMethod != current.defaultPaymentMethod
+                updated.copy(
+                    lastExpenseChoices = updated.lastExpenseChoices?.let {
+                        it.copy(
+                            category = it.category.takeUnless { newCategory },
+                            paymentMethod = it.paymentMethod.takeUnless { newMethod },
+                        )
+                    },
+                    lastIncomeChoices = updated.lastIncomeChoices?.let {
+                        it.copy(paymentMethod = it.paymentMethod.takeUnless { newMethod })
+                    },
+                )
+            }
+        }
     }
 
     /** The daily "nothing logged today" reminder (on at 9 PM unless changed). See DailyReminderWorker. */
@@ -1208,11 +1227,10 @@ class MainViewModel(
         _selectedFilter.value = filter
     }
 
-    // The defaults chosen in Categories & payment methods (UPI and Food out of the box), falling back
-    // to the first choice still offered if the chosen one has since been hidden. See Categories.
+    // Start with the last choices for this type, then the configured defaults.
     private fun defaultCategory(type: String): String = Categories.defaultCategory(type, categoryPrefs.value)
 
-    private fun defaultPaymentMethod(): String = Categories.defaultPaymentMethod(categoryPrefs.value)
+    private fun defaultPaymentMethod(): String = Categories.defaultPaymentMethod(categoryPrefs.value, _type.value)
 
     fun openManualAdd(defaultType: String = "expense") {
         if (fullBackupBlocksActions()) return
@@ -1763,9 +1781,14 @@ class MainViewModel(
     }
 
     fun updateType(newType: String) {
-        if (fullBackupBlocksActions()) return
+        if (fullBackupBlocksActions() || _type.value == newType) return
         touched(EntryField.Type)
         _type.value = newType
+        if (_editingTransactionId.value == null) {
+            _category.value = defaultCategory(newType)
+            _paymentMethod.value = defaultPaymentMethod()
+            return
+        }
         val prefs = categoryPrefs.value
         val isIncomeCategory = Categories.isIncomeCategory(_category.value, prefs)
         if (newType == "income" && !isIncomeCategory) {
@@ -2085,9 +2108,9 @@ class MainViewModel(
             if (fullBackupBlocksActions()) return@launch
             // A photo still being written goes with the expense rather than being dropped.
             billPhotoJob?.join()
+            val editingId = tx.id.takeIf { it != 0L }
             val savedId = try {
-                val editingId = _editingTransactionId.value
-                if (editingId != null && editingId != 0L) {
+                if (editingId != null) {
                     val result = ledgerRepo.updateTransactionWithSplits(
                         tx = tx,
                         paidByPersonId = _paidByPersonId.value,
@@ -2111,12 +2134,27 @@ class MainViewModel(
                 _statusMessage.value = archivedMessage(e)
                 return@launch
             }
+            if (editingId == null) rememberEntryChoices(tx)
             settleBillPhoto(savedId)
             // Saved: the split by items has done its job, and its link comes down.
             dropItemSplit()
             _isConfirmSheetOpen.value = false
             _moneyConfirmations.tryEmit(Unit)
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
+        }
+    }
+
+    private suspend fun rememberEntryChoices(tx: TransactionEntity) {
+        val saved = LastEntryChoices(tx.category, tx.paymentMethod)
+        try {
+            settings.updateCategoryPrefs(settingsId) { current ->
+                if (tx.type == "income") current.copy(lastIncomeChoices = saved)
+                else current.copy(lastExpenseChoices = saved)
+            }
+            // The next Add can open as soon as this sheet closes.
+            categoryPrefs.first { it.lastChoicesFor(tx.type) == saved }
+        } catch (_: IOException) {
+            Log.w("MainViewModel", "Couldn't remember the last choices for a saved entry")
         }
     }
 
