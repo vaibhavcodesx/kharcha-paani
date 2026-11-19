@@ -20,6 +20,7 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2.49.4";
 import { cleanStatementReply } from "./statement.ts";
+import { checkRequest, type Feature } from "./request_policy.ts";
 import { fromGroqChat, GROQ_FALLBACK_GEMINI, GROQ_MODELS, GROQ_TIMEOUT_MS, toGroqChat } from "./groq.ts";
 
 /**
@@ -107,8 +108,13 @@ Deno.serve(async (req) => {
   if (!authorization) return refuse(401, "UNAUTHENTICATED", "sign in first");
 
   if (Number(req.headers.get("content-length") ?? "0") > MAX_BODY_BYTES) return refuse(413, "TOO_LARGE", "request too large");
-  const body = await req.text();
-  if (body.length > MAX_BODY_BYTES) return refuse(413, "TOO_LARGE", "request too large");
+  const rawBody = await req.text();
+  if (rawBody.length > MAX_BODY_BYTES) return refuse(413, "TOO_LARGE", "request too large");
+  // S-01: the feature is decided from the body, not trusted from the header, and only the fields the
+  // app really sends go on to Google or Groq. Before the read is spent, so a refusal costs nothing.
+  const checked = checkRequest(feature as Feature, rawBody);
+  if (!checked.ok) return refuse(400, "INVALID_ARGUMENT", `request not accepted: ${checked.reason}`);
+  const body = checked.body;
 
   // As the caller, so take_ai_read counts against auth.uid() and nobody else.
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
