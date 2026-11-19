@@ -11,12 +11,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -32,14 +35,26 @@ import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 
 @Composable
-fun SimplifyDebtsSheet(isOpen: Boolean, simplifiedDebts: List<SimplifiedDebt>, onDismiss: () -> Unit) {
+fun SimplifyDebtsSheet(
+    isOpen: Boolean,
+    simplifiedDebts: List<SimplifiedDebt>,
+    onDismiss: () -> Unit,
+    onSettle: ((personId: Long) -> Unit)? = null,
+) {
     if (!isOpen) return
-    KpModalSheet(onDismiss = onDismiss) { SimplifyDebtsContent(simplifiedDebts) }
+    KpModalSheet(onDismiss = onDismiss) { SimplifyDebtsContent(simplifiedDebts, onSettle = onSettle) }
 }
 
-/** The fewest payments that clear everyone's balances, in plain words. A view, so no action bar. */
+/**
+ * The fewest payments that clear everyone's balances, in plain words. A row that involves you has a
+ * Settle button that opens settling up with that person (UX-10); it was a dead end before.
+ */
 @Composable
-fun SimplifyDebtsContent(simplifiedDebts: List<SimplifiedDebt>, modifier: Modifier = Modifier) {
+fun SimplifyDebtsContent(
+    simplifiedDebts: List<SimplifiedDebt>,
+    modifier: Modifier = Modifier,
+    onSettle: ((personId: Long) -> Unit)? = null,
+) {
     SheetScaffold(modifier = modifier) {
         SheetTitle(
             title = stringResource(R.string.debt_management_title),
@@ -76,6 +91,21 @@ fun SimplifyDebtsContent(simplifiedDebts: List<SimplifiedDebt>, modifier: Modifi
                         modifier = Modifier.weight(1f).padding(horizontal = Spacing.m),
                     )
                     Text(Money.format(debt.amount), style = MoneyText.row, color = if (iGet) ChartreuseSecondary else OffWhiteText)
+                    if (onSettle != null && (iPay || iGet)) {
+                        val other = if (iPay) debt.toPersonId else debt.fromPersonId
+                        val otherName = if (iPay) debt.toPersonName else debt.fromPersonName
+                        val settleWith = stringResource(R.string.debt_management_settle_with, otherName)
+                        TextButton(
+                            onClick = { onSettle(other) },
+                            modifier = Modifier.padding(start = Spacing.xs).testTag("simplify_settle_$other"),
+                        ) {
+                            Text(
+                                stringResource(R.string.debt_management_settle),
+                                style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.semantics { contentDescription = settleWith },
+                            )
+                        }
+                    }
                 }
             }
         }
