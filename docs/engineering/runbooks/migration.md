@@ -17,5 +17,5 @@ The free plan has no backups, so a bad migration cannot be undone from the dashb
    `pg_dump` with the project's connection string. Verify the dump succeeded and keep it in secure off-device storage.
    Take a fresh live dump after staging passes. If the dump fails, pause before applying the migration.
 2. Apply to the staging project once it exists (issue #298), run the test script, look at the result.
-3. Apply to live in the SQL editor. Run the test script again (rolled back). Check one real screen on the phone.
+3. Apply to live in the SQL editor (see [apply-sql-by-hand.md](apply-sql-by-hand.md)). Run the test script again (rolled back). Check one real screen on the phone.
 4. Tell the Lead; the Lead edits the migration's header comment to "Applied <date>" and the changelog line.
