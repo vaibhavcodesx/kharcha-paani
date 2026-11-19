@@ -1,7 +1,5 @@
 package com.vaibhav.kharchapaani.ui.groups
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onAllNodesWithText
@@ -149,7 +147,7 @@ class SharedGroupUiTest {
                     onRevokeInvite = {},
                     onSetArchived = {},
                     onLeave = {},
-                    myBalance = balance,
+                    myBalance = balance.value,
                 )
             }
         }
@@ -158,12 +156,12 @@ class SharedGroupUiTest {
         composeTestRule.onNodeWithText("You owe ₹250 in this group. Leaving does not clear it, so settle up first.").assertExists()
         composeTestRule.onNodeWithText("Cancel").performClick()
 
-        balance = 80.0
+        balance.value = 80.0
         composeTestRule.onNodeWithText("Leave group").performClick()
         composeTestRule.onNodeWithText("You are owed ₹80 in this group. Leaving does not collect it, so ask to be paid first.").assertExists()
         composeTestRule.onNodeWithText("Cancel").performClick()
 
-        balance = 0.0
+        balance.value = 0.0
         composeTestRule.onNodeWithText("Leave group").performClick()
         composeTestRule.onNodeWithText("Its expenses and settlements will be removed from this phone. Other members keep them, and you can rejoin with a new invite.").assertExists()
         composeTestRule.onAllNodesWithText("in this group", substring = true).assertCountEquals(0)
