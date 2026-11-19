@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani.ui.components
 
 import androidx.compose.material.icons.outlined.ReceiptLong
+import androidx.compose.material.icons.outlined.SyncProblem
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -55,7 +56,9 @@ import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
+import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
+import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -175,6 +178,23 @@ fun TransactionItemCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(text = detail, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     PaymentPill(method = tx.paymentMethod, modifier = Modifier.padding(start = Spacing.s))
+                    if (tx.syncState == SyncState.FAILED) {
+                        // Not colour alone: an icon and the words, and the same sentence for TalkBack (UX-33).
+                        val failed = stringResource(R.string.timeline_row_sync_failed)
+                        Icon(
+                            Icons.Outlined.SyncProblem,
+                            contentDescription = failed,
+                            tint = WarmAmberLight,
+                            modifier = Modifier.padding(start = Spacing.s).size(14.dp).testTag("sync_failed_${tx.id}"),
+                        )
+                        Text(
+                            text = stringResource(R.string.timeline_row_not_synced),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = WarmAmberLight,
+                            maxLines = 1,
+                            modifier = Modifier.padding(start = Spacing.xs),
+                        )
+                    }
                     if (hasBillPhoto) {
                         Icon(
                             Icons.Outlined.ReceiptLong,
