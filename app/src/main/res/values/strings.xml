@@ -949,6 +949,7 @@
     <string name="shared_group_notice_membership">You\'re no longer an active member of this group.</string>
     <string name="shared_group_notice_problem">Something went wrong (%1$d). Try again.</string>
     <string name="shared_group_notice_invalid">That invite code is invalid or has expired.</string>
+    <string name="shared_group_notice_too_many">Too many tries. Try again in an hour.</string>
     <string name="shared_group_notice_offline">You\'re offline. Connect and try again.</string>
     <!-- Additional screen strings. -->
     <string name="ask_status_today">Asked today</string>

@@ -9,6 +9,7 @@ import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.data.sync.GroupInvite
 import com.vaibhav.kharchapaani.data.sync.GroupMembershipRemote
+import com.vaibhav.kharchapaani.data.sync.InvalidInviteException
 import com.vaibhav.kharchapaani.data.sync.InvitePreview
 import com.vaibhav.kharchapaani.data.sync.personalTransaction
 import com.vaibhav.kharchapaani.domain.InviteLink
@@ -40,6 +41,8 @@ private class FakeMembershipRemote : GroupMembershipRemote {
     val left = mutableListOf<String>()
     val revoked = mutableListOf<String>()
     var online = true
+    /** A newer server answers join_group with null for a code it no longer accepts (used up, revoked, expired). */
+    var joinRefusesCode = false
 
     private fun check() {
         if (!online) throw IOException("offline")
@@ -64,6 +67,7 @@ private class FakeMembershipRemote : GroupMembershipRemote {
 
     override suspend fun joinGroup(code: String): String {
         check()
+        if (joinRefusesCode) throw InvalidInviteException()
         joined += code
         return previews.getValue(code).groupId
     }
@@ -117,6 +121,22 @@ class SharedGroupsControllerTest {
         assertEquals(listOf("AB2CD3EF"), remote.joined)
         assertEquals(1, syncRequests)
         assertTrue(joined.message!!.contains("Goa"))
+    }
+
+    @Test
+    fun `a code the server refuses at join time says invalid, and nothing is joined`() {
+        controller.openJoin("kharchapaani://join/AB2CD3EF")
+        awaitState { it.join?.preview != null }
+        // The invite was valid when previewed, then used up or reset before the person tapped Join.
+        remote.joinRefusesCode = true
+
+        controller.confirmJoin()
+
+        val state = awaitState { it.join?.error != null }
+        assertEquals(context.getString(SharedGroupsController.INVALID_CODE), state.join?.error)
+        assertFalse("the Join button is usable again", state.join!!.isJoining)
+        assertTrue(remote.joined.isEmpty())
+        assertEquals(0, syncRequests)
     }
 
     @Test
