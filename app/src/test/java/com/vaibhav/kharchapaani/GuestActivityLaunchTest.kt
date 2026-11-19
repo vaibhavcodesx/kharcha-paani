@@ -2,6 +2,13 @@ package com.vaibhav.kharchapaani
 
 import android.app.Application
 import android.content.Context
+import androidx.compose.runtime.ExperimentalComposeRuntimeApi
+import androidx.compose.runtime.RecomposeScope
+import androidx.compose.runtime.Recomposer
+import androidx.compose.runtime.tooling.CompositionObserver
+import androidx.compose.runtime.tooling.CompositionObserverHandle
+import androidx.compose.runtime.tooling.CompositionRegistrationObserver
+import androidx.compose.runtime.tooling.ObservableComposition
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -23,6 +30,7 @@ import com.vaibhav.kharchapaani.ui.session.AccountSessionState
 import com.vaibhav.kharchapaani.ui.session.AccountSession
 import com.vaibhav.kharchapaani.ui.session.CloudAuthOwner
 import com.vaibhav.kharchapaani.ui.session.SessionClosingWork
+import com.vaibhav.kharchapaani.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -40,6 +48,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import android.os.Looper
+import java.util.concurrent.atomic.AtomicInteger
 
 /** Real MainActivity + both real account ViewModels + a persisted Room ledger on a cold local launch. */
 @RunWith(RobolectricTestRunner::class)
@@ -111,6 +120,7 @@ class GuestActivityLaunchTest {
             assertFalse(app.getDatabasePath(LedgerDatabases.databaseName(guest.id)).exists())
             val instance = SupabaseClientProvider::class.java.getDeclaredField("instance").apply { isAccessible = true }
             assertNull("Local Activity startup must not even construct Supabase", instance.get(null))
+            verifyHiddenEditorDoesNotRecomposeHome(ViewModelProvider(session)[MainViewModel::class.java])
         } finally {
             // Capture scopes even on a failed assertion, before the Activity rule destroys stores.
             val holder = ViewModelProvider(compose.activity)[AccountSessionHolder::class.java]
@@ -124,6 +134,49 @@ class GuestActivityLaunchTest {
             // Known activity owners only; this never asks CloudAuthOwner for an auth ViewModel.
             val cloudOwner = ViewModelProvider(compose.activity)[CloudAuthOwner::class.java]
             cloudOwner.viewModelScope.coroutineContext[Job]?.let(jobs::add)
+        }
+    }
+
+    @OptIn(ExperimentalComposeRuntimeApi::class)
+    private fun verifyHiddenEditorDoesNotRecomposeHome(viewModel: MainViewModel) {
+        val passes = AtomicInteger()
+        val observers = mutableMapOf<ObservableComposition, CompositionObserverHandle>()
+        val registrations = compose.runOnIdle {
+            Recomposer.runningRecomposers.value.mapNotNull { recomposer ->
+                recomposer.observe(object : CompositionRegistrationObserver {
+                    override fun onCompositionRegistered(composition: ObservableComposition) {
+                        observers[composition] = composition.setObserver(object : CompositionObserver {
+                            override fun onBeginComposition(composition: ObservableComposition) { passes.incrementAndGet() }
+                            override fun onEndComposition(composition: ObservableComposition) = Unit
+                            override fun onScopeEnter(scope: RecomposeScope) = Unit
+                            override fun onScopeExit(scope: RecomposeScope) = Unit
+                            override fun onScopeDisposed(scope: RecomposeScope) = Unit
+                            override fun onReadInScope(scope: RecomposeScope, value: Any) = Unit
+                            override fun onScopeInvalidated(scope: RecomposeScope, value: Any?) = Unit
+                        })
+                    }
+
+                    override fun onCompositionUnregistered(composition: ObservableComposition) {
+                        observers.remove(composition)?.dispose()
+                    }
+                })
+            }
+        }
+        try {
+            assertTrue("the Home composition was observed", registrations.isNotEmpty() && observers.isNotEmpty())
+            passes.set(0)
+            repeat(4) { index ->
+                compose.runOnIdle { viewModel.updateMerchant("Hidden draft $index") }
+                compose.waitForIdle()
+            }
+            val count = passes.get()
+            println("Home composition passes for 4 updates to the closed editor: $count")
+            assertEquals("a closed editor should not invalidate Home", 0, count)
+        } finally {
+            compose.runOnIdle {
+                registrations.forEach { it.dispose() }
+                observers.values.forEach { it.dispose() }
+            }
         }
     }
 }
