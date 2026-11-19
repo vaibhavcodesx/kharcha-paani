@@ -1,12 +1,17 @@
 package com.vaibhav.kharchapaani.data.sync
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
 import com.vaibhav.kharchapaani.BuildConfig
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.time.LocalDate
 import kotlin.coroutines.cancellation.CancellationException
 
 /** The one `public.app_config` row: a server-driven minimum app version (S-06, owner answer C-08). */
@@ -24,6 +29,7 @@ object AppVersionGate {
     private const val PREFS = "app_version_gate"
     private const val KEY_MIN = "min_version_code"
     private const val KEY_RECOMMENDED = "recommended_version_code"
+    private const val KEY_DISMISSED_DATE = "recommended_dismissed_date"
     private const val TAG = "AppVersionGate"
 
     /** Pure rule: a minimum of 0 (or less) means no minimum. */
@@ -39,6 +45,31 @@ object AppVersionGate {
 
     fun cachedRecommendedVersion(context: Context): Int =
         prefs(context).getInt(KEY_RECOMMENDED, 0)
+
+    enum class Notice { REQUIRED, RECOMMENDED, NONE }
+
+    fun notice(
+        context: Context,
+        installedVersionCode: Int = BuildConfig.VERSION_CODE,
+        today: LocalDate = LocalDate.now(),
+    ): Notice = when {
+        updateRequired(context, installedVersionCode) -> Notice.REQUIRED
+        cachedRecommendedVersion(context) > installedVersionCode &&
+            prefs(context).getString(KEY_DISMISSED_DATE, null) != today.toString() -> Notice.RECOMMENDED
+        else -> Notice.NONE
+    }
+
+    fun observeNotice(context: Context) = callbackFlow {
+        val preferences = prefs(context)
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> trySend(notice(context)) }
+        preferences.registerOnSharedPreferenceChangeListener(listener)
+        trySend(notice(context))
+        awaitClose { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
+    }.distinctUntilChanged()
+
+    fun dismissRecommendation(context: Context, today: LocalDate = LocalDate.now()) {
+        prefs(context).edit().putString(KEY_DISMISSED_DATE, today.toString()).apply()
+    }
 
     /**
      * Reads the config and caches it. Any failure (offline, table missing before the migration is

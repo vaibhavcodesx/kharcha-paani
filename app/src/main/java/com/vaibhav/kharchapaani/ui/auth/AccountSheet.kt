@@ -87,7 +87,9 @@ import com.vaibhav.kharchapaani.ui.components.BrandMark
 import com.vaibhav.kharchapaani.ui.components.SheetScaffold
 import com.vaibhav.kharchapaani.ui.components.SheetTextInput
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
+import com.vaibhav.kharchapaani.data.sync.SyncPassStatus
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
+import com.vaibhav.kharchapaani.ui.sync.SyncUpdateNotice
 import com.vaibhav.kharchapaani.ui.theme.BrandGradient
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -141,6 +143,7 @@ fun AccountSheet(
     isLocal: Boolean = false,
     onSignInFromLocal: () -> Unit = {},
     onUseLocal: () -> Unit = {},
+    lastSyncError: String? = null,
 ) {
     // Read here rather than passed in: the setting lives with crash reporting, which starts before
     // anything else and can't wait for a view model. Null in a build with no Firebase project.
@@ -178,6 +181,7 @@ fun AccountSheet(
             isLocal = isLocal,
             onSignInFromLocal = onSignInFromLocal,
             onUseLocal = onUseLocal,
+            lastSyncError = lastSyncError,
             crashReports = crashReports,
             onCrashReportsChange = {
                 CrashReporting.setEnabled(context, it)
@@ -225,6 +229,7 @@ fun AccountSheetContent(
     /** Whether crash reports are on; null when this build can't send any, and the switch isn't shown. */
     crashReports: Boolean? = null,
     onCrashReportsChange: (Boolean) -> Unit = {},
+    lastSyncError: String? = null,
 ) {
     val saved =(state.profile as? ProfileState.Loaded)?.profile
     // Keyed on what's saved, so a successful save (or a reload) resets the fields to it.
@@ -364,6 +369,10 @@ fun AccountSheetContent(
                 Spacer(Modifier.height(Spacing.xl))
             }
 
+            SyncUpdateNotice(
+                modifier = Modifier.padding(bottom = Spacing.l),
+                onLinkUnavailable = onNoApp,
+            )
             Eyebrow(stringResource(R.string.account_eyebrow_account))
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 CloudStatusRow(
@@ -373,6 +382,20 @@ fun AccountSheetContent(
                     position = RowPosition.First,
                 )
                 SyncStatusRow(status = syncStatus, onRetryFailed = onRetryFailedSync, position = RowPosition.Last)
+            }
+            val syncErrorReason = when (lastSyncError) {
+                SyncPassStatus.OFFLINE -> R.string.account_sync_error_offline
+                SyncPassStatus.SERVER -> R.string.account_sync_error_server
+                SyncPassStatus.OTHER -> R.string.account_sync_error_other
+                else -> null
+            }
+            if (syncErrorReason != null) {
+                Text(
+                    text = stringResource(R.string.account_sync_last_failed, stringResource(syncErrorReason)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = WarmAmberLight,
+                    modifier = Modifier.padding(top = Spacing.s),
+                )
             }
             Text(
                 // No version history here (owner, 2026-11-06): the few records from before 1.3 that stay on

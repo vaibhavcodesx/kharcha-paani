@@ -101,6 +101,8 @@ import com.vaibhav.kharchapaani.ui.session.AccountSessionHolder
 import com.vaibhav.kharchapaani.ui.session.AccountSessionState
 import com.vaibhav.kharchapaani.ui.session.LedgerOpenFailedScreen
 import com.vaibhav.kharchapaani.data.auth.AuthState
+import com.vaibhav.kharchapaani.data.sync.AppVersionGate
+import com.vaibhav.kharchapaani.data.sync.SyncPassStatus
 import com.vaibhav.kharchapaani.ui.auth.AccountSheet
 import com.vaibhav.kharchapaani.ui.auth.DeleteAccountSheet
 import com.vaibhav.kharchapaani.ui.auth.NotificationOfferSheet
@@ -342,7 +344,9 @@ class MainActivity : ComponentActivity() {
                 val lifecycle = LocalLifecycleOwner.current.lifecycle
                 LaunchedEffect(session.isLocal, session.userId, lifecycle) {
                     if (session.isLocal) return@LaunchedEffect
-                    val changes = SupabaseLedgerChanges(SupabaseClientProvider.get(application), session.userId)
+                    val supabase = SupabaseClientProvider.get(application)
+                    launch { AppVersionGate.refreshQuietly(application, supabase) }
+                    val changes = SupabaseLedgerChanges(supabase, session.userId)
                     lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                         SyncDoorbell(changes = changes::changes, ring = viewModel::requestSync).run()
                     }
@@ -359,6 +363,10 @@ class MainActivity : ComponentActivity() {
                         onIntentHandled()
                     }
                 }
+                val syncErrorFlow = remember(session.database) {
+                    session.database.syncDao().observeMeta(SyncPassStatus.LAST_SYNC_ERROR)
+                }
+                val lastSyncError by syncErrorFlow.collectAsStateWithLifecycle(initialValue = null)
                 // Your own colour, everywhere the app draws "you" (design item 11). Provided around
                 // the whole app: the screens, the sheets and the dock all read it.
                 val myColour = authUiState.hue?.let { MyColour(hueColour(it), Hues.hex(it)) } ?: LocalMyColour.current
@@ -377,6 +385,7 @@ class MainActivity : ComponentActivity() {
                     isLocal = session.isLocal,
                     onSignInFromLocal = onSignInFromLocal,
                     onUseLocal = onUseLocal,
+                    lastSyncError = lastSyncError,
                 )
                 }
             }
@@ -468,6 +477,7 @@ fun SplitFlowApp(
     isLocal: Boolean = false,
     onSignInFromLocal: () -> Unit = {},
     onUseLocal: () -> Unit = {},
+    lastSyncError: String? = null,
 ) {
     var isAccountSheetOpen by rememberSaveable { mutableStateOf(false) }
     var isDeleteAccountOpen by rememberSaveable { mutableStateOf(false) }
@@ -864,6 +874,7 @@ fun SplitFlowApp(
             onSaveHue = { onSaveHue(it, false) },
             state = authUiState,
             syncStatus = syncStatus,
+            lastSyncError = lastSyncError,
             askBeforeDiscarding = askBeforeDiscarding,
             aiEnabled = aiEnabled,
             onAiEnabledChange = viewModel::setAiEnabled,
