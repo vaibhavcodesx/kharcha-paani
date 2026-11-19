@@ -6,6 +6,10 @@ The in-app path (Settings, Delete my account) is the normal one. This is for the
 owner runs them. The owner's email inbox is the request channel; answer within a few days (the privacy policy
 says what is promised).
 
+**Preferred path:** Use the **Delete tab** on the owner admin page (`site/admin/`, see [admin-page runbook](admin-page.md)). It previews affected groups, inherited ownership, and leftover bill photos, requires typing the email to confirm, runs the deletion atomically, and removes leftover files from storage.
+
+If the admin page is unavailable, follow the manual steps below:
+
 **1. Check the request is theirs.** The email must come from the Google account they signed in with. If it
 comes from another address, reply asking them to write from the sign-in account. Never delete on a guess.
 
