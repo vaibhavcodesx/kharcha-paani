@@ -63,6 +63,22 @@ class SettlementReminderNotificationsTest {
 
 
     @Test
+    fun `a payment that keeps waiting is nudged three times and then left alone`() = runBlocking {
+        val id = priyaSaysShePaid()
+        val day = 86_400_000L
+        // Arrival, day 3 and day 6: one nudge each.
+        assertEquals(1, SettlementReminders.remind(context, db, userId, now))
+        assertEquals(1, SettlementReminders.remind(context, db, userId, now + 3 * day))
+        assertEquals(1, SettlementReminders.remind(context, db, userId, now + 6 * day))
+        // Day 9, 12 and a month on: nothing more, however many syncs run.
+        assertEquals(0, SettlementReminders.remind(context, db, userId, now + 9 * day))
+        assertEquals(0, SettlementReminders.remind(context, db, userId, now + 12 * day))
+        assertEquals(0, SettlementReminders.remind(context, db, userId, now + 30 * day))
+        // And the payment itself still waits for an answer.
+        assertEquals(2, db.groupSyncDao().settlementById(id)!!.remindedStage)
+    }
+
+    @Test
     fun `payment details have a redacted lock screen version but keep the full private reminder`() = runBlocking {
         priyaSaysShePaid()
         assertEquals(1, SettlementReminders.remind(context, db, userId, now))
