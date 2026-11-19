@@ -1,5 +1,6 @@
 package com.vaibhav.kharchapaani.ui.format
 
+import androidx.compose.ui.text.AnnotatedString
 import com.vaibhav.kharchapaani.domain.MAX_AMOUNT_RUPEES
 import com.vaibhav.kharchapaani.domain.isSavableAmount
 import org.junit.Assert.assertEquals
@@ -40,6 +41,36 @@ class AmountInputTest {
         assertNull(Money.acceptInput("1e999"))
         assertNull(Money.acceptInput("NaN"))
         assertNull(Money.acceptInput("12345678901"))
+    }
+
+    @Test
+    fun `grouping keeps partial amounts and fractional text as typed`() {
+        val cases = mapOf(
+            "" to "",
+            "." to ".",
+            ".05" to ".05",
+            "999" to "999",
+            "1000." to "1,000.",
+            "240000.50" to "2,40,000.50",
+            "9999999999.99" to "9,99,99,99,999.99",
+        )
+        for ((input, display) in cases) {
+            val transformed = AmountInputGrouping.filter(AnnotatedString(input))
+            assertEquals(display, transformed.text.text)
+            val offsets = transformed.offsetMapping
+            for (offset in 0..input.length) {
+                assertEquals(offset, offsets.transformedToOriginal(offsets.originalToTransformed(offset)))
+            }
+        }
+    }
+
+    @Test
+    fun `both sides of each grouping comma map to the same digit boundary`() {
+        val offsets = AmountInputGrouping.filter(AnnotatedString("240000")).offsetMapping
+        assertEquals(1, offsets.transformedToOriginal(1))
+        assertEquals(1, offsets.transformedToOriginal(2))
+        assertEquals(3, offsets.transformedToOriginal(4))
+        assertEquals(3, offsets.transformedToOriginal(5))
     }
 
     @Test

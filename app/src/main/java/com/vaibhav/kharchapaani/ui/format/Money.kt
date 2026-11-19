@@ -99,6 +99,13 @@ object Money {
         return clean
     }
 
+    /** Add grouping to editable digits without dropping a decimal point or rounding the amount. */
+    internal fun groupInput(text: String): String {
+        if (acceptInput(text) != text) return text
+        val whole = text.substringBefore('.')
+        return groupIndian(whole) + text.drop(whole.length)
+    }
+
     private val noise = Regex("[,\\s₹]")
     private val plainNumber = Regex("""\d{0,10}(\.\d{0,2})?""")
 

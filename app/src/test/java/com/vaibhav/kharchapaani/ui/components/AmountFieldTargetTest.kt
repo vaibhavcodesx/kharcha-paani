@@ -5,12 +5,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
@@ -80,5 +83,20 @@ class AmountFieldTargetTest {
         composeTestRule.onNodeWithTag("amount").performTextInput("1250")
 
         assertEquals("1250", typed)
+    }
+
+    @Test
+    fun `the field draws Indian grouping and keeps the plain amount`() {
+        show()
+        composeTestRule.onNodeWithTag("amount_field_band").performClick()
+        val field = composeTestRule.onNodeWithTag("amount")
+        field.performTextInput("240000.50")
+
+        assertEquals("240000.50", typed)
+        field.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { getLayout ->
+            val layouts = mutableListOf<TextLayoutResult>()
+            getLayout(layouts)
+            assertEquals("2,40,000.50", layouts.single().layoutInput.text.text)
+        }
     }
 }
