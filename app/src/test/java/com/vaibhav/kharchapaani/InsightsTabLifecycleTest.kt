@@ -155,10 +155,13 @@ class InsightsTabLifecycleTest {
         compose.waitForIdle()
 
         // 7. Verify updated analytics reflect the Room mutation after resuming
+        // Room re-emits on its own thread after the resume; idle the looper while waiting
+        // so posted invalidation and state updates are processed deterministically.
+        compose.waitUntil(10_000) {
+            ShadowLooper.idleMainLooper()
+            kotlin.math.abs(viewModel.insightsAnalytics.value.totalExpense - 2000.0) < 0.01
+        }
         compose.onNodeWithTag("insights_spent_figure").assertExists()
-        // Room re-emits on its own thread after the resume; waitForIdle doesn't cover that, so wait
-        // (bounded) for the new figure before asserting it.
-        compose.waitUntil(5_000) { kotlin.math.abs(viewModel.insightsAnalytics.value.totalExpense - 2000.0) < 0.01 }
         assertEquals(2000.0, viewModel.insightsAnalytics.value.totalExpense, 0.01)
         assertEquals(YearMonth.now(), viewModel.insightsMonth.value)
         assertEquals(AppTab.Insights.ordinal, viewModel.currentTab.value)

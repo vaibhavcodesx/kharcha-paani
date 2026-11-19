@@ -1,0 +1,34 @@
+name: SQL tests
+
+# Runs every supabase/tests/*_test.sql on an in-memory Postgres (PGlite), after replaying every migration, so a change to
+# the database or a test cannot silently break another (issue #301). Nothing here touches the live project.
+# Runs only when supabase/ changes. Runner: supabase/tests/local/ci.mjs.
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/sql-tests.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sql-tests-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# Actions are pinned to a commit, not a tag. The runner's own Node is used. The one npm package is pinned to an exact
+# version and installed without install scripts.
+jobs:
+  sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install PGlite
+        working-directory: supabase/tests/local
+        run: npm install --no-save --ignore-scripts --save-exact @electric-sql/pglite@0.5.16
+
+      - name: Run every SQL test
+        run: node supabase/tests/local/ci.mjs

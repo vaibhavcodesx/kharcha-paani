@@ -114,6 +114,9 @@ import com.vaibhav.kharchapaani.domain.DailySpend
 import com.vaibhav.kharchapaani.domain.GroupInsights
 import com.vaibhav.kharchapaani.ui.format.MonthNames
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.channels.Channel
@@ -128,6 +131,7 @@ import com.vaibhav.kharchapaani.domain.CsvFile
 import com.vaibhav.kharchapaani.domain.DebtSimplifier
 import com.vaibhav.kharchapaani.domain.ExportRange
 import com.vaibhav.kharchapaani.domain.Categories
+import com.vaibhav.kharchapaani.domain.LastEntryChoices
 import com.vaibhav.kharchapaani.domain.CategoryPrefs
 import com.vaibhav.kharchapaani.domain.EntryDraft
 import com.vaibhav.kharchapaani.domain.UpiPayee
@@ -148,6 +152,7 @@ import com.vaibhav.kharchapaani.util.NotificationHelper
 import com.vaibhav.kharchapaani.util.SharedFiles
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 import java.io.File
+import java.io.IOException
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -191,6 +196,15 @@ class MainViewModel(
         aiAllowed = { AiSettings(application).enabledNow },
     ),
     private val isLocal: Boolean = false,
+    // Asks the server, without spending anything, whether a read of this kind would be allowed right now.
+    // null means the answer could not be had (offline, an error): the caller carries on and lets the
+    // real call decide.
+    private val aiReadAllowed: suspend (String) -> Boolean? = { feature ->
+        runCatching {
+            SupabaseClientProvider.get(application).postgrest
+                .rpc("ai_available", buildJsonObject { put("p_feature", feature) }).data.trim() == "true"
+        }.getOrNull()
+    },
 ) : AndroidViewModel(application), SessionClosingWork {
 
     private val recoveryJournal = if (isLocal) File(application.filesDir, "backup-recovery/local-$userId.json") else null
@@ -317,10 +331,27 @@ class MainViewModel(
 
     fun updateCategoryPrefs(change: (CategoryPrefs) -> CategoryPrefs) {
         if (fullBackupBlocksActions()) return
-        viewModelScope.launch { settings.updateCategoryPrefs(settingsId, change) }
+        viewModelScope.launch {
+            settings.updateCategoryPrefs(settingsId) { current ->
+                val updated = change(current)
+                val newCategory = updated.defaultCategory != current.defaultCategory
+                val newMethod = updated.defaultPaymentMethod != current.defaultPaymentMethod
+                updated.copy(
+                    lastExpenseChoices = updated.lastExpenseChoices?.let {
+                        it.copy(
+                            category = it.category.takeUnless { newCategory },
+                            paymentMethod = it.paymentMethod.takeUnless { newMethod },
+                        )
+                    },
+                    lastIncomeChoices = updated.lastIncomeChoices?.let {
+                        it.copy(paymentMethod = it.paymentMethod.takeUnless { newMethod })
+                    },
+                )
+            }
+        }
     }
 
-    /** The daily "nothing logged today" reminder (on at 9 PM unless changed). See DailyReminderWorker. */
+    /** The daily "nothing logged today" reminder (off unless turned on, then 9 PM unless changed). See DailyReminderWorker. */
     val reminder: StateFlow<ReminderSettings> = settings.reminder
         .stateIn(viewModelScope, SharingStarted.Eagerly, ReminderSettings())
 
@@ -764,6 +795,34 @@ class MainViewModel(
     }
 
     /**
+     * Runs [proceed] unless the owner has paused AI for this kind, in which case it says so at once.
+     * Called when the mic, Bill photo or Statement button is tapped, so a pause is shown before
+     * anything is recorded, photographed or picked, not after. A person's own daily cap is not
+     * checked here; it still shows when the read is refused. If the server cannot be asked quickly,
+     * [proceed] runs and the real call decides.
+     */
+    fun guardAiRead(feature: AiFeature, proceed: () -> Unit) {
+        val key = when (feature) {
+            AiFeature.Voice, AiFeature.QuickAdd -> "quick_add"
+            AiFeature.Bill -> "bill"
+            AiFeature.Statement -> "statement"
+            else -> null
+        }
+        if (key == null || isLocal || !aiAvailable || !canUseAi()) {
+            proceed()
+            return
+        }
+        viewModelScope.launch {
+            val allowed = withTimeoutOrNull(AI_CHECK_MS) { aiReadAllowed(key) } ?: true
+            if (allowed) {
+                proceed()
+            } else {
+                _statusMessage.value = uiText(R.string.ai_paused_now)
+            }
+        }
+    }
+
+    /**
      * Whether spoken audio may be sent to Gemini: there is an AI in this build and the person has
      * accepted its notice. Before that, voice goes through the phone's own recogniser only, and
      * nothing leaves the phone until the typed words reach the usual notice.
@@ -847,7 +906,7 @@ class MainViewModel(
     private val _category = MutableStateFlow("Food")
     val category: StateFlow<String> = _category.asStateFlow()
 
-    private val _paymentMethod = MutableStateFlow("PopUPI")
+    private val _paymentMethod = MutableStateFlow(Categories.DEFAULT_PAYMENT_METHOD)
     val paymentMethod: StateFlow<String> = _paymentMethod.asStateFlow()
 
     private val _note = MutableStateFlow("")
@@ -1208,11 +1267,10 @@ class MainViewModel(
         _selectedFilter.value = filter
     }
 
-    // The defaults chosen in Categories & payment methods (UPI and Food out of the box), falling back
-    // to the first choice still offered if the chosen one has since been hidden. See Categories.
+    // Start with the last choices for this type, then the configured defaults.
     private fun defaultCategory(type: String): String = Categories.defaultCategory(type, categoryPrefs.value)
 
-    private fun defaultPaymentMethod(): String = Categories.defaultPaymentMethod(categoryPrefs.value)
+    private fun defaultPaymentMethod(): String = Categories.defaultPaymentMethod(categoryPrefs.value, _type.value)
 
     fun openManualAdd(defaultType: String = "expense") {
         if (fullBackupBlocksActions()) return
@@ -1763,9 +1821,14 @@ class MainViewModel(
     }
 
     fun updateType(newType: String) {
-        if (fullBackupBlocksActions()) return
+        if (fullBackupBlocksActions() || _type.value == newType) return
         touched(EntryField.Type)
         _type.value = newType
+        if (_editingTransactionId.value == null) {
+            _category.value = defaultCategory(newType)
+            _paymentMethod.value = defaultPaymentMethod()
+            return
+        }
         val prefs = categoryPrefs.value
         val isIncomeCategory = Categories.isIncomeCategory(_category.value, prefs)
         if (newType == "income" && !isIncomeCategory) {
@@ -2085,9 +2148,9 @@ class MainViewModel(
             if (fullBackupBlocksActions()) return@launch
             // A photo still being written goes with the expense rather than being dropped.
             billPhotoJob?.join()
+            val editingId = tx.id.takeIf { it != 0L }
             val savedId = try {
-                val editingId = _editingTransactionId.value
-                if (editingId != null && editingId != 0L) {
+                if (editingId != null) {
                     val result = ledgerRepo.updateTransactionWithSplits(
                         tx = tx,
                         paidByPersonId = _paidByPersonId.value,
@@ -2111,12 +2174,27 @@ class MainViewModel(
                 _statusMessage.value = archivedMessage(e)
                 return@launch
             }
+            if (editingId == null) rememberEntryChoices(tx)
             settleBillPhoto(savedId)
             // Saved: the split by items has done its job, and its link comes down.
             dropItemSplit()
             _isConfirmSheetOpen.value = false
             _moneyConfirmations.tryEmit(Unit)
             SplitFlowWidgetProvider.notifyWidgetUpdate(getApplication())
+        }
+    }
+
+    private suspend fun rememberEntryChoices(tx: TransactionEntity) {
+        val saved = LastEntryChoices(tx.category, tx.paymentMethod)
+        try {
+            settings.updateCategoryPrefs(settingsId) { current ->
+                if (tx.type == "income") current.copy(lastIncomeChoices = saved)
+                else current.copy(lastExpenseChoices = saved)
+            }
+            // The next Add can open as soon as this sheet closes.
+            categoryPrefs.first { it.lastChoicesFor(tx.type) == saved }
+        } catch (_: IOException) {
+            Log.w("MainViewModel", "Couldn't remember the last choices for a saved entry")
         }
     }
 
@@ -2228,6 +2306,43 @@ class MainViewModel(
 
     fun dismissCreateGroup() {
         _isCreateGroupOpen.value = false
+    }
+
+    private val _editingGroupId = MutableStateFlow<Long?>(null)
+
+    /** The local group whose Edit sheet is open, kept live. Shared groups are never edited here (UX-19). */
+    val editingGroup: StateFlow<GroupWithDetails?> = combine(_editingGroupId, groups) { id, all ->
+        id?.let { editing -> all.firstOrNull { it.group.id == editing && !it.group.isShared } }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    fun openEditGroup(groupId: Long) {
+        if (fullBackupBlocksActions()) return
+        _editingGroupId.value = groupId
+    }
+
+    fun dismissEditGroup() {
+        _editingGroupId.value = null
+    }
+
+    /** Renames a local group, changes its icon or about line, and sets its members. History and balances stay. */
+    fun saveEditedGroup(name: String, description: String, emoji: String, memberPersonIds: List<Long>) {
+        if (fullBackupBlocksActions()) return
+        if (name.isBlank()) return
+        submissions.launch(Submit.EditGroup) {
+            if (fullBackupBlocksActions()) return@launch
+            val current = editingGroup.value ?: return@launch
+            ledgerRepo.updateGroup(
+                current.group.copy(
+                    name = name.trim().take(120),
+                    description = description.trim().take(500),
+                    emoji = emoji,
+                    updatedAt = System.currentTimeMillis(),
+                ),
+                memberPersonIds,
+            )
+            dismissEditGroup()
+            _statusMessage.value = uiText(R.string.action_notice_group_saved, name.trim())
+        }
     }
 
     fun createNewGroup(
@@ -2503,9 +2618,15 @@ class MainViewModel(
         next.invoke()
     }
 
+    /**
+     * "Type it myself": this entry is made on the phone, and AI is switched off so the sheet does
+     * not come back on every entry (UX-02, owner answer D-02). The quiet "AI is off" line under quick
+     * add offers to turn it on again.
+     */
     fun declineAiNotice() {
         val instead = insteadOfAi
         closeAiNotice()
+        setAiEnabled(false)
         instead?.invoke()
     }
 
@@ -3199,6 +3320,7 @@ class MainViewModel(
 
         /** How long "Turn on AI" waits for the choice to be saved before giving up quietly. */
         const val AI_ON_WAIT_MS = 3_000L
+        const val AI_CHECK_MS = 1_500L
 
         /** Debounce window for search input so rapid keystrokes don't re-build the feed synchronously. */
         const val SEARCH_DEBOUNCE_MS = 150L

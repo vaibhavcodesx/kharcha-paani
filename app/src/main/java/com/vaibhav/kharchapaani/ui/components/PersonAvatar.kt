@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import com.vaibhav.kharchapaani.ui.theme.UnknownAvatarGray
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -71,7 +72,7 @@ fun PersonAvatar(
 fun parseColor(hex: String, fallback: Color = UnknownPersonGray): Color =
     runCatching { Color(android.graphics.Color.parseColor(hex)) }.getOrDefault(fallback)
 
-private val UnknownPersonGray = Color(0xFFB9B2A8)
+private val UnknownPersonGray = UnknownAvatarGray
 
 /** "Rohan Mehta" → "RM", "rohan" → "R", blank → "?". */
 fun initials(name: String): String =

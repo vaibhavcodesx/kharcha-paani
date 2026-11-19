@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** The user actions that write something, each of which runs at most once at a time. */
-enum class Submit { SaveEntry, ImportStatement, RecordSettlement, RecordIou, CreateGroup, AddFriend, AddSubscription }
+enum class Submit { SaveEntry, ImportStatement, RecordSettlement, RecordIou, CreateGroup, EditGroup, AddFriend, AddSubscription }
 
 /**
  * One run at a time per action: a second tap while the first save is still writing does nothing.

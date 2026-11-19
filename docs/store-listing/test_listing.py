@@ -34,7 +34,7 @@ class ListingTests(unittest.TestCase):
         for disclosure in (
             "does not hold or transfer money", "internet connection",
             "Google Gemini", "human reviewers may see it", "manual entry",
-            "daily usage limits", "18 and over", "Google sign-in is required",
+            "daily usage limits", "18 and over", "sign in to back up and split with friends",
         ):
             self.assertIn(disclosure, text)
 

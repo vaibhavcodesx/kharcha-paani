@@ -22,9 +22,9 @@ class DailyReminderTest {
         TransactionEntity(type = "expense", amount = 50.0, category = "Food", merchant = "Chai", paymentMethod = "UPI", date = date, ownerProfileId = owner)
 
     @Test
-    fun `on at 9 PM out of the box`() {
+    fun `off out of the box, and 9 PM once turned on`() {
         val settings = ReminderSettings()
-        assertTrue(settings.enabled)
+        assertFalse(settings.enabled)
         assertEquals(21 * 60, settings.minuteOfDay)
     }
 

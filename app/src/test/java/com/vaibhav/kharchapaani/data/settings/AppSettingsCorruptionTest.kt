@@ -97,9 +97,9 @@ class AppSettingsCorruptionTest {
         // askBeforeDiscarding defaults to true
         assertEquals(true, settings.askBeforeDiscarding.first())
 
-        // reminder defaults: enabled = true, minuteOfDay = 21 * 60 (9 PM)
+        // reminder defaults: off, minuteOfDay = 21 * 60 (9 PM) once turned on (owner answer D-08)
         val reminder = settings.reminder.first()
-        assertTrue(reminder.enabled)
+        assertFalse(reminder.enabled)
         assertEquals(ReminderSettings.DEFAULT_MINUTE_OF_DAY, reminder.minuteOfDay)
 
         // aiNoticeAccepted defaults to false

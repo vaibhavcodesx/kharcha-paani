@@ -5,6 +5,7 @@ import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
+import com.vaibhav.kharchapaani.data.sync.GroupInvite
 import com.vaibhav.kharchapaani.data.sync.GroupMembershipRemote
 import com.vaibhav.kharchapaani.data.sync.InvalidInviteException
 import com.vaibhav.kharchapaani.data.sync.InvitePreview
@@ -33,12 +34,16 @@ data class JoinGroupState(
     val canJoin: Boolean get() = preview != null && !isJoining
 }
 
+data class GroupInviteUsage(val usedCount: Int, val maxUses: Int)
+
 data class GroupInviteState(
     val groupId: Long,
     val code: String? = null,
     val expiresAtMillis: Long? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
+    val canReset: Boolean = false,
+    val usage: GroupInviteUsage? = null,
 ) {
     val link: String? get() = code?.let(InviteLink::linkFor)
 }
@@ -48,6 +53,8 @@ data class SharedGroupsUiState(
     val join: JoinGroupState? = null,
     val invite: GroupInviteState? = null,
     val leavingGroupId: Long? = null,
+    val removableGroupId: Long? = null,
+    val isRemovingMember: Boolean = false,
     val message: String? = null,
     /** Set by a join that went through, until the shell has offered notifications for it. */
     val justJoined: Boolean = false,
@@ -71,6 +78,7 @@ class SharedGroupsController(
     private val _state = MutableStateFlow(SharedGroupsUiState())
     val state: StateFlow<SharedGroupsUiState> = _state.asStateFlow()
     private var previewJob: Job? = null
+    private var inviteResetUnavailable = false
 
     fun openJoin(prefill: String = "") {
         if (blockWithoutAccount()) return
@@ -152,7 +160,6 @@ class SharedGroupsController(
     }
 
     /** A group created offline has to reach the server before anyone can be invited to it. */
-    @OptIn(ExperimentalTime::class)
     fun createInvite(group: GroupEntity) {
         val network = remote ?: run { blockWithoutAccount(); return }
         if (group.syncState != SyncState.SYNCED) {
@@ -162,39 +169,144 @@ class SharedGroupsController(
             }
             return
         }
+        if (_state.value.invite?.let { it.groupId == group.id && it.isLoading } == true) return
+        val pending = GroupInviteState(group.id, isLoading = true)
+        _state.update { it.copy(invite = pending) }
         scope.launch {
-            _state.update { it.copy(invite = GroupInviteState(group.id, isLoading = true)) }
-            runRemote { network.createInvite(group.remoteId) }.fold(
-                onSuccess = { invite ->
-                    _state.update {
-                        it.copy(
-                            invite = GroupInviteState(
-                                groupId = group.id,
-                                code = invite.code,
-                                expiresAtMillis = runCatching { Instant.parse(invite.expiresAt).toEpochMilliseconds() }.getOrNull(),
-                            )
-                        )
+            // The count columns ship with the reset RPC. A failed lookup leaves the legacy create path available.
+            val lookup = runRemote { network.activeInvite(group.remoteId, selfProfileId) }
+            val active = lookup.getOrNull()
+            val result = if (active != null) Result.success(active) else runRemote { network.createInvite(group.remoteId) }
+            val invite = result.fold(
+                onSuccess = { current ->
+                    val details = if (active == null && lookup.isSuccess) {
+                        withInviteUsage(network, group, current)
+                    } else {
+                        current
+                    }
+                    val canReset = lookup.isSuccess && !inviteResetUnavailable
+                    GroupInviteState(group.id, canReset = canReset).withLink(details)
+                },
+                onFailure = { GroupInviteState(group.id, error = it.message) },
+            )
+            _state.update { if (it.invite === pending) it.copy(invite = invite) else it }
+        }
+    }
+
+    fun resetInvite(group: GroupEntity) {
+        val network = remote ?: return
+        val invite = _state.value.invite ?: return
+        if (!group.isShared || group.isArchived || group.syncState != SyncState.SYNCED ||
+            invite.groupId != group.id || invite.code == null || !invite.canReset ||
+            invite.isLoading || inviteResetUnavailable
+        ) return
+
+        val pending = invite.copy(isLoading = true, error = null)
+        _state.update { it.copy(invite = pending) }
+        scope.launch {
+            val result = runRemote { network.resetInvite(group.remoteId) }
+            val updated = result.fold(
+                onSuccess = { replacement ->
+                    if (replacement == null) {
+                        inviteResetUnavailable = true
+                        invite.copy(canReset = false, error = copyText(R.string.shared_group_notice_reset_unavailable))
+                    } else {
+                        invite.withLink(withInviteUsage(network, group, replacement))
                     }
                 },
-                onFailure = { error -> _state.update { it.copy(invite = GroupInviteState(group.id, error = error.message)) } },
+                onFailure = { invite.copy(error = it.message) },
             )
+            _state.update { if (it.invite === pending) it.copy(invite = updated) else it }
         }
+    }
+
+    private suspend fun withInviteUsage(network: GroupMembershipRemote, group: GroupEntity, invite: GroupInvite): GroupInvite =
+        runRemote { network.activeInvite(group.remoteId, selfProfileId, invite.code) }.getOrNull() ?: invite
+
+    @OptIn(ExperimentalTime::class)
+    private fun GroupInviteState.withLink(invite: GroupInvite): GroupInviteState {
+        val usage = if (invite.usedCount != null && invite.maxUses != null) {
+            GroupInviteUsage(invite.usedCount, invite.maxUses)
+        } else {
+            null
+        }
+        return copy(
+            code = invite.code,
+            expiresAtMillis = runCatching { Instant.parse(invite.expiresAt).toEpochMilliseconds() }.getOrNull(),
+            error = null,
+            usage = usage,
+        )
     }
 
     fun revokeInvite() {
         val network = remote ?: run { blockWithoutAccount(); return }
         val invite = _state.value.invite ?: return
         val code = invite.code ?: return
+        if (invite.isLoading) return
+        val pending = invite.copy(isLoading = true, error = null)
+        _state.update { it.copy(invite = pending) }
         scope.launch {
-            runRemote { network.revokeInvite(code) }.fold(
-                onSuccess = { _state.update { it.copy(invite = null, message = copyText(R.string.shared_group_notice_revoked)) } },
-                onFailure = { error -> _state.update { it.copy(invite = invite.copy(error = error.message)) } },
-            )
+            val result = runRemote { network.revokeInvite(code) }
+            _state.update { state ->
+                if (state.invite !== pending) return@update state
+                result.fold(
+                    onSuccess = { state.copy(invite = null, message = copyText(R.string.shared_group_notice_revoked)) },
+                    onFailure = { state.copy(invite = invite.copy(error = it.message)) },
+                )
+            }
         }
     }
 
     fun dismissInvite() {
         _state.update { it.copy(invite = null) }
+    }
+
+    private fun canManageMembers(group: GroupEntity): Boolean =
+        group.isShared && group.createdByProfileId == selfProfileId &&
+            !group.isArchived && group.syncState == SyncState.SYNCED
+
+    suspend fun checkMemberRemoval(group: GroupEntity) {
+        val network = remote
+        val supported = if (network == null || !canManageMembers(group)) false else try {
+            network.supportsInviteLimits(group.remoteId)
+        } catch (_: IOException) {
+            false
+        } catch (_: RestException) {
+            false
+        }
+        _state.update { it.copy(removableGroupId = group.id.takeIf { supported }) }
+    }
+
+    fun removeMember(group: GroupEntity, memberProfileId: String) {
+        val network = remote ?: return
+        val current = _state.value
+        if (!canManageMembers(group) || current.removableGroupId != group.id || current.isRemovingMember ||
+            memberProfileId.isBlank() || memberProfileId == selfProfileId
+        ) return
+
+        _state.update { it.copy(isRemovingMember = true) }
+        scope.launch {
+            try {
+                network.removeMember(group.remoteId, memberProfileId)
+                requestSync()
+                _state.update { it.copy(message = copyText(R.string.shared_group_notice_member_removed)) }
+            } catch (_: IOException) {
+                _state.update { it.copy(message = copyText(OFFLINE)) }
+            } catch (e: RestException) {
+                if (e.statusCode == 404 || e.error.contains("PGRST202", ignoreCase = true)) {
+                    _state.update { state ->
+                        state.copy(
+                            removableGroupId = state.removableGroupId.takeUnless { it == group.id },
+                            message = copyText(R.string.shared_group_notice_remove_unavailable),
+                        )
+                    }
+                } else {
+                    _state.update { it.copy(message = messageFor(e)) }
+                }
+            } finally {
+                _state.update { it.copy(isRemovingMember = false) }
+            }
+        }
     }
 
     fun leaveGroup(group: GroupEntity, onLeft: () -> Unit) {

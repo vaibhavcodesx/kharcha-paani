@@ -15,6 +15,7 @@ import com.vaibhav.kharchapaani.data.settings.AppSettings
 import kotlinx.coroutines.flow.first
 import com.vaibhav.kharchapaani.data.remote.SupabaseClientProvider
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
+import com.vaibhav.kharchapaani.reminder.GroupJoinNotices
 import com.vaibhav.kharchapaani.reminder.SettlementReminders
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 import io.github.jan.supabase.SupabaseClient
@@ -57,7 +58,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     mode.choice == LedgerMode.Choice.CLOUD
             }) { database ->
                 try {
-                    syncAll(database, supabase, userId)
+                    SyncPassStatus.record(database.syncDao()) { syncAll(database, supabase, userId) }
                 } finally {
                     // Payments a groupmate recorded that wait for my answer: the first nudge, then day
                     // 3, 6… Whatever the pull managed, the ones already on the phone still get theirs:
@@ -67,6 +68,15 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                         SettlementReminders.remind(applicationContext, database, userId, prefs = prefs)
                     }
                         .onFailure { Log.w(TAG, "Settlement reminders skipped", it) }
+
+                    try {
+                        val prefs = AppSettings(applicationContext).notificationPrefs.first()
+                        GroupJoinNotices.deliver(applicationContext, database, prefs)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Group join notices skipped", e)
+                    }
                 }
             }
         }
@@ -113,6 +123,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
          */
         private val passLock = Mutex()
 
+        internal suspend fun withoutSync(action: suspend () -> Unit) = passLock.withLock { action() }
+
         internal suspend fun syncIfSignedIn(
             requestedUserId: String,
             signedInUserId: String?,
@@ -120,7 +132,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         ): ListenableWorker.Result {
             if (signedInUserId != requestedUserId) return ListenableWorker.Result.success()
             return try {
-                passLock.withLock { sync() }
+                withoutSync(sync)
                 ListenableWorker.Result.success()
             } catch (e: IOException) {
                 // Offline, DNS, timeout (supabase-kt's HttpRequestException is an IOException).

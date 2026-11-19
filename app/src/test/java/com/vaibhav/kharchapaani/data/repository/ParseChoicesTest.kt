@@ -9,21 +9,26 @@ import org.junit.Test
 class ParseChoicesTest {
 
     private val choices = ParseChoices.of(
-        CategoryPrefs(customExpense = listOf("Pets"), hiddenCategories = setOf("Team Payment"), customPaymentMethods = listOf("Amex")),
+        CategoryPrefs(customExpense = listOf("Pets"), hiddenCategories = setOf("Transport"), customPaymentMethods = listOf("Amex")),
     )
 
     @Test
     fun `the prompts offer this account's categories and methods, custom ones included, hidden ones not`() {
         assertTrue("Pets" in choices.categoryList.split(", "))
-        assertTrue("Groceries" in choices.categoryList.split(", "))
+        assertTrue("Food" in choices.categoryList.split(", "))
         assertTrue("Income (Salary)" in choices.categoryList.split(", "))
-        assertFalse("Team Payment" in choices.categoryList.split(", "))
+        val promptCategories = choices.categoryList.split(", ")
+        val promptMethods = choices.paymentList.split(", ")
+        assertFalse("Transport" in promptCategories)
+        assertFalse("Team Payment" in promptCategories)
+        assertFalse("Income (Client)" in promptCategories)
+        assertFalse("PopUPI" in promptMethods)
         assertTrue("Amex" in choices.paymentList.split(", "))
     }
 
     @Test
-    fun `a statement's groceries, investment and salary rows keep those categories`() {
-        assertEquals("Groceries", choices.categoryFor("expense", "Groceries"))
+    fun `statement parsing keeps offered categories and handles unsupported categories`() {
+        assertEquals("Other", choices.categoryFor("expense", "Team Payment"))
         assertEquals("Investment", choices.categoryFor("expense", "investment"))
         assertEquals("Income (Salary)", choices.categoryFor("income", "Income (Salary)"))
     }
