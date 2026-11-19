@@ -23,3 +23,43 @@ Owner-only steps from [admin-page.md](../../designs/admin-page.md). Agents apply
 13. To rollback database objects: run the DROP statements documented in the header of each admin SQL file.
 14. To take down the frontend: delete or disable the Vercel project deployment.
 15. **Break-glass immediate lockout:** run `delete from private.admins;` in Supabase SQL editor.
+
+## Day-to-Day Owner Guide
+
+This guide is for managing the app day to day without technical jargon.
+
+### How to Sign In
+1. Open the admin URL on your phone or computer.
+2. Tap **Sign in with Google** and pick your Google account.
+3. **If sign-in fails:**
+   - Confirm you are using the same Google email you added to the database.
+   - The most common cause is a Google client secret mismatch: re-copy the Web Client secret from Google Cloud into Supabase under Auth > Providers > Google.
+   - Check that your admin URL is listed in Supabase Auth > URL Configuration > Redirect URLs.
+
+### What Each Tab Does
+- **Today**: Instant overview of the app: active people this week, how much AI has been used today, cloud photo storage, and database size.
+- **People**: Search users by name or email, view account details, and manage their plan.
+- **Limits**: Daily usage ceilings and the emergency AI pause button.
+- **Release**: Control which app versions are allowed to connect, prompting older versions to update.
+- **Log**: A clear timeline record of every action taken by an admin (with dates, who did it, and what changed).
+- **Delete account**: Permanently erase a user and all their stored receipts when requested.
+
+### How to Pause AI
+1. Go to **Limits** (or the prompt on **Today**).
+2. Click **Pause AI**.
+3. Type `PAUSE` in the box and confirm. AI parsing stops cleanly and the app switches to manual entry without errors. Tap **Resume AI** when ready to restore it.
+
+### How to Change a Plan
+1. Open the **People** tab and find the person by name or email.
+2. Click their row to open details.
+3. Select the new plan (Free, Friends, or Paid) and click **Save**.
+
+### How to Raise the Minimum Version Safely
+1. Open the **Release** tab.
+2. Check the timeline track. **Safety rule:** Never raise the minimum version higher than the version code that contains the in-app update screen.
+3. Enter the new version number and save. Older app builds will gently tell users to update on Google Play.
+
+### How to Delete an Account
+1. Open the **Delete account** tab.
+2. Enter the person\'s email to look up their records.
+3. Confirm their details, type `DELETE` in the confirmation box, and proceed. Their data, profile, and photos will be removed permanently.
