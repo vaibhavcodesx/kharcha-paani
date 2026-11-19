@@ -7,7 +7,7 @@ Checked against `app/src/main/AndroidManifest.xml` on 2026-11-19. Play's review 
 | Permission | Why | Asked when | What the person sees first | If declined |
 |---|---|---|---|---|
 | `INTERNET` | Sign-in, sync, AI reads, shared groups | Never (normal permission) | n/a | App works offline (local mode) |
-| `POST_NOTIFICATIONS` | Settlement and daily reminders the person turned on | When a reminder is first turned on | The reminder setting itself says what it will send | Reminders are not shown; nothing else changes |
+| `POST_NOTIFICATIONS` | Settlement and daily reminders the person turned on | The app offers it itself, at most twice, right after the first own entry or after joining a group (never on first launch); after that only the Notifications screen asks | The app's own explanation first, then the system prompt | Reminders are not shown; nothing else changes; the Notifications screen can open the system settings later |
 | `RECORD_AUDIO` | Voice entry: the person says an entry | First tap of the voice bar | One-line sheet: "To hear your entry, Kharcha Paani needs the microphone, only while this bar is open." (Continue / Not now) | A message says they can type; typing is unaffected |
 | `CAMERA` | (1) Scan a group invite QR code; (2) take a photo of a bill | First tap of Scan or Bill photo | One-line sheet with the reason (QR: scanning an invite; Bill photo: photographing the bill) | A message; they can paste an invite link or choose a bill photo from the gallery |
 
