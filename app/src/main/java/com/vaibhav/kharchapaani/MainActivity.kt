@@ -1311,7 +1311,7 @@ fun SplitFlowApp(
     if (selectedPersonForLedger != null) {
         val person = selectedPersonForLedger!!
         val ledgerFlow = remember(person.id, viewModel) { viewModel.getPersonLedgerFlow(person.id) }
-        val ledgerItems by ledgerFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+        val ledgerItems by ledgerFlow.collectAsStateWithLifecycle(initialValue = null)
         PersonLedgerSheet(
             person = person,
             ledgerItems = ledgerItems,

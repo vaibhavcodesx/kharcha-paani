@@ -370,7 +370,7 @@ internal fun CaptureAction(icon: ImageVector, label: String, filled: Boolean, on
             .clickable(onClickLabel = label, role = Role.Button, onClick = onClick)
             .semantics { contentDescription = label },
     ) {
-        Icon(icon, contentDescription = null, tint = if (filled) CharcoalBg else WarmAmberPrimary, modifier = Modifier.size(22.dp))
+        Icon(icon, contentDescription = label, tint = if (filled) CharcoalBg else WarmAmberPrimary, modifier = Modifier.size(22.dp))
     }
 }
 

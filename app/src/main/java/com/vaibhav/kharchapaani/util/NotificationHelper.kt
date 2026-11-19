@@ -9,12 +9,12 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.vaibhav.kharchapaani.IncomingIntents
+import com.vaibhav.kharchapaani.MainActivity
 import com.vaibhav.kharchapaani.R
 import com.vaibhav.kharchapaani.widget.SplitFlowWidgetProvider
 
 /**
- * The app's notifications: the daily reminder, and payments a groupmate recorded that wait for my
- * answer.
+ * The app's notifications: daily reminders, payments waiting for my answer and new group members.
  *
  * This file used to hold an AI-Studio-era "monthly spending digest" that nothing ever called, on a
  * high-importance channel with lights and vibration — the wrong weight for anything this app says.
@@ -23,6 +23,8 @@ object NotificationHelper {
 
     const val CHANNEL_DAILY_REMINDER = "daily_reminder"
     const val CHANNEL_SETTLEMENTS = "settlements_to_confirm"
+    const val CHANNEL_GROUP_JOINS = "group_joins"
+    private const val NOTIFICATION_ID_GROUP_JOIN = 2002
     private const val NOTIFICATION_ID_DAILY_REMINDER = 2001
     /**
      * One notification per settlement, told apart by its tag ("settlement:<id>"), so a newer stage
@@ -55,9 +57,39 @@ object NotificationHelper {
         ).apply {
             description = context.getString(R.string.notification_payment_description)
         }
+        val joins = NotificationChannel(
+            CHANNEL_GROUP_JOINS,
+            context.getString(R.string.notification_group_join_channel),
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply {
+            description = context.getString(R.string.notification_group_join_description)
+        }
         context.getSystemService(NotificationManager::class.java)?.let {
             it.createNotificationChannel(channel)
             it.createNotificationChannel(settlements)
+            it.createNotificationChannel(joins)
+        }
+    }
+
+    fun showGroupJoin(context: Context, tag: String, member: String, group: String): Boolean {
+        if (!canNotify(context, CHANNEL_GROUP_JOINS)) return false
+        createChannels(context)
+        val open = Intent(context, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        val pending = PendingIntent.getActivity(context, 0, open, PendingIntent.FLAG_IMMUTABLE)
+        val notice = NotificationCompat.Builder(context, CHANNEL_GROUP_JOINS)
+            .setSmallIcon(R.drawable.ic_stat_reminder)
+            .setContentTitle(context.getString(R.string.notification_group_join_title, member, group))
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setOnlyAlertOnce(true)
+            .setAutoCancel(true)
+            .setContentIntent(pending)
+            .build()
+        return try {
+            NotificationManagerCompat.from(context).notify(tag, NOTIFICATION_ID_GROUP_JOIN, notice)
+            true
+        } catch (_: SecurityException) {
+            false
         }
     }
 
