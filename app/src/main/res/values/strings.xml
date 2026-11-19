@@ -1075,6 +1075,16 @@
     <string name="account_sync_synced_just_now">All changes synced</string>
     <string name="account_sync_synced_relative">All changes synced · %1$s</string>
     <string name="account_sync_not_synced">Not synced yet</string>
+    <string name="sync_update_required">Update Kharcha Paani to keep syncing.</string>
+    <string name="sync_update_data_safe">Your data is safe and you can still read and export it.</string>
+    <string name="sync_update_recommended">A Kharcha Paani update is available.</string>
+    <string name="sync_update_action">Update</string>
+    <string name="sync_update_dismiss">Later</string>
+    <string name="sync_update_no_app">Install a browser to open the update link.</string>
+    <string name="account_sync_last_failed">Last sync failed: %1$s</string>
+    <string name="account_sync_error_offline">Couldn’t connect.</string>
+    <string name="account_sync_error_server">The server couldn’t complete the request.</string>
+    <string name="account_sync_error_other">Something went wrong. Try again.</string>
 
     <!-- Account Settings, Data, Colour & Help -->
     <string name="account_backup_explanation">Your expenses back up to your account and work offline, splits and loans included. Shared groups sync with everyone in them.</string>

@@ -12,6 +12,7 @@ import androidx.compose.ui.test.performTextReplacement
 import com.vaibhav.kharchapaani.BuildConfig
 import com.vaibhav.kharchapaani.data.auth.AuthState
 import com.vaibhav.kharchapaani.data.auth.Profile
+import com.vaibhav.kharchapaani.data.sync.SyncPassStatus
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
 import org.junit.After
@@ -34,12 +35,16 @@ class AccountSheetContentTest {
     private var askChanges = mutableListOf<Boolean>()
     private var exportOpened = false
 
-    private fun show(profile: ProfileState = ProfileState.Loaded(Profile(id = "u1", displayName = "Priya"))) {
+    private fun show(
+        profile: ProfileState = ProfileState.Loaded(Profile(id = "u1", displayName = "Priya")),
+        lastSyncError: String? = null,
+    ) {
         composeTestRule.setContent {
             SplitFlowTheme {
                 AccountSheetContent(
                     state = AuthUiState(authState = signedIn, profile = profile),
                     syncStatus = SyncStatus(),
+                    lastSyncError = lastSyncError,
                     askBeforeDiscarding = true,
                     onSaveProfile = { name, emoji -> saved = name to emoji },
                     onAskBeforeDiscardingChange = { askChanges += it },
@@ -77,6 +82,12 @@ class AccountSheetContentTest {
         show()
 
         composeTestRule.onNodeWithText("Update Kharcha Paani to keep syncing.").assertDoesNotExist()
+    }
+
+    @Test
+    fun `the last sync error is displayed as a friendly reason`() {
+        show(lastSyncError = SyncPassStatus.OFFLINE)
+        composeTestRule.onNodeWithText("Last sync failed: Couldn’t connect.").assertExists()
     }
 
     @Test

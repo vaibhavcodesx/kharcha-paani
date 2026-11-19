@@ -57,7 +57,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     mode.choice == LedgerMode.Choice.CLOUD
             }) { database ->
                 try {
-                    syncAll(database, supabase, userId)
+                    SyncPassStatus.record(database.syncDao()) { syncAll(database, supabase, userId) }
                 } finally {
                     // Payments a groupmate recorded that wait for my answer: the first nudge, then day
                     // 3, 6… Whatever the pull managed, the ones already on the phone still get theirs:
