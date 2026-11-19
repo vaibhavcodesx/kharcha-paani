@@ -18,6 +18,7 @@ import com.vaibhav.kharchapaani.domain.ItemSplit
 import com.vaibhav.kharchapaani.domain.ItemSplitMath
 import com.vaibhav.kharchapaani.domain.SplitItem
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -280,6 +281,53 @@ class ItemSplitControllerTest {
         empty.open(dinner) { BillItemsReadResult.Read(emptyList(), total = 330.0) }
         settle()
         assertTrue(said(R.string.item_split_read_none))
+    }
+
+    @Test
+    fun `closing the item split cancels its AI read and keeps the draft`() = runTest {
+        val controller = controller()
+        var readEnded = false
+        controller.open(dinner) {
+            try {
+                awaitCancellation()
+            } finally {
+                readEnded = true
+            }
+        }
+        settle()
+        assertTrue(controller.state.value.reading)
+
+        controller.close()
+        settle()
+
+        assertTrue(readEnded)
+        assertFalse(controller.state.value.reading)
+        assertTrue(controller.draft().items.isEmpty())
+        assertEquals(dinner.totalPaise, controller.draft().totalPaise)
+    }
+
+    @Test
+    fun `a daily bill cap still lets me enter items by hand`() = runTest {
+        val controller = controller()
+        controller.open(dinner) { BillItemsReadResult.Failed(AiFailure.DailyLimit) }
+        settle()
+
+        assertEquals(listOf(AiFailure.DailyLimit.name), messages)
+        assertFalse(controller.state.value.reading)
+        controller.saveItem(null, "Dinner", 1, dinner.totalPaise)
+        assertEquals(dinner.totalPaise, controller.draft().items.single().amountPaise)
+    }
+
+    @Test
+    fun `a hundred items fit and one more is refused without changing the bill`() = runTest {
+        val controller = controller()
+        controller.open(dinner, null)
+        repeat(100) { index -> controller.saveItem(null, "Item $index", 1, 100) }
+        controller.saveItem(null, "Extra item", 1, 100)
+
+        assertTrue(said(R.string.item_split_too_many_items))
+        assertEquals(100, controller.draft().items.size)
+        assertEquals(10_000L, controller.draft().items.sumOf { it.amountPaise })
     }
 
     @Test
