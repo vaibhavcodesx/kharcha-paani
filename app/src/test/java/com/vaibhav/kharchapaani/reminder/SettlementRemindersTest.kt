@@ -30,7 +30,7 @@ class SettlementRemindersTest {
     }
 
     @Test
-    fun `at most three nudges: when it arrives, day 3 and day 6, then no more`() {
+    fun `at most three nudges, on arrival then day 3 then day 6, and then no more`() {
         assertEquals(3, SettlementReminders.MAX_NUDGES)
         assertEquals(0, SettlementReminders.nudgeStageFor(recorded, recorded))
         assertEquals(1, SettlementReminders.nudgeStageFor(recorded, recorded + 3 * day))
