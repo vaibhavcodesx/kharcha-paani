@@ -78,7 +78,8 @@ class SharedGroupUiTest {
                     members = listOf(PersonEntity(name = "Bob", avatarColor = "#70C1FF", profileId = "bob")),
                     isCreator = false,
                     invite = GroupInviteState(groupId = 1, code = "AB2CD3EF", expiresAtMillis = 1_800_000_000_000,
-                        canReset = canReset.value),
+                        canReset = canReset.value,
+                        usage = GroupInviteUsage(3, 20).takeIf { canReset.value }),
                     isLeaving = false,
                     unsyncedChanges = 0,
                     onSyncNow = {},
@@ -93,10 +94,12 @@ class SharedGroupUiTest {
             }
         }
 
+        composeTestRule.onNodeWithText("3 of 20 used").assertIsDisplayed()
         composeTestRule.onNodeWithText("Reset link").assertIsDisplayed().performClick()
         assertEquals(1, resets)
         composeTestRule.runOnIdle { canReset.value = false }
         composeTestRule.onNodeWithText("Reset link").assertDoesNotExist()
+        composeTestRule.onNodeWithText("3 of 20 used").assertDoesNotExist()
         composeTestRule.onNodeWithText("AB2C D3EF").assertIsDisplayed()
         composeTestRule.onNodeWithText("Share link").performClick()
         assertEquals("kharchapaani://join/AB2CD3EF", shared)

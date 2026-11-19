@@ -552,6 +552,7 @@
     <string name="shared_group_copy_sync_now">Sync now</string>
     <string name="shared_group_copy_cancel">Cancel</string>
     <string name="shared_group_copy_invite_code">INVITE CODE</string>
+    <string name="shared_group_copy_invite_uses">%1$d of %2$d used</string>
     <string name="shared_group_copy_share">Share link</string>
     <string name="shared_group_qr_show">Show QR</string>
     <string name="shared_group_qr_hide">Hide QR</string>
