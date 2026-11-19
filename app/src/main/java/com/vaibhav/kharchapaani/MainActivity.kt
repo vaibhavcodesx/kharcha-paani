@@ -66,7 +66,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.testTag
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -515,7 +514,6 @@ fun SplitFlowApp(
     val categoryPrefs by viewModel.categoryPrefs.collectAsStateWithLifecycle()
     val isCategoriesOpen by viewModel.isCategoriesOpen.collectAsStateWithLifecycle()
     val isSubscriptionsOpen by viewModel.isSubscriptionsOpen.collectAsStateWithLifecycle()
-    val subscriptions by viewModel.subscriptions.collectAsStateWithLifecycle()
     val isUpiOpen by viewModel.isUpiOpen.collectAsStateWithLifecycle()
     val restorePreview by viewModel.restorePreview.collectAsStateWithLifecycle()
     val fullBackupBusy by viewModel.fullBackupBusy.collectAsStateWithLifecycle()
@@ -531,19 +529,16 @@ fun SplitFlowApp(
             isDeleteAccountOpen = false
         }
     }
-    val currentTab by viewModel.currentTab.collectAsState()
+    val currentTab by viewModel.currentTab.collectAsStateWithLifecycle()
     // Back from Splits or Insights goes Home first, rather than closing the app; Back on Home leaves.
     // Sheets and dialogs are their own windows and still take Back before this does.
     BackHandler(enabled = currentTab != AppTab.Activity.ordinal) { viewModel.setTab(AppTab.Activity.ordinal) }
     val billPhotoIds by viewModel.billPhotoIds.collectAsStateWithLifecycle()
     val pendingItemSplit by viewModel.pendingItemSplit.collectAsStateWithLifecycle()
-    val rawTransactions by viewModel.rawTransactions.collectAsState()
+    val rawTransactions by viewModel.rawTransactions.collectAsStateWithLifecycle()
     val homeSnapshot by viewModel.homeSnapshot.collectAsStateWithLifecycle()
-    val insightsAnalytics by viewModel.insightsAnalytics.collectAsStateWithLifecycle()
-    val insightsMonth by viewModel.insightsMonth.collectAsStateWithLifecycle()
-    val earliestInsightsMonth by viewModel.earliestInsightsMonth.collectAsStateWithLifecycle()
-    val personBalances by viewModel.personBalances.collectAsState()
-    val people by viewModel.people.collectAsState()
+    val personBalances by viewModel.personBalances.collectAsStateWithLifecycle()
+    val people by viewModel.people.collectAsStateWithLifecycle()
 
     // One colour per person (design item 11). Groupmates' chosen colours are what mine keeps clear
     // of; everyone on this phone is what a new friend's colour keeps clear of.
@@ -559,64 +554,42 @@ fun SplitFlowApp(
     LaunchedEffect(profileLoaded, myHue == null, groupmateHues) {
         if (profileLoaded && myHue == null) Hues.firstPick(selfProfileId, groupmateHues)?.let { onSaveHue(it, true) }
     }
-    val groups by viewModel.groups.collectAsState()
-    val rawGroups by viewModel.rawGroups.collectAsState()
-    val isParsing by viewModel.isParsing.collectAsState()
-    val isImprovingWithAi by viewModel.isImprovingWithAi.collectAsState()
-    val updatedByAi by viewModel.updatedByAi.collectAsState()
-    val voiceCaptureRequested by viewModel.voiceCaptureRequested.collectAsState()
-    val captureFocusRequested by viewModel.captureFocusRequested.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val selectedFilter by viewModel.selectedFilter.collectAsState()
-
-    // Confirm Bottom Sheet State
-    val isConfirmSheetOpen by viewModel.isConfirmSheetOpen.collectAsState()
-    val editingTxId by viewModel.editingTransactionId.collectAsState()
-    val editingAddedBy by viewModel.editingAddedBy.collectAsState()
-    val txType by viewModel.type.collectAsState()
-    val txAmount by viewModel.amount.collectAsState()
-    val txMerchant by viewModel.merchant.collectAsState()
-    val txCategory by viewModel.category.collectAsState()
-    val txPaymentMethod by viewModel.paymentMethod.collectAsState()
-    val txNote by viewModel.note.collectAsState()
-    val txDate by viewModel.date.collectAsState()
-    val txGroupId by viewModel.groupId.collectAsState()
-    val isSplit by viewModel.isSplit.collectAsState()
-    val splitMode by viewModel.splitMode.collectAsState()
-    val paidByPersonId by viewModel.paidByPersonId.collectAsState()
-    val shares by viewModel.shares.collectAsState()
+    val groups by viewModel.groups.collectAsStateWithLifecycle()
+    val rawGroups by viewModel.rawGroups.collectAsStateWithLifecycle()
+    val isParsing by viewModel.isParsing.collectAsStateWithLifecycle()
+    val voiceCaptureRequested by viewModel.voiceCaptureRequested.collectAsStateWithLifecycle()
+    val captureFocusRequested by viewModel.captureFocusRequested.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val selectedFilter by viewModel.selectedFilter.collectAsStateWithLifecycle()
 
     // Dialogs & Modals
-    val selectedPersonForLedger by viewModel.selectedPersonForLedger.collectAsState()
-    val isSettleUpOpen by viewModel.isSettleUpOpen.collectAsState()
-    val settleUpPerson by viewModel.settleUpPerson.collectAsState()
-    val settleUpHisaab by viewModel.settleUpHisaab.collectAsStateWithLifecycle()
+    val isConfirmSheetOpen by viewModel.isConfirmSheetOpen.collectAsStateWithLifecycle()
+    val selectedPersonForLedger by viewModel.selectedPersonForLedger.collectAsStateWithLifecycle()
+    val isSettleUpOpen by viewModel.isSettleUpOpen.collectAsStateWithLifecycle()
     val askedAt by viewModel.askedAt.collectAsStateWithLifecycle()
-    val isIouOpen by viewModel.isIouOpen.collectAsState()
-    val isSimplifyDebtsOpen by viewModel.isSimplifyDebtsOpen.collectAsState()
-    val simplifiedDebts by viewModel.simplifiedDebts.collectAsState()
-    val splitLocked by viewModel.splitLocked.collectAsStateWithLifecycle()
+    val isIouOpen by viewModel.isIouOpen.collectAsStateWithLifecycle()
+    val isSimplifyDebtsOpen by viewModel.isSimplifyDebtsOpen.collectAsStateWithLifecycle()
+    val simplifiedDebts by viewModel.simplifiedDebts.collectAsStateWithLifecycle()
     val settlementsAwaitingMe by viewModel.settlementsAwaitingMe.collectAsStateWithLifecycle()
     val settlementsAwaitingThem by viewModel.settlementsAwaitingThem.collectAsStateWithLifecycle()
     val answeringSettlement by viewModel.answeringSettlement.collectAsStateWithLifecycle()
-    val isAddFriendOpen by viewModel.isAddFriendOpen.collectAsState()
+    val isAddFriendOpen by viewModel.isAddFriendOpen.collectAsStateWithLifecycle()
 
     // Group Modals
-    val isCreateGroupOpen by viewModel.isCreateGroupOpen.collectAsState()
-    val createGroupShared by viewModel.createGroupShared.collectAsState()
-    val splitGroupPrompt by viewModel.splitGroupPrompt.collectAsState()
-    val selectedGroupForDetail by viewModel.selectedGroupForDetail.collectAsState()
+    val isCreateGroupOpen by viewModel.isCreateGroupOpen.collectAsStateWithLifecycle()
+    val createGroupShared by viewModel.createGroupShared.collectAsStateWithLifecycle()
+    val splitGroupPrompt by viewModel.splitGroupPrompt.collectAsStateWithLifecycle()
+    val selectedGroupForDetail by viewModel.selectedGroupForDetail.collectAsStateWithLifecycle()
 
     // AI Summary
-    val askBoard by viewModel.askBoard.collectAsStateWithLifecycle()
     val aiAsksLeft by viewModel.aiAsksLeft.collectAsStateWithLifecycle()
-    val tripReview by viewModel.tripReview.collectAsState()
+    val tripReview by viewModel.tripReview.collectAsStateWithLifecycle()
 
     // Statement Import State
-    val isImportStatementOpen by viewModel.isImportStatementOpen.collectAsState()
-    val isParsingStatement by viewModel.isParsingStatement.collectAsState()
-    val statementParseResult by viewModel.statementParseResult.collectAsState()
-    val statusMessage by viewModel.statusMessage.collectAsState()
+    val isImportStatementOpen by viewModel.isImportStatementOpen.collectAsStateWithLifecycle()
+    val isParsingStatement by viewModel.isParsingStatement.collectAsStateWithLifecycle()
+    val statementParseResult by viewModel.statementParseResult.collectAsStateWithLifecycle()
+    val statusMessage by viewModel.statusMessage.collectAsStateWithLifecycle()
 
     val sharedGroupsState by sharedGroups.state.collectAsStateWithLifecycle()
 
@@ -695,7 +668,7 @@ fun SplitFlowApp(
             viewModel.clearStatusMessage()
         }
     }
-    val undoPrompt by viewModel.undoPrompt.collectAsState()
+    val undoPrompt by viewModel.undoPrompt.collectAsStateWithLifecycle()
     LaunchedEffect(undoPrompt) {
         val prompt = undoPrompt ?: return@LaunchedEffect
         viewModel.clearUndoPrompt()
@@ -735,7 +708,6 @@ fun SplitFlowApp(
         }
     }
     val syncStatus by viewModel.syncStatus.collectAsStateWithLifecycle()
-    val parseNotice by viewModel.parseNotice.collectAsState()
 
     val hazeState = rememberHazeState()
     Box(
@@ -826,23 +798,29 @@ fun SplitFlowApp(
                         onRequestSync = { viewModel.requestSync() }, localOnly = viewModel.isLocalLedger,
                     )
 
-                    2 -> InsightsScreen(
-                        accountAvatar = authUiState.accountAvatar,
-                        onOpenAccount = { if (!fullBackupModalOpen) isAccountSheetOpen = true },
-                        syncStatus = syncStatus,
-                        analytics = insightsAnalytics,
-                        transactions = rawTransactions,
-                        people = people,
-                        askBoard = askBoard,
-                        onAsk = { viewModel.askInsights(it) },
-                        aiAsksLeft = aiAsksLeft,
-                        aiAvailable = viewModel.aiAvailable && aiEnabled,
-                        onExport = { viewModel.openExport() },
-                        onEditTransaction = { viewModel.openEditTransaction(it) },
-                        month = insightsMonth,
-                        earliestMonth = earliestInsightsMonth,
-                        onMonthChange = { viewModel.setInsightsMonth(it) },
-                    )
+                    2 -> {
+                        val insightsAnalytics by viewModel.insightsAnalytics.collectAsStateWithLifecycle()
+                        val insightsMonth by viewModel.insightsMonth.collectAsStateWithLifecycle()
+                        val earliestInsightsMonth by viewModel.earliestInsightsMonth.collectAsStateWithLifecycle()
+                        val askBoard by viewModel.askBoard.collectAsStateWithLifecycle()
+                        InsightsScreen(
+                            accountAvatar = authUiState.accountAvatar,
+                            onOpenAccount = { if (!fullBackupModalOpen) isAccountSheetOpen = true },
+                            syncStatus = syncStatus,
+                            analytics = insightsAnalytics,
+                            transactions = rawTransactions,
+                            people = people,
+                            askBoard = askBoard,
+                            onAsk = { viewModel.askInsights(it) },
+                            aiAsksLeft = aiAsksLeft,
+                            aiAvailable = viewModel.aiAvailable && aiEnabled,
+                            onExport = { viewModel.openExport() },
+                            onEditTransaction = { viewModel.openEditTransaction(it) },
+                            month = insightsMonth,
+                            earliestMonth = earliestInsightsMonth,
+                            onMonthChange = { viewModel.setInsightsMonth(it) },
+                        )
+                    }
                 }
             }
         }
@@ -1041,8 +1019,6 @@ fun SplitFlowApp(
     // Confirm & Edit Bottom Sheet
     // Bill photos: the system camera writes into cache/camera through the FileProvider, and the
     // photo picker hands back a picture. Only the Camera action requires permission.
-    val billPhoto by viewModel.billPhoto.collectAsStateWithLifecycle()
-    val submitting by viewModel.submitting.collectAsStateWithLifecycle()
     var cameraFile by rememberSaveable { mutableStateOf<String?>(null) }
     val takeBillPhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
         val file = cameraFile?.let(::File) ?: return@rememberLauncherForActivityResult
@@ -1078,133 +1054,170 @@ fun SplitFlowApp(
         }
     }
 
-    ConfirmBottomSheet(
-        isOpen = isConfirmSheetOpen,
-        isParsing = isParsing,
-        notice = parseNotice,
-        type = txType,
-        amount = txAmount,
-        merchant = txMerchant,
-        category = txCategory,
-        paymentMethod = txPaymentMethod,
-        note = txNote,
-        date = txDate,
-        groupId = txGroupId,
-        // Archived shared groups are read-only (decision 4), so they can't be picked for new expenses.
-        availableGroups = rawGroups.filterNot { it.isShared && it.isArchived },
-        isSplit = isSplit,
-        splitMode = splitMode,
-        paidByPersonId = paidByPersonId,
-        shares = shares,
-        isEditing = editingTxId != null,
-        addedBy = editingAddedBy,
-        splitLocked = splitLocked,
-        onTypeChange = { viewModel.updateType(it) },
-        onAmountChange = { viewModel.updateAmount(it) },
-        onMerchantChange = { viewModel.updateMerchant(it) },
-        onCategoryChange = { viewModel.updateCategory(it) },
-        onPaymentMethodChange = { viewModel.updatePaymentMethod(it) },
-        onNoteChange = { viewModel.updateNote(it) },
-        onDateChange = { viewModel.updateDate(it) },
-        onGroupIdChange = { viewModel.updateGroupId(it) },
-        onIsSplitChange = { viewModel.setIsSplit(it) },
-        onSplitModeChange = { viewModel.setSplitMode(it) },
-        onPaidByPersonIdChange = { viewModel.setPaidByPersonId(it) },
-        onTogglePersonShare = { viewModel.togglePersonShare(it) },
-        onExactAmountChange = { id, amt -> viewModel.updateExactShareAmount(id, amt) },
-        onPercentageChange = { id, pct -> viewModel.updateSharePercentage(id, pct) },
-        onOpenAddFriend = { viewModel.openAddFriend() },
-        onSave = { viewModel.saveCurrentTransaction() },
-        onDismiss = { viewModel.dismissConfirmSheet() },
-        hasUnsavedInput = { askBeforeDiscarding && viewModel.hasUnsavedEntry() },
-        categories = Categories.categoriesFor(txType, categoryPrefs),
-        paymentMethods = Categories.paymentMethods(categoryPrefs),
-        billPhoto = billPhoto,
-        onAddBillPhoto = addBillPhoto,
-        onRemoveBillPhoto = viewModel::removeBillPhoto,
-        onLoadBillPhoto = viewModel::loadCloudBillPhoto,
-        isSaving = Submit.SaveEntry in submitting,
-        isImprovingWithAi = isImprovingWithAi,
-        updatedByAi = updatedByAi,
-        onSaveIntent = viewModel::holdDraftForSave,
-        // Not on a groupmate's expense: its split is theirs to change.
-        onSplitByItems = if (editingAddedBy == null) ({ viewModel.openItemSplit(authUiState.displayName) }) else null,
-        // Your own expense can be deleted from its edit sheet; the Undo line follows (UX-06).
-        onDelete = editingTxId?.takeIf { editingAddedBy == null }?.let { id ->
-            {
-                viewModel.dismissConfirmSheet()
-                viewModel.deleteTransaction(id)
-            }
-        },
-    )
-
-    // Split by items, over the entry it belongs to (docs/designs/split-by-items.md).
     val itemSplitState by viewModel.itemSplit.state.collectAsStateWithLifecycle()
-    val itemSplitActions = remember(viewModel) {
-        ItemSplitActions(
-            onDismiss = viewModel.itemSplit::close,
-            onSetActive = viewModel.itemSplit::setActive,
-            onAddPerson = viewModel.itemSplit::addPerson,
-            onRemovePerson = viewModel.itemSplit::removePerson,
-            onToggle = viewModel.itemSplit::toggle,
-            onSetWeight = viewModel.itemSplit::setWeight,
-            onSaveItem = viewModel.itemSplit::saveItem,
-            onRemoveItem = viewModel.itemSplit::removeItem,
-            onReadItems = viewModel.itemSplit::readItems,
-            onShare = viewModel.itemSplit::share,
-            onStopSharing = viewModel.itemSplit::stopSharing,
-            onSendLink = viewModel::sendItemSplitLink,
-            onUse = viewModel::useItemSplit,
-            onCancelRead = viewModel.itemSplit::cancelRead,
+    if (isConfirmSheetOpen || itemSplitState.isOpen) {
+        val shares by viewModel.shares.collectAsStateWithLifecycle()
+        if (isConfirmSheetOpen) {
+            val editingTxId by viewModel.editingTransactionId.collectAsStateWithLifecycle()
+            val editingAddedBy by viewModel.editingAddedBy.collectAsStateWithLifecycle()
+            val txType by viewModel.type.collectAsStateWithLifecycle()
+            val txAmount by viewModel.amount.collectAsStateWithLifecycle()
+            val txMerchant by viewModel.merchant.collectAsStateWithLifecycle()
+            val txCategory by viewModel.category.collectAsStateWithLifecycle()
+            val txPaymentMethod by viewModel.paymentMethod.collectAsStateWithLifecycle()
+            val txNote by viewModel.note.collectAsStateWithLifecycle()
+            val txDate by viewModel.date.collectAsStateWithLifecycle()
+            val txGroupId by viewModel.groupId.collectAsStateWithLifecycle()
+            val isSplit by viewModel.isSplit.collectAsStateWithLifecycle()
+            val splitMode by viewModel.splitMode.collectAsStateWithLifecycle()
+            val paidByPersonId by viewModel.paidByPersonId.collectAsStateWithLifecycle()
+            val splitLocked by viewModel.splitLocked.collectAsStateWithLifecycle()
+            val parseNotice by viewModel.parseNotice.collectAsStateWithLifecycle()
+            val billPhoto by viewModel.billPhoto.collectAsStateWithLifecycle()
+            val submitting by viewModel.submitting.collectAsStateWithLifecycle()
+            val isImprovingWithAi by viewModel.isImprovingWithAi.collectAsStateWithLifecycle()
+            val updatedByAi by viewModel.updatedByAi.collectAsStateWithLifecycle()
+            ConfirmBottomSheet(
+                isOpen = isConfirmSheetOpen,
+                isParsing = isParsing,
+                notice = parseNotice,
+                type = txType,
+                amount = txAmount,
+                merchant = txMerchant,
+                category = txCategory,
+                paymentMethod = txPaymentMethod,
+                note = txNote,
+                date = txDate,
+                groupId = txGroupId,
+                // Archived shared groups are read-only (decision 4), so they can't be picked for new expenses.
+                availableGroups = rawGroups.filterNot { it.isShared && it.isArchived },
+                isSplit = isSplit,
+                splitMode = splitMode,
+                paidByPersonId = paidByPersonId,
+                shares = shares,
+                isEditing = editingTxId != null,
+                addedBy = editingAddedBy,
+                splitLocked = splitLocked,
+                onTypeChange = { viewModel.updateType(it) },
+                onAmountChange = { viewModel.updateAmount(it) },
+                onMerchantChange = { viewModel.updateMerchant(it) },
+                onCategoryChange = { viewModel.updateCategory(it) },
+                onPaymentMethodChange = { viewModel.updatePaymentMethod(it) },
+                onNoteChange = { viewModel.updateNote(it) },
+                onDateChange = { viewModel.updateDate(it) },
+                onGroupIdChange = { viewModel.updateGroupId(it) },
+                onIsSplitChange = { viewModel.setIsSplit(it) },
+                onSplitModeChange = { viewModel.setSplitMode(it) },
+                onPaidByPersonIdChange = { viewModel.setPaidByPersonId(it) },
+                onTogglePersonShare = { viewModel.togglePersonShare(it) },
+                onExactAmountChange = { id, amt -> viewModel.updateExactShareAmount(id, amt) },
+                onPercentageChange = { id, pct -> viewModel.updateSharePercentage(id, pct) },
+                onOpenAddFriend = { viewModel.openAddFriend() },
+                onSave = { viewModel.saveCurrentTransaction() },
+                onDismiss = { viewModel.dismissConfirmSheet() },
+                hasUnsavedInput = { askBeforeDiscarding && viewModel.hasUnsavedEntry() },
+                categories = Categories.categoriesFor(txType, categoryPrefs),
+                paymentMethods = Categories.paymentMethods(categoryPrefs),
+                billPhoto = billPhoto,
+                onAddBillPhoto = addBillPhoto,
+                onRemoveBillPhoto = viewModel::removeBillPhoto,
+                onLoadBillPhoto = viewModel::loadCloudBillPhoto,
+                isSaving = Submit.SaveEntry in submitting,
+                isImprovingWithAi = isImprovingWithAi,
+                updatedByAi = updatedByAi,
+                onSaveIntent = viewModel::holdDraftForSave,
+                // Not on a groupmate's expense: its split is theirs to change.
+                onSplitByItems = if (editingAddedBy == null) ({ viewModel.openItemSplit(authUiState.displayName) }) else null,
+                // Your own expense can be deleted from its edit sheet; the Undo line follows (UX-06).
+                onDelete = editingTxId?.takeIf { editingAddedBy == null }?.let { id ->
+                    {
+                        viewModel.dismissConfirmSheet()
+                        viewModel.deleteTransaction(id)
+                    }
+                },
+            )
+        }
+
+        if (itemSplitState.isOpen) {
+            // Split by items, over the entry it belongs to (docs/designs/split-by-items.md).
+            val itemSplitActions = remember(viewModel) {
+                ItemSplitActions(
+                    onDismiss = viewModel.itemSplit::close,
+                    onSetActive = viewModel.itemSplit::setActive,
+                    onAddPerson = viewModel.itemSplit::addPerson,
+                    onRemovePerson = viewModel.itemSplit::removePerson,
+                    onToggle = viewModel.itemSplit::toggle,
+                    onSetWeight = viewModel.itemSplit::setWeight,
+                    onSaveItem = viewModel.itemSplit::saveItem,
+                    onRemoveItem = viewModel.itemSplit::removeItem,
+                    onReadItems = viewModel.itemSplit::readItems,
+                    onShare = viewModel.itemSplit::share,
+                    onStopSharing = viewModel.itemSplit::stopSharing,
+                    onSendLink = viewModel::sendItemSplitLink,
+                    onUse = viewModel::useItemSplit,
+                    onCancelRead = viewModel.itemSplit::cancelRead,
+                )
+            }
+            ItemSplitSheet(
+                state = itemSplitState,
+                // Whoever could be in this entry's split: a shared group's members and guests, or everyone.
+                candidates = shares.filter { it.personId != -1L }.map { TableCandidate(it.personId, it.personName) },
+                actions = itemSplitActions,
+            )
+        }
+    }
+
+    val isExportOpen by viewModel.isExportOpen.collectAsStateWithLifecycle()
+    if (isExportOpen) {
+        val insightsMonth by viewModel.insightsMonth.collectAsStateWithLifecycle()
+        val earliestInsightsMonth by viewModel.earliestInsightsMonth.collectAsStateWithLifecycle()
+        ExportSheet(
+            isOpen = isExportOpen,
+            transactions = rawTransactions,
+            initialMonth = insightsMonth,
+            earliestMonth = earliestInsightsMonth,
+            onExport = { viewModel.exportCsv(it) },
+            onDismiss = { viewModel.closeExport() },
         )
     }
-    ItemSplitSheet(
-        state = itemSplitState,
-        // Whoever could be in this entry's split: a shared group's members and guests, or everyone.
-        candidates = shares.filter { it.personId != -1L }.map { TableCandidate(it.personId, it.personName) },
-        actions = itemSplitActions,
-    )
-
-    val isExportOpen by viewModel.isExportOpen.collectAsState()
-    ExportSheet(
-        isOpen = isExportOpen,
-        transactions = rawTransactions,
-        initialMonth = insightsMonth,
-        earliestMonth = earliestInsightsMonth,
-        onExport = { viewModel.exportCsv(it) },
-        onDismiss = { viewModel.closeExport() },
-    )
 
     // Settle up
-    val currentPersonBalance = settleUpPerson?.let { p ->
-        personBalances.find { it.person.id == p.id }
+    if (isSettleUpOpen) {
+        val settleUpPerson by viewModel.settleUpPerson.collectAsStateWithLifecycle()
+        val settleUpHisaab by viewModel.settleUpHisaab.collectAsStateWithLifecycle()
+        val currentPersonBalance = settleUpPerson?.let { p ->
+            personBalances.find { it.person.id == p.id }
+        }
+        SettleUpSheet(
+            isOpen = isSettleUpOpen,
+            person = settleUpPerson,
+            suggestedAmount = currentPersonBalance?.netBalance ?: 0.0,
+            groupOptions = remember(settleUpPerson, people, groups) {
+                viewModel.groupOptionsFor(listOfNotNull(settleUpPerson?.id))
+            },
+            onCreateGroup = { viewModel.openCreateSharedGroup() },
+            onConfirm = { fromId, toId, amt, note, groupId ->
+                viewModel.recordSettlementPayment(fromId, toId, amt, note, groupId)
+            },
+            onDismiss = { viewModel.dismissSettleUp() },
+            upiPayee = upiPayee,
+            hisaab = settleUpHisaab,
+            onAsk = { amount, message -> settleUpPerson?.let { viewModel.askToPay(it, amount, message) } },
+        )
     }
-    SettleUpSheet(
-        isOpen = isSettleUpOpen,
-        person = settleUpPerson,
-        suggestedAmount = currentPersonBalance?.netBalance ?: 0.0,
-        groupOptions = remember(settleUpPerson, people, groups) {
-            viewModel.groupOptionsFor(listOfNotNull(settleUpPerson?.id))
-        },
-        onCreateGroup = { viewModel.openCreateSharedGroup() },
-        onConfirm = { fromId, toId, amt, note, groupId ->
-            viewModel.recordSettlementPayment(fromId, toId, amt, note, groupId)
-        },
-        onDismiss = { viewModel.dismissSettleUp() },
-        upiPayee = upiPayee,
-        hisaab = settleUpHisaab,
-        onAsk = { amount, message -> settleUpPerson?.let { viewModel.askToPay(it, amount, message) } },
-    )
 
-    SubscriptionsSheet(
-        isOpen = isSubscriptionsOpen,
-        subscriptions = subscriptions,
-        prefs = categoryPrefs,
-        onAdd = { new, chargeFromStart -> viewModel.addSubscription(new, chargeFromStart) },
-        onCancel = { viewModel.cancelSubscription(it) },
-        onDelete = { viewModel.deleteSubscription(it) },
-        onDismiss = { viewModel.closeSubscriptions() },
-    )
+    if (isSubscriptionsOpen) {
+        val subscriptions by viewModel.subscriptions.collectAsStateWithLifecycle()
+        SubscriptionsSheet(
+            isOpen = isSubscriptionsOpen,
+            subscriptions = subscriptions,
+            prefs = categoryPrefs,
+            onAdd = { new, chargeFromStart -> viewModel.addSubscription(new, chargeFromStart) },
+            onCancel = { viewModel.cancelSubscription(it) },
+            onDelete = { viewModel.deleteSubscription(it) },
+            onDismiss = { viewModel.closeSubscriptions() },
+        )
+    }
 
     CategoriesSheet(
         isOpen = isCategoriesOpen,
@@ -1260,7 +1273,7 @@ fun SplitFlowApp(
     )
 
     // Edit a local group (UX-19)
-    val editingGroup by viewModel.editingGroup.collectAsState()
+    val editingGroup by viewModel.editingGroup.collectAsStateWithLifecycle()
     CreateGroupSheet(
         isOpen = editingGroup != null,
         allPeople = people,
@@ -1351,7 +1364,7 @@ fun SplitFlowApp(
     if (selectedPersonForLedger != null) {
         val person = selectedPersonForLedger!!
         val ledgerFlow = remember(person.id, viewModel) { viewModel.getPersonLedgerFlow(person.id) }
-        val ledgerItems by ledgerFlow.collectAsState(initial = null)
+        val ledgerItems by ledgerFlow.collectAsStateWithLifecycle(initialValue = null)
         PersonLedgerSheet(
             person = person,
             ledgerItems = ledgerItems,
