@@ -1174,4 +1174,25 @@
     <string name="everything_backup_discard_title">Discard this restore?</string>
     <string name="everything_backup_discard_description">Stop trying to finish this restore. Entries already restored will stay. Keep your backup file.</string>
     <string name="fullbackup_vm_discarded">Restore discarded.</string>
+
+    <!-- Ask to pay message (UX-41) -->
+    <string name="ask_message_header">Hey %1$s, here\'s our hisaab:</string>
+    <string name="ask_message_carried_over">• Carried over: %1$s</string>
+    <string name="ask_message_earlier">• Earlier: %1$s</string>
+    <string name="ask_message_line">• %1$s</string>
+    <string name="ask_message_total">Total: %1$s</string>
+    <string name="ask_message_partial">Asking %1$s of the %2$s for now.</string>
+    <string name="ask_message_upi">UPI: %1$s</string>
+    <string name="ask_message_footer">Sent from Kharcha Paani</string>
+    <string name="ask_message_their_share">%1$s, %2$s: your share %3$s</string>
+    <string name="ask_message_my_share">%1$s, %2$s: my share of what you paid %3$s</string>
+    <string name="ask_message_as_guest">%1$s, %2$s: your share as my guest %3$s</string>
+    <string name="ask_message_i_sent">I sent you, %1$s: %2$s</string>
+    <string name="ask_message_they_sent">You sent me, %1$s: %2$s</string>
+
+    <!-- Account Profile Editing (UX-41) -->
+    <string name="account_profile_save">Save profile</string>
+    <string name="account_profile_saving">Saving…</string>
+    <string name="account_profile_add_name">Add your name</string>
+    <string name="account_profile_name_too_long">Name is too long</string>
 </resources>
