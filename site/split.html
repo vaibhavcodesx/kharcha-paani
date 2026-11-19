@@ -105,6 +105,7 @@ h2 { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: 
 @keyframes pulse { from { opacity: .5; } to { opacity: 1; } }
 footer { margin-top: 2.5rem; color: var(--faint); font-size: .85rem; }
 footer a { color: inherit; }
+footer .get-app { margin-top: .4rem; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
@@ -485,8 +486,11 @@ function listNames(names) {
 }
 
 function footer() {
-  return h("footer", null, "Only first names and what's on this bill are kept, and only until it's settled. ",
-    h("a", { href: "privacy.html" }, "Privacy"));
+  return h("footer", null,
+    "Only first names and what's on this bill are kept, and only until it's settled. ",
+    h("a", { href: "privacy.html" }, "Privacy"),
+    h("div", { class: "get-app" },
+      h("a", { href: "https://github.com/vaibhavcodesx/kharcha-paani/releases" }, "Get the app")));
 }
 
 render();
