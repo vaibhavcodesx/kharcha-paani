@@ -130,6 +130,7 @@ import com.vaibhav.kharchapaani.ui.itemsplit.ItemSplitActions
 import com.vaibhav.kharchapaani.ui.itemsplit.ItemSplitSheet
 import com.vaibhav.kharchapaani.ui.itemsplit.TableCandidate
 import com.vaibhav.kharchapaani.ui.groups.ShareSplitPrompt
+import com.vaibhav.kharchapaani.domain.GroupBalances
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupPanel
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupsController
 import com.vaibhav.kharchapaani.ui.groups.SharedGroupsViewModel
@@ -1243,6 +1244,14 @@ fun SplitFlowApp(
         },
         sharedGroupPanel = { details ->
             val group = details.group
+            LaunchedEffect(group.id, group.isArchived, group.syncState, group.createdByProfileId) {
+                sharedGroups.checkMemberRemoval(group)
+            }
+            val allowMemberRemoval = sharedGroupsState.removableGroupId == group.id
+            val outstandingMembers = remember(allowMemberRemoval, details.transactions, details.settlements) {
+                if (allowMemberRemoval) GroupBalances.netPositions(details.transactions, details.settlements).keys
+                else emptySet()
+            }
             SharedGroupPanel(
                 group = group,
                 members = details.members,
@@ -1256,6 +1265,9 @@ fun SplitFlowApp(
                 onRevokeInvite = { sharedGroups.revokeInvite() },
                 onSetArchived = { sharedGroups.setArchived(group, it) },
                 onLeave = { sharedGroups.leaveGroup(group) { viewModel.dismissGroupDetail() } },
+                onRemoveMember = if (allowMemberRemoval) ({ profileId -> sharedGroups.removeMember(group, profileId) }) else null,
+                isRemovingMember = sharedGroupsState.isRemovingMember,
+                outstandingMembers = outstandingMembers,
             )
         },
     )

@@ -48,6 +48,8 @@ data class SharedGroupsUiState(
     val join: JoinGroupState? = null,
     val invite: GroupInviteState? = null,
     val leavingGroupId: Long? = null,
+    val removableGroupId: Long? = null,
+    val isRemovingMember: Boolean = false,
     val message: String? = null,
     /** Set by a join that went through, until the shell has offered notifications for it. */
     val justJoined: Boolean = false,
@@ -195,6 +197,54 @@ class SharedGroupsController(
 
     fun dismissInvite() {
         _state.update { it.copy(invite = null) }
+    }
+
+    private fun canManageMembers(group: GroupEntity): Boolean =
+        group.isShared && group.createdByProfileId == selfProfileId &&
+            !group.isArchived && group.syncState == SyncState.SYNCED
+
+    suspend fun checkMemberRemoval(group: GroupEntity) {
+        val network = remote
+        val supported = if (network == null || !canManageMembers(group)) false else try {
+            network.supportsMemberRemoval(group.remoteId)
+        } catch (_: IOException) {
+            false
+        } catch (_: RestException) {
+            false
+        }
+        _state.update { it.copy(removableGroupId = group.id.takeIf { supported }) }
+    }
+
+    fun removeMember(group: GroupEntity, memberProfileId: String) {
+        val network = remote ?: return
+        val current = _state.value
+        if (!canManageMembers(group) || current.removableGroupId != group.id || current.isRemovingMember ||
+            memberProfileId.isBlank() || memberProfileId == selfProfileId
+        ) return
+
+        _state.update { it.copy(isRemovingMember = true) }
+        scope.launch {
+            try {
+                network.removeMember(group.remoteId, memberProfileId)
+                requestSync()
+                _state.update { it.copy(message = copyText(R.string.shared_group_notice_member_removed)) }
+            } catch (_: IOException) {
+                _state.update { it.copy(message = copyText(OFFLINE)) }
+            } catch (e: RestException) {
+                if (e.statusCode == 404 || e.error.contains("PGRST202", ignoreCase = true)) {
+                    _state.update { state ->
+                        state.copy(
+                            removableGroupId = state.removableGroupId.takeUnless { it == group.id },
+                            message = copyText(R.string.shared_group_notice_remove_unavailable),
+                        )
+                    }
+                } else {
+                    _state.update { it.copy(message = messageFor(e)) }
+                }
+            } finally {
+                _state.update { it.copy(isRemovingMember = false) }
+            }
+        }
     }
 
     fun leaveGroup(group: GroupEntity, onLeft: () -> Unit) {

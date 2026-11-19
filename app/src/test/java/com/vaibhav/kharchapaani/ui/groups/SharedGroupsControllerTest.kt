@@ -122,7 +122,7 @@ class SharedGroupsControllerTest {
         remote.memberRemovalAvailable = true
 
         controller.checkMemberRemoval(group)
-        assertTrue(controller.state.value.memberRemovalAvailable)
+        assertEquals(group.id, controller.state.value.removableGroupId)
         controller.removeMember(group, "other-profile")
 
         awaitState { it.message != null && !it.isRemovingMember }
@@ -136,7 +136,7 @@ class SharedGroupsControllerTest {
             isShared = true, syncState = SyncState.SYNCED)
 
         controller.checkMemberRemoval(group)
-        assertFalse(controller.state.value.memberRemovalAvailable)
+        assertNull(controller.state.value.removableGroupId)
         controller.removeMember(group, "other-profile")
         remote.memberRemovalAvailable = true
         controller.checkMemberRemoval(group)
