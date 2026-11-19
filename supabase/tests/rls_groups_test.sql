@@ -153,8 +153,8 @@ select public._expect_value('mallory cannot see alice''s group',
   $q$ select count(*) from public.groups where id = '10000000-0000-4000-8000-000000000001' $q$, 0);
 select public._expect_error('mallory cannot insert herself into a group by knowing its id',
   $q$ insert into public.group_members (group_id, profile_id) values ('10000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-0000000000d1') $q$);
-select public._expect_error('join_group rejects a made-up code',
-  $q$ select public.join_group('ABCDEFGH') $q$);
+select public._expect_value('join_group returns null for a made-up code (no error: the failed try is counted)',
+  $q$ select (public.join_group('ABCDEFGH') is null)::int $q$, 1);
 select public._expect_error('mallory cannot claim alice''s group id through create_group',
   $q$ select public.create_group('10000000-0000-4000-8000-000000000001', 'Mine now') $q$);
 select public._expect_value('mallory cannot list the group''s invites',
@@ -189,8 +189,8 @@ select public._expect_ok('carol joins with the same code (codes are multi-use un
 select public._as_admin();
 update public.group_invites set expires_at = now() - interval '1 minute' where code = (select value from public._ids where key = 'invite');
 select public._as('00000000-0000-4000-8000-0000000000d1');
-select public._expect_error('an expired code cannot be used',
-  format($q$ select public.join_group(%L) $q$, (select value from public._ids where key = 'invite')));
+select public._expect_value('an expired code cannot be used (null)',
+  format($q$ select (public.join_group(%L) is null)::int $q$, (select value from public._ids where key = 'invite')), 1);
 select public._expect_value('an expired code previews as nothing',
   format($q$ select count(*) from public.preview_invite(%L) $q$, (select value from public._ids where key = 'invite')), 0);
 
@@ -203,8 +203,8 @@ select public._as('00000000-0000-4000-8000-0000000000a1');
 select public._expect_ok('the group creator revokes the second invite',
   format($q$ select public.revoke_group_invite(%L) $q$, (select value from public._ids where key = 'invite2')));
 select public._as('00000000-0000-4000-8000-0000000000d1');
-select public._expect_error('a revoked code cannot be used',
-  format($q$ select public.join_group(%L) $q$, (select value from public._ids where key = 'invite2')));
+select public._expect_value('a revoked code cannot be used (null)',
+  format($q$ select (public.join_group(%L) is null)::int $q$, (select value from public._ids where key = 'invite2')), 1);
 
 -- ------------------------------------------------------------
 -- Gap 2: profile visibility
@@ -451,8 +451,8 @@ select public._expect_error('no settlements in an archived group',
   $q$ insert into public.settlements (from_profile_id, to_profile_id, amount, group_id) values ('00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-0000000000a1', 5, '10000000-0000-4000-8000-000000000001') $q$);
 
 select public._as('00000000-0000-4000-8000-0000000000d1');
-select public._expect_error('an unexpired code for an archived group cannot be used',
-  format($q$ select public.join_group(%L) $q$, (select value from public._ids where key = 'invite3')));
+select public._expect_value('an unexpired code for an archived group cannot be used (null)',
+  format($q$ select (public.join_group(%L) is null)::int $q$, (select value from public._ids where key = 'invite3')), 1);
 
 -- ------------------------------------------------------------
 -- Anonymous callers
