@@ -72,3 +72,10 @@ val SkyBlue = Color(0xFF38BDF8)
 // Signature gradient: amber through a saturated warm gold to lime, so the middle never goes brown.
 // Reserved for three places: the hero balance, the primary add/save action, the dock's active mark.
 val BrandGold = Color(0xFFFFB547)
+
+// Destructive-action tokens. DestructiveText is a light red for text on dark surfaces (7.9:1
+// contrast). DeleteActionRed is a dark-red fill for swipe-to-delete reveals (4.8:1 behind white).
+// UnknownAvatarGray is the background of an avatar whose owner has no colour set.
+val DestructiveText = Color(0xFFFF8A80)
+val DeleteActionRed = Color(0xFFC62F2F)
+val UnknownAvatarGray = Color(0xFFB9B2A8)

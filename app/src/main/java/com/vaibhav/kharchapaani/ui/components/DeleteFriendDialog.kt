@@ -10,15 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.vaibhav.kharchapaani.R
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
-import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
-import com.vaibhav.kharchapaani.ui.format.Money
-import com.vaibhav.kharchapaani.ui.theme.CharcoalSurface
-import com.vaibhav.kharchapaani.ui.theme.KpShapes
-import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
-import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
-import com.vaibhav.kharchapaani.ui.theme.Spacing
+import com.vaibhav.kharchapaani.ui.theme.DestructiveText
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import kotlin.math.abs
 
@@ -80,6 +72,3 @@ fun DeleteFriendDialog(
         titleContentColor = OffWhiteText,
     )
 }
-
-// A light red for text on the dark surface (7.9:1); the swipe reveal's #C62F2F is a fill, too dark for text.
-internal val DestructiveText = Color(0xFFFF8A80)
