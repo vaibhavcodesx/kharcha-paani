@@ -1,6 +1,8 @@
 package com.vaibhav.kharchapaani.ui.groups
 
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -125,6 +127,45 @@ class SharedGroupUiTest {
         assertEquals(null, removed)
         composeTestRule.onNodeWithText("Remove").performClick()
         assertEquals("bob", removed)
+    }
+
+    @Test
+    fun `leaving a group shows what I owe or am owed, and nothing when settled`() {
+        val balance = androidx.compose.runtime.mutableStateOf(-250.0)
+        composeTestRule.setContent {
+            SplitFlowTheme {
+                SharedGroupPanel(
+                    group = GroupEntity(name = "Goa trip", syncState = SyncState.SYNCED),
+                    members = emptyList(),
+                    isCreator = false,
+                    invite = null,
+                    isLeaving = false,
+                    unsyncedChanges = 0,
+                    onSyncNow = {},
+                    onCreateInvite = {},
+                    onShareInvite = {},
+                    onRevokeInvite = {},
+                    onSetArchived = {},
+                    onLeave = {},
+                    myBalance = balance.value,
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Leave group").performClick()
+        composeTestRule.onNodeWithText("₹250 is still unsettled on your side in this group. Leaving does not clear it, so settle up first.").assertExists()
+        composeTestRule.onNodeWithText("Cancel").performClick()
+
+        balance.value = 80.0
+        composeTestRule.onNodeWithText("Leave group").performClick()
+        composeTestRule.onNodeWithText("You are owed ₹80 in this group. Leaving does not collect it, so ask to be paid first.").assertExists()
+        composeTestRule.onNodeWithText("Cancel").performClick()
+
+        balance.value = 0.0
+        composeTestRule.onNodeWithText("Leave group").performClick()
+        composeTestRule.onNodeWithText("Its expenses and settlements will be removed from this phone. Other members keep them, and you can rejoin with a new invite.").assertExists()
+        composeTestRule.onAllNodesWithText("still unsettled", substring = true).assertCountEquals(0)
+        composeTestRule.onAllNodesWithText("You are owed", substring = true).assertCountEquals(0)
     }
 
     @Test

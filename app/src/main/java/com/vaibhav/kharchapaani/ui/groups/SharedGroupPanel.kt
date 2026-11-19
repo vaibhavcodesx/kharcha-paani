@@ -60,8 +60,10 @@ import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
+import com.vaibhav.kharchapaani.ui.format.Money
 import java.text.DateFormat
 import java.util.Date
+import kotlin.math.abs
 
 /** Members, invites, archiving and leaving for a shared group, shown inside its detail sheet. */
 @OptIn(ExperimentalLayoutApi::class)
@@ -83,6 +85,8 @@ fun SharedGroupPanel(
     onRemoveMember: ((profileId: String) -> Unit)? = null,
     isRemovingMember: Boolean = false,
     outstandingMembers: Set<Long> = emptySet(),
+    /** What I am owed (positive) or owe (negative) in this group, in rupees. Shown before leaving. */
+    myBalance: Double = 0.0,
 ) {
     var confirmingLeave by rememberSaveable { mutableStateOf(false) }
     var memberToRemoveId by rememberSaveable(group.id) { mutableStateOf<Long?>(null) }
@@ -198,6 +202,17 @@ fun SharedGroupPanel(
                         stringResource(R.string.shared_group_copy_leave_explanation),
                         style = MaterialTheme.typography.bodyMedium,
                     )
+                    if (abs(myBalance) >= 0.005) {
+                        // Leaving does not settle anything, so the person should see what is left unsettled.
+                        Text(
+                            text = stringResource(
+                                if (myBalance > 0) R.string.shared_group_copy_leave_owed else R.string.shared_group_copy_leave_owe,
+                                Money.format(abs(myBalance)),
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = WarmAmberLight,
+                        )
+                    }
                     if (unsyncedChanges > 0) {
                         // Leaving first would throw these away: the server refuses them from a non-member.
                         Text(

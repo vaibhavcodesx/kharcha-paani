@@ -544,6 +544,8 @@
     <string name="shared_group_copy_archive">Archive group</string>
     <string name="shared_group_copy_leaving">Leaving…</string>
     <string name="shared_group_copy_leave_group">Leave group</string>
+    <string name="shared_group_copy_leave_owed">You are owed %1$s in this group. Leaving does not collect it, so ask to be paid first.</string>
+    <string name="shared_group_copy_leave_owe">%1$s is still unsettled on your side in this group. Leaving does not clear it, so settle up first.</string>
     <string name="shared_group_copy_leave_explanation">Its expenses and settlements will be removed from this phone. Other members keep them, and you can rejoin with a new invite.</string>
     <string name="shared_group_copy_leave_anyway">Leave anyway</string>
     <string name="shared_group_copy_leave">Leave</string>
