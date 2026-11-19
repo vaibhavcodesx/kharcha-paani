@@ -1,14 +1,16 @@
+Last verified against the code: 2026-11-19.
+
 # Kharcha Paani: Architecture Map
 
-Written for Antigravity onboarding (Item O3), checked against main `ebfc2b66110d0897685369f2c124fac2dec68862` on 2026-11-04. Use this source map alongside the historical [original architecture dossier](original-architecture-dossier.md). It describes checked-in implementation and configuration, not independently verified live services or phone behavior.
+Written for Antigravity onboarding (Item O3), checked against main on 2026-11-19 for Milestone 1.8.0. Use this source map alongside the historical [original architecture dossier](original-architecture-dossier.md). It describes checked-in implementation and configuration, not independently verified live services or phone behavior.
 
-**Version boundary:** the `v1.6.0` tag is the phone-test release baseline. Main at the commit above also contains #195 sheet-first quick add: the phone guess opens the confirmation sheet before an AI improvement arrives. That behavior is absent from the tagged 1.6.0 text path, which waits for parsing before opening the sheet. This document does not establish which build is installed, phone acceptance, proxy deployment, applied SQL, live quotas, or old-key revocation.
+**Version boundary:** Milestone 1.8.0 baseline includes sheet-first quick add (#195), split-by-items (`domain/ItemSplit.kt`, `site/split.html`, live database functions), and Groq-backed typed quick adds with transparent Gemini fallback. This document records implementation and staged vs live server state; it does not establish phone acceptance, live quotas, or old-key revocation.
 
 ---
 
 ## 1. High-Level System Architecture
 
-Kharcha Paani is an offline-first native Android application for personal finance and shared group expense tracking in India. It pairs an offline SQLite relational database (Room v10) with Supabase cloud infrastructure (Auth, PostgREST, Realtime, Edge Functions) and Gemini multimodal AI requests routed through the checked-in `gemini-proxy` integration.
+Kharcha Paani is an offline-first native Android application for personal finance and shared group expense tracking in India. It pairs an offline SQLite relational database (Room v10) with Supabase cloud infrastructure (Auth, PostgREST, Realtime, Edge Functions) and AI requests routed through the checked-in `gemini-proxy` integration (typed quick adds go through Groq with a Gemini fallback; bills, statements, voice and Insights use Gemini; the app never holds an API key).
 
 ```mermaid
 flowchart TD
@@ -28,11 +30,11 @@ flowchart TD
         Auth["Supabase GoTrue Auth\n(Google ID Token Exchange)"]
         Postgres["PostgreSQL Database\n(RLS, Transactions, Groups, Splits)"]
         Realtime["Realtime Postgres Changes"]
-        Proxy["gemini-proxy Edge Function\n(Server-held Gemini Secret & Quota Check)"]
+        Proxy["gemini-proxy Edge Function\n(Server-held Gemini & Groq Secrets & Quota Check)"]
     end
 
-    subgraph GoogleAI ["Google Cloud / Gemini API"]
-        Gemini["gemini-3.6-flash / gemini-3.5-flash-lite\n(NLP, Vision OCR, Document Parsing)"]
+    subgraph GoogleAI ["Cloud AI Providers (Gemini / Groq)"]
+        Gemini["Groq qwen3.8-27b (typed quick-add)\nGemini 3.6-flash / 3.5-flash-lite\n(bills, statements, voice, insights, fallback)"]
     end
 
     UI --> VM
@@ -52,6 +54,12 @@ flowchart TD
     Proxy -->|API Secret| Gemini
     Widgets --> Room
 ```
+
+### 1.1 Cloud Infrastructure & Server State
+- **Edge Functions (`gemini-proxy`):** Holds server-held `GEMINI_API_KEY` and `GROQ_API_KEY` secrets. Verifies user JWT, enforces daily usage caps via `take_ai_read`, routes typed quick adds to Groq with transparent Gemini fallback, and routes bills, statements, voice, and Insights to Gemini. The app never holds an API key.
+- **Split-by-Items Link Functions (Live):** 8 functions defined in `20261110000000_bill_item_splits.sql` are **live** on Supabase (applied by hand); the four link functions (`bill_split_view`, `bill_split_join`, `bill_split_claim`, `bill_split_done`) are open to signed-out/anon callers using random 122-bit URL tokens, while the host management functions (`create_bill_split`, `update_bill_split`, `remove_bill_split_person`, `close_bill_split`) require authentication.
+- **Minimum-Version Switch (Staged, not applied):** `public.app_config` (`20261119000000_app_config.sql`) introduces a single-row table with `min_version_code` and `recommended_version_code` readable by anon and authenticated callers to pause sync and prompt out-of-date clients without restricting local access or data exports.
+- **Plan & Ceiling Tables (Staged, not applied):** `private.user_plans`, `private.ai_plan_caps`, and `private.ai_project_ceilings` (`20261119000100_ai_plans_and_ceiling.sql`) define per-user tiers (`free`, `friends`, `paid`) and project-wide daily rate ceilings to prevent quota exhaustion across all users.
 
 ---
 
@@ -274,14 +282,14 @@ sequenceDiagram
 
 ## 7. Multimodal AI Ingestion Pipeline
 
-The checked-in client directs AI requests to the authenticated `gemini-proxy` endpoint, whose code reads the Gemini key from a server secret. Deployment, configured secrets and live behavior require separate verification:
+The checked-in client directs AI requests to the authenticated `gemini-proxy` endpoint, whose code reads Gemini and Groq API keys from server secrets (the app never holds an API key). Typed quick adds route through Groq with a Gemini fallback; bills, statements, voice, and Insights use Gemini. Deployment, configured secrets and live behavior require separate verification:
 
 ```mermaid
 flowchart LR
     Input["Input Source\n(Quick-Add Text / Receipt Photo / Bank Statement PDF)"]
     LocalFallback["On-device Text Guess\n(LocalHeuristicParser)"]
     EdgeFunction["Supabase Edge Function\n(gemini-proxy)"]
-    GeminiModel["Google Gemini API\n(gemini-3.6-flash / gemini-3.5-flash-lite)"]
+    GeminiModel["AI Providers\n(Groq qwen3.8-27b / Gemini 3.6-flash / Gemini 3.5-flash-lite)"]
     ClientParse["GeminiRepository\nEnvelope parsing and failure classification"]
     Result["ParsedTransactionResult / StatementParseResult"]
 
@@ -297,12 +305,12 @@ flowchart LR
 ```
 
 ### 7.1 Key Ingestion Modes
-1. **Quick-Add Natural Language:** `GeminiRepository.parseText` computes the local heuristic result first, then makes a cloud call when configured; it is sequential, not a race between two parsers. At checked main, #195 additionally opens the sheet on `MainViewModel.openOnPhoneGuess`, then runs cancellable AI improvement and preserves fields the person touched. The tagged 1.6.0 path waited for `parseText` before opening the sheet.
-2. **Bill Photo Multimodal OCR:** Shared-image decoding targets a 2048 px long side in `SharedFiles` (older BitmapFactory sampling may be just above it). The AI request scales the long side to at most 1600 px and JPEG quality 85 in `GeminiRepository.bitmapToBase64`, then extracts receipt fields. A failed read leaves manual entry available; there is no claimed on-device receipt OCR fallback.
-3. **Bank Statement Parsing:** `readStatementPdf` sends PDF data through the proxy and validates/reviews returned items. Its use of `LocalStatementParser.buildStatementGroups` groups already parsed rows; it does not extract PDF text offline. Network/quota/read failures surface a failure/manual-entry path, not an offline PDF import.
-4. **Daily AI Quotas:** The checked-in SQL seeds per-user daily caps of 50 quick-adds, 10 bill reads, 3 statements and 20 Insights/trip reads, keyed to midnight IST. The proxy calls `take_ai_read`; caps can change server-side, and accepted calls spend a read even if Google fails. A fallback request can spend a second read. These are configured defaults, not live quota/deployment evidence. Local manual entry remains available.
+1. **Quick-Add Natural Language:** `GeminiRepository.parseText` computes the local heuristic result first, then makes a cloud call when configured; it is sequential, not a race between two parsers. Typed quick adds route through Groq (`groq-qwen3.8-27b`), falling back to `gemini-3.1-flash-lite` if Groq fails or times out (8 s limit). Spoken quick adds route directly to Gemini (`gemini-3.6-flash`, falling back to `gemini-3.5-flash-lite`). The app never holds an API key. At checked main, #195 additionally opens the sheet on `MainViewModel.openOnPhoneGuess`, then runs cancellable AI improvement and preserves fields the person touched. The tagged 1.6.0 path waited for `parseText` before opening the sheet.
+2. **Bill Photo Multimodal OCR:** Shared-image decoding targets a 2048 px long side in `SharedFiles` (older BitmapFactory sampling may be just above it). The AI request scales the long side to at most 1600 px and JPEG quality 85 in `GeminiRepository.bitmapToBase64`, then extracts receipt fields via `gemini-3.6-flash`. A failed read leaves manual entry available; there is no claimed on-device receipt OCR fallback.
+3. **Bank Statement Parsing:** `readStatementPdf` sends PDF data through the proxy to Gemini and validates/reviews returned items. Its use of `LocalStatementParser.buildStatementGroups` groups already parsed rows; it does not extract PDF text offline. Network/quota/read failures surface a failure/manual-entry path, not an offline PDF import.
+4. **Daily AI Quotas, Plans and Project Ceilings:** The checked-in SQL seeds per-user daily caps of 50 quick-adds, 10 bill reads, 3 statements and 20 Insights/trip reads, keyed to midnight IST in `private.ai_read_caps`. The proxy calls `take_ai_read`; caps can change server-side, and accepted calls spend a read even if Google or Groq fails. A fallback request to Gemini on a failed Groq call reuses the same read. Per-plan caps (`private.ai_plan_caps` for `friends` and `paid` plans), user plan mappings (`private.user_plans`), and project-wide daily ceilings (`private.ai_project_ceilings` in `20261119000100_ai_plans_and_ceiling.sql`) are **staged, not applied** in migration history. Local manual entry remains available.
 
-The model IDs are source configuration, not a claim about current Google availability: `MODEL = gemini-3.6-flash`, `FALLBACK_MODEL = gemini-3.5-flash-lite`, matching the proxy allowlist. The general text/receipt/ask call wrapper retries once on server-error/rate-limit failures; the PDF path calls the primary endpoint directly.
+The model IDs are source configuration, not a claim about current provider availability: typed quick adds use `groq-qwen3.8-27b` with fallback to `gemini-3.1-flash-lite`; general multimodal/bill/insights requests use `MODEL = gemini-3.6-flash` and `FALLBACK_MODEL = gemini-3.5-flash-lite`, matching the proxy allowlist. The general text/receipt/ask call wrapper retries once on server-error/rate-limit failures; the PDF path calls the primary endpoint directly.
 
 ---
 
