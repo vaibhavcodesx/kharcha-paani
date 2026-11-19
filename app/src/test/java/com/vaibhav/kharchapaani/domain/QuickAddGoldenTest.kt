@@ -76,7 +76,7 @@ class QuickAddGoldenTest {
         TestCase("cab 450 split with Ankit", "expense", 450.0, "Cab", "Transport", "", expectedDaysBack = 0, knownFriends = listOf("Ankit Shah"), expectedSplits = listOf("Ankit")),
 
         // Multi-item categories & everyday purchases
-        TestCase("kurkure and chips 30 cash", "expense", 30.0, "Kurkure Chips", "Packaged goods", "Cash", expectedDaysBack = 0),
+        TestCase("kurkure and chips 30 cash", "expense", 30.0, "Kurkure Chips", "Food", "Cash", expectedDaysBack = 0),
         TestCase("doctor clinic 500 card", "expense", 500.0, "Doctor Clinic", "Health", "Card", expectedDaysBack = 0),
         TestCase("wifi recharge 999 airtel", "expense", 999.0, "Wifi Recharge Airtel", "Bills", "", expectedDaysBack = 0)
     )
