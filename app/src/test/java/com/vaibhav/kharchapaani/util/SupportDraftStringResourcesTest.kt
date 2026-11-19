@@ -28,4 +28,15 @@ class SupportDraftStringResourcesTest {
             assertTrue(body.contains("Kharcha Paani ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"))
         }
     }
+
+    @Test fun `report handles missing email app without crashing`() {
+        Robolectric.buildActivity(Activity::class.java).setup().use { controller ->
+            val context = object : android.content.ContextWrapper(controller.get()) {
+                override fun startActivity(intent: Intent?) {
+                    throw android.content.ActivityNotFoundException("No email app")
+                }
+            }
+            assertFalse(Support.reportAiAnswer(context, "Question", "Answer"))
+        }
+    }
 }

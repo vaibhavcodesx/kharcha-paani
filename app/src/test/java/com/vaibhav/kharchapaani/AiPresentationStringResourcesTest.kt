@@ -82,4 +82,8 @@ class AiPresentationStringResourcesTest {
         compose.onNodeWithText("What to change").assertExists()
         compose.onNodeWithText("Log a few expenses first; there's nothing to read yet.").assertExists()
     }
+
+    @Test fun `no email app found string resource matches required copy`() {
+        assertEquals("No email app found. The address was copied.", app.getString(R.string.ai_display_report_no_email))
+    }
 }
