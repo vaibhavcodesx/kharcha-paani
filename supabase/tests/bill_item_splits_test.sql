@@ -276,7 +276,7 @@ select public._expect_value('the host herself can''t be removed',
 -- ------------------------------------------------------------
 select public._as_anon();
 select public._expect_ok('the table fills to 30 people',
-  $q$ select public.bill_split_join((select value from public._ids where key = 't'), 'Guest ' || g) from generate_series(1, 27) g $q$);
+  $q$ select public.bill_split_join((select value from public._ids where key = 't'), 'Guest' || g) from generate_series(1, 27) g $q$);
 select public._expect_state('and the 31st is refused',
   $q$ select public.bill_split_join((select value from public._ids where key = 't'), 'One too many') $q$, 'P0001');
 
@@ -351,6 +351,44 @@ select public._expect_value('and app_config is read-only for anon',
       where n.nspname = 'public' and c.relname = 'app_config'
         and (has_table_privilege('anon', c.oid, 'insert') or has_table_privilege('anon', c.oid, 'update')
           or has_table_privilege('anon', c.oid, 'delete')) $q$, 0);
+
+
+-- Two people may share a first name and their picks remain tied to their own ids.
+select public._as('00000000-0000-4000-8000-0000000000a7');
+insert into public._ids
+select 'same_names', public.create_bill_split(jsonb_build_object(
+  'id', '10000000-0000-4000-8000-0000000000e7', 'host_name', 'Asha Example', 'total_paise', 3500,
+  'items', jsonb_build_array(jsonb_build_object('id', '20000000-0000-4000-8000-0000000000e7', 'name', 'Chai', 'amount_paise', 3500)),
+  'people', jsonb_build_array(
+    jsonb_build_object('id', '30000000-0000-4000-8000-0000000000e7', 'name', 'Asha Example', 'is_host', true),
+    jsonb_build_object('id', '30000000-0000-4000-8000-0000000000f7', 'name', 'Rohan Kumar')))) ->> 'token';
+
+select public._as_admin();
+select public._expect_value('new shared bills store only first names',
+  $q$ select count(*) from private.bill_split_people
+      where split_id = '10000000-0000-4000-8000-0000000000e7' and name in ('Asha', 'Rohan') $q$, 2);
+-- Restore synthetic legacy data to check how a link published before the change is displayed.
+update private.bill_splits set host_name = 'Asha Example' where id = '10000000-0000-4000-8000-0000000000e7';
+update private.bill_split_people set name = 'Rohan Kumar' where id = '30000000-0000-4000-8000-0000000000f7';
+
+select public._as_anon();
+select public._expect_value('an existing link shows the host and guest by first name',
+  $q$ select ((s ->> 'host_name') = 'Asha' and (s -> 'people' -> 1 ->> 'name') = 'Rohan')::int
+      from public.bill_split_view((select value from public._ids where key = 'same_names')) s $q$, 1);
+select public._expect_value('a guest with a matching first name gets a distinct entry',
+  $q$ select (public.bill_split_join((select value from public._ids where key = 'same_names'), 'Rohan Kumar',
+        '30000000-0000-4000-8000-0000000000a8') ->> 'person_id' = '30000000-0000-4000-8000-0000000000a8')::int $q$, 1);
+select public._expect_value('retrying a join by its id keeps the same entry',
+  $q$ select (public.bill_split_join((select value from public._ids where key = 'same_names'), 'Rohan Das',
+        '30000000-0000-4000-8000-0000000000a8') ->> 'person_id' = '30000000-0000-4000-8000-0000000000a8')::int $q$, 1);
+select public._expect_value('the guest page can identify each Rohan by the displayed label',
+  $q$ select ((s -> 'people' -> 1 ->> 'name') = 'Rohan' and (s -> 'people' -> 2 ->> 'name') = 'Rohan 2'
+          and jsonb_array_length(s -> 'people') = 3)::int
+      from public.bill_split_view((select value from public._ids where key = 'same_names')) s $q$, 1);
+select public._expect_value('the second Rohan can pick an item under their own id',
+  $q$ select (s -> 'claims' -> 0 ->> 'person_id' = '30000000-0000-4000-8000-0000000000a8')::int
+      from public.bill_split_claim((select value from public._ids where key = 'same_names'),
+        '30000000-0000-4000-8000-0000000000a8', '20000000-0000-4000-8000-0000000000e7', 1) s $q$, 1);
 
 select n, test, passed, detail from public._rls_results order by n;
 
