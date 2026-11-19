@@ -510,7 +510,8 @@ class LocalBackupRoundTripTest {
         assertEquals("Serialization must preserve every supported backup field", backup, decodedBackup)
 
         // --- Restore the file's decoded contents into target ---
-        val report = LocalBackupRepository(target).restore(decodedBackup)
+        val restoreDay = java.time.LocalDate.of(2026, 9, 18)
+        val report = LocalBackupRepository(target).restore(decodedBackup, today = restoreDay)
         assertEquals(0, report.skipped)
         assertTrue(report.added > 0)
 
@@ -544,7 +545,9 @@ class LocalBackupRoundTripTest {
         assertEquals("PopUPI", restoredSub.paymentMethod)
         assertEquals("MONTHLY", restoredSub.cycle)
         assertEquals(400_001L, restoredSub.startDate)
-        assertEquals(500_001L, restoredSub.chargedThrough)
+        // The one field that deliberately does not round-trip: a restored subscription resumes
+        // charging from the day of the restore, so an old file can't re-create past charges (DATA-03).
+        assertEquals(com.vaibhav.kharchapaani.domain.CalendarDay.toMillis(restoreDay), restoredSub.chargedThrough)
         assertEquals(600_001L, restoredSub.cancelledAt)
         assertEquals(700_001L, restoredSub.createdAt)
 
