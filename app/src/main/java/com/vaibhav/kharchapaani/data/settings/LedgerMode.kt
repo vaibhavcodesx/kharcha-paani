@@ -45,6 +45,16 @@ class LedgerMode(context: Context) {
         check(prefs.edit().putString(MODE, Choice.CLOUD.name).commit()) { "Couldn't save account ledger choice" }
     }
 
+    /**
+     * Forgets the guest identity and returns to the account flow, after [com.vaibhav.kharchapaani.ui.session.GuestDeletion]
+     * has removed its files. A later useLocal() makes a new, empty ledger with a new id.
+     */
+    fun discardGuest() = synchronized(lock) {
+        check(prefs.edit().remove(GUEST_ID).putString(MODE, Choice.CLOUD.name).commit()) {
+            "Couldn't forget the local ledger"
+        }
+    }
+
     private fun guestIdentity(): GuestSession {
         val id = prefs.getString(GUEST_ID, null)
         // A damaged stored identity must not silently select a fresh empty ledger.
