@@ -140,6 +140,11 @@ class AccountSheetContentTest {
     @Test
     fun `settings switch the discard question and open export`() {
         show()
+        composeTestRule.onNodeWithText("Settings").assertExists()
+        for (section in listOf("ACCOUNT", "NOTIFICATIONS", "AI", "PRIVACY AND DATA", "ABOUT")) {
+            composeTestRule.onNodeWithText(section).assertExists()
+        }
+
 
         composeTestRule.onNodeWithTag("setting_ask_before_discarding").performScrollTo().performClick()
         composeTestRule.onNodeWithTag("setting_export").performScrollTo().performClick()
