@@ -339,7 +339,7 @@ class MainViewModel(
         }
     }
 
-    /** The daily "nothing logged today" reminder (on at 9 PM unless changed). See DailyReminderWorker. */
+    /** The daily "nothing logged today" reminder (off unless turned on, then 9 PM unless changed). See DailyReminderWorker. */
     val reminder: StateFlow<ReminderSettings> = settings.reminder
         .stateIn(viewModelScope, SharingStarted.Eagerly, ReminderSettings())
 

@@ -22,7 +22,7 @@ import java.util.Locale
  * itself reads the signed-in account's ledger.
  */
 data class ReminderSettings(
-    val enabled: Boolean = true,
+    val enabled: Boolean = false,
     /** Minutes after midnight, local time. */
     val minuteOfDay: Int = DEFAULT_MINUTE_OF_DAY,
 ) {
