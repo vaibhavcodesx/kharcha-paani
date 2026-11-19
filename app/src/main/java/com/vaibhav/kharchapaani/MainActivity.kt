@@ -3,6 +3,7 @@ package com.vaibhav.kharchapaani
 import java.util.UUID
 import java.io.File
 import com.vaibhav.kharchapaani.ui.components.BillPhotoSource
+import com.vaibhav.kharchapaani.ui.components.rememberCameraAccess
 import androidx.core.content.FileProvider
 import androidx.activity.result.PickVisualMediaRequest
 import android.content.ActivityNotFoundException
@@ -1000,8 +1001,7 @@ fun SplitFlowApp(
 
     // Confirm & Edit Bottom Sheet
     // Bill photos: the system camera writes into cache/camera through the FileProvider, and the
-    // photo picker hands back a picture. The app declares no CAMERA permission, so neither asks
-    // for one. The camera's original is deleted once it's read; only the re-encoded copy is kept.
+    // photo picker hands back a picture. Only the Camera action requires permission.
     val billPhoto by viewModel.billPhoto.collectAsStateWithLifecycle()
     val submitting by viewModel.submitting.collectAsStateWithLifecycle()
     var cameraFile by rememberSaveable { mutableStateOf<String?>(null) }
@@ -1013,18 +1013,22 @@ fun SplitFlowApp(
     val pickBillPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) viewModel.attachBillPhoto(context, uri)
     }
+    val launchBillCamera = rememberCameraAccess(
+        onGranted = {
+            val file = File(File(context.cacheDir, "camera").apply { mkdirs() }, "${UUID.randomUUID()}.jpg")
+            cameraFile = file.path
+            try {
+                takeBillPhoto.launch(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
+            } catch (e: ActivityNotFoundException) {
+                cameraFile = null
+                viewModel.showMessage(context.getString(R.string.shell_copy_camera_missing))
+            }
+        },
+        onDenied = { viewModel.showMessage(context.getString(R.string.bill_photo_camera_denied)) },
+    )
     val addBillPhoto: (BillPhotoSource) -> Unit = { source ->
         when (source) {
-            BillPhotoSource.Camera -> {
-                val file = File(File(context.cacheDir, "camera").apply { mkdirs() }, "${UUID.randomUUID()}.jpg")
-                cameraFile = file.path
-                try {
-                    takeBillPhoto.launch(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
-                } catch (e: ActivityNotFoundException) {
-                    cameraFile = null
-                    viewModel.showMessage(context.getString(R.string.shell_copy_camera_missing))
-                }
-            }
+            BillPhotoSource.Camera -> launchBillCamera()
             BillPhotoSource.Gallery -> {
                 try {
                     pickBillPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
@@ -1257,6 +1261,7 @@ fun SplitFlowApp(
         onInputChange = sharedGroups::onJoinInputChange,
         onJoin = sharedGroups::confirmJoin,
         onDismiss = sharedGroups::dismissJoin,
+        onInviteQrScanned = sharedGroups::onInviteQrScanned,
     )
 
     // Person Ledger Sheet

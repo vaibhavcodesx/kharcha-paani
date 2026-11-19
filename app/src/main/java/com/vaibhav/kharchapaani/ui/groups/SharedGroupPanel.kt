@@ -41,6 +41,7 @@ import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.ui.components.PersonAvatar
+import com.vaibhav.kharchapaani.ui.components.QrCode
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -190,6 +191,7 @@ private fun InviteSection(
             CircularProgressIndicator(color = WarmAmberPrimary, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
         }
         link != null && invite.code != null -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+            var showQr by rememberSaveable(link) { mutableStateOf(false) }
             Column(
                 Modifier
                     .fillMaxWidth()
@@ -208,8 +210,22 @@ private fun InviteSection(
             }
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 PanelButton(label = stringResource(R.string.shared_group_copy_share), filled = true, onClick = { onShareInvite(link) }, modifier = Modifier.weight(1f))
-                PanelButton(label = stringResource(R.string.shared_group_copy_revoke), filled = false, onClick = onRevokeInvite)
+                PanelButton(
+                    label = stringResource(if (showQr) R.string.shared_group_qr_hide else R.string.shared_group_qr_show),
+                    filled = false,
+                    onClick = { showQr = !showQr },
+                    modifier = Modifier.weight(1f),
+                )
             }
+            if (showQr) {
+                QrCode(
+                    text = link,
+                    contentDescription = stringResource(R.string.shared_group_qr_description),
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    size = 168.dp,
+                )
+            }
+            PanelButton(label = stringResource(R.string.shared_group_copy_revoke), filled = false, onClick = onRevokeInvite, modifier = Modifier.align(Alignment.End))
         }
         else -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             PanelButton(label = stringResource(R.string.shared_group_copy_invite), filled = false, onClick = onCreateInvite, modifier = Modifier.fillMaxWidth())

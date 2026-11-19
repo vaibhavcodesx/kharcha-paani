@@ -104,14 +104,14 @@ A photo chosen in the sheet is not attached until Save:
   runs when an account's session opens: it deletes files with no row, and staged files older than
   a day.
 
-### Camera and gallery, with no permission
+### Camera and gallery
 
 - **Take photo**: `ActivityResultContracts.TakePicture` into a FileProvider URI under
-  `cacheDir/camera/`. The app doesn't declare `CAMERA`, so the system camera handles it without a
-  permission prompt. The `camera/` path is added to `file_paths.xml`; the raw capture is deleted as
-  soon as it's processed.
+  `cacheDir/camera/`. The app requests camera access on this action, since group invite scanning
+  also uses the camera. The `camera/` path is in `file_paths.xml`, and the raw capture is deleted
+  once it's processed.
 - **Choose from gallery**: the Photo Picker (`PickVisualMedia(ImageOnly)`), which needs no
-  permission either.
+  permission.
 
 ### The sheet
 

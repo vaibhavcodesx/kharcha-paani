@@ -13,7 +13,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -21,6 +26,7 @@ import androidx.compose.ui.res.pluralStringResource
 import com.vaibhav.kharchapaani.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -33,6 +39,7 @@ import com.vaibhav.kharchapaani.ui.components.GlassActionBar
 import com.vaibhav.kharchapaani.ui.components.KpModalSheet
 import com.vaibhav.kharchapaani.ui.components.SheetScaffold
 import com.vaibhav.kharchapaani.ui.components.SheetTitle
+import com.vaibhav.kharchapaani.ui.components.rememberCameraAccess
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.CharcoalSurface
@@ -54,9 +61,42 @@ fun JoinGroupSheet(
     onInputChange: (String) -> Unit,
     onJoin: () -> Unit,
     onDismiss: () -> Unit,
+    onInviteQrScanned: (String) -> Unit,
 ) {
     if (state == null) return
-    KpModalSheet(onDismiss = onDismiss) { JoinGroupContent(state, onInputChange, onJoin) }
+    var scanning by rememberSaveable { mutableStateOf(false) }
+    var cameraError by rememberSaveable { mutableStateOf<Int?>(null) }
+    val focus = LocalFocusManager.current
+    val requestCamera = rememberCameraAccess(
+        onGranted = { scanning = true },
+        onDenied = { cameraError = R.string.shared_group_qr_camera_denied },
+    )
+    KpModalSheet(onDismiss = onDismiss) {
+        JoinGroupContent(
+            state,
+            onInputChange,
+            onJoin,
+            onScan = {
+                focus.clearFocus()
+                cameraError = null
+                requestCamera()
+            },
+            cameraError = cameraError?.let { stringResource(it) },
+        )
+    }
+    if (scanning) {
+        InviteQrScanner(
+            onResult = {
+                scanning = false
+                onInviteQrScanned(it)
+            },
+            onDismiss = { scanning = false },
+            onUnavailable = {
+                scanning = false
+                cameraError = R.string.shared_group_qr_camera_unavailable
+            },
+        )
+    }
 }
 
 /** Paste a link or type a code; the group previews before anything is joined. */
@@ -66,6 +106,8 @@ fun JoinGroupContent(
     onInputChange: (String) -> Unit,
     onJoin: () -> Unit,
     modifier: Modifier = Modifier,
+    onScan: (() -> Unit)? = null,
+    cameraError: String? = null,
 ) {
     SheetScaffold(
         modifier = modifier,
@@ -101,7 +143,13 @@ fun JoinGroupContent(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        state.error?.let {
+        if (onScan != null) {
+            TextButton(onClick = onScan, enabled = !state.isJoining) {
+                Text(stringResource(R.string.shared_group_qr_scan))
+            }
+            Text(stringResource(R.string.shared_group_qr_permission_reason), style = MaterialTheme.typography.bodySmall)
+        }
+        (cameraError ?: state.error)?.let {
             Text(
                 it,
                 style = MaterialTheme.typography.bodyMedium,
