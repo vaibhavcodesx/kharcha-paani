@@ -78,6 +78,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.vaibhav.kharchapaani.ui.format.AmountInputGrouping
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.theme.BrandGradient
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
@@ -418,6 +419,7 @@ fun BigAmountField(
                 value = amount,
                 // Only a plain amount gets in: "NaN", "1e999" or a pasted 19-digit number used to.
                 onValueChange = { Money.acceptInput(it)?.let(onAmountChange) },
+                visualTransformation = AmountInputGrouping,
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 textStyle = MoneyText.hero.copy(color = OffWhiteText),
