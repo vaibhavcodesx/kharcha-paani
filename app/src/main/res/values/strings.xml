@@ -676,6 +676,7 @@
     <string name="ai_display_reading">READING</string>
     <string name="ai_display_report">Report this answer</string>
     <string name="ai_display_report_action">Report this answer by email</string>
+    <string name="ai_display_report_no_email">No email app found. The address was copied.</string>
     <string name="ai_display_no_spending">Log a few expenses first; there\'s nothing to read yet.</string>
     <string name="ai_display_cap">That\'s today\'s readings used up. They start again tomorrow.</string>
     <string name="ai_display_failure">Couldn\'t get an answer just now.</string>

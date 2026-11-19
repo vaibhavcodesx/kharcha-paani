@@ -11,7 +11,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.clickable
+import android.content.ActivityNotFoundException
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
 import com.vaibhav.kharchapaani.util.Support
 import androidx.compose.material3.MaterialTheme
@@ -152,13 +156,22 @@ fun AskAnswer(
                 Text(state.text, style = MaterialTheme.typography.bodyLarge)
                 // Play's AI-generated content policy: an answer can be reported from where it's read.
                 val context = LocalContext.current
+                val clipboard = LocalClipboardManager.current
                 Text(
                     stringResource(R.string.ai_display_report),
                     style = MaterialTheme.typography.labelMedium,
                     color = SubMutedWarmGray,
                     modifier = Modifier
                         .clickable(onClickLabel = stringResource(R.string.ai_display_report_action)) {
-                            Support.reportAiAnswer(context, reportQuestion, state.text)
+                            val opened = try {
+                                Support.reportAiAnswer(context, reportQuestion, state.text)
+                            } catch (_: ActivityNotFoundException) {
+                                false
+                            }
+                            if (!opened) {
+                                clipboard.setText(AnnotatedString(Support.EMAIL))
+                                Toast.makeText(context, R.string.ai_display_report_no_email, Toast.LENGTH_LONG).show()
+                            }
                         }
                         .padding(vertical = Spacing.xs)
                         .testTag("ai_answer_report"),
