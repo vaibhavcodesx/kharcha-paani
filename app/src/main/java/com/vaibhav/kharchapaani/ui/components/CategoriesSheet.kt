@@ -33,6 +33,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.domain.Categories
+import com.vaibhav.kharchapaani.domain.TextLimits
 import com.vaibhav.kharchapaani.domain.CategoryPrefs
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -252,7 +253,7 @@ private fun ChoiceSection(
                     .background(CharcoalCard)
                     .padding(start = Spacing.l, end = Spacing.xs),
             ) {
-                SheetTextInput(value = draft, onValueChange = { draft = it }, placeholder = addLabel, fieldTestTag = "add_${tag}_input")
+                SheetTextInput(value = draft, onValueChange = { draft = it }, placeholder = addLabel, fieldTestTag = "add_${tag}_input", maxLength = TextLimits.CATEGORY)
                 TextButton(
                     onClick = {
                         cleanDraft?.let(onAdd)

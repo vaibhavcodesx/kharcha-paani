@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
+import com.vaibhav.kharchapaani.domain.TextLimits
 import com.vaibhav.kharchapaani.domain.UpiPayee
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.groups.RecordInGroupSection
@@ -136,7 +137,7 @@ fun IouContent(
             testTag = "iou_amount_input",
         )
         SheetRow(label = stringResource(R.string.payment_for)) {
-            SheetTextInput(value = reason, onValueChange = { reason = it }, placeholder = stringResource(R.string.payment_reason_hint))
+            SheetTextInput(value = reason, onValueChange = { reason = it }, placeholder = stringResource(R.string.payment_reason_hint), maxLength = TextLimits.SETTLEMENT_NOTE)
         }
         // The same code as settling up, either way round: lend and pay into theirs (or show yours),
         // borrow and they scan yours.
