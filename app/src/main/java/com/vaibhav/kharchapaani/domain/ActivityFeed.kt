@@ -59,7 +59,7 @@ object ActivityFeed {
                             share.guestName?.contains(term, ignoreCase = true) == true
                     }
                 val matchesFilter = when (filter) {
-                    EXPENSES -> tx.type == "expense" && !tx.isSplit
+                    EXPENSES -> tx.type == "expense"
                     INCOME -> tx.type == "income"
                     SPLITS -> tx.isSplit
                     else -> true
@@ -69,7 +69,7 @@ object ActivityFeed {
             .map { ActivityItem.Transaction(it, isReadOnly = !it.canEdit || it.transaction.groupId in archivedSharedGroups) }
 
         // Settlements and IOUs are money moving between people, so they belong with splits, not
-        // with personal expenses or income.
+        // with expenses or income.
         val settlementItems = if (filter == ALL || filter == SPLITS) {
             settlements
                 .map {
