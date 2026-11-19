@@ -7,6 +7,7 @@ import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.PendingRemoteDeleteEntity
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
+import com.vaibhav.kharchapaani.data.db.entity.SyncMetaEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import kotlinx.coroutines.runBlocking
@@ -78,6 +79,29 @@ class GroupSyncEngineTest {
         assertEquals(setOf(-1L, bobPerson.id), members)
         assertEquals("Bob", bobPerson.name)
         assertNull("no person row is made for this account", groupDao.personByProfileId(alice))
+    }
+
+
+    @Test
+    fun `a pull queues a newly joined groupmate once without notifying for the initial roster`() = runBlocking {
+        remote.groupCreatedBy(bob, goa, "Goa trip", alice)
+        engine.pullGroups()
+
+        val sync = db.syncDao()
+        val carolNotice = "group_join:$goa:$carol"
+        assertNull(sync.meta("group_join:$goa:$bob"))
+        assertNull(sync.meta("group_join:$goa:$alice"))
+
+        remote.join(goa, carol)
+        engine.pullGroups()
+        assertEquals("pending", sync.meta(carolNotice))
+
+        sync.putMeta(SyncMetaEntity(carolNotice, "shown"))
+        remote.leave(goa, carol)
+        engine.pullGroups()
+        remote.join(goa, carol)
+        engine.pullGroups()
+        assertEquals("shown", sync.meta(carolNotice))
     }
 
     @Test
