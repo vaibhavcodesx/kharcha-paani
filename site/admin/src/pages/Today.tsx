@@ -88,23 +88,27 @@ export function Today({ go }: { go: (tab: TabId) => void }) {
             <h2 id="h-ai">AI reads today</h2>
             <button className="linkbtn" onClick={() => go('limits')}>Limits</button>
           </div>
-          {o.ai_today.map((a) => {
-            const tone = toneFor(a.used, a.ceiling, o.ai_paused)
-            return (
-              <div className="gauge" key={a.feature} data-tone={tone}>
-                <div className="gauge-head">
-                  <span className="label">{featureLabel(a.feature)}</span>
-                  <span className="num">{formatInt(a.used)}{a.ceiling !== null && <span className="of"> of {formatInt(a.ceiling)}</span>}</span>
-                </div>
-                {a.ceiling !== null && (
-                  <div className="gauge-bar" role="meter" aria-label={`${featureLabel(a.feature)} today`} aria-valuemin={0} aria-valuemax={a.ceiling} aria-valuenow={Math.min(a.used, a.ceiling)}>
-                    <span style={{ ['--w' as string]: `${o.ai_paused ? 100 : percent(a.used, a.ceiling)}%` }} />
+          {o.ai_today.length === 0 ? (
+            <p className="muted">No AI reads recorded today.</p>
+          ) : (
+            o.ai_today.map((a) => {
+              const tone = toneFor(a.used, a.ceiling, o.ai_paused)
+              return (
+                <div className="gauge" key={a.feature} data-tone={tone}>
+                  <div className="gauge-head">
+                    <span className="label">{featureLabel(a.feature)}</span>
+                    <span className="num">{formatInt(a.used)}{a.ceiling !== null && <span className="of"> of {formatInt(a.ceiling)}</span>}</span>
                   </div>
-                )}
-                <State tone={tone} />
-              </div>
-            )
-          })}
+                  {a.ceiling !== null && (
+                    <div className="gauge-bar" role="meter" aria-label={`${featureLabel(a.feature)} today`} aria-valuemin={0} aria-valuemax={a.ceiling} aria-valuenow={Math.min(a.used, a.ceiling)}>
+                      <span style={{ ['--w' as string]: `${o.ai_paused ? 100 : percent(a.used, a.ceiling)}%` }} />
+                    </div>
+                  )}
+                  <State tone={tone} />
+                </div>
+              )
+            })
+          )}
         </section>
 
         <section className="panel p-space" aria-labelledby="h-space">

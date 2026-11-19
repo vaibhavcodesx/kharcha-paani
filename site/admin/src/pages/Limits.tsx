@@ -72,40 +72,44 @@ export function Limits() {
 
       <section className="panel table-panel" aria-labelledby="h-table">
         <h2 id="h-table">Daily limits by kind</h2>
-        <div className="limits" role="table" aria-label="Daily limits by kind">
-          <div className="limits-head" role="row">
-            <span role="columnheader">Kind</span>
-            <span role="columnheader">Free, per person</span>
-            <span role="columnheader">Friends, per person</span>
-            <span role="columnheader">Whole project</span>
+        {d.caps.length === 0 ? (
+          <p className="muted">No daily limit rules configured yet.</p>
+        ) : (
+          <div className="limits" role="table" aria-label="Daily limits by kind">
+            <div className="limits-head" role="row">
+              <span role="columnheader">Kind</span>
+              <span role="columnheader">Free, per person</span>
+              <span role="columnheader">Friends, per person</span>
+              <span role="columnheader">Whole project</span>
+            </div>
+            {d.caps.map((c) => {
+              const ceil = ceilingOf(c.feature)
+              const tone = toneFor(ceil?.used_today ?? 0, ceil?.per_day ?? null, d.paused)
+              return (
+                <div className="limits-row" role="row" key={c.feature}>
+                  <span role="cell" className="kind">{featureLabel(c.feature)}</span>
+                  <span role="cell" data-label="Free, per person">
+                    <EditableNumber label={`${featureLabel(c.feature)}, free plan`} value={c.free} max={10000} onSave={setCap('free', c.feature)} />
+                  </span>
+                  <span role="cell" data-label="Friends, per person">
+                    <EditableNumber label={`${featureLabel(c.feature)}, friends plan`} value={c.friends} max={10000} onSave={setCap('friends', c.feature)} />
+                  </span>
+                  <span role="cell" data-label="Whole project" className="ceil">
+                    <EditableNumber label={`${featureLabel(c.feature)} ceiling`} value={ceil?.per_day ?? null} max={100000} nonePhrase="no ceiling" disabled={d.paused} onSave={setCeiling(c.feature)} />
+                    {ceil?.per_day != null && (
+                      <>
+                        <span className="gauge-bar" data-tone={tone} role="meter" aria-label={`${featureLabel(c.feature)} used today`} aria-valuemin={0} aria-valuemax={ceil.per_day} aria-valuenow={Math.min(ceil.used_today, ceil.per_day)}>
+                          <span style={{ ['--w' as string]: `${d.paused ? 100 : percent(ceil.used_today, ceil.per_day)}%` }} />
+                        </span>
+                        <span className="ceil-note"><span className="num">{formatInt(ceil.used_today)}</span> used today <State tone={tone} /></span>
+                      </>
+                    )}
+                  </span>
+                </div>
+              )
+            })}
           </div>
-          {d.caps.map((c) => {
-            const ceil = ceilingOf(c.feature)
-            const tone = toneFor(ceil?.used_today ?? 0, ceil?.per_day ?? null, d.paused)
-            return (
-              <div className="limits-row" role="row" key={c.feature}>
-                <span role="cell" className="kind">{featureLabel(c.feature)}</span>
-                <span role="cell" data-label="Free, per person">
-                  <EditableNumber label={`${featureLabel(c.feature)}, free plan`} value={c.free} max={10000} onSave={setCap('free', c.feature)} />
-                </span>
-                <span role="cell" data-label="Friends, per person">
-                  <EditableNumber label={`${featureLabel(c.feature)}, friends plan`} value={c.friends} max={10000} onSave={setCap('friends', c.feature)} />
-                </span>
-                <span role="cell" data-label="Whole project" className="ceil">
-                  <EditableNumber label={`${featureLabel(c.feature)} ceiling`} value={ceil?.per_day ?? null} max={100000} nonePhrase="no ceiling" disabled={d.paused} onSave={setCeiling(c.feature)} />
-                  {ceil?.per_day != null && (
-                    <>
-                      <span className="gauge-bar" data-tone={tone} role="meter" aria-label={`${featureLabel(c.feature)} used today`} aria-valuemin={0} aria-valuemax={ceil.per_day} aria-valuenow={Math.min(ceil.used_today, ceil.per_day)}>
-                        <span style={{ ['--w' as string]: `${d.paused ? 100 : percent(ceil.used_today, ceil.per_day)}%` }} />
-                      </span>
-                      <span className="ceil-note"><span className="num">{formatInt(ceil.used_today)}</span> used today <State tone={tone} /></span>
-                    </>
-                  )}
-                </span>
-              </div>
-            )
-          })}
-        </div>
+        )}
         {d.paused && <p className="muted">Ceilings are held at zero while AI is paused. Resume to change them.</p>}
       </section>
 
