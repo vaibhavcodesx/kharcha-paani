@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ConfirmSheet, EditableNumber, ErrorPanel } from '../controls'
-import { featureLabel, formatInt, toneFor } from '../format'
+import { featureLabel, formatInt, percent, toneFor } from '../format'
 import { Icon } from '../icons'
+import { useOverview } from '../overview'
 import { AdminError, callRpc, type Limits as LimitsData } from '../rpc'
 import { supabase } from '../supabase'
-import { Meter, Skeleton, State, useToast } from '../ui'
+import { Skeleton, State, useToast } from '../ui'
 
 type Load = { kind: 'loading' } | { kind: 'ready'; data: LimitsData } | { kind: 'failed'; error: AdminError }
 
 export function Limits() {
+  const { refresh } = useOverview()
   const [load, setLoad] = useState<Load>({ kind: 'loading' })
   const [pausing, setPausing] = useState(false)
   const [resuming, setResuming] = useState(false)
@@ -36,63 +38,76 @@ export function Limits() {
   }
   const d = load.data
 
+  const changed = async () => {
+    await fetchLimits()
+    void refresh()
+  }
   const setCap = (plan: 'free' | 'friends', feature: string) => async (n: number) => {
     await callRpc<void>(supabase, 'admin_set_cap', { p_plan: plan, p_feature: feature, p_per_day: n })
-    await fetchLimits()
+    await changed()
   }
   const setCeiling = (feature: string) => async (n: number) => {
     await callRpc<void>(supabase, 'admin_set_ceiling', { p_feature: feature, p_per_day: n })
-    await fetchLimits()
+    await changed()
   }
+  const ceilingOf = (feature: string) => d.ceilings.find((c) => c.feature === feature)
 
   return (
     <>
       <header className="pagehead">
         <h1>Limits</h1>
-        <p>How many AI reads a person can use a day, and how many the whole project can. Changes apply at once and are written to the Log.</p>
+        <p>How many AI reads each person can use a day, and how many the whole project can. Every change applies at once and is written to the Log.</p>
       </header>
 
-      <section className="master" data-paused={d.paused} aria-labelledby="h-master">
-        <div>
+      <section className="master-switch" data-paused={d.paused} aria-labelledby="h-master">
+        <span className="switch-icon"><Icon name={d.paused ? 'pause' : 'check'} size={28} filled /></span>
+        <div className="switch-text">
           <h2 id="h-master">{d.paused ? 'AI is paused for everyone' : 'AI is on'}</h2>
-          <p>{d.paused ? 'Phones show the daily-limit message. Your ceilings are saved and come back exactly when you resume.' : 'Pausing stops every AI read for everyone until you resume. Use it if the free quota is about to run out.'}</p>
+          <p>{d.paused ? 'Phones show the daily-limit message. Your ceilings are saved and come back exactly when you resume.' : 'Pausing stops every AI read for every person until you resume. Use it if the free quota is about to run out.'}</p>
         </div>
         {d.paused
-          ? <button className="btn btn-primary" onClick={() => setResuming(true)}><Icon name="check" />Resume AI</button>
-          : <button className="btn btn-danger" onClick={() => setPausing(true)}><Icon name="pause" />Pause AI</button>}
+          ? <button className="btn btn-primary" onClick={() => setResuming(true)}><Icon name="check" size={18} />Resume AI</button>
+          : <button className="btn btn-danger" onClick={() => setPausing(true)}><Icon name="pause" size={18} />Pause AI</button>}
       </section>
 
-      <div className="columns">
-        <section className="section" aria-labelledby="h-caps">
-          <h2 id="h-caps">Per person, per day</h2>
-          {d.caps.map((c) => (
-            <div className="row capsrow" key={c.feature}>
-              <span className="label">{featureLabel(c.feature)}</span>
-              <span className="pair"><span className="pairlabel">Free</span><EditableNumber label={`${featureLabel(c.feature)}, free plan`} value={c.free} max={10000} onSave={setCap('free', c.feature)} /></span>
-              <span className="pair"><span className="pairlabel">Friends</span><EditableNumber label={`${featureLabel(c.feature)}, friends plan`} value={c.friends} max={10000} onSave={setCap('friends', c.feature)} /></span>
-            </div>
-          ))}
-        </section>
-
-        <section className="section" aria-labelledby="h-ceil">
-          <h2 id="h-ceil">Whole project, per day</h2>
-          {d.paused && <p className="muted">Ceilings are held at zero while AI is paused. Resume to change them.</p>}
-          {d.ceilings.map((c) => {
-            const tone = toneFor(c.used_today, c.per_day, d.paused)
+      <section className="panel table-panel" aria-labelledby="h-table">
+        <h2 id="h-table">Daily limits by kind</h2>
+        <div className="limits" role="table" aria-label="Daily limits by kind">
+          <div className="limits-head" role="row">
+            <span role="columnheader">Kind</span>
+            <span role="columnheader">Free, per person</span>
+            <span role="columnheader">Friends, per person</span>
+            <span role="columnheader">Whole project</span>
+          </div>
+          {d.caps.map((c) => {
+            const ceil = ceilingOf(c.feature)
+            const tone = toneFor(ceil?.used_today ?? 0, ceil?.per_day ?? null, d.paused)
             return (
-              <div className="row" key={c.feature}>
-                <span className="label">{featureLabel(c.feature)}</span>
-                <span className="value">
-                  <span className="of">used </span>{formatInt(c.used_today)}<span className="of"> of </span>
-                  <EditableNumber label={`${featureLabel(c.feature)} ceiling`} value={c.per_day} max={100000} nonePhrase="no ceiling" disabled={d.paused} onSave={setCeiling(c.feature)} />
+              <div className="limits-row" role="row" key={c.feature}>
+                <span role="cell" className="kind">{featureLabel(c.feature)}</span>
+                <span role="cell" data-label="Free, per person">
+                  <EditableNumber label={`${featureLabel(c.feature)}, free plan`} value={c.free} max={10000} onSave={setCap('free', c.feature)} />
                 </span>
-                {c.per_day !== null && <Meter used={c.used_today} limit={c.per_day} tone={tone} />}
-                <State tone={tone} />
+                <span role="cell" data-label="Friends, per person">
+                  <EditableNumber label={`${featureLabel(c.feature)}, friends plan`} value={c.friends} max={10000} onSave={setCap('friends', c.feature)} />
+                </span>
+                <span role="cell" data-label="Whole project" className="ceil">
+                  <EditableNumber label={`${featureLabel(c.feature)} ceiling`} value={ceil?.per_day ?? null} max={100000} nonePhrase="no ceiling" disabled={d.paused} onSave={setCeiling(c.feature)} />
+                  {ceil?.per_day != null && (
+                    <>
+                      <span className="gauge-bar" data-tone={tone} role="meter" aria-label={`${featureLabel(c.feature)} used today`} aria-valuemin={0} aria-valuemax={ceil.per_day} aria-valuenow={Math.min(ceil.used_today, ceil.per_day)}>
+                        <span style={{ ['--w' as string]: `${d.paused ? 100 : percent(ceil.used_today, ceil.per_day)}%` }} />
+                      </span>
+                      <span className="ceil-note"><span className="num">{formatInt(ceil.used_today)}</span> used today <State tone={tone} /></span>
+                    </>
+                  )}
+                </span>
               </div>
             )
           })}
-        </section>
-      </div>
+        </div>
+        {d.paused && <p className="muted">Ceilings are held at zero while AI is paused. Resume to change them.</p>}
+      </section>
 
       <ConfirmSheet
         open={pausing}
@@ -103,7 +118,7 @@ export function Limits() {
         danger
         onConfirm={async () => {
           await callRpc(supabase, 'admin_pause_ai', { p_reason: null })
-          await fetchLimits()
+          await changed()
           toast.say('AI is paused. It is in the Log.')
         }}
       >
@@ -117,7 +132,7 @@ export function Limits() {
         confirmLabel="Resume AI"
         onConfirm={async () => {
           await callRpc(supabase, 'admin_resume_ai')
-          await fetchLimits()
+          await changed()
           toast.say('AI is back on, with your saved ceilings. It is in the Log.')
         }}
       >
