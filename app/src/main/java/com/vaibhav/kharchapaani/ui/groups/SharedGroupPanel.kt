@@ -269,6 +269,12 @@ private fun InviteSection(
             ) {
                 Text(stringResource(R.string.shared_group_copy_invite_code), style = EyebrowText)
                 Text(invite.code.chunked(4).joinToString(" "), style = MoneyText.large, color = OffWhiteText)
+                invite.usage?.let {
+                    Text(
+                        stringResource(R.string.shared_group_copy_invite_uses, it.usedCount, it.maxUses),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
                 invite.expiresAtMillis?.let {
                     Text(
                         text = stringResource(R.string.shared_group_copy_expires, DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it))),

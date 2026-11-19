@@ -115,6 +115,21 @@ class AiNoticeGateTest {
     }
 
     @Test
+    fun `Type it myself turns AI off, so the notice does not come back on the next entry`() = runBlocking {
+        viewModel.parseInputText("chai 40 cash")
+        viewModel.declineAiNotice()
+
+        until { !viewModel.aiEnabled.value && !AiSettings(application).enabledNow }
+        viewModel.dismissConfirmSheet()
+        viewModel.parseInputText("auto 120")
+
+        assertFalse("declining must not bring the sheet back", viewModel.isAiNoticeOpen.value)
+        assertEquals("120", viewModel.amount.value)
+        delay(300)
+        assertEquals(0, calls.get())
+    }
+
+    @Test
     fun `once accepted, Gemini reads it, and the notice doesn't come back`() = runBlocking {
         viewModel.parseInputText("chai 40 cash")
         viewModel.acceptAiNotice()

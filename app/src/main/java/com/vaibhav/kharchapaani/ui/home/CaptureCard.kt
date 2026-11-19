@@ -106,6 +106,8 @@ fun CaptureCard(
     aiEnabled: Boolean = true,
     /** AI is off and the person reached for it: the mic, or the "AI is off" line. */
     onAiOff: (AiFeature) -> Unit = {},
+    /** Asked before the mic, Bill photo or Statement does anything: runs the block only if AI reads are still allowed. */
+    guardAi: (AiFeature, () -> Unit) -> Unit = { _, go -> go() },
     startVoiceCapture: Boolean = false,
     onVoiceCaptureStarted: () -> Unit = {},
     // The widget's quick-add bar: put the cursor in the line (keyboard up), then report it.
@@ -137,7 +139,7 @@ fun CaptureCard(
             onAiOff(AiFeature.Voice)
             return
         }
-        voice.listen()
+        guardAi(AiFeature.Voice) { voice.listen() }
     }
 
     val focusRequester = remember { FocusRequester() }
@@ -296,14 +298,16 @@ fun CaptureCard(
             Box(Modifier.weight(1f)) {
                 Row(Modifier.fillMaxWidth()) {
                     CaptureMode(KpIcons.Scan, stringResource(R.string.home_capture_bill_photo), Modifier.testTag("scan_receipt_button")) {
-                        billMenuOpen = true
+                        guardAi(AiFeature.Bill) { billMenuOpen = true }
                     }
                 }
                 SourceMenu(expanded = billMenuOpen, onDismiss = { billMenuOpen = false }, onPick = ::billFrom, tagPrefix = "scan_receipt")
             }
             CaptureMode(KpIcons.Statement, stringResource(R.string.home_capture_statement), Modifier.testTag("upload_pdf_statement_button")) {
-                runCatching { pdfPicker.launch("application/pdf") }
-                    .onFailure { onCaptureFailed(context.getString(R.string.home_capture_pdf_unreadable)) }
+                guardAi(AiFeature.Statement) {
+                    runCatching { pdfPicker.launch("application/pdf") }
+                        .onFailure { onCaptureFailed(context.getString(R.string.home_capture_pdf_unreadable)) }
+                }
             }
             CaptureMode(KpIcons.Lend, stringResource(R.string.home_capture_iou), Modifier.testTag("home_iou_button"), onOpenIou)
         }

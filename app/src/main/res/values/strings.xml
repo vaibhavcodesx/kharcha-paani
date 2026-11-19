@@ -190,6 +190,8 @@
     <string name="entry_optional">Optional</string>
     <string name="entry_close_choices">Close choices</string>
     <string name="entry_reading">Reading your entry…</string>
+    <string name="entry_delete">Delete this expense</string>
+    <string name="entry_reading_cancel">Cancel</string>
     <string name="entry_improving_ai">Improving with AI…</string>
     <string name="entry_updated_by_ai">Updated by AI</string>
     <string name="entry_income_noun">income</string>
@@ -431,6 +433,11 @@
     <string name="create_group_too_long">Name is too long</string>
     <string name="create_group_disabled">Name the group</string>
     <string name="create_group_title">New group</string>
+    <string name="edit_group_title">Edit group</string>
+    <string name="edit_group_supporting">Rename it, change the icon, or add and remove members. Past expenses stay as they are.</string>
+    <string name="edit_group_save">Save changes</string>
+    <string name="edit_group_button">Edit</string>
+    <string name="action_notice_group_saved">Saved %1$s.</string>
     <string name="create_group_supporting">For a trip, a flat, or anything you split more than once.</string>
     <string name="create_group_name">Name</string>
     <string name="create_group_placeholder">Goa 2026</string>
@@ -458,6 +465,8 @@
     <string name="timeline_row_edit">Edit</string>
     <string name="timeline_row_delete">Delete</string>
     <string name="timeline_row_bill">Has a bill photo</string>
+    <string name="timeline_row_sync_failed">Couldn\'t sync. Will retry.</string>
+    <string name="timeline_row_not_synced">Not synced</string>
     <string name="timeline_row_of">of %1$s</string>
     <string name="timeline_row_between">Split between %1$d</string>
     <string name="timeline_row_with">Split with %1$s</string>
@@ -552,6 +561,7 @@
     <string name="shared_group_copy_sync_now">Sync now</string>
     <string name="shared_group_copy_cancel">Cancel</string>
     <string name="shared_group_copy_invite_code">INVITE CODE</string>
+    <string name="shared_group_copy_invite_uses">%1$d of %2$d used</string>
     <string name="shared_group_copy_share">Share link</string>
     <string name="shared_group_qr_show">Show QR</string>
     <string name="shared_group_qr_hide">Hide QR</string>
@@ -632,6 +642,8 @@
     <string name="debt_management_consequence">Settlements and IOUs with them are removed. Expenses you split only with them stay in your history as your own, at what you spent.</string>
     <string name="debt_management_delete">Delete</string>
     <string name="debt_management_cancel">Cancel</string>
+    <string name="debt_management_settle">Settle</string>
+    <string name="debt_management_settle_with">Settle up with %1$s</string>
     <string name="debt_management_title">Who pays whom</string>
     <string name="debt_management_empty">Nobody owes anybody right now.</string>
     <string name="debt_management_explanation">The fewest payments that would clear every balance between you and your friends.</string>
@@ -732,6 +744,7 @@
     <string name="ai_display_receipt_ratelimited">The AI is busy right now, so the bill wasn\'t read. Fill in the details, or try again in a few minutes.</string>
     <string name="ai_display_receipt_servererror">The AI service is having trouble, so the bill wasn\'t read. Fill in the details, or try again.</string>
     <string name="ai_display_receipt_blocked">Couldn\'t read that bill. Fill in the details, or try a clearer photo.</string>
+    <string name="ai_paused_now">AI is paused for now. You can still add entries by hand.</string>
     <string name="ai_display_receipt_dailylimit">That\'s today\'s bill reads used up. Fill in the details; they\'re back tomorrow.</string>
     <string name="ai_display_receipt_needssignin">Sign out and back in to read bills again. Fill in the details for now.</string>
     <string name="ai_display_local_filled">Filled in on your phone. Check the amount and details.</string>
@@ -1173,4 +1186,25 @@
     <string name="everything_backup_discard_title">Discard this restore?</string>
     <string name="everything_backup_discard_description">Stop trying to finish this restore. Entries already restored will stay. Keep your backup file.</string>
     <string name="fullbackup_vm_discarded">Restore discarded.</string>
+
+    <!-- Ask to pay message (UX-41) -->
+    <string name="ask_message_header">Hey %1$s, here\'s our hisaab:</string>
+    <string name="ask_message_carried_over">• Carried over: %1$s</string>
+    <string name="ask_message_earlier">• Earlier: %1$s</string>
+    <string name="ask_message_line">• %1$s</string>
+    <string name="ask_message_total">Total: %1$s</string>
+    <string name="ask_message_partial">Asking %1$s of the %2$s for now.</string>
+    <string name="ask_message_upi">UPI: %1$s</string>
+    <string name="ask_message_footer">Sent from Kharcha Paani</string>
+    <string name="ask_message_their_share">%1$s, %2$s: your share %3$s</string>
+    <string name="ask_message_my_share">%1$s, %2$s: my share of what you paid %3$s</string>
+    <string name="ask_message_as_guest">%1$s, %2$s: your share as my guest %3$s</string>
+    <string name="ask_message_i_sent">I sent you, %1$s: %2$s</string>
+    <string name="ask_message_they_sent">You sent me, %1$s: %2$s</string>
+
+    <!-- Account Profile Editing (UX-41) -->
+    <string name="account_profile_save">Save profile</string>
+    <string name="account_profile_saving">Saving…</string>
+    <string name="account_profile_add_name">Add your name</string>
+    <string name="account_profile_name_too_long">Name is too long</string>
 </resources>

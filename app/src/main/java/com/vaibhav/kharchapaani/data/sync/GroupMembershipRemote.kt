@@ -17,6 +17,8 @@ import kotlin.time.ExperimentalTime
 data class GroupInvite(
     val code: String,
     @SerialName("expires_at") val expiresAt: String,
+    @SerialName("used_count") val usedCount: Int? = null,
+    @SerialName("max_uses") val maxUses: Int? = null,
 )
 
 @Serializable
@@ -38,8 +40,8 @@ interface GroupMembershipRemote {
     /** Replaces all live codes for the group. Null when the server has no reset RPC. */
     suspend fun resetInvite(groupRemoteId: String): GroupInvite?
 
-    /** Unexpired, unrevoked invites for a group, newest first. */
-    suspend fun activeInvites(groupRemoteId: String): List<GroupInvite>
+    /** A member's newest unexpired, unrevoked invite, or the specified code when refreshing it. */
+    suspend fun activeInvite(groupRemoteId: String, creatorProfileId: String, code: String? = null): GroupInvite?
 
     suspend fun revokeInvite(code: String)
 
@@ -82,15 +84,18 @@ class SupabaseGroupMembershipRemote(private val supabase: SupabaseClient) : Grou
     }
 
     @OptIn(ExperimentalTime::class)
-    override suspend fun activeInvites(groupRemoteId: String): List<GroupInvite> =
-        supabase.from("group_invites").select {
+    override suspend fun activeInvite(groupRemoteId: String, creatorProfileId: String, code: String?): GroupInvite? =
+        supabase.from("group_invites").select(Columns.list("code", "expires_at", "used_count", "max_uses")) {
             filter {
                 eq("group_id", groupRemoteId)
+                eq("created_by", creatorProfileId)
+                if (code != null) eq("code", code)
                 exact("revoked_at", null)
                 gt("expires_at", Clock.System.now().toString())
             }
             order("created_at", Order.DESCENDING)
-        }.decodeList()
+            limit(1)
+        }.decodeList<GroupInvite>().firstOrNull()
 
     override suspend fun revokeInvite(code: String) {
         supabase.postgrest.rpc("revoke_group_invite", buildJsonObject { put("p_code", code) })

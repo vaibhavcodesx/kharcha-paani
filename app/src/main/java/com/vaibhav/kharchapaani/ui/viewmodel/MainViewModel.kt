@@ -114,6 +114,9 @@ import com.vaibhav.kharchapaani.domain.DailySpend
 import com.vaibhav.kharchapaani.domain.GroupInsights
 import com.vaibhav.kharchapaani.ui.format.MonthNames
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.channels.Channel
@@ -193,6 +196,15 @@ class MainViewModel(
         aiAllowed = { AiSettings(application).enabledNow },
     ),
     private val isLocal: Boolean = false,
+    // Asks the server, without spending anything, whether a read of this kind would be allowed right now.
+    // null means the answer could not be had (offline, an error): the caller carries on and lets the
+    // real call decide.
+    private val aiReadAllowed: suspend (String) -> Boolean? = { feature ->
+        runCatching {
+            SupabaseClientProvider.get(application).postgrest
+                .rpc("ai_available", buildJsonObject { put("p_feature", feature) }).data.trim() == "true"
+        }.getOrNull()
+    },
 ) : AndroidViewModel(application), SessionClosingWork {
 
     private val recoveryJournal = if (isLocal) File(application.filesDir, "backup-recovery/local-$userId.json") else null
@@ -780,6 +792,34 @@ class MainViewModel(
 
     fun onVoiceCaptureStarted() {
         _voiceCaptureRequested.value = false
+    }
+
+    /**
+     * Runs [proceed] unless the owner has paused AI for this kind, in which case it says so at once.
+     * Called when the mic, Bill photo or Statement button is tapped, so a pause is shown before
+     * anything is recorded, photographed or picked, not after. A person's own daily cap is not
+     * checked here; it still shows when the read is refused. If the server cannot be asked quickly,
+     * [proceed] runs and the real call decides.
+     */
+    fun guardAiRead(feature: AiFeature, proceed: () -> Unit) {
+        val key = when (feature) {
+            AiFeature.Voice, AiFeature.QuickAdd -> "quick_add"
+            AiFeature.Bill -> "bill"
+            AiFeature.Statement -> "statement"
+            else -> null
+        }
+        if (key == null || isLocal || !aiAvailable || !canUseAi()) {
+            proceed()
+            return
+        }
+        viewModelScope.launch {
+            val allowed = withTimeoutOrNull(AI_CHECK_MS) { aiReadAllowed(key) } ?: true
+            if (allowed) {
+                proceed()
+            } else {
+                _statusMessage.value = uiText(R.string.ai_paused_now)
+            }
+        }
     }
 
     /**
@@ -2268,6 +2308,43 @@ class MainViewModel(
         _isCreateGroupOpen.value = false
     }
 
+    private val _editingGroupId = MutableStateFlow<Long?>(null)
+
+    /** The local group whose Edit sheet is open, kept live. Shared groups are never edited here (UX-19). */
+    val editingGroup: StateFlow<GroupWithDetails?> = combine(_editingGroupId, groups) { id, all ->
+        id?.let { editing -> all.firstOrNull { it.group.id == editing && !it.group.isShared } }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    fun openEditGroup(groupId: Long) {
+        if (fullBackupBlocksActions()) return
+        _editingGroupId.value = groupId
+    }
+
+    fun dismissEditGroup() {
+        _editingGroupId.value = null
+    }
+
+    /** Renames a local group, changes its icon or about line, and sets its members. History and balances stay. */
+    fun saveEditedGroup(name: String, description: String, emoji: String, memberPersonIds: List<Long>) {
+        if (fullBackupBlocksActions()) return
+        if (name.isBlank()) return
+        submissions.launch(Submit.EditGroup) {
+            if (fullBackupBlocksActions()) return@launch
+            val current = editingGroup.value ?: return@launch
+            ledgerRepo.updateGroup(
+                current.group.copy(
+                    name = name.trim().take(120),
+                    description = description.trim().take(500),
+                    emoji = emoji,
+                    updatedAt = System.currentTimeMillis(),
+                ),
+                memberPersonIds,
+            )
+            dismissEditGroup()
+            _statusMessage.value = uiText(R.string.action_notice_group_saved, name.trim())
+        }
+    }
+
     fun createNewGroup(
         name: String,
         description: String,
@@ -2541,9 +2618,15 @@ class MainViewModel(
         next.invoke()
     }
 
+    /**
+     * "Type it myself": this entry is made on the phone, and AI is switched off so the sheet does
+     * not come back on every entry (UX-02, owner answer D-02). The quiet "AI is off" line under quick
+     * add offers to turn it on again.
+     */
     fun declineAiNotice() {
         val instead = insteadOfAi
         closeAiNotice()
+        setAiEnabled(false)
         instead?.invoke()
     }
 
@@ -3237,6 +3320,7 @@ class MainViewModel(
 
         /** How long "Turn on AI" waits for the choice to be saved before giving up quietly. */
         const val AI_ON_WAIT_MS = 3_000L
+        const val AI_CHECK_MS = 1_500L
 
         /** Debounce window for search input so rapid keystrokes don't re-build the feed synchronously. */
         const val SEARCH_DEBOUNCE_MS = 150L

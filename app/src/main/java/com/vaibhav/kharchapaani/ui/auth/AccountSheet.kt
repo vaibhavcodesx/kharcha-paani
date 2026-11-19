@@ -143,6 +143,7 @@ fun AccountSheet(
     isLocal: Boolean = false,
     onSignInFromLocal: () -> Unit = {},
     onUseLocal: () -> Unit = {},
+    onDeleteLocalLedger: () -> Unit = {},
     lastSyncError: String? = null,
 ) {
     // Read here rather than passed in: the setting lives with crash reporting, which starts before
@@ -181,6 +182,7 @@ fun AccountSheet(
             isLocal = isLocal,
             onSignInFromLocal = onSignInFromLocal,
             onUseLocal = onUseLocal,
+            onDeleteLocalLedger = onDeleteLocalLedger,
             lastSyncError = lastSyncError,
             crashReports = crashReports,
             onCrashReportsChange = {
@@ -226,6 +228,7 @@ fun AccountSheetContent(
     isLocal: Boolean = false,
     onSignInFromLocal: () -> Unit = {},
     onUseLocal: () -> Unit = {},
+    onDeleteLocalLedger: () -> Unit = {},
     /** Whether crash reports are on; null when this build can't send any, and the switch isn't shown. */
     crashReports: Boolean? = null,
     onCrashReportsChange: (Boolean) -> Unit = {},
@@ -246,11 +249,11 @@ fun AccountSheetContent(
         actionBar = if (!isLocal && (changed || state.isSavingProfile)) {
             {
                 GlassActionBar(
-                    label = "Save profile",
+                    label = stringResource(R.string.account_profile_save),
                     disabledLabel = when {
-                        state.isSavingProfile -> "Saving…"
-                        name.isBlank() -> "Add your name"
-                        else -> "Name is too long"
+                        state.isSavingProfile -> stringResource(R.string.account_profile_saving)
+                        name.isBlank() -> stringResource(R.string.account_profile_add_name)
+                        else -> stringResource(R.string.account_profile_name_too_long)
                     },
                     enabled = cleanName != null && !state.isSavingProfile,
                     onClick = { onSaveProfile(name, emoji) },
@@ -281,8 +284,23 @@ fun AccountSheetContent(
             Text(
                 stringResource(R.string.guest_separate_ledgers),
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = Spacing.s, bottom = Spacing.xl),
+                modifier = Modifier.padding(top = Spacing.s, bottom = Spacing.m),
             )
+            var confirmDeleteLocal by rememberSaveable { mutableStateOf(false) }
+            TextButton(
+                onClick = { confirmDeleteLocal = true },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("account_delete_local"),
+            ) { Text(stringResource(R.string.guest_delete_button), color = DestructiveText) }
+            if (confirmDeleteLocal) {
+                DeleteLocalLedgerDialog(
+                    onConfirm = {
+                        confirmDeleteLocal = false
+                        onDeleteLocalLedger()
+                    },
+                    onDismiss = { confirmDeleteLocal = false },
+                )
+            }
+            Spacer(Modifier.padding(bottom = Spacing.l))
         } else {
             // Your own colour once you have one (design item 11): the same one groupmates see you in.
             val mine = state.hue?.let(::hueColour)
@@ -405,10 +423,20 @@ fun AccountSheetContent(
                 modifier = Modifier.padding(top = Spacing.s, bottom = Spacing.xl),
             )
 
+            var confirmUseLocal by rememberSaveable { mutableStateOf(false) }
             TextButton(
-                onClick = onUseLocal,
+                onClick = { confirmUseLocal = true },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("account_use_local"),
             ) { Text(stringResource(R.string.guest_use_local)) }
+            if (confirmUseLocal) {
+                UseLocalDialog(
+                    onConfirm = {
+                        confirmUseLocal = false
+                        onUseLocal()
+                    },
+                    onDismiss = { confirmUseLocal = false },
+                )
+            }
             Text(stringResource(R.string.guest_separate_ledgers), style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(bottom = Spacing.xl))
         }
@@ -725,7 +753,7 @@ private fun AvatarGrid(initial: String, selected: String?, onSelect: (String?) -
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 row.forEach { choice ->
                     AvatarTile(
-                        label = choice ?: "Initials",
+                        label = choice ?: stringResource(R.string.account_avatar_initials),
                         selected = selected == choice,
                         onSelect = { onSelect(choice) },
                         testTag = choice?.let { "avatar_$it" } ?: "avatar_initials",

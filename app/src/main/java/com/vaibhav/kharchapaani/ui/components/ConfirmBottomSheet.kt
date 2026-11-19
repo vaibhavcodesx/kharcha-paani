@@ -40,6 +40,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -88,6 +89,7 @@ import com.vaibhav.kharchapaani.ui.theme.GlassPanel
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.LocalHazeState
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
+import com.vaibhav.kharchapaani.ui.theme.DestructiveText
 import com.vaibhav.kharchapaani.ui.theme.MutedWarmGray
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
@@ -158,6 +160,8 @@ fun ConfirmBottomSheet(
     onSaveIntent: () -> Unit = {},
     // Opens "Split by items" for this expense; null where it isn't offered.
     onSplitByItems: (() -> Unit)? = null,
+    // Editing your own expense: a Delete button at the bottom (UX-06). The row already has Undo after it goes.
+    onDelete: (() -> Unit)? = null,
 ) {
     if (!isOpen) return
     val focusManager = LocalFocusManager.current
@@ -185,6 +189,8 @@ fun ConfirmBottomSheet(
             updatedByAi = updatedByAi,
             onSaveIntent = onSaveIntent,
             onSplitByItems = onSplitByItems,
+            onCancelReading = onDismiss,
+            onDelete = onDelete,
             onSave = {
                 focusManager.clearFocus()
                 onSave()
@@ -259,6 +265,10 @@ fun ConfirmSheetContent(
     onSaveIntent: () -> Unit = {},
     // Opens "Split by items" (docs/designs/split-by-items.md); null where it isn't offered.
     onSplitByItems: (() -> Unit)? = null,
+    // Shown while a bill or line is being read: stops the read and closes the sheet. Null hides the button.
+    onCancelReading: (() -> Unit)? = null,
+    // Editing your own expense: a Delete button at the bottom (UX-06). The row already has Undo after it goes.
+    onDelete: (() -> Unit)? = null,
 ) {
     // An entry keeps its own category or method even when it isn't a choice here (hidden since, or a
     // groupmate's own category), so it's shown and stays selected.
@@ -339,7 +349,7 @@ fun ConfirmSheetContent(
         }
 
         if (isParsing) {
-            ParsingPlaceholder()
+            ParsingPlaceholder(onCancelReading)
             return@SheetScaffold
         }
 
@@ -524,6 +534,15 @@ fun ConfirmSheetContent(
             SheetTextInput(value = note, onValueChange = onNoteChange, placeholder = stringResource(R.string.entry_optional), maxLength = com.vaibhav.kharchapaani.domain.TextLimits.NOTE)
         }
 
+        if (isEditing && onDelete != null) {
+            TextButton(
+                onClick = onDelete,
+                modifier = Modifier.fillMaxWidth().padding(top = Spacing.xl).testTag("confirm_delete_button"),
+            ) {
+                Text(stringResource(R.string.entry_delete), style = MaterialTheme.typography.labelLarge, color = DestructiveText)
+            }
+        }
+
         BillPhotoRow(photo = billPhoto, onAdd = onAddBillPhoto, onRemove = onRemoveBillPhoto, onLoad = onLoadBillPhoto, modifier = Modifier.padding(top = Spacing.s))
     }
 }
@@ -618,7 +637,7 @@ private fun AiReadingStatus(isImprovingWithAi: Boolean, updatedByAi: Boolean) {
 }
 
 @Composable
-private fun ParsingPlaceholder() {
+private fun ParsingPlaceholder(onCancel: (() -> Unit)? = null) {
     Column(Modifier.padding(vertical = Spacing.xl), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Box(
             Modifier
@@ -644,6 +663,14 @@ private fun ParsingPlaceholder() {
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = Spacing.l).align(Alignment.CenterHorizontally),
         )
+        if (onCancel != null) {
+            TextButton(
+                onClick = onCancel,
+                modifier = Modifier.align(Alignment.CenterHorizontally).testTag("confirm_reading_cancel"),
+            ) {
+                Text(stringResource(R.string.entry_reading_cancel), style = MaterialTheme.typography.labelLarge, color = MutedWarmGray)
+            }
+        }
     }
 }
 

@@ -34,6 +34,8 @@ data class JoinGroupState(
     val canJoin: Boolean get() = preview != null && !isJoining
 }
 
+data class GroupInviteUsage(val usedCount: Int, val maxUses: Int)
+
 data class GroupInviteState(
     val groupId: Long,
     val code: String? = null,
@@ -41,6 +43,7 @@ data class GroupInviteState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val canReset: Boolean = false,
+    val usage: GroupInviteUsage? = null,
 ) {
     val link: String? get() = code?.let(InviteLink::linkFor)
 }
@@ -170,12 +173,19 @@ class SharedGroupsController(
         val pending = GroupInviteState(group.id, isLoading = true)
         _state.update { it.copy(invite = pending) }
         scope.launch {
-            val result = runRemote { network.createInvite(group.remoteId) }
+            // The count columns ship with the reset RPC. A failed lookup leaves the legacy create path available.
+            val lookup = runRemote { network.activeInvite(group.remoteId, selfProfileId) }
+            val active = lookup.getOrNull()
+            val result = if (active != null) Result.success(active) else runRemote { network.createInvite(group.remoteId) }
             val invite = result.fold(
-                onSuccess = { created ->
-                    val canReset = !inviteResetUnavailable &&
-                        runRemote { network.supportsInviteLimits(group.remoteId) }.getOrDefault(false)
-                    GroupInviteState(group.id, canReset = canReset).withLink(created)
+                onSuccess = { current ->
+                    val details = if (active == null && lookup.isSuccess) {
+                        withInviteUsage(network, group, current)
+                    } else {
+                        current
+                    }
+                    val canReset = lookup.isSuccess && !inviteResetUnavailable
+                    GroupInviteState(group.id, canReset = canReset).withLink(details)
                 },
                 onFailure = { GroupInviteState(group.id, error = it.message) },
             )
@@ -201,7 +211,7 @@ class SharedGroupsController(
                         inviteResetUnavailable = true
                         invite.copy(canReset = false, error = copyText(R.string.shared_group_notice_reset_unavailable))
                     } else {
-                        invite.withLink(replacement)
+                        invite.withLink(withInviteUsage(network, group, replacement))
                     }
                 },
                 onFailure = { invite.copy(error = it.message) },
@@ -210,12 +220,23 @@ class SharedGroupsController(
         }
     }
 
+    private suspend fun withInviteUsage(network: GroupMembershipRemote, group: GroupEntity, invite: GroupInvite): GroupInvite =
+        runRemote { network.activeInvite(group.remoteId, selfProfileId, invite.code) }.getOrNull() ?: invite
+
     @OptIn(ExperimentalTime::class)
-    private fun GroupInviteState.withLink(invite: GroupInvite): GroupInviteState = copy(
-        code = invite.code,
-        expiresAtMillis = runCatching { Instant.parse(invite.expiresAt).toEpochMilliseconds() }.getOrNull(),
-        error = null,
-    )
+    private fun GroupInviteState.withLink(invite: GroupInvite): GroupInviteState {
+        val usage = if (invite.usedCount != null && invite.maxUses != null) {
+            GroupInviteUsage(invite.usedCount, invite.maxUses)
+        } else {
+            null
+        }
+        return copy(
+            code = invite.code,
+            expiresAtMillis = runCatching { Instant.parse(invite.expiresAt).toEpochMilliseconds() }.getOrNull(),
+            error = null,
+            usage = usage,
+        )
+    }
 
     fun revokeInvite() {
         val network = remote ?: run { blockWithoutAccount(); return }

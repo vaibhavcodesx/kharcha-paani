@@ -37,6 +37,8 @@ export function CommandPalette({ open, onClose, onRun }: { open: boolean; onClos
           <input
             autoFocus
             role="combobox"
+            aria-label="Commands and sections"
+            aria-autocomplete="list"
             aria-expanded="true"
             aria-controls={listId}
             aria-activedescendant={results[active] ? `${listId}-${results[active].id}` : undefined}
@@ -49,10 +51,10 @@ export function CommandPalette({ open, onClose, onRun }: { open: boolean; onClos
               if (e.key === 'Enter') { e.preventDefault(); run(results[active]) }
             }}
           />
-          <kbd>Esc</kbd>
+          <kbd aria-hidden="true">Esc</kbd>
         </div>
-        <ul id={listId} role="listbox" className="palette-list">
-          {results.length === 0 && <li className="palette-empty">Nothing matches “{query}”.</li>}
+        <ul id={listId} role="listbox" aria-label="Commands" className="palette-list">
+          {results.length === 0 && <li className="palette-empty" role="presentation">Nothing matches “{query}”.</li>}
           {results.map((c, i) => (
             <li key={c.id} id={`${listId}-${c.id}`} role="option" aria-selected={i === active} data-active={i === active} onMouseEnter={() => setActive(i)} onClick={() => run(c)}>
               <span>{c.label}</span>

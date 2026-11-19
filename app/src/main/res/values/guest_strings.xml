@@ -2,6 +2,16 @@
 <resources>
     <string name="guest_continue_local">Use without signing in</string>
     <string name="guest_use_local">Use a local ledger instead</string>
+    <string name="guest_use_local_confirm_title">Switch to this phone\'s ledger?</string>
+    <string name="guest_use_local_confirm_body">You\'ll see only what\'s saved on this phone. Your account\'s entries stay safe in the cloud and are here again when you switch back.</string>
+    <string name="guest_use_local_confirm">Switch</string>
+    <string name="guest_use_local_cancel">Cancel</string>
+    <string name="guest_delete_button">Delete this phone\'s ledger</string>
+    <string name="guest_delete_title">Delete everything on this phone?</string>
+    <string name="guest_delete_body">Every entry, friend, group and bill photo in this phone\'s ledger is removed for good, and you go back to sign-in. It can\'t be undone. To keep a copy, export a backup first.</string>
+    <string name="guest_delete_confirm">Delete</string>
+    <string name="guest_delete_cancel">Cancel</string>
+    <string name="guest_delete_failed">Couldn\'t delete the ledger. Nothing was changed.</string>
     <string name="guest_on_this_phone">On this phone</string>
     <string name="guest_local_explanation">Your entries stay on this phone and don\'t sync. Save a backup before you uninstall or change phones.</string>
     <string name="guest_separate_ledgers">This phone\'s ledger and your account\'s stay apart. Signing in never uploads what\'s here.</string>

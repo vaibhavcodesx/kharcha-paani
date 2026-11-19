@@ -45,6 +45,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import com.vaibhav.kharchapaani.ui.components.ExportSheet
 import com.vaibhav.kharchapaani.ui.components.SettlementAnswerSheet
@@ -94,6 +95,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.repeatOnLifecycle
 import com.vaibhav.kharchapaani.ui.session.AccountSession
 import com.vaibhav.kharchapaani.ui.session.CloudAuthOwner
+import com.vaibhav.kharchapaani.ui.session.GuestDeletion
 import com.vaibhav.kharchapaani.ui.session.LocalSignInState
 import com.vaibhav.kharchapaani.data.settings.LedgerMode
 import com.vaibhav.kharchapaani.ui.session.AccountSessionHolder
@@ -202,6 +204,25 @@ class MainActivity : ComponentActivity() {
                         Toast.makeText(this@MainActivity, R.string.guest_choice_failed, Toast.LENGTH_LONG).show()
                     }
                 }
+                val scope = rememberCoroutineScope()
+                // Delete this phone's ledger and go back to sign-in (UX-01). The session ends first so the file is closed.
+                val deleteLocalLedger: () -> Unit = {
+                    scope.launch {
+                        try {
+                            val mode = LedgerMode(this@MainActivity)
+                            val guest = mode.guestOrNull()
+                            sessionHolder.onAccountChanged(null)
+                            sessionHolder.awaitSessionClosingWork()
+                            if (guest != null) GuestDeletion.wipeLocal(this@MainActivity, guest)
+                            mode.discardGuest()
+                            choice = LedgerMode.Choice.CLOUD
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (_: Exception) {
+                            Toast.makeText(this@MainActivity, R.string.guest_delete_failed, Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
                 LaunchedEffect(choice) {
                     if (choice == LedgerMode.Choice.LOCAL) {
                         // Remove cloud account ViewModels before closing their HTTP client. The
@@ -236,6 +257,7 @@ class MainActivity : ComponentActivity() {
                             queuedIntent = queuedIntent,
                             onIntentHandled = { queuedIntent = null },
                             onSignInFromLocal = { cloudAuthOwner.signInFromLocal(this@MainActivity) },
+                            onDeleteLocalLedger = deleteLocalLedger,
                             localSignInFailed = localSignIn == LocalSignInState.Failed,
                             onLocalSignInFailureShown = cloudAuthOwner::consumeLocalSignInResult,
                         )
@@ -321,6 +343,7 @@ class MainActivity : ComponentActivity() {
         authViewModel: AuthViewModel? = null,
         onSignInFromLocal: () -> Unit = {},
         onUseLocal: () -> Unit = {},
+        onDeleteLocalLedger: () -> Unit = {},
         localSignInFailed: Boolean = false,
         onLocalSignInFailureShown: () -> Unit = {},
     ) {
@@ -385,6 +408,7 @@ class MainActivity : ComponentActivity() {
                     isLocal = session.isLocal,
                     onSignInFromLocal = onSignInFromLocal,
                     onUseLocal = onUseLocal,
+                    onDeleteLocalLedger = onDeleteLocalLedger,
                     lastSyncError = lastSyncError,
                 )
                 }
@@ -477,6 +501,7 @@ fun SplitFlowApp(
     isLocal: Boolean = false,
     onSignInFromLocal: () -> Unit = {},
     onUseLocal: () -> Unit = {},
+    onDeleteLocalLedger: () -> Unit = {},
     lastSyncError: String? = null,
 ) {
     var isAccountSheetOpen by rememberSaveable { mutableStateOf(false) }
@@ -739,6 +764,7 @@ fun SplitFlowApp(
                             syncStatus = syncStatus,
                             onShowMessage = viewModel::showMessage,
                             onAiOff = viewModel::showAiOffNudge,
+                            guardAi = viewModel::guardAiRead,
                             onVoiceCaptureStarted = viewModel::onVoiceCaptureStarted,
                             onOpenAccount = { if (!fullBackupModalOpen) isAccountSheetOpen = true },
                             onRequestSync = { viewModel.requestSync() }, localOnly = viewModel.isLocalLedger,
@@ -860,6 +886,7 @@ fun SplitFlowApp(
             isLocal = isLocal,
             onSignInFromLocal = { if (!fullBackupModalOpen) onSignInFromLocal() },
             onUseLocal = { if (!fullBackupModalOpen) onUseLocal() },
+            onDeleteLocalLedger = { if (!fullBackupModalOpen) onDeleteLocalLedger() },
             upiId = upiPayee?.upiId,
             onOpenUpi = {
                 isAccountSheetOpen = false
@@ -1101,6 +1128,13 @@ fun SplitFlowApp(
                 onSaveIntent = viewModel::holdDraftForSave,
                 // Not on a groupmate's expense: its split is theirs to change.
                 onSplitByItems = if (editingAddedBy == null) ({ viewModel.openItemSplit(authUiState.displayName) }) else null,
+                // Your own expense can be deleted from its edit sheet; the Undo line follows (UX-06).
+                onDelete = editingTxId?.takeIf { editingAddedBy == null }?.let { id ->
+                    {
+                        viewModel.dismissConfirmSheet()
+                        viewModel.deleteTransaction(id)
+                    }
+                },
             )
         }
 
@@ -1218,7 +1252,13 @@ fun SplitFlowApp(
     SimplifyDebtsSheet(
         isOpen = isSimplifyDebtsOpen,
         simplifiedDebts = simplifiedDebts,
-        onDismiss = { viewModel.dismissSimplifyDebts() }
+        onDismiss = { viewModel.dismissSimplifyDebts() },
+        onSettle = { personId ->
+            people.firstOrNull { it.id == personId }?.let { person ->
+                viewModel.dismissSimplifyDebts()
+                viewModel.openSettleUp(person)
+            }
+        },
     )
 
     // New group
@@ -1230,6 +1270,18 @@ fun SplitFlowApp(
             viewModel.createNewGroup(name, desc, emoji, color, memberIds, shared)
         },
         onDismiss = { viewModel.dismissCreateGroup() }
+    )
+
+    // Edit a local group (UX-19)
+    val editingGroup by viewModel.editingGroup.collectAsState()
+    CreateGroupSheet(
+        isOpen = editingGroup != null,
+        allPeople = people,
+        editing = editingGroup,
+        onSaveGroup = { name, desc, emoji, _, memberIds, _ ->
+            viewModel.saveEditedGroup(name, desc, emoji, memberIds)
+        },
+        onDismiss = { viewModel.dismissEditGroup() },
     )
 
     // Group Detail Sheet
@@ -1248,6 +1300,7 @@ fun SplitFlowApp(
         },
         onExportGroup = { groupId -> viewModel.exportGroupCsv(groupId) },
         onAskTripReview = { groupId -> viewModel.askTripReview(groupId) },
+        onEditGroup = { groupId -> viewModel.openEditGroup(groupId) },
         tripReview = tripReview,
         aiAsksLeft = aiAsksLeft,
         aiAvailable = viewModel.aiAvailable && aiEnabled,

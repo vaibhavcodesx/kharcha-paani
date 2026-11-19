@@ -75,7 +75,7 @@ export function Log() {
                     <strong>{actionLabel(r.action)}</strong>
                     {who && <span className="t-target">{who}</span>}
                     {what && (simple
-                      ? <span className="t-change num"><s>{from}</s><Icon name="arrow" size={14} /><b>{to}</b></span>
+                      ? <span className="t-change num"><span className="sr">changed from </span><s>{from}</s><Icon name="arrow" size={14} /><span className="sr"> to </span><b>{to}</b></span>
                       : <span className="t-change num">{what}</span>)}
                   </div>
                   <time className="num" dateTime={r.at} title={formatWhen(r.at)}>{time.format(new Date(r.at))}</time>

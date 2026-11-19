@@ -108,6 +108,7 @@ fun GroupDetailSheet(
     aiAsksLeft: Int = AI_DAILY_CAP,
     aiAvailable: Boolean = true,
     people: List<PersonEntity> = groupDetails?.members.orEmpty(),
+    onEditGroup: ((groupId: Long) -> Unit)? = null,
 ) {
     if (groupDetails == null) return
     KpModalSheet(onDismiss = onDismiss) {
@@ -130,6 +131,7 @@ fun GroupDetailSheet(
             aiAsksLeft = aiAsksLeft,
             aiAvailable = aiAvailable,
             people = people,
+            onEditGroup = onEditGroup,
         )
     }
 }
@@ -153,6 +155,8 @@ fun GroupDetailContent(
     aiAsksLeft: Int = AI_DAILY_CAP,
     aiAvailable: Boolean = true,
     people: List<PersonEntity> = groupDetails.members,
+    // Offered for a local, unarchived group: opens the Edit group sheet (UX-19).
+    onEditGroup: ((groupId: Long) -> Unit)? = null,
 ) {
     val settlementsLabel = stringResource(R.string.group_detail_settlements)
     val allActivityLabel = stringResource(R.string.group_detail_all)
@@ -196,6 +200,11 @@ fun GroupDetailContent(
                     Text(group.name, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
                     if (group.description.isNotBlank()) {
                         Text(group.description, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+                if (onEditGroup != null && !group.isShared && !group.isArchived) {
+                    TextButton(onClick = { onEditGroup(group.id) }, modifier = Modifier.testTag("edit_group_button")) {
+                        Text(stringResource(R.string.edit_group_button), style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }

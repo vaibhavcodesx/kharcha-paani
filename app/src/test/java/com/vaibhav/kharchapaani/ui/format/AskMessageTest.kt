@@ -73,6 +73,21 @@ class AskMessageTest {
     }
 
     @Test
+    fun `building with Strings from context produces byte-for-byte identical output with and without UPI`() {
+        val withUpiDefault = AskMessage.build("Aaru Sharma", hisaab, asked = 275.0, upiId = "lal@okaxis", zone = zone)
+        val withUpiContext = AskMessage.build("Aaru Sharma", hisaab, asked = 275.0, upiId = "lal@okaxis", context = context, zone = zone)
+        val withUpiLoaded = AskMessage.build("Aaru Sharma", hisaab, asked = 275.0, upiId = "lal@okaxis", zone = zone, strings = AskMessage.Strings.from(context))
+        assertEquals(withUpiDefault, withUpiContext)
+        assertEquals(withUpiDefault, withUpiLoaded)
+
+        val withoutUpiDefault = AskMessage.build("Aaru", hisaab, asked = 200.0, upiId = null, zone = zone)
+        val withoutUpiContext = AskMessage.build("Aaru", hisaab, asked = 200.0, upiId = null, context = context, zone = zone)
+        val withoutUpiLoaded = AskMessage.build("Aaru", hisaab, asked = 200.0, upiId = null, zone = zone, strings = AskMessage.Strings.from(context))
+        assertEquals(withoutUpiDefault, withoutUpiContext)
+        assertEquals(withoutUpiDefault, withoutUpiLoaded)
+    }
+
+    @Test
     fun `a partial ask from the real ledger stays friendly and keeps the full balance`() = runTest {
         val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .allowMainThreadQueries().build()

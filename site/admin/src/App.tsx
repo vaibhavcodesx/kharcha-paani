@@ -155,6 +155,7 @@ function Console() {
 
   return (
     <div className="console">
+      <a href="#view" className="sr-skip">Skip to main content</a>
       <aside className="rail">
         <div className="wordmark">Kharcha Paani<small>Owner console</small></div>
         <Tabs tab={tab} go={go} variant="rail" />
