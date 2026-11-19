@@ -30,7 +30,7 @@ class IconButtonAccessibilityTest {
             SplitFlowTheme {
                 KpDock(
                     currentTab = AppTab.Activity,
-                    onTabSelected = {},
+                    onSelectTab = {},
                     onAdd = {},
                 )
 
