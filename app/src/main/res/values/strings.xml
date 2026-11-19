@@ -459,6 +459,8 @@
     <string name="timeline_row_edit">Edit</string>
     <string name="timeline_row_delete">Delete</string>
     <string name="timeline_row_bill">Has a bill photo</string>
+    <string name="timeline_row_sync_failed">Couldn\'t sync. Will retry.</string>
+    <string name="timeline_row_not_synced">Not synced</string>
     <string name="timeline_row_of">of %1$s</string>
     <string name="timeline_row_between">Split between %1$d</string>
     <string name="timeline_row_with">Split with %1$s</string>

@@ -40,6 +40,24 @@ class TransactionItemCardTest {
     )
 
     @Test
+    fun `a row the server rejected says so, with an icon and words`() {
+        val failed = FullTransaction(tx.transaction.copy(syncState = com.vaibhav.kharchapaani.data.db.entity.SyncState.FAILED))
+        composeTestRule.setContent { SplitFlowTheme { TransactionItemCard(failed, onEdit = {}, onDelete = {}) } }
+
+        composeTestRule.onNodeWithTag("sync_failed_9", useUnmergedTree = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Not synced", useUnmergedTree = true).assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Couldn't sync. Will retry.", useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `a synced or pending row shows no failure mark`() {
+        composeTestRule.setContent { SplitFlowTheme { TransactionItemCard(tx, onEdit = {}, onDelete = {}) } }
+
+        composeTestRule.onNodeWithTag("sync_failed_9", useUnmergedTree = true).assertDoesNotExist()
+        composeTestRule.onNodeWithText("Not synced", useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
     fun `amounts keep their paisa`() {
         composeTestRule.setContent { SplitFlowTheme { TransactionItemCard(tx, onEdit = {}, onDelete = {}) } }
 
