@@ -82,6 +82,9 @@ class GuestUiTest {
             }
         }
         compose.onNodeWithTag("account_use_local").performScrollTo().performClick()
+        // It asks first (UX-31); the switch runs on the second tap.
+        assertEquals(0, local)
+        compose.onNodeWithTag("use_local_confirm").performClick()
         assertEquals(1, local)
         assertEquals(0, signOut)
         compose.onNodeWithTag("account_local_sign_in").assertDoesNotExist()
