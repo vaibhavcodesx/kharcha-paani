@@ -362,6 +362,27 @@ class ItemSplitControllerTest {
         assertEquals(dinner.totalPaise, ItemSplitMath.finalAmounts(split).values.sum())
     }
 
+
+    @Test
+    fun `two ledger friends with the same name keep separate picks`() = runTest {
+        val controller = controller()
+        controller.open(dinner, null)
+        controller.withTheBill()
+        val first = controller.person("Rohan")
+        controller.setActive(first)
+        controller.toggle(controller.item("Biryani"))
+
+        controller.addPerson("Rohan", ledgerId = 8L)
+
+        val second = controller.draft().activePersonId
+        assertTrue(first != second)
+        controller.toggle(controller.item("Water"))
+        val draft = controller.draft()
+        assertEquals(listOf(7L, 8L), draft.people.filter { it.name == "Rohan" }.map { it.ledgerId })
+        assertEquals(setOf(first, second), draft.claims.map { it.personId }.toSet())
+        assertEquals(dinner.totalPaise, ItemSplitMath.finalAmounts(draft.split).values.sum())
+    }
+
     @Test
     fun `without an account it still splits, and says why it can't share`() = runTest {
         val controller = controller(table = null)
