@@ -564,6 +564,8 @@
     <string name="shared_group_qr_camera_unavailable">Could not open the camera. Enter the invite code to join.</string>
     <string name="shared_group_qr_invalid">Scan a Kharcha Paani group invite QR code, or enter the invite code.</string>
     <string name="shared_group_copy_revoke">Turn off</string>
+    <string name="shared_group_copy_reset">Reset link</string>
+    <string name="shared_group_notice_reset_unavailable">Reset link is unavailable. You can still share or turn off this link.</string>
     <string name="shared_group_copy_invite">Invite people</string>
     <string name="shared_group_copy_people">%1$d PEOPLE</string>
     <string name="shared_group_remove_person">Remove %1$s</string>
