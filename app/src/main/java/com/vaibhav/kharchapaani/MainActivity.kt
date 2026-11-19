@@ -1103,6 +1103,13 @@ fun SplitFlowApp(
         onSaveIntent = viewModel::holdDraftForSave,
         // Not on a groupmate's expense: its split is theirs to change.
         onSplitByItems = if (editingAddedBy == null) ({ viewModel.openItemSplit(authUiState.displayName) }) else null,
+        // Your own expense can be deleted from its edit sheet; the Undo line follows (UX-06).
+        onDelete = editingTxId?.takeIf { editingAddedBy == null }?.let { id ->
+            {
+                viewModel.dismissConfirmSheet()
+                viewModel.deleteTransaction(id)
+            }
+        },
     )
 
     // Split by items, over the entry it belongs to (docs/designs/split-by-items.md).
