@@ -1,8 +1,9 @@
 -- STAGED, NOT APPLIED. Cap new cloud receipts at 200 KB each and 50 objects per account.
 -- Existing receipts remain readable and deletable under the existing access policies.
 -- Owner: validate in staging and gate old clients before applying (see the migration runbook).
--- Rollback: drop trigger receipts_account_quota on storage.objects;
--- drop function private.enforce_receipt_account_quota();
+-- Rollback (run in one transaction as the migration role):
+-- create or replace function private.enforce_receipt_account_quota() returns trigger
+-- language plpgsql security definer set search_path = '' as $$ begin return null; end; $$;
 -- update storage.buckets set file_size_limit = 1048576 where id = 'receipts';
 
 begin;
