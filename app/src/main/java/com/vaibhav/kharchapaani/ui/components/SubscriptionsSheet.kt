@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.vaibhav.kharchapaani.R
+import com.vaibhav.kharchapaani.domain.TextLimits
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -154,7 +155,7 @@ fun SubscriptionsContent(
         Text(stringResource(R.string.subscription_copy_add_one).uppercase(), style = EyebrowText, modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() })
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             SheetRow(label = stringResource(R.string.subscription_copy_name), position = RowPosition.First) {
-                SheetTextInput(value = name, onValueChange = { name = it }, placeholder = stringResource(R.string.subscription_copy_name_example), fieldTestTag = "subscription_name_input")
+                SheetTextInput(value = name, onValueChange = { name = it }, placeholder = stringResource(R.string.subscription_copy_name_example), fieldTestTag = "subscription_name_input", maxLength = TextLimits.MERCHANT)
             }
             SheetRow(label = stringResource(R.string.subscription_copy_amount), position = RowPosition.Middle) {
                 SheetTextInput(

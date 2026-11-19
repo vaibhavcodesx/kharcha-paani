@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -18,6 +19,7 @@ import androidx.work.testing.WorkManagerTestInitHelper
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.data.repository.MAX_LOCAL_NAME_LENGTH
+import com.vaibhav.kharchapaani.domain.TextLimits
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -152,5 +154,23 @@ class FieldLengthLimitTest {
         assertEquals(MAX_LOCAL_NAME_LENGTH, person.name.length)
         assertEquals(64, person.name.length)
         assertEquals("B".repeat(64), person.name)
+    }
+
+    @Test
+    fun `UpiContent caps payee name input to DISPLAY_NAME limit`() {
+        compose.setContent {
+            SplitFlowTheme {
+                UpiContent(
+                    saved = null,
+                    defaultName = "",
+                    onSave = {},
+                    onRemove = {},
+                )
+            }
+        }
+
+        val longName = "A".repeat(80)
+        compose.onNodeWithTag("upi_name_input").performTextInput(longName)
+        compose.onNodeWithTag("upi_name_input").assertTextEquals("A".repeat(TextLimits.DISPLAY_NAME))
     }
 }

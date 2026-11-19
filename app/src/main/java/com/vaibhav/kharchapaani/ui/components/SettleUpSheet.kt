@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.domain.SharedRecordGroups
+import com.vaibhav.kharchapaani.domain.TextLimits
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.platform.testTag
@@ -127,7 +128,7 @@ fun SettleUpContent(
             testTag = "settle_amount_input",
         )
         SheetRow(label = stringResource(R.string.payment_note)) {
-            SheetTextInput(value = note, onValueChange = { note = it }, placeholder = stringResource(R.string.payment_note_hint))
+            SheetTextInput(value = note, onValueChange = { note = it }, placeholder = stringResource(R.string.payment_note_hint), maxLength = TextLimits.SETTLEMENT_NOTE)
         }
         // Ask-to-pay (eng review D2): only where the money comes to you and they actually owe you.
         // Above the QR (owner, 2026-10-23): below it, the ask was off screen until you scrolled.

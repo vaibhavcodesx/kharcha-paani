@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
+import com.vaibhav.kharchapaani.domain.TextLimits
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
@@ -103,7 +104,7 @@ fun CreateGroupContent(
                 SheetTextInput(value = name, onValueChange = { name = it }, placeholder = stringResource(R.string.create_group_placeholder), fieldTestTag = "group_name_input")
             }
             SheetRow(label = stringResource(R.string.create_group_about), position = RowPosition.Last) {
-                SheetTextInput(value = about, onValueChange = { about = it }, placeholder = stringResource(R.string.create_group_optional))
+                SheetTextInput(value = about, onValueChange = { about = it }, placeholder = stringResource(R.string.create_group_optional), maxLength = TextLimits.GROUP_DESCRIPTION)
             }
         }
         if (tooLong) {

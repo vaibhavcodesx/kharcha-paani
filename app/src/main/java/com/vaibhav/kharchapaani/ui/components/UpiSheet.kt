@@ -22,6 +22,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.domain.UpiLink
+import com.vaibhav.kharchapaani.domain.TextLimits
 import com.vaibhav.kharchapaani.domain.UpiPayee
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.SubMutedWarmGray
@@ -91,7 +92,7 @@ fun UpiContent(
                 )
             }
             SheetRow(label = stringResource(R.string.upi_copy_name), position = RowPosition.Last) {
-                SheetTextInput(value = name, onValueChange = { name = it }, placeholder = stringResource(R.string.upi_copy_name_hint), fieldTestTag = "upi_name_input")
+                SheetTextInput(value = name, onValueChange = { name = it }, placeholder = stringResource(R.string.upi_copy_name_hint), fieldTestTag = "upi_name_input", maxLength = TextLimits.DISPLAY_NAME)
             }
         }
         val idInvalid = id.isNotBlank() && cleanId == null
