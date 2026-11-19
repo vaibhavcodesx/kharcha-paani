@@ -8,6 +8,24 @@ not GitHub Pages. The page holds no secret: it signs in with Google and calls da
 check the caller against `private.admins`. All SQL here is **staged**: the owner applies it by hand. Agents apply
 nothing to the live project. Planned by an Opus agent, reviewed by the Lead.
 
+## 0. Stack (amended 2026-11-19, owner decision; overrides "vanilla", "no build step" and the `js/*.js` file names below)
+
+Vercel hosts it, so a build step is free. Stack: **Vite + React + TypeScript**, plain CSS with the tokens of section 3
+(CSS variables, no Tailwind, no UI kit, so it does not look like a template), `@supabase/supabase-js` pinned,
+Radix primitives only where they give real accessibility (dialog, tabs). No router library (hash routing by hand), no
+state library, no chart library. Why this and not Next.js: the page is a client-only app that talks to Supabase; it has
+no server code of our own, which keeps the attack surface small. React escapes text by default, which removes the
+hand-built-DOM XSS risk; the "no `innerHTML`" rule becomes "no `dangerouslySetInnerHTML`" (lint-enforced). Types for the
+admin functions come from the staged SQL (hand-written `rpc.ts` types, tested against fixtures).
+Supply chain: committed lockfile, `npm ci` only, exact pins, at most 10 direct dependencies, Dependabot on, no
+postinstall scripts (`ignore-scripts=true` in `.npmrc`). The project lives in `site/admin/` (`package.json`, `src/`,
+`vercel.json` with the headers of section 2); Vercel runs `npm ci && npm run build` and serves `dist/`. CI (Lead, red
+because of `.github/`) runs `npm ci`, `npm run lint`, `npm test` (Vitest, pure functions and components) and
+`npm run build` on PRs that touch `site/admin/`. The CSP drops `'unsafe-inline'` for styles by shipping one built CSS
+file; the supabase-js vendor file and SRI hash are no longer needed. No agent runs `npm` on the owner's laptop:
+CI is the test run, like Gradle.
+
+
 ## 1. What the page does
 
 | Area | Shows | Controls |
