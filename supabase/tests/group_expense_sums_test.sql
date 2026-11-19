@@ -1,4 +1,4 @@
--- Checks for the migration 20261025000200_group_expense_sums (plan T2.1, security audit H-2): a group
+-- Checks for the migration 20261026141316_group_expense_sums (plan T2.1, security audit H-2): a group
 -- expense's shares and split total must add up to its amount, whoever writes them.
 --
 -- Same conventions as rls_groups_test.sql: one transaction ending in ROLLBACK, one result row per

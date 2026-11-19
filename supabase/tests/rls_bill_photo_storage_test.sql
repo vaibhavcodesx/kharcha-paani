@@ -131,8 +131,9 @@ values ('20000000-0000-4000-8000-000000000009', '00000000-0000-4000-8000-0000000
 -- The bucket
 -- ------------------------------------------------------------
 select public._as_admin();
-select public._expect_value('the receipts bucket is private, 1 MB a file, images only',
-  $q$ select count(*) from storage.buckets where id = 'receipts' and not public and file_size_limit = 1048576
+-- 200 KB a file since 20261119000400 (receipt_quota); it was 1 MB.
+select public._expect_value('the receipts bucket is private, 200 KB a file, images only',
+  $q$ select count(*) from storage.buckets where id = 'receipts' and not public and file_size_limit = 200000
       and allowed_mime_types @> array['image/webp','image/jpeg'] and cardinality(allowed_mime_types) = 2 $q$, 1);
 
 -- ------------------------------------------------------------

@@ -8,14 +8,14 @@
 >
 > **Now written, 2026-10-23.** "Nothing writes it yet" below was true when written. Since 1.4.0,
 > `save_group_expense` writes `local_name` for a guest on a shared group's expense
-> (`20260926000100_group_expense_guests.sql`), and since 1.3.0 personal splits and IOUs with
+> (`20260927073436_group_expense_guests.sql`), and since 1.3.0 personal splits and IOUs with
 > friends not on the app go to `local_splits` and `local_settlements` instead.
 
 So the database can hold this today and nothing writes it yet. That is deliberate: turning it on
 means `SyncDao.pendingPersonalTransactions` stops filtering `isSplit = 0`, which changes what
 previously-local-only data begins syncing, and that wants its own session.
 
-- Migration: `supabase/migrations/20260920000000_local_participant_shares.sql`
+- Migration: `supabase/migrations/20260920030201_local_participant_shares.sql`
 - Test: `supabase/tests/rls_local_participant_shares_test.sql` — **12/12 against the local harness**
 - The other two suites still pass with it in place: `rls_groups_test` 100/100,
   `rls_payer_edit_test` 28/28
@@ -91,7 +91,7 @@ inside its owner's expense, visible to exactly the people who could already read
 
 ## What is left
 
-1. ~~Apply `20260920000000_local_participant_shares.sql`~~ — done, 2026-09-20. 12/12 against live,
+1. ~~Apply `20260920030201_local_participant_shares.sql`~~ — done, 2026-09-20. 12/12 against live,
    rolled back cleanly, advisors clean.
 2. The client work is **not** written yet and is the larger half: `RemoteShare` gains
    `local_name`; `GroupSyncEngine.buildGroupExpense` stops returning null when a sharer has no

@@ -3,7 +3,7 @@ package com.vaibhav.kharchapaani.domain
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/** The app never sends text the server refuses (T2.2, migration 20261106000100_text_limits). */
+/** The app never sends text the server refuses (T2.2, migration 20261106130938_text_limits). */
 class TextLimitsTest {
     @Test fun `limits match the server's checks`() {
         assertEquals(120, TextLimits.MERCHANT)

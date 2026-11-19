@@ -1,4 +1,4 @@
--- Checks for migration 20260923000000_owner_private_local_ledger, applied to live on 2026-09-24.
+-- Checks for migration 20260924173011_owner_private_local_ledger, applied to live on 2026-09-24.
 -- 33/33 on the local harness and 33/33 against live (run so that it could only roll back: the
 -- final statement raises with the results), leaving nothing behind.
 --

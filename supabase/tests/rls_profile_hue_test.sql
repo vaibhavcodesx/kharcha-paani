@@ -1,4 +1,4 @@
--- Checks for the migration 20260927000000_profile_hue (design doc item 11): one colour per
+-- Checks for the migration 20260927073454_profile_hue (design doc item 11): one colour per
 -- person, refused when it's within 25 degrees of anyone you share a group with, or in the amber band.
 --
 -- Same conventions as rls_groups_test.sql: one transaction ending in ROLLBACK, one result row per

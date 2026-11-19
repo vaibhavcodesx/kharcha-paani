@@ -5,7 +5,7 @@
 -- See docs/local-friend-sync-v2.md for the why.
 --
 -- What it is for. A split or an IOU with a friend who has no account lives only on the phone that
--- recorded it. 20260920000000_local_participant_shares gave split_shares a local_name, but only a
+-- recorded it. 20260920030201_local_participant_shares gave split_shares a local_name, but only a
 -- *group* expense can have a split at all (splits_insert requires an active group, and paid_by must
 -- be a group member), so the common case -- "Rohan and I had dinner, I paid" -- still had nowhere to
 -- go. Widening the group policies to cover it would have meant touching the most carefully tested

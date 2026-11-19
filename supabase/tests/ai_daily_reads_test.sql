@@ -1,4 +1,4 @@
--- Checks for the migration 20261025000000_ai_daily_reads (plan T1.3, decision D2): per-person daily
+-- Checks for the migration 20261026154229_ai_daily_reads (plan T1.3, decision D2): per-person daily
 -- AI reads by kind, spent only through public.take_ai_read, with the caps as data.
 --
 -- Same conventions as rls_groups_test.sql: one transaction ending in ROLLBACK, one result row per

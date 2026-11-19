@@ -283,7 +283,7 @@ Updates bell instead (the Realtime doorbell already refreshes the screen).
    later in the same `save_group_expense` call are visible), `settlements`, `group_members` and
    `groups`. The actor comes from `auth.uid()` (exact even for a payer editing someone else's
    expense). Service-role writes (`auth.uid()` null) notify nobody, as with `stamp_new_settlement`
-   (`20260926000000:80-82`).
+   (`20260927073400:80-82`).
 2. **Inbox:** the app pulls `activity` (cursor on `updated_at`, like the other pulls) into a Room
    `inbox_items` table. That feeds the Updates screen (§2d) and the **fallback** notifications.
 3. **Push:** an `AFTER INSERT` trigger on `activity` calls `net.http_post` (pg_net, sent only after

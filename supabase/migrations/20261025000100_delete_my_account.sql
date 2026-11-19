@@ -1,4 +1,5 @@
--- NOT APPLIED. Staged for owner review (plan T1.1, decision D1). NOT purely additive: it drops the
+-- APPLIED to live by hand (not recorded in the migration history; see supabase/MIGRATIONS.md). Reviewed as
+-- plan T1.1, decision D1. NOT purely additive: it drops the
 -- foreign key from profiles to auth.users (see below).
 -- Tested against live inside a transaction that rolled back: supabase/tests/delete_my_account_test.sql.
 --

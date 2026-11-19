@@ -1,4 +1,4 @@
--- Checks for the migration 20260926000100_group_expense_guests (design doc item 9): a group
+-- Checks for the migration 20260927073436_group_expense_guests (design doc item 9): a group
 -- expense can carry shares for friends without an account ("guests" of the member who added it).
 --
 -- Same conventions as rls_groups_test.sql: one transaction ending in ROLLBACK, one result row per

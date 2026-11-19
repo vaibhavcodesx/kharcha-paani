@@ -409,8 +409,8 @@ The UI shows `failedChanges` from **rows** only (`MainViewModel.kt:138-145`), so
 - **L7.** "Scan bill" opens the gallery picker (`CaptureCard.kt:126,186`). Rename it to "Bill photo", or offer Camera / Gallery (after #76).
 - **L8.** Search doesn't match friend names or amounts (M11 row).
 - **L9.** The client doesn't cap lengths that the server enforces:
-  - friend names (server: 1..64 for `local_name`, `supabase/migrations/20260923000000_owner_private_local_ledger.sql:52-53`; `AddFriendSheet.kt` has no cap; `LedgerRepository.addPerson` `:618`). A longer name makes every private split with that friend FAILED.
-  - the settlement reject note (server ≤200, `20260926000000_settlement_confirmation.sql:65`).
+  - friend names (server: 1..64 for `local_name`, `supabase/migrations/20260924173011_owner_private_local_ledger.sql:52-53`; `AddFriendSheet.kt` has no cap; `LedgerRepository.addPerson` `:618`). A longer name makes every private split with that friend FAILED.
+  - the settlement reject note (server ≤200, `20260927073400_settlement_confirmation.sql:65`).
 
   Add `maxLength` to the fields.
 - **L10.** Shared `SimpleDateFormat` instances in `LocalStatementParser` (`domain/LocalStatementParser.kt:15-31`) are not thread-safe if two parses overlap. Switch to `DateTimeFormatter` or use a local instance per call.

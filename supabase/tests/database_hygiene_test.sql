@@ -1,4 +1,4 @@
--- Checks for the migration 20261025000300_database_hygiene (plan T2.3; security audit M-4, L-8, L-9):
+-- Checks for the migration 20261026203844_database_hygiene (plan T2.3; security audit M-4, L-8, L-9):
 -- anon has no privileges in public, now or by default; a colour clash with a nameless groupmate is
 -- caught; avatar_url is an https link.
 --
@@ -161,10 +161,16 @@ select public._expect_ok('a colour well away from it is fine',
 -- ------------------------------------------------------------
 -- avatar_url
 -- ------------------------------------------------------------
+-- avatar_url is not writable by signed-in people since 20261119000200 (profiles_column_grants), so the
+-- constraint is checked as the service role, and a separate check shows people cannot write it.
+select public._as_admin();
 select public._expect_state('an avatar that isn''t an https link is refused',
   $q$ update public.profiles set avatar_url = 'http://example.com/a.png' where id = '00000000-0000-4000-8000-0000000000a6' $q$, '23514');
 select public._expect_ok('an https one is fine',
   $q$ update public.profiles set avatar_url = 'https://lh3.googleusercontent.com/a/abc' where id = '00000000-0000-4000-8000-0000000000a6' $q$);
+select public._as('00000000-0000-4000-8000-0000000000a6');
+select public._expect_denied('a signed-in person can''t write avatar_url',
+  $q$ update public.profiles set avatar_url = 'https://example.com/a.png' where id = '00000000-0000-4000-8000-0000000000a6' $q$);
 
 select n, test, passed, detail from public._rls_results order by n;
 

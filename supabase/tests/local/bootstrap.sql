@@ -29,7 +29,7 @@ alter default privileges in schema public grant execute on functions to anon, au
 -- Supabase creates this empty publication; migrations add tables to it for Realtime.
 create publication supabase_realtime;
 
--- Supabase Storage, as far as the migrations touch it (bill photos, 20261106000000): the bucket
+-- Supabase Storage, as far as the migrations touch it (bill photos, 20261106124001): the bucket
 -- list, the objects table their policies sit on, and the folder helper.
 create schema storage;
 create table storage.buckets (

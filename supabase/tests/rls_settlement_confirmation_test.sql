@@ -1,4 +1,4 @@
--- Checks for migration supabase/migrations/20260926000000_settlement_confirmation.sql.
+-- Checks for migration supabase/migrations/20260927073400_settlement_confirmation.sql.
 -- Applied to live 2026-09-27.
 --
 -- Same conventions as the other suites: one transaction ending in ROLLBACK, one result row per

@@ -21,7 +21,7 @@
 --     "I'll tick for Priya, her phone is dead" is meant to work. The host's own picks need the host's
 --     session. Nothing a link-holder does reaches the host's ledger: the host reviews the picks and
 --     saves the expense themself.
---   * Those four are granted to `anon`, which until now could run nothing (20261025000300). They take
+--   * Those four are granted to `anon`, which until now could run nothing (20261026203844). They take
 --     the token on every call, touch only that split's rows, and are capped: 30 people and 100 items
 --     a split, names of 40 characters, 10 open splits a host.
 --
