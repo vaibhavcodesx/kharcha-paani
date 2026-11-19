@@ -9,6 +9,7 @@ import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.repository.ArchivedGroupException
+import com.vaibhav.kharchapaani.data.repository.ExpenseWriteResult
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -59,8 +60,8 @@ class SharedGroupRepositoryTest {
         val id = db.transactionDao().insertTransaction(groupmate)
         val before = db.transactionDao().getTransactionByIdDirect(id)!!
 
-        repository.updateTransactionWithSplits(before.copy(amount = 900.0))
-        repository.deleteTransaction(id)
+        assertEquals(ExpenseWriteResult.NotAllowed, repository.updateTransactionWithSplits(before.copy(amount = 900.0)))
+        assertEquals(ExpenseWriteResult.NotAllowed, repository.deleteTransaction(id))
 
         assertEquals(before, db.transactionDao().getTransactionByIdDirect(id))
         assertEquals(emptyList<String>(), db.syncDao().pendingDeletes(10))
@@ -73,10 +74,18 @@ class SharedGroupRepositoryTest {
         val before = db.transactionDao().getTransactionByIdDirect(id)!!
         val syncBefore = syncRequests
 
-        repository.updateTransactionWithSplits(before.copy(amount = 120.0))
+        assertEquals(ExpenseWriteResult.Applied, repository.updateTransactionWithSplits(before.copy(amount = 120.0)))
 
         assertEquals(120.0, db.transactionDao().getTransactionByIdDirect(id)!!.amount, 0.0)
         assertEquals(syncBefore + 1, syncRequests)
+    }
+
+    @Test
+    fun `a missing entry reports that it is gone without requesting sync`() = runBlocking {
+        val missing = personalTransaction("Lunch", amount = 100.0).copy(id = 1L)
+        assertEquals(ExpenseWriteResult.Missing, repository.updateTransactionWithSplits(missing))
+        assertEquals(ExpenseWriteResult.Missing, repository.deleteTransaction(missing.id))
+        assertEquals(0, syncRequests)
     }
 
     @Test

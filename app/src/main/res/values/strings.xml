@@ -794,6 +794,9 @@
     <string name="action_notice_subscription_next">%1$s added. Its first charge lands when it\'s due.</string>
     <string name="action_notice_edit_payer">Only %1$s, who added it, or %2$s, who paid, can edit this expense.</string>
     <string name="action_notice_edit_owner">Only %1$s can edit this expense.</string>
+    <string name="action_notice_expense_missing">This entry is no longer available.</string>
+    <string name="action_notice_expense_read_only">You no longer have permission to change this expense.</string>
+    <string name="action_notice_expense_payer_restricted">Only the person who added this expense can change who paid, remove the split, or move it to another group.</string>
     <string name="action_notice_archived">%1$s is archived, so its expenses and settlements are read-only.</string>
     <string name="action_notice_deleted">Deleted %1$s</string>
     <string name="action_notice_created_shared">Created %1$s. Open it to invite people.</string>

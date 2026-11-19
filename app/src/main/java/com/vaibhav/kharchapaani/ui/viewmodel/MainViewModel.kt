@@ -70,6 +70,7 @@ import com.vaibhav.kharchapaani.data.model.SplitMode
 import com.vaibhav.kharchapaani.data.model.StatementParseResult
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
 import com.vaibhav.kharchapaani.data.repository.ArchivedGroupException
+import com.vaibhav.kharchapaani.data.repository.ExpenseWriteResult
 import com.vaibhav.kharchapaani.data.repository.DuplicateFriendException
 import com.vaibhav.kharchapaani.ui.components.splitProblem
 import com.vaibhav.kharchapaani.data.repository.GeminiRepository
@@ -2087,12 +2088,16 @@ class MainViewModel(
             val savedId = try {
                 val editingId = _editingTransactionId.value
                 if (editingId != null && editingId != 0L) {
-                    ledgerRepo.updateTransactionWithSplits(
+                    val result = ledgerRepo.updateTransactionWithSplits(
                         tx = tx,
                         paidByPersonId = _paidByPersonId.value,
                         shares = splitShareEntities,
                         splitType = _splitMode.value.name.lowercase(Locale.getDefault())
                     )
+                    if (result != ExpenseWriteResult.Applied) {
+                        showExpenseWriteRefusal(result)
+                        return@launch
+                    }
                     editingId
                 } else {
                     ledgerRepo.saveTransactionWithSplits(
@@ -2126,6 +2131,16 @@ class MainViewModel(
     private fun archivedMessage(e: ArchivedGroupException) =
         uiText(R.string.action_notice_archived, e.groupName)
 
+    private fun showExpenseWriteRefusal(result: ExpenseWriteResult) {
+        val message = when (result) {
+            ExpenseWriteResult.Applied -> return
+            ExpenseWriteResult.Missing -> R.string.action_notice_expense_missing
+            ExpenseWriteResult.NotAllowed -> R.string.action_notice_expense_read_only
+            ExpenseWriteResult.PayerEditRestricted -> R.string.action_notice_expense_payer_restricted
+        }
+        launchAction { _statusMessage.value = uiText(message) }
+    }
+
     /** Takes the row away now; the ledger delete waits for the Undo snackbar to go. */
     fun deleteTransaction(txId: Long) {
         if (fullBackupBlocksActions()) return
@@ -2151,7 +2166,13 @@ class MainViewModel(
         val photos = try {
             // Read first: the rows go with the expense (cascade), and with them the file names.
             cloudCopies = receipts.remotePathsOf(txId)
-            receipts.fileNamesOf(txId).also { ledgerRepo.deleteTransaction(txId) }
+            val fileNames = receipts.fileNamesOf(txId)
+            val result = ledgerRepo.deleteTransaction(txId)
+            if (result != ExpenseWriteResult.Applied) {
+                showExpenseWriteRefusal(result)
+                return
+            }
+            fileNames
         } catch (e: ArchivedGroupException) {
             _statusMessage.value = archivedMessage(e)
             return

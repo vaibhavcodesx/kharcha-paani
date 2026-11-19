@@ -100,7 +100,7 @@ class MoneyConfirmationHapticsTest {
         assertTrue(feedback.isEmpty())
     }
 
-    @Test fun `an edit refused after the sheet opened explains why and leaves it editable`() = runBlocking {
+    @Test fun `an edit refused after the sheet opened explains why and keeps the sheet open`() = runBlocking {
         val id = db.transactionDao().insertTransaction(personalTransaction("Lunch", amount = 100.0))
         val original = db.transactionDao().getTransactionByIdDirect(id)!!
         vm.openEditTransaction(FullTransaction(original))
@@ -111,6 +111,20 @@ class MoneyConfirmationHapticsTest {
 
         assertEquals("You no longer have permission to change this expense.", vm.statusMessage.value)
         assertTrue(vm.isConfirmSheetOpen.value)
+        assertEquals(100.0, db.transactionDao().getTransactionByIdDirect(id)!!.amount, 0.0)
+        assertTrue(feedback.isEmpty())
+    }
+
+    @Test fun `a refused undoable delete explains why and preserves the entry`() = runBlocking {
+        val original = personalTransaction("Lunch", amount = 100.0).copy(
+            ownerProfileId = "00000000-0000-4000-8000-0000000000b1",
+        )
+        val id = db.transactionDao().insertTransaction(original)
+        vm.deleteTransaction(id)
+        vm.commitDelete(id)
+        until { vm.statusMessage.value != null }
+
+        assertEquals("You no longer have permission to change this expense.", vm.statusMessage.value)
         assertEquals(100.0, db.transactionDao().getTransactionByIdDirect(id)!!.amount, 0.0)
         assertTrue(feedback.isEmpty())
     }
