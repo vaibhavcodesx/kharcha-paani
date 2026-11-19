@@ -38,7 +38,7 @@ class DeleteAccountReceiptsTest {
         val photos = (1..201).map { "owner/tx-a/photo-$it.webp" } +
             (1..101).map { "owner/tx-${it.toString().padStart(3, '0')}/photo.webp" }
         val fake = FakeServer(photos)
-        withRepository(fake) { deleteAccount(keepName = true) }
+        withRepository(fake) { deleteAccount(userId = "owner", keepName = true) }
 
         assertEquals(listOf("other/tx/keep.webp"), fake.objects.toList())
         assertEquals(listOf(100, 100, 100, 2), fake.batchSizes)
@@ -51,7 +51,7 @@ class DeleteAccountReceiptsTest {
     @Test
     fun `an empty folder still lets the account be deleted`() = runBlocking {
         val fake = FakeServer(emptyList())
-        withRepository(fake) { deleteAccount(keepName = false) }
+        withRepository(fake) { deleteAccount(userId = "owner", keepName = false) }
 
         assertTrue(fake.listRequests.isNotEmpty())
         assertTrue(fake.batchSizes.isEmpty())
@@ -63,13 +63,13 @@ class DeleteAccountReceiptsTest {
         val fake = FakeServer((1..101).map { "owner/tx/photo-$it.webp" })
         fake.failDeleteBatch = 2
         withRepository(fake) {
-            val error = runCatching { deleteAccount(keepName = false) }.exceptionOrNull()
+            val error = runCatching { deleteAccount(userId = "owner", keepName = false) }.exceptionOrNull()
             assertTrue(error is RestException)
             assertTrue(fake.rpcCalls.isEmpty())
             assertEquals(1, fake.objects.count { it.startsWith("owner/") })
 
             fake.failDeleteBatch = null
-            deleteAccount(keepName = false)
+            deleteAccount(userId = "owner", keepName = false)
         }
 
         assertTrue(fake.ownFolderWasEmptyAtRpc)
@@ -81,7 +81,7 @@ class DeleteAccountReceiptsTest {
         val fake = FakeServer(listOf("owner/tx/photo.webp"))
         fake.listOffline = true
         withRepository(fake) {
-            val error = runCatching { deleteAccount(keepName = false) }.exceptionOrNull()
+            val error = runCatching { deleteAccount(userId = "owner", keepName = false) }.exceptionOrNull()
             assertTrue(error is IOException)
         }
 
