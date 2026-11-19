@@ -28,7 +28,7 @@ Exactly one row. Copy the id. Also look at `select * from public.profiles where 
 **4. Take a database dump** if you have not taken one today (`docs/engineering/runbooks/migration.md`, step 1 of
 "Owner"). Deletion is permanent.
 
-**5. Delete their bill photos first.** The deletion function does not remove files. Supabase dashboard > Storage > `receipts` > open the folder named with their id > select all > Delete. Do not delete files with SQL (it leaves the files behind). Once their sign-in is gone you can no longer tell whose folder it was.
+**5. Delete their bill photos first (email requests only).** In Supabase dashboard > Storage > `receipts`, open the folder named with the verified account ID, then select all and delete. Confirm the folder is empty or absent before continuing. If a deletion fails, retry before moving to step 6. The in-app flow does this step automatically.
 
 **6. Run the deletion as that person**, in one SQL editor run (it is a single transaction):
 
@@ -42,7 +42,7 @@ commit;
 
 The function deletes their private rows, tombstones the profile (name only), removes them from groups (a group
 they created passes to the longest-standing member; an empty group is deleted) and deletes the sign-in. It is the
-same code the app runs; the photos are the one thing it does not remove, which is why step 5 exists.
+same database function the app runs after it removes the person's bill photos.
 
 **7. Check.**
 

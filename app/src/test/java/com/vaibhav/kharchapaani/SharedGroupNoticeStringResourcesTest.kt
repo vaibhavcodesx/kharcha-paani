@@ -64,6 +64,8 @@ class SharedGroupNoticeStringResourcesTest {
             override suspend fun revokeInvite(code: String): Unit = error("Not used")
             override suspend fun previewInvite(code: String): InvitePreview? = throw IOException("offline")
             override suspend fun joinGroup(code: String): String = error("Not used")
+            override suspend fun supportsMemberRemoval(groupRemoteId: String): Boolean = error("Not used")
+            override suspend fun removeMember(groupRemoteId: String, memberProfileId: String): Unit = error("Not used")
             override suspend fun leaveGroup(groupRemoteId: String, selfProfileId: String): Unit = error("Not used")
         }
         val controller = SharedGroupsController(screen, LedgerRepository(db), remote,

@@ -11,7 +11,7 @@ nothing to the live project. Planned by an Opus agent, reviewed by the Lead.
 ## 0. Stack (amended 2026-11-19, owner decision; overrides "vanilla", "no build step" and the `js/*.js` file names below)
 
 Vercel hosts it, so a build step is free. Stack: **Vite + React + TypeScript**, plain CSS with the tokens of section 3
-(CSS variables, no Tailwind, no UI kit, so it does not look like a template), `@supabase/supabase-js` pinned,
+(CSS variables, no Tailwind, no UI kit, so it does not look like a template), `@supabase/supabase-js` pinned (exact version in `package.json`),
 Radix primitives only where they give real accessibility (dialog, tabs). No router library (hash routing by hand), no
 state library, no chart library. Why this and not Next.js: the page is a client-only app that talks to Supabase; it has
 no server code of our own, which keeps the attack surface small. React escapes text by default, which removes the
@@ -22,9 +22,16 @@ postinstall scripts (`ignore-scripts=true` in `.npmrc`). The project lives in `s
 `vercel.json` with the headers of section 2); Vercel runs `npm ci && npm run build` and serves `dist/`. CI (Lead, red
 because of `.github/`) runs `npm ci`, `npm run lint`, `npm test` (Vitest, pure functions and components) and
 `npm run build` on PRs that touch `site/admin/`. The CSP drops `'unsafe-inline'` for styles by shipping one built CSS
-file; the supabase-js vendor file and SRI hash are no longer needed. No agent runs `npm` on the owner's laptop:
-CI is the test run, like Gradle.
+file; the supabase-js vendor file and SRI hash are no longer needed. No agent runs a heavy build on the owner's laptop; the page's own checks (`npm test`, `npm run build`, `npm run dev:mock`) are light and
+also run in CI.
 
+
+**Built differently from the first plan (Lead, 2026-11-19, after the Impeccable craft pass).** The craft rules ban an eyebrow
+label above a heading, gradient text and a hero-metric block, so Today opens with a plain sentence ("37 people have
+accounts, 21 of them active this week.") with the numbers in the number face, and everything below is ledger rows on
+hairlines, not cards or tiles. The brand gradient is not used on text. The app's own fonts (Outfit, Plus Jakarta Sans,
+Space Grotesk) stay: using our design language is the brief. `npm run dev:mock` serves the page with sample data
+(`preview/mock-supabase.ts`, variants `?paused ?leftover ?empty ?slow ?error`) so any screen can be looked at without a backend.
 
 ## 1. What the page does
 
