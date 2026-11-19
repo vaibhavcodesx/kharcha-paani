@@ -431,6 +431,11 @@
     <string name="create_group_too_long">Name is too long</string>
     <string name="create_group_disabled">Name the group</string>
     <string name="create_group_title">New group</string>
+    <string name="edit_group_title">Edit group</string>
+    <string name="edit_group_supporting">Rename it, change the icon, or add and remove members. Past expenses stay as they are.</string>
+    <string name="edit_group_save">Save changes</string>
+    <string name="edit_group_button">Edit</string>
+    <string name="action_notice_group_saved">Saved %1$s.</string>
     <string name="create_group_supporting">For a trip, a flat, or anything you split more than once.</string>
     <string name="create_group_name">Name</string>
     <string name="create_group_placeholder">Goa 2026</string>

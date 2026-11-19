@@ -1220,6 +1220,18 @@ fun SplitFlowApp(
         onDismiss = { viewModel.dismissCreateGroup() }
     )
 
+    // Edit a local group (UX-19)
+    val editingGroup by viewModel.editingGroup.collectAsState()
+    CreateGroupSheet(
+        isOpen = editingGroup != null,
+        allPeople = people,
+        editing = editingGroup,
+        onSaveGroup = { name, desc, emoji, _, memberIds, _ ->
+            viewModel.saveEditedGroup(name, desc, emoji, memberIds)
+        },
+        onDismiss = { viewModel.dismissEditGroup() },
+    )
+
     // Group Detail Sheet
     GroupDetailSheet(
         groupDetails = selectedGroupForDetail,
@@ -1236,6 +1248,7 @@ fun SplitFlowApp(
         },
         onExportGroup = { groupId -> viewModel.exportGroupCsv(groupId) },
         onAskTripReview = { groupId -> viewModel.askTripReview(groupId) },
+        onEditGroup = { groupId -> viewModel.openEditGroup(groupId) },
         tripReview = tripReview,
         aiAsksLeft = aiAsksLeft,
         aiAvailable = viewModel.aiAvailable && aiEnabled,

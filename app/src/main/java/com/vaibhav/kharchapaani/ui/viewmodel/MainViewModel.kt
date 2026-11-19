@@ -2308,6 +2308,43 @@ class MainViewModel(
         _isCreateGroupOpen.value = false
     }
 
+    private val _editingGroupId = MutableStateFlow<Long?>(null)
+
+    /** The local group whose Edit sheet is open, kept live. Shared groups are never edited here (UX-19). */
+    val editingGroup: StateFlow<GroupWithDetails?> = combine(_editingGroupId, groups) { id, all ->
+        id?.let { editing -> all.firstOrNull { it.group.id == editing && !it.group.isShared } }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    fun openEditGroup(groupId: Long) {
+        if (fullBackupBlocksActions()) return
+        _editingGroupId.value = groupId
+    }
+
+    fun dismissEditGroup() {
+        _editingGroupId.value = null
+    }
+
+    /** Renames a local group, changes its icon or about line, and sets its members. History and balances stay. */
+    fun saveEditedGroup(name: String, description: String, emoji: String, memberPersonIds: List<Long>) {
+        if (fullBackupBlocksActions()) return
+        if (name.isBlank()) return
+        submissions.launch(Submit.EditGroup) {
+            if (fullBackupBlocksActions()) return@launch
+            val current = editingGroup.value ?: return@launch
+            ledgerRepo.updateGroup(
+                current.group.copy(
+                    name = name.trim().take(120),
+                    description = description.trim().take(500),
+                    emoji = emoji,
+                    updatedAt = System.currentTimeMillis(),
+                ),
+                memberPersonIds,
+            )
+            dismissEditGroup()
+            _statusMessage.value = uiText(R.string.action_notice_group_saved, name.trim())
+        }
+    }
+
     fun createNewGroup(
         name: String,
         description: String,
