@@ -65,7 +65,16 @@ UPI app; does not lend, hold, or transfer money." Never tick mobile payments, mo
 - **Content rating:** answer the questionnaire as a finance/utility app with user-generated text
   shared only within private groups; no violence, gambling, or purchases.
 - **App access:** Sign-in is optional (the app can be used locally without an account, but cloud sync
-  and shared groups require signing in). Give the reviewer account's details: a Google account with
+  and shared groups require signing in). The review account and its App access text are in docs/store-listing/reviewer-access.md; it is a Google account with
   sample data (a shared group, a split, a settlement).
 - **Government app:** No. **News app:** No. **Health app:** No.
 - **Category:** Finance. **Tags:** budgeting, expense tracker.
+
+## Notes for the form (added 2026-11-19, audit P-05; one source of truth)
+
+- **Visible to other users is not 'shared with third parties'.** Bill photos, group expenses, names and UPI IDs are visible to the people in the same group or split. Play treats that separately from sharing with a third party. In the form's notes write: 'Visible only to people the user chooses to group or split with.' Keep this consistent with the privacy policy.
+- **Split-by-items link (new).** A host can share a link so friends tick items with no account. What is kept: the bill's items and prices, its total, the host's first name and the first name each guest types. Kept for 24 hours; deleted when the host finishes. No account ids, phone numbers or photos. Type: Personal info > Name (first names), Financial info > Purchase history, not shared with third parties, collected for app functionality.
+- **Crash reports.** The owner decided (B-07) they are on by default with an off switch, once the Firebase project is confirmed to receive them. Until that is confirmed (issue #333) keep the declared 'optional, off by default' answer; change this row and the policy together when the default changes.
+- **Free versus paid AI tier.** Every Gemini row above assumes the free tier. If the app moves to the paid tier (required for EU/UK users), the 'shared with Google for product improvement' rows change: update this file and the policy in one PR.
+- **Camera.** The CAMERA permission is declared for the QR scan and the Bill photo flow. Frames are decoded on the phone and discarded; nothing is collected. Details in docs/store-listing/permissions.md.
+- **Minimum-version table.** The app reads one public row (two version numbers) with no sign-in. No personal data.
