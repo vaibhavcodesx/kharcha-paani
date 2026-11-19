@@ -1,6 +1,6 @@
 # Delete your Kharcha Paani account
 
-Last updated 25 October 2026.
+Last updated 19 November 2026.
 
 ## In the app (quickest)
 
@@ -17,10 +17,10 @@ delete the account within **7 days** of your email and reply to confirm.
 ## What's deleted, and what stays
 
 **Deleted:** your account (you can't sign in to it again), your profile details (email, UPI ID,
-picture, emoji, colour), your personal expenses and income, your private splits, and friends who
-aren't on the app. Copies in our database backups are overwritten within 30 days.
+picture, emoji, colour), your personal expenses and income, your private splits, backed-up bill photos, and friends
+who aren't on the app. Copies in our database backups are overwritten within 30 days.
 
-**Stays:** expenses and payments in shared groups, because your groupmates' balances depend on them.
+**Stays:** expenses and payments in shared groups, because other members' balances depend on them.
 They show your name as it is now, or "Former member", as you choose. Only the name stays, nothing
 else about you.
 
