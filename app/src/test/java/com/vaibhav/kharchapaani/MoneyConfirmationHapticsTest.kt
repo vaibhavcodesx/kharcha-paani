@@ -16,6 +16,8 @@ import androidx.work.testing.WorkManagerTestInitHelper
 import com.vaibhav.kharchapaani.data.db.AppDatabase
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import com.vaibhav.kharchapaani.data.model.StatementTransactionItem
+import com.vaibhav.kharchapaani.data.model.FullTransaction
+import com.vaibhav.kharchapaani.data.sync.personalTransaction
 import com.vaibhav.kharchapaani.ui.components.MoneyConfirmationHaptics
 import com.vaibhav.kharchapaani.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.*
@@ -95,6 +97,21 @@ class MoneyConfirmationHapticsTest {
         vm.recordSettlementPayment(-1, 2, Double.NaN, ""); settled()
         assertTrue(db.transactionDao().getAllTransactions().first().isEmpty())
         assertTrue(db.settlementDao().getAllSettlements().first().isEmpty())
+        assertTrue(feedback.isEmpty())
+    }
+
+    @Test fun `an edit refused after the sheet opened explains why and leaves it editable`() = runBlocking {
+        val id = db.transactionDao().insertTransaction(personalTransaction("Lunch", amount = 100.0))
+        val original = db.transactionDao().getTransactionByIdDirect(id)!!
+        vm.openEditTransaction(FullTransaction(original))
+        vm.updateAmount("120")
+        db.transactionDao().updateTransaction(original.copy(ownerProfileId = "00000000-0000-4000-8000-0000000000b1"))
+        vm.saveCurrentTransaction(askForGroup = false)
+        settled()
+
+        assertEquals("You no longer have permission to change this expense.", vm.statusMessage.value)
+        assertTrue(vm.isConfirmSheetOpen.value)
+        assertEquals(100.0, db.transactionDao().getTransactionByIdDirect(id)!!.amount, 0.0)
         assertTrue(feedback.isEmpty())
     }
 }

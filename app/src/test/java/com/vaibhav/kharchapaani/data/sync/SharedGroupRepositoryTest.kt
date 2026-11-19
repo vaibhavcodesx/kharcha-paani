@@ -50,6 +50,36 @@ class SharedGroupRepositoryTest {
         db.personDao().insertPerson(PersonEntity(name = "Bob", avatarColor = "#70C1FF", profileId = profileId))
 
     @Test
+    fun `refused expense mutations preserve the ledger and request no sync`() = runBlocking {
+        val owner = "00000000-0000-4000-8000-0000000000b1"
+        val groupId = sharedGroupBy(owner)
+        val groupmate = personalTransaction("Dinner", amount = 800.0).copy(
+            groupId = groupId, ownerProfileId = owner, syncState = SyncState.SYNCED,
+        )
+        val id = db.transactionDao().insertTransaction(groupmate)
+        val before = db.transactionDao().getTransactionByIdDirect(id)!!
+
+        repository.updateTransactionWithSplits(before.copy(amount = 900.0))
+        repository.deleteTransaction(id)
+
+        assertEquals(before, db.transactionDao().getTransactionByIdDirect(id))
+        assertEquals(emptyList<String>(), db.syncDao().pendingDeletes(10))
+        assertEquals(0, syncRequests)
+    }
+
+    @Test
+    fun `a permitted expense edit still saves and requests sync`() = runBlocking {
+        val id = repository.saveTransactionWithSplits(personalTransaction("Lunch", amount = 100.0))
+        val before = db.transactionDao().getTransactionByIdDirect(id)!!
+        val syncBefore = syncRequests
+
+        repository.updateTransactionWithSplits(before.copy(amount = 120.0))
+
+        assertEquals(120.0, db.transactionDao().getTransactionByIdDirect(id)!!.amount, 0.0)
+        assertEquals(syncBefore + 1, syncRequests)
+    }
+
+    @Test
     fun `a new shared group is queued with only this account as a member`() = runBlocking {
         val groupId = repository.createSharedGroup("Flat")
 
