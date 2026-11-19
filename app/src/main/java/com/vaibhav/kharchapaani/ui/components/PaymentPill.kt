@@ -58,7 +58,7 @@ fun PaymentPill(method: String, modifier: Modifier = Modifier) {
         }
         Text(
             text = label,
-            style = EyebrowText.copy(fontSize = 9.sp, letterSpacing = 0.6.sp, fontWeight = FontWeight.Medium),
+            style = EyebrowText.copy(fontSize = 11.sp, letterSpacing = 0.6.sp, fontWeight = FontWeight.Medium),
             color = SubMutedWarmGray,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

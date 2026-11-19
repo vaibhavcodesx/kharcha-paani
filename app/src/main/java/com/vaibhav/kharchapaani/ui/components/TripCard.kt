@@ -265,7 +265,7 @@ private const val ARCHIVED_ALPHA = 0.55f
 private fun StateTag(label: String, modifier: Modifier = Modifier) {
     Text(
         text = label.uppercase(),
-        style = EyebrowText.copy(fontSize = 9.sp, letterSpacing = 0.6.sp),
+        style = EyebrowText.copy(fontSize = 11.sp, letterSpacing = 0.6.sp),
         color = SubMutedWarmGray,
         maxLines = 1,
         modifier = modifier
