@@ -153,7 +153,7 @@ class SharedGroupUiTest {
         }
 
         composeTestRule.onNodeWithText("Leave group").performClick()
-        composeTestRule.onNodeWithText("You owe ₹250 in this group. Leaving does not clear it, so settle up first.").assertExists()
+        composeTestRule.onNodeWithText("₹250 is still unsettled on your side in this group. Leaving does not clear it, so settle up first.").assertExists()
         composeTestRule.onNodeWithText("Cancel").performClick()
 
         balance.value = 80.0
@@ -164,7 +164,8 @@ class SharedGroupUiTest {
         balance.value = 0.0
         composeTestRule.onNodeWithText("Leave group").performClick()
         composeTestRule.onNodeWithText("Its expenses and settlements will be removed from this phone. Other members keep them, and you can rejoin with a new invite.").assertExists()
-        composeTestRule.onAllNodesWithText("in this group", substring = true).assertCountEquals(0)
+        composeTestRule.onAllNodesWithText("still unsettled", substring = true).assertCountEquals(0)
+        composeTestRule.onAllNodesWithText("You are owed", substring = true).assertCountEquals(0)
     }
 
     @Test
