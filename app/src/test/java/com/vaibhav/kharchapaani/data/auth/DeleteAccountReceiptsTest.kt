@@ -11,6 +11,7 @@ import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.storage.Storage
+import io.github.jan.supabase.storage.resumable.MemoryResumableCache
 import io.ktor.client.engine.okhttp.OkHttp
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -166,7 +167,9 @@ class DeleteAccountReceiptsTest {
                 alwaysAutoRefresh = false
                 enableLifecycleCallbacks = false
             }
-            install(Storage)
+            install(Storage) {
+                resumable { cache = MemoryResumableCache() }
+            }
             install(Postgrest)
         }
 
