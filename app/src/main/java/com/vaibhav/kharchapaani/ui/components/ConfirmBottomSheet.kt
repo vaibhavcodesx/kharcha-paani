@@ -40,6 +40,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -185,6 +186,7 @@ fun ConfirmBottomSheet(
             updatedByAi = updatedByAi,
             onSaveIntent = onSaveIntent,
             onSplitByItems = onSplitByItems,
+            onCancelReading = onDismiss,
             onSave = {
                 focusManager.clearFocus()
                 onSave()
@@ -259,6 +261,8 @@ fun ConfirmSheetContent(
     onSaveIntent: () -> Unit = {},
     // Opens "Split by items" (docs/designs/split-by-items.md); null where it isn't offered.
     onSplitByItems: (() -> Unit)? = null,
+    // Shown while a bill or line is being read: stops the read and closes the sheet. Null hides the button.
+    onCancelReading: (() -> Unit)? = null,
 ) {
     // An entry keeps its own category or method even when it isn't a choice here (hidden since, or a
     // groupmate's own category), so it's shown and stays selected.
@@ -339,7 +343,7 @@ fun ConfirmSheetContent(
         }
 
         if (isParsing) {
-            ParsingPlaceholder()
+            ParsingPlaceholder(onCancelReading)
             return@SheetScaffold
         }
 
@@ -618,7 +622,7 @@ private fun AiReadingStatus(isImprovingWithAi: Boolean, updatedByAi: Boolean) {
 }
 
 @Composable
-private fun ParsingPlaceholder() {
+private fun ParsingPlaceholder(onCancel: (() -> Unit)? = null) {
     Column(Modifier.padding(vertical = Spacing.xl), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Box(
             Modifier
@@ -644,6 +648,14 @@ private fun ParsingPlaceholder() {
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = Spacing.l).align(Alignment.CenterHorizontally),
         )
+        if (onCancel != null) {
+            TextButton(
+                onClick = onCancel,
+                modifier = Modifier.align(Alignment.CenterHorizontally).testTag("confirm_reading_cancel"),
+            ) {
+                Text(stringResource(R.string.entry_reading_cancel), style = MaterialTheme.typography.labelLarge, color = MutedWarmGray)
+            }
+        }
     }
 }
 

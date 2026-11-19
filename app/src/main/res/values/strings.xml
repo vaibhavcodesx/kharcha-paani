@@ -190,6 +190,7 @@
     <string name="entry_optional">Optional</string>
     <string name="entry_close_choices">Close choices</string>
     <string name="entry_reading">Reading your entry…</string>
+    <string name="entry_reading_cancel">Cancel</string>
     <string name="entry_improving_ai">Improving with AI…</string>
     <string name="entry_updated_by_ai">Updated by AI</string>
     <string name="entry_income_noun">income</string>
