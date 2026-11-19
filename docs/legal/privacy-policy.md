@@ -28,9 +28,10 @@ note), splits, IOUs, settlements and the groups you create or join. These are st
 and, so they're safe if you lose it and so your groups stay in step, in your account in the cloud.
 
 **Bill photos.** When you attach a photo of a bill, the app re-encodes it on your phone, removing all
-EXIF metadata (such as GPS location, camera model and timestamps) and resizing it to at most 1 MB.
-When you are signed in, this image is backed up to your account on our cloud server so you can restore
-it on another device. On a split in a shared group, members of that split can see the bill photo
+EXIF metadata (such as GPS location, camera model and timestamps). When you are signed in, new cloud
+copies are compressed to at most 200 KB and backed up to your account, up to 50 cloud photos. If your
+account is full, new photos stay on your phone until there is room. On a split in a shared group,
+members of that split can see the backed-up bill photo
 unless you turn off "Share bill photos" in Settings. Deleting the expense, replacing or removing the
 photo, or deleting your account deletes the cloud copy.
 
