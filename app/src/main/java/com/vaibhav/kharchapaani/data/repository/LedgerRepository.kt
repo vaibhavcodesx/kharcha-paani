@@ -1020,8 +1020,8 @@ class LedgerRepository(
                     // Calendar days, the same in any zone; [zone] only places each charge at 9 am.
                     val start = CalendarDay.fromMillis(subscription.startDate)
                     val chargedThrough = subscription.chargedThrough?.let(CalendarDay::fromMillis)
-                    val due = SubscriptionSchedule.dueDates(start, cycle, today, subscription.cancelledAt?.let(CalendarDay::fromMillis))
-                        .filter { chargedThrough == null || it.isAfter(chargedThrough) }
+                    val due = SubscriptionSchedule.dueDates(start, cycle, today,
+                        subscription.cancelledAt?.let(CalendarDay::fromMillis), after = chargedThrough)
                     if (due.isEmpty()) return@withTransaction 0
 
                     for (date in due) {

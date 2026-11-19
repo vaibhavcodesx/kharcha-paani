@@ -20,11 +20,13 @@ import com.vaibhav.kharchapaani.domain.BackupSplit
 import com.vaibhav.kharchapaani.domain.BackupSubscription
 import com.vaibhav.kharchapaani.domain.BackupTransaction
 import com.vaibhav.kharchapaani.domain.CategoryPrefs
+import com.vaibhav.kharchapaani.domain.CalendarDay
 import com.vaibhav.kharchapaani.domain.LocalBackup
 import com.vaibhav.kharchapaani.domain.RestoreReport
 import com.vaibhav.kharchapaani.domain.roundPaisa
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.time.LocalDate
 
 /**
  * Reading and writing everything the server will never hold.
@@ -167,7 +169,7 @@ class LocalBackupRepository(private val db: AppDatabase) {
      * Running it twice is a no-op, and [RestoreReport] says what it skipped rather than reporting a
      * success that leaves you unsure whether it duplicated everything.
      */
-    suspend fun restore(backup: LocalBackup): RestoreReport = withContext(Dispatchers.IO) {
+    suspend fun restore(backup: LocalBackup, today: LocalDate = LocalDate.now()): RestoreReport = withContext(Dispatchers.IO) {
         var report = RestoreReport()
 
         db.withTransaction {
@@ -241,7 +243,9 @@ class LocalBackupRepository(private val db: AppDatabase) {
                         paymentMethod = sub.paymentMethod,
                         cycle = sub.cycle,
                         startDate = sub.startDate,
-                        chargedThrough = sub.chargedThrough,
+                        // Missing history since the export is not a new expense. Resume tomorrow,
+                        // keeping the original start date as the billing anchor and restore key.
+                        chargedThrough = CalendarDay.toMillis(today),
                         cancelledAt = sub.cancelledAt,
                         createdAt = sub.createdAt,
                     )
