@@ -29,14 +29,12 @@ name's timestamp is the version the live history uses. Update this table wheneve
 | `20261106124001_bill_photo_storage.sql` | applied, recorded in the live history |
 | `20261106130938_text_limits.sql` | applied, recorded in the live history |
 | `20261110000000_bill_item_splits.sql` | **applied by hand, NOT recorded** (repair: see `docs/engineering/runbooks/migration-history-repair.md`) |
-| `20261119000000_app_config.sql` | **staged, not applied** |
-| `20261119000100_ai_plans_and_ceiling.sql` | **staged, not applied** |
-| `20261119000200_profiles_column_grants.sql` | **staged, not applied** |
-| `20261119000300_group_invite_limits_and_member_removal.sql` | **staged, not applied** |
-| `20261119000400_receipt_quota.sql` | **staged, not applied** |
-| `20261120000000_admin_core.sql` | **staged, not applied** (admin page S1; apply after `...000100`) |
-| `20261120000100_admin_writes.sql` | **staged, not applied** (admin page S2; apply after admin_core) |
-| `20261120000200_admin_delete_account.sql` | **staged, not applied** (admin page S3; REPLACES the live `delete_my_account` body with a wrapper; apply after admin_writes) |
+| `20261119000000_app_config.sql` | **applied by hand 2026-11-19, NOT recorded in the live history** |
+| `20261119000100_ai_plans_and_ceiling.sql` | **applied by hand 2026-11-19 (tables first, then the `take_ai_read` replacement from the one-paste script), NOT recorded in the live history** |
+| `20261119000200_profiles_column_grants.sql` | **applied by hand 2026-11-19, NOT recorded in the live history** |
+| `20261119000300_group_invite_limits_and_member_removal.sql` | **applied by hand 2026-11-19, NOT recorded in the live history** |
+| `20261119000400_receipt_quota.sql` | **applied by hand 2026-11-19, NOT recorded in the live history** |
+| Admin page S1 to S4 (`20261120000000` to `20261120000300`, in PRs #445, #448, #451, #452, not yet merged) | **applied by hand 2026-11-19 from the same script, NOT recorded.** The owner's row is in `private.admins`. Merge those PRs only after review; the SQL is already live |
 
 Staged files are applied by the owner, by hand, in file order, after a database dump
 (`docs/engineering/runbooks/migration.md`). Some staged files need an app change first; their header says so.
