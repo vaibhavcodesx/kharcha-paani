@@ -19,6 +19,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.model.CategorySummary
 import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
@@ -26,6 +27,7 @@ import com.vaibhav.kharchapaani.domain.DaySpend
 import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.screens.HomeScreen
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
@@ -51,6 +53,7 @@ class LargeMoneyTextTest {
 
     @Test
     fun `Home displays every digit of its money figures from default to double text size`() {
+        compose.mainClock.autoAdvance = false
         compose.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale.value)) {
                 SplitFlowTheme {
@@ -94,6 +97,7 @@ class LargeMoneyTextTest {
                     visibleAmount.indices.forEach { index ->
                         val layouts = mutableListOf<TextLayoutResult>()
                         digits[index].assertIsDisplayed().performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+                        assertEquals(visibleAmount[index].toString(), layouts.single().layoutInput.text.text)
                         assertFalse("$visibleAmount clipped at $screen and $scale", layouts.single().hasVisualOverflow)
                     }
                 }
@@ -103,6 +107,7 @@ class LargeMoneyTextTest {
 
     @Test
     fun `SpendCharts show the selected amount without cutting off digits`() {
+        compose.mainClock.autoAdvance = false
         val category = CategorySummary("Food", dayAmount, 100f, 1)
         compose.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale.value)) {
@@ -134,10 +139,12 @@ class LargeMoneyTextTest {
         }
     }
 
-    private fun resize(screen: androidx.compose.ui.unit.Dp, scale: Float) {
-        compose.runOnIdle {
+    private fun resize(screen: Dp, scale: Float) {
+        compose.runOnUiThread {
             width.value = screen
             fontScale.value = scale
         }
+        compose.mainClock.advanceTimeBy(900)
+        compose.waitForIdle()
     }
 }

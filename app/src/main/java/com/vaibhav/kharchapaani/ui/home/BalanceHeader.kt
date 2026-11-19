@@ -21,6 +21,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.constrainHeight
+import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -42,6 +48,7 @@ import com.vaibhav.kharchapaani.ui.theme.MoneyText
 import com.vaibhav.kharchapaani.ui.theme.OffWhiteText
 import com.vaibhav.kharchapaani.ui.theme.Spacing
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /**
  * The top of Home is what this month has cost, in the brand gradient, with the streak underneath.
@@ -76,6 +83,7 @@ fun BalanceHeader(
             prefix = "₹",
             style = MoneyText.hero,
             brush = BrandGradient.horizontal(),
+            modifier = Modifier.fitRollingNumberWidth(),
             // Whole rupees: at a glance the month is "₹12,345", not "₹12,345.50" (U27). Rows keep paise.
             wholeRupees = true,
         )
@@ -105,20 +113,15 @@ fun MonthStrip(
 ) {
     val owedToMe = netBalance >= 0.005
     val iOwe = netBalance <= -0.005
-    Row(modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+    val incomeFigure: @Composable (Modifier) -> Unit = { figureModifier ->
         MonthFigure(
             label = stringResource(R.string.home_came_in),
             amount = analytics.totalIncome,
             color = MoneyIn,
-            modifier = Modifier.weight(1f),
+            modifier = figureModifier,
         )
-        Box(
-            Modifier
-                .padding(horizontal = Spacing.xl)
-                .width(1.dp)
-                .fillMaxHeight()
-                .background(CharcoalBorder)
-        )
+    }
+    val balanceFigure: @Composable (Modifier) -> Unit = { figureModifier ->
         MonthFigure(
             label = when {
                 owedToMe -> stringResource(R.string.home_friends_owe)
@@ -132,8 +135,21 @@ fun MonthStrip(
                 else -> MutedWarmGray
             },
             onClick = onOpenSimplifyDebts.takeIf { owedToMe || iOwe },
-            modifier = Modifier.weight(1f),
+            modifier = figureModifier,
         )
+    }
+    if (LocalDensity.current.fontScale > 1.5f) {
+        Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
+            incomeFigure(Modifier.fillMaxWidth())
+            Box(Modifier.fillMaxWidth().height(1.dp).background(CharcoalBorder))
+            balanceFigure(Modifier.fillMaxWidth())
+        }
+    } else {
+        Row(modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+            incomeFigure(Modifier.weight(1f))
+            Box(Modifier.padding(horizontal = Spacing.xl).width(1.dp).fillMaxHeight().background(CharcoalBorder))
+            balanceFigure(Modifier.weight(1f))
+        }
     }
 }
 
@@ -172,7 +188,12 @@ private fun MonthFigure(
         verticalArrangement = Arrangement.spacedBy(Spacing.xxs),
     ) {
         Text(label.uppercase(), style = EyebrowText)
-        AnimatedRollingNumber(targetValue = amount, style = MoneyText.title, color = color)
+        AnimatedRollingNumber(
+            targetValue = amount,
+            style = MoneyText.title,
+            color = color,
+            modifier = Modifier.fitRollingNumberWidth(),
+        )
         if (onClick != null) {
             Text(
                 text = stringResource(R.string.home_simplify),
@@ -180,6 +201,21 @@ private fun MonthFigure(
                 color = WarmAmberLight,
                 modifier = Modifier.padding(top = Spacing.xxs),
             )
+        }
+    }
+}
+
+/** Measure all glyphs before fitting the rolling number so tight rows can't clip its last digits. */
+private fun Modifier.fitRollingNumberWidth(): Modifier = layout { measurable, constraints ->
+    val number = measurable.measure(constraints.copy(minWidth = 0, maxWidth = Constraints.Infinity))
+    val width = constraints.constrainWidth(number.width)
+    val scale = (width.toFloat() / number.width.coerceAtLeast(1)).coerceAtMost(1f)
+    val height = constraints.constrainHeight((number.height * scale).roundToInt())
+    layout(width, height) {
+        number.placeRelativeWithLayer(0, 0) {
+            transformOrigin = TransformOrigin(0f, 0f)
+            scaleX = scale
+            scaleY = scale
         }
     }
 }
