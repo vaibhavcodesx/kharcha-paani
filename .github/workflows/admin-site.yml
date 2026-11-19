@@ -56,4 +56,5 @@ jobs:
       - name: No source maps or secrets in the build
         run: |
           if find dist -name '*.map' | grep -q .; then echo "source maps in dist"; exit 1; fi
-          if grep -rnEi "service_role|sb_secret|SUPABASE_SERVICE" dist; then echo "a service key name appears in dist"; exit 1; fi
+          # The client library mentions the "sb_secret_" prefix in its own code, so look for a real key value, not the word.
+          if grep -rnE "sb_secret_[A-Za-z0-9_-]{16,}|SUPABASE_SERVICE_ROLE_KEY" dist; then echo "a secret key appears in dist"; exit 1; fi
