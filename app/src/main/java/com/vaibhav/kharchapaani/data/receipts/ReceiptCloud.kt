@@ -15,6 +15,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.IOException
 import java.util.UUID
 
 /**
@@ -127,6 +128,9 @@ class SupabaseReceiptRemote(private val supabase: SupabaseClient) : ReceiptRemot
             listNames(folder).map { "$folder/$it" }
         }
         files.chunked(CHUNK).forEach { delete(it) }
+        if (files.isNotEmpty() && bucket.list(ownerId) { limit = 1 }.isNotEmpty()) {
+            throw IOException("Bill photo cleanup did not empty the account folder")
+        }
     }
 
     private suspend fun listNames(folder: String): List<String> = buildList {

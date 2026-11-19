@@ -2,6 +2,8 @@ package com.vaibhav.kharchapaani.data.auth
 
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.MemoryCodeVerifierCache
+import io.github.jan.supabase.auth.MemorySessionManager
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.auth.user.UserSession
@@ -89,6 +91,17 @@ class DeleteAccountReceiptsTest {
         assertTrue(fake.batchSizes.isEmpty())
     }
 
+    @Test
+    fun `an apparently successful removal must leave the folder empty`() = runBlocking {
+        val fake = FakeServer(listOf("owner/tx/photo.webp")).apply { ignoreDeletes = true }
+        withRepository(fake) {
+            val result = runCatching { deleteAccount(userId = "owner", keepName = false) }
+            assertTrue(result.isFailure)
+        }
+        assertEquals(listOf(1), fake.batchSizes)
+        assertTrue(fake.rpcCalls.isEmpty())
+    }
+
     private suspend fun withRepository(fake: FakeServer, block: suspend AuthRepository.() -> Unit) {
         val client = fake.client()
         try {
@@ -116,6 +129,7 @@ class DeleteAccountReceiptsTest {
         var ownFolderWasEmptyAtRpc = false
         var failDeleteBatch: Int? = null
         var listOffline = false
+        var ignoreDeletes = false
 
         fun client(): SupabaseClient = createSupabaseClient("https://local.invalid", "test-key") {
             httpEngine = OkHttp.create {
@@ -145,6 +159,8 @@ class DeleteAccountReceiptsTest {
                 }
             }
             install(Auth) {
+                sessionManager = MemorySessionManager()
+                codeVerifierCache = MemoryCodeVerifierCache()
                 autoLoadFromStorage = false
                 autoSaveToStorage = false
                 alwaysAutoRefresh = false
@@ -174,7 +190,7 @@ class DeleteAccountReceiptsTest {
             if (batchSizes.size == failDeleteBatch) {
                 return 403 to """{"statusCode":"403","error":"Forbidden","message":"Fake Storage denial"}"""
             }
-            objects.removeAll(paths.toSet())
+            if (!ignoreDeletes) objects.removeAll(paths.toSet())
             return 200 to "[]"
         }
     }
