@@ -131,7 +131,7 @@ class SharedGroupUiTest {
 
     @Test
     fun `leaving a group shows what I owe or am owed, and nothing when settled`() {
-        var balance by mutableDoubleStateOf(-250.0)
+        val balance = androidx.compose.runtime.mutableStateOf(-250.0)
         composeTestRule.setContent {
             SplitFlowTheme {
                 SharedGroupPanel(
