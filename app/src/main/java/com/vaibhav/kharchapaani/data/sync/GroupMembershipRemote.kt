@@ -41,11 +41,21 @@ interface GroupMembershipRemote {
     /** Null for an unknown, expired, revoked or archived code; the server doesn't say which. */
     suspend fun previewInvite(code: String): InvitePreview?
 
-    /** Returns the joined group's remote id. Joining a group twice is a no-op. */
+    /**
+     * Returns the joined group's remote id. Joining a group twice is a no-op.
+     * @throws InvalidInviteException when the server has no live invite for the code.
+     */
     suspend fun joinGroup(code: String): String
 
     suspend fun leaveGroup(groupRemoteId: String, selfProfileId: String)
 }
+
+/**
+ * An unknown, expired, revoked, used-up or archived code. Newer servers answer `join_group` with a null
+ * result for these (an error would roll back the failed-try count that limits guessing); older ones
+ * raised "invite code is invalid or expired". Both reach the person as the same message.
+ */
+class InvalidInviteException : Exception("invite code is invalid or expired")
 
 class SupabaseGroupMembershipRemote(private val supabase: SupabaseClient) : GroupMembershipRemote {
 
@@ -75,7 +85,8 @@ class SupabaseGroupMembershipRemote(private val supabase: SupabaseClient) : Grou
             .firstOrNull()
 
     override suspend fun joinGroup(code: String): String =
-        supabase.postgrest.rpc("join_group", buildJsonObject { put("p_code", code) }).decodeAs<String>()
+        supabase.postgrest.rpc("join_group", buildJsonObject { put("p_code", code) }).decodeAs<String?>()
+            ?: throw InvalidInviteException()
 
     override suspend fun leaveGroup(groupRemoteId: String, selfProfileId: String) {
         supabase.from("group_members").delete {

@@ -6,6 +6,7 @@ import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
 import com.vaibhav.kharchapaani.data.db.entity.SyncState
 import com.vaibhav.kharchapaani.data.repository.LedgerRepository
 import com.vaibhav.kharchapaani.data.sync.GroupMembershipRemote
+import com.vaibhav.kharchapaani.data.sync.InvalidInviteException
 import com.vaibhav.kharchapaani.data.sync.InvitePreview
 import com.vaibhav.kharchapaani.domain.InviteLink
 import io.github.jan.supabase.exceptions.RestException
@@ -249,12 +250,15 @@ class SharedGroupsController(
         throw e
     } catch (e: IOException) {
         Result.failure(Exception(copyText(OFFLINE)))
+    } catch (e: InvalidInviteException) {
+        Result.failure(Exception(copyText(INVALID_CODE)))
     } catch (e: RestException) {
         Result.failure(Exception(messageFor(e)))
     }
 
     private fun messageFor(e: RestException): String = when {
         e.error.contains("invalid or expired", ignoreCase = true) -> copyText(INVALID_CODE)
+        e.error.contains("too many invite attempts", ignoreCase = true) -> copyText(R.string.shared_group_notice_too_many)
         e.statusCode == 401 -> copyText(R.string.shared_group_notice_session)
         e.statusCode == 403 || e.error.contains("not a member", ignoreCase = true) -> copyText(R.string.shared_group_notice_membership)
         else -> copyText(R.string.shared_group_notice_problem, e.statusCode)
