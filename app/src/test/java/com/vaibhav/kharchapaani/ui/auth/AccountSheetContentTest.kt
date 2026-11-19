@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.auth
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -7,10 +9,12 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
+import com.vaibhav.kharchapaani.BuildConfig
 import com.vaibhav.kharchapaani.data.auth.AuthState
 import com.vaibhav.kharchapaani.data.auth.Profile
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -46,6 +50,33 @@ class AccountSheetContentTest {
                 )
             }
         }
+    }
+
+    private val versionPreferences
+        get() = ApplicationProvider.getApplicationContext<Context>()
+            .getSharedPreferences("app_version_gate", Context.MODE_PRIVATE)
+
+    @After
+    fun clearGate() {
+        versionPreferences.edit().clear().commit()
+    }
+
+    @Test
+    fun `required update appears in Settings and export remains usable`() {
+        versionPreferences.edit().putInt("min_version_code", BuildConfig.VERSION_CODE + 1).commit()
+        show()
+
+        composeTestRule.onNodeWithText("Update Kharcha Paani to keep syncing.").assertExists()
+        composeTestRule.onNodeWithTag("setting_export").performScrollTo().performClick()
+        assertEquals(true, exportOpened)
+    }
+
+    @Test
+    fun `the required update banner stays hidden with no minimum`() {
+        versionPreferences.edit().clear().commit()
+        show()
+
+        composeTestRule.onNodeWithText("Update Kharcha Paani to keep syncing.").assertDoesNotExist()
     }
 
     @Test
