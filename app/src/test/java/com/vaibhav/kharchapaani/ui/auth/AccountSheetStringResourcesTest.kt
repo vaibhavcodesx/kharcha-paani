@@ -40,7 +40,7 @@ class AccountSheetStringResourcesTest {
         assertEquals("Initials", resources.getString(R.string.account_avatar_initials))
         assertEquals("Couldn't save your profile. Check your connection and try again.", resources.getString(R.string.account_profile_save_failed))
         assertEquals("Keep it to 30 characters.", resources.getString(R.string.account_name_too_long, 30))
-        assertEquals("Groupmates see your name and avatar.", resources.getString(R.string.account_name_helper))
+        assertEquals("Members see your name and avatar.", resources.getString(R.string.account_name_helper))
         assertEquals("Account", resources.getString(R.string.account_eyebrow_account))
     }
 
@@ -92,7 +92,7 @@ class AccountSheetStringResourcesTest {
         composeTestRule.onNodeWithText("Name").assertExists()
         composeTestRule.onNodeWithText("Avatar").assertExists()
         composeTestRule.onNodeWithText("Initials").assertExists()
-        composeTestRule.onNodeWithText("Groupmates see your name and avatar.").assertExists()
+        composeTestRule.onNodeWithText("Members see your name and avatar.").assertExists()
         composeTestRule.onNodeWithText("ACCOUNT").assertExists()
         composeTestRule.onNodeWithText("Signed in").assertExists()
     }
@@ -132,7 +132,7 @@ class AccountSheetStringResourcesTest {
         assertEquals("Colour", resources.getString(R.string.account_colour_label))
         assertEquals("Choosing one", resources.getString(R.string.account_colour_choosing))
         assertEquals("Yours everywhere", resources.getString(R.string.account_colour_yours))
-        assertEquals("You wear this colour everywhere: on your phone and on every groupmate's.", resources.getString(R.string.account_colour_wear_description))
+        assertEquals("You wear this colour everywhere: on your phone and on every member's.", resources.getString(R.string.account_colour_wear_description))
         assertEquals("Save colour", resources.getString(R.string.account_colour_save))
         assertEquals("Your colour is close to Rohan's. Pick another so you're easy to tell apart.", resources.getString(R.string.account_colour_clash, "Rohan"))
         assertEquals("Daily reminder", resources.getString(R.string.account_setting_daily_reminder_title))

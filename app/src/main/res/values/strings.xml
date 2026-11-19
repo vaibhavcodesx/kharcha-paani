@@ -472,7 +472,7 @@
     <string name="settlement_row_clear">Clear it away</string>
     <string name="settlement_row_delete">Delete IOU</string>
     <string name="settlement_row_retract">Retract settlement</string>
-    <string name="settlement_row_groupmate">this groupmate</string>
+    <string name="settlement_row_groupmate">this member</string>
     <string name="settlement_row_local">This changes the record on this phone.</string>
     <string name="settlement_row_devices">This change will sync to your other devices.</string>
     <string name="settlement_row_close">Close IOU details</string>
@@ -751,7 +751,7 @@
     <string name="notification_screen_settings_hint">Turn them on in your phone\'s settings for Kharcha Paani</string>
     <string name="notification_screen_on">Turn on</string>
     <string name="notification_screen_payments">Payments to confirm</string>
-    <string name="notification_screen_payments_hint">When a groupmate says money changed hands with you</string>
+    <string name="notification_screen_payments_hint">When a member says money changed hands with you</string>
     <string name="notification_screen_quiet">Quiet hours</string>
     <string name="notification_screen_quiet_off">Off</string>
     <string name="notification_screen_starts">Starts</string>
@@ -783,7 +783,7 @@
     <string name="action_notice_cancelled">Cancelled. Charges already logged stay.</string>
     <string name="action_notice_upi_removed">UPI ID removed.</string>
     <string name="action_notice_upi_remove_later">Removed here. It\'ll clear for your groups next time you\'re online.</string>
-    <string name="action_notice_upi_saved">UPI ID saved. Groupmates settling up with you will see it.</string>
+    <string name="action_notice_upi_saved">UPI ID saved. Members settling up with you will see it.</string>
     <string name="action_notice_upi_save_later">Saved on this phone. It\'ll reach your groups next time you\'re online.</string>
     <string name="action_notice_confirmed">Confirmed. It counts for both of you now.</string>
     <string name="action_notice_rejected">Marked not right. It won\'t count.</string>
@@ -844,7 +844,7 @@
         <item quantity="other">Export %1$d entries</item>
     </plurals>
     <string name="action_notice_unknown_owner">the member who added it</string>
-    <string name="action_notice_groupmate">a groupmate</string>
+    <string name="action_notice_groupmate">a member</string>
     <!-- Additional screen strings. -->
     <string name="shell_copy_file_failed">Couldn\'t open that file.</string>
     <string name="shell_copy_notifications">Open your phone\'s settings and turn on notifications for Kharcha Paani.</string>
@@ -987,7 +987,7 @@
     <string name="notification_daily_channel">Daily reminder</string>
     <string name="notification_daily_description">A nudge in the evening if nothing\'s been logged that day</string>
     <string name="notification_payment_channel">Payments to confirm</string>
-    <string name="notification_payment_description">When a groupmate says money changed hands with you, until you confirm it or say it isn\'t right</string>
+    <string name="notification_payment_description">When a member says money changed hands with you, until you confirm it or say it isn\'t right</string>
     <string name="notification_payment_public">A payment is waiting for your answer</string>
     <string name="notification_daily_title">Nothing logged today</string>
     <string name="notification_daily_body">Add today\'s spending before it slips your mind.</string>
@@ -998,7 +998,7 @@
     <string name="notification_payment_first_body">Confirm it, or say it isn\'t right. It doesn\'t count until you do.</string>
     <string name="notification_payment_later_title">Still waiting on you: %1$s with %2$s</string>
     <string name="notification_payment_later_body">%1$s, %2$d days ago. It won\'t count until you answer.</string>
-    <string name="notification_groupmate">A groupmate</string>
+    <string name="notification_groupmate">A member</string>
     <!-- Additional screen strings. -->
     <string name="payment_method_spoken">Paid by %1$s</string>
     <!-- Additional screen strings. -->
@@ -1066,7 +1066,7 @@
     <string name="account_avatar_initials">Initials</string>
     <string name="account_profile_save_failed">Couldn\'t save your profile. Check your connection and try again.</string>
     <string name="account_name_too_long">Keep it to %1$d characters.</string>
-    <string name="account_name_helper">Groupmates see your name and avatar.</string>
+    <string name="account_name_helper">Members see your name and avatar.</string>
     <string name="account_eyebrow_account">Account</string>
     <string name="account_cloud_offline">Offline. Your account reconnects on its own.</string>
     <string name="account_cloud_unavailable">Can\'t reach your account right now</string>
@@ -1142,7 +1142,7 @@
     <string name="account_colour_label">Colour</string>
     <string name="account_colour_choosing">Choosing one</string>
     <string name="account_colour_yours">Yours everywhere</string>
-    <string name="account_colour_wear_description">You wear this colour everywhere: on your phone and on every groupmate\'s.</string>
+    <string name="account_colour_wear_description">You wear this colour everywhere: on your phone and on every member\'s.</string>
     <string name="account_colour_save">Save colour</string>
     <string name="account_colour_clash">Your colour is close to %1$s\'s. Pick another so you\'re easy to tell apart.</string>
     <string name="account_setting_daily_reminder_title">Daily reminder</string>
