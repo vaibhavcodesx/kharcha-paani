@@ -143,6 +143,7 @@ fun AccountSheet(
     isLocal: Boolean = false,
     onSignInFromLocal: () -> Unit = {},
     onUseLocal: () -> Unit = {},
+    onDeleteLocalLedger: () -> Unit = {},
     lastSyncError: String? = null,
 ) {
     // Read here rather than passed in: the setting lives with crash reporting, which starts before
@@ -181,6 +182,7 @@ fun AccountSheet(
             isLocal = isLocal,
             onSignInFromLocal = onSignInFromLocal,
             onUseLocal = onUseLocal,
+            onDeleteLocalLedger = onDeleteLocalLedger,
             lastSyncError = lastSyncError,
             crashReports = crashReports,
             onCrashReportsChange = {
@@ -226,6 +228,7 @@ fun AccountSheetContent(
     isLocal: Boolean = false,
     onSignInFromLocal: () -> Unit = {},
     onUseLocal: () -> Unit = {},
+    onDeleteLocalLedger: () -> Unit = {},
     /** Whether crash reports are on; null when this build can't send any, and the switch isn't shown. */
     crashReports: Boolean? = null,
     onCrashReportsChange: (Boolean) -> Unit = {},
@@ -281,8 +284,23 @@ fun AccountSheetContent(
             Text(
                 stringResource(R.string.guest_separate_ledgers),
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = Spacing.s, bottom = Spacing.xl),
+                modifier = Modifier.padding(top = Spacing.s, bottom = Spacing.m),
             )
+            var confirmDeleteLocal by rememberSaveable { mutableStateOf(false) }
+            TextButton(
+                onClick = { confirmDeleteLocal = true },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("account_delete_local"),
+            ) { Text(stringResource(R.string.guest_delete_button), color = DestructiveText) }
+            if (confirmDeleteLocal) {
+                DeleteLocalLedgerDialog(
+                    onConfirm = {
+                        confirmDeleteLocal = false
+                        onDeleteLocalLedger()
+                    },
+                    onDismiss = { confirmDeleteLocal = false },
+                )
+            }
+            Spacer(Modifier.padding(bottom = Spacing.l))
         } else {
             // Your own colour once you have one (design item 11): the same one groupmates see you in.
             val mine = state.hue?.let(::hueColour)
