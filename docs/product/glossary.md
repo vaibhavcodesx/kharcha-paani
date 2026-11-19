@@ -14,7 +14,7 @@ This document establishes the single canonical term for each core product concep
 | **Direct Contact** | **friend** | Someone you split with or track balances with directly (1:1). | person, people, contact, user, buddy |
 | **Group Participant** | **member** | Someone who has joined or been added to a shared group. | groupmate, person, people, friend |
 | **Non-App Participant** | **guest** | Someone without a Kharcha Paani account in a split or group; their share is covered by the user who added them. | friend who isn't on the app, ghost, outside person |
-| **Direct Debt / Lending** | **loan** | Money directly lent or borrowed between friends that is not part of a group expense or split bill. | IOU, debt, credit, borrow/lend record |
+| **Direct Debt / Lending** | **IOU** | Money directly lent or borrowed between friends that is not part of a group expense or split bill. Explained once at the top of the Log an IOU sheet. | loan, debt, credit, borrow/lend record |
 | **Shared Space** | **group** | A collective space for sharing expenses and balances with multiple people. | trip, flat, circle, room |
 | **General Ledger Item** | **entry** | Any single recorded item in the personal ledger (can be an expense, income, or adjustment). | transaction, record, item, log |
 | **Money Spent** | **expense** | Money paid out of pocket for goods, food, bills, or services. | transaction, spending, debit |
@@ -35,8 +35,8 @@ This document establishes the single canonical term for each core product concep
 - **`user`** (1 string): Technical jargon used in AI privacy notice ("never shown to other users").
 
 ### Nouns for a Debt
-- **`IOU`** (17 strings): Stiff acronym friends don't recognize ("Log an IOU", "Delete IOU", "Kharcha Paani IOU"). Replaced by "loan" per owner decision D-11 / issue #351 / PR #411.
-- **`loan`** (1 string): The approved user-friendly word ("Loan" note fallback).
+- **`IOU`** (17 strings): Kept. The owner decided on 2026-11-19 that "loan" sounds too serious; the word is explained at the top of the Log an IOU sheet (`payment_iou_body`). PR #411 was reverted.
+- **`loan`** (1 string): Only the default note on a lent amount ("Loan").
 - **`balance`** (9 strings): Used for running totals ("takes it out of your balance", "clear every balance").
 - **`borrowed` / `lent`** (17 strings): Used as directional verbs or descriptors ("You lent", "You borrowed", "Money lent or borrowed").
 - **`debt`** (0 user-facing strings): Kept internal (e.g. debt simplification algorithm).
@@ -73,26 +73,8 @@ The table below catalogs strings that deviate from the chosen canonical vocabula
 | **Group Participant** | **member** | `strings.xml:create_group_local` | "Only on this phone. The friends in it don't need the app." | Replace "friends" with "members". |
 | **Group Participant** | **member** | `strings.xml:splits_groups_empty_body` | "...join one with the code a friend sends." | Replace "a friend sends" with "a member sends" (or leave if invite is from a friend). |
 | **Group Participant** | **member** | `strings.xml:upi_copy_supporting` | "People in your shared groups can see it too." | Replace "People" with "Members". |
-| **Non-App Participant** | **guest** | `strings.xml:delete_account_goes_body` | "...splits and IOUs with friends who aren't on the app..." | Replace with "...splits and loans with guests...". |
+| **Non-App Participant** | **guest** | `strings.xml:delete_account_goes_body` | "...splits and IOUs with friends who aren't on the app..." | Replace "friends who aren't on the app" with "guests"; keep IOUs.
 | **Non-App Participant** | **guest** | `strings.xml:friend_form_supporting` | "...and they don't need the app." | Clarify that non-app participants function as guests in groups. |
-| **Direct Debt** | **loan** | `strings.xml:home_capture_iou` | "IOU" | Replace with "Loan". |
-| **Direct Debt** | **loan** | `strings.xml:splits_log_iou` | "Log an IOU" | Replace with "Log a loan". |
-| **Direct Debt** | **loan** | `strings.xml:payment_record_iou` | "Record IOU" | Replace with "Record loan". |
-| **Direct Debt** | **loan** | `strings.xml:payment_iou_title` | "Log an IOU" | Replace with "Log a loan". |
-| **Direct Debt** | **loan** | `strings.xml:payment_no_friends` | "...then log the IOU." | Replace with "...then log the loan." |
-| **Direct Debt** | **loan** | `strings.xml:payment_iou_upi_note` | "Kharcha Paani IOU" | Replace with "Kharcha Paani loan". |
-| **Direct Debt** | **loan** | `strings.xml:friend_form_supporting` | "Split with them, log IOUs and settle up..." | Replace "log IOUs" with "log loans". |
-| **Direct Debt** | **loan** | `strings.xml:group_detail_iou` | "IOU" | Replace with "Loan". |
-| **Direct Debt** | **loan** | `strings.xml:settlement_row_iou` | "IOU" | Replace with "Loan". |
-| **Direct Debt** | **loan** | `strings.xml:settlement_row_delete` | "Delete IOU" | Replace with "Delete loan". |
-| **Direct Debt** | **loan** | `strings.xml:settlement_row_close` | "Close IOU details" | Replace with "Close loan details". |
-| **Direct Debt** | **loan** | `strings.xml:settlement_row_show` | "Show IOU details" | Replace with "Show loan details". |
-| **Direct Debt** | **loan** | `strings.xml:settlement_row_remove_iou` | "Removing this %1$s IOU takes it out of your balance..." | Replace with "Removing this %1$s loan...". |
-| **Direct Debt** | **loan** | `strings.xml:debt_management_consequence` | "Settlements and IOUs with them are removed." | Replace "IOUs" with "loans". |
-| **Direct Debt** | **loan** | `strings.xml:ledger_description_iou` | "IOU" | Replace with "Loan". |
-| **Direct Debt** | **loan** | `strings.xml:delete_account_goes_body` | "...splits and IOUs with friends..." | Replace "IOUs" with "loans". |
-| **Direct Debt** | **loan** | `strings.xml:account_backup_explanation` | "...splits and IOUs included." | Replace "IOUs" with "loans". |
-| **Direct Debt** | **loan** | `strings.xml:payment_borrowed_note` | "Borrowed Amount" | Replace with "Loan" (matching `payment_lent_note`). |
 | **Shared Space** | **group** | `strings.xml:splits_subtitle` | "Who owes whom, with friends and on trips" | Replace "on trips" with "in groups". |
 | **Shared Space** | **group** | `strings.xml:group_detail_trip` | "How did this trip go?" | Replace with "How did this group go?" |
 | **Shared Space** | **group** | `strings.xml:group_detail_read` | "Read this trip" | Replace with "Read this group". |

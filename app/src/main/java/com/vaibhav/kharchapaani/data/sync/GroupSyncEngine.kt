@@ -20,6 +20,7 @@ import com.vaibhav.kharchapaani.domain.UpiLink
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
 import com.vaibhav.kharchapaani.domain.SplitRounding
 import com.vaibhav.kharchapaani.domain.isSavableAmount
+import com.vaibhav.kharchapaani.reminder.GroupJoinNotices
 import java.util.UUID
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.seconds
@@ -286,9 +287,9 @@ class GroupSyncEngine(
 
         db.withTransaction {
             for (remoteGroup in visible) {
-                val memberIds = remoteGroup.members
+                val members = remoteGroup.members
                     .filter { it.profileId != selfProfileId }
-                    .map { upsertPerson(it.profileId, it.profiles) }
+                    .map { it.profileId to upsertPerson(it.profileId, it.profiles) }
                 val pulled = GroupEntity(
                     name = remoteGroup.name,
                     description = remoteGroup.description,
@@ -313,8 +314,15 @@ class GroupSyncEngine(
                     // PENDING/FAILED: the local edit wins, but membership is the server's alone.
                     else -> local.id
                 }
+                if (local != null && !pulled.isArchived) {
+                    val knownMemberIds = db.groupDao().getMembersForGroupDirect(groupId).map { it.personId }.toSet()
+                    for ((profileId, personId) in members) {
+                        if (personId !in knownMemberIds) GroupJoinNotices.record(syncDao, remoteGroup.id, profileId)
+                    }
+                }
                 dao.deleteMembers(groupId)
-                dao.insertMembers((listOf(ME) + memberIds).map { GroupMemberEntity(groupId = groupId, personId = it) })
+                val memberIds = listOf(ME) + members.map { it.second }
+                dao.insertMembers(memberIds.map { GroupMemberEntity(groupId = groupId, personId = it) })
             }
 
             val visibleIds = visible.map { it.id }.toSet()

@@ -180,7 +180,7 @@ private fun RemoveButton(onRemove: () -> Unit) {
             .semantics { contentDescription = removeDescription }
             .testTag("bill_photo_remove"),
     ) {
-        Icon(KpIcons.Close, contentDescription = null, tint = MutedWarmGray, modifier = Modifier.size(18.dp))
+        Icon(KpIcons.Close, contentDescription = removeDescription, tint = MutedWarmGray, modifier = Modifier.size(18.dp))
     }
 }
 
@@ -199,7 +199,7 @@ fun BillPhotoViewer(
         Column(Modifier.fillMaxSize().background(Color.Black).testTag("bill_photo_viewer")) {
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(Spacing.s), horizontalArrangement = Arrangement.End) {
                 IconButton(onClick = onDismiss, modifier = Modifier.semantics { contentDescription = closeDescription }) {
-                    Icon(KpIcons.Close, contentDescription = null, tint = OffWhiteText)
+                    Icon(KpIcons.Close, contentDescription = closeDescription, tint = OffWhiteText)
                 }
             }
             AsyncImage(

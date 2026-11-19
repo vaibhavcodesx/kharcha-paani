@@ -7,8 +7,10 @@ You decide order, review, merge, and keep the repo true. You do not take the who
 
 1. Ask the owner everything you need up front (decisions, permissions), once. Then autopilot.
 2. `gh issue list -l needs-owner -L 20 --json number,title`: anything answered in chat is recorded on the issue.
-3. Check the board is not empty for Builder and Worker: `gh issue list -l for:worker -L 12` and `-l for:builder`.
-   Keep at least ten Worker issues briefed (template in `briefs/`). Hand the owner nothing to prepare.
+3. Run `bash scripts/agent_queue.sh` first, then again after every merge round: it counts what Antigravity (worker)
+   and Codex (builder) can still take and prints REFILL when a queue is low (Worker under 4, Builder under 6).
+   Refill to ten with briefs from `briefs/TEMPLATE.md` before doing anything else. Antigravity must never run dry.
+   Hand the owner nothing to prepare.
 4. Review open PRs oldest first: `gh pr list --state open -L 20`. Follow `PLAYBOOK.md` sections 3 and 4.
 5. Take your own `for:lead` issues (designs, red work, reviews). Design docs for red work and for budgets and
    multi-currency go in `docs/designs/<name>.md` with a status line (draft, approved, shipped) before code.

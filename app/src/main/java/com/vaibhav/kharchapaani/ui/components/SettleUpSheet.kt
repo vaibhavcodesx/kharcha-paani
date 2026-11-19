@@ -16,6 +16,7 @@ import com.vaibhav.kharchapaani.domain.SharedRecordGroups
 import com.vaibhav.kharchapaani.domain.TextLimits
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import com.vaibhav.kharchapaani.domain.UpiPayee
 import com.vaibhav.kharchapaani.domain.UpiLink
@@ -133,7 +134,8 @@ fun SettleUpContent(
         // Ask-to-pay (eng review D2): only where the money comes to you and they actually owe you.
         // Above the QR (owner, 2026-10-23): below it, the ask was off screen until you scrolled.
         if (onAsk != null && hisaab != null && theyPaid && value > 0) {
-            val message = remember(person.name, hisaab, value, upiPayee) { AskMessage.build(person.name, hisaab, value, upiPayee?.upiId) }
+            val context = LocalContext.current
+            val message = remember(person.name, hisaab, value, upiPayee, context) { AskMessage.build(person.name, hisaab, value, upiPayee?.upiId, context = context) }
             AskToPaySection(
                 firstName = firstName(person.name),
                 message = message,

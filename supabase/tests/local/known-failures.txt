@@ -1,0 +1,8 @@
+# Checks that fail on the local PGlite stand-in only, because it differs from Supabase, not because a migration is wrong.
+# One per line: "<test file>: <check name>". CI fails on any other failure. If a line starts passing, ci.mjs says so: remove it.
+#
+# In all three, a signed-out (anon) caller reading `profiles` is refused with "permission denied" locally, where Supabase
+# returns zero rows. The check wants zero rows; the refusal is the stricter outcome, so nothing is exposed either way.
+profile_avatar_emoji_test.sql: signed-out callers see no profiles
+rls_groups_test.sql: anon sees no profiles
+rls_profile_hue_test.sql: anon can't set anyone's colour

@@ -30,6 +30,17 @@ class SettlementRemindersTest {
     }
 
     @Test
+    fun `at most three nudges, on arrival then day 3 then day 6, and then no more`() {
+        assertEquals(3, SettlementReminders.MAX_NUDGES)
+        assertEquals(0, SettlementReminders.nudgeStageFor(recorded, recorded))
+        assertEquals(1, SettlementReminders.nudgeStageFor(recorded, recorded + 3 * day))
+        assertEquals(2, SettlementReminders.nudgeStageFor(recorded, recorded + 6 * day))
+        // Day 9 and day 30 would have been stages 3 and 10; they stay on the last nudge, so nothing more is shown.
+        assertEquals(2, SettlementReminders.nudgeStageFor(recorded, recorded + 9 * day))
+        assertEquals(2, SettlementReminders.nudgeStageFor(recorded, recorded + 30 * day))
+    }
+
+    @Test
     fun `the words escalate and always say it doesn't count yet`() {
         val settlement = SettlementEntity(
             fromPersonId = 2, toPersonId = -1L, amount = 500.0, createdAt = recorded,

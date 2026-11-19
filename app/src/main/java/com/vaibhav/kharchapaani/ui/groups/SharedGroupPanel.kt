@@ -18,6 +18,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
@@ -58,8 +60,10 @@ import com.vaibhav.kharchapaani.ui.theme.Spacing
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberLight
 import com.vaibhav.kharchapaani.ui.theme.WarmAmberPrimary
+import com.vaibhav.kharchapaani.ui.format.Money
 import java.text.DateFormat
 import java.util.Date
+import kotlin.math.abs
 
 /** Members, invites, archiving and leaving for a shared group, shown inside its detail sheet. */
 @OptIn(ExperimentalLayoutApi::class)
@@ -78,8 +82,16 @@ fun SharedGroupPanel(
     onSetArchived: (Boolean) -> Unit,
     onLeave: () -> Unit,
     modifier: Modifier = Modifier,
+    onRemoveMember: ((profileId: String) -> Unit)? = null,
+    isRemovingMember: Boolean = false,
+    outstandingMembers: Set<Long> = emptySet(),
+    /** What I am owed (positive) or owe (negative) in this group, in rupees. Shown before leaving. */
+    myBalance: Double = 0.0,
+    onResetInvite: (() -> Unit)? = null,
 ) {
     var confirmingLeave by rememberSaveable { mutableStateOf(false) }
+    var memberToRemoveId by rememberSaveable(group.id) { mutableStateOf<Long?>(null) }
+    val canRemove = isCreator && !group.isArchived && onRemoveMember != null
 
     Column(
         modifier = modifier
@@ -115,11 +127,21 @@ fun SharedGroupPanel(
         Text(stringResource(R.string.shared_group_copy_people, members.size + 1), style = EyebrowText)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             MemberChip(name = stringResource(R.string.shared_group_copy_you), colorHex = LocalMyColour.current.hex)
-            members.forEach { MemberChip(name = it.name, colorHex = it.avatarColor, emoji = it.avatarEmoji) }
+            members.forEach { member ->
+                MemberChip(
+                    name = member.name,
+                    colorHex = member.avatarColor,
+                    emoji = member.avatarEmoji,
+                    onRemove = if (canRemove && !member.profileId.isNullOrBlank()) {
+                        { memberToRemoveId = member.id }
+                    } else null,
+                    removeEnabled = !isRemovingMember,
+                )
+            }
         }
 
         if (!group.isArchived) {
-            InviteSection(invite, onCreateInvite, onShareInvite, onRevokeInvite)
+            InviteSection(invite, onCreateInvite, onShareInvite, onRevokeInvite, onResetInvite)
         } else {
             Text(stringResource(R.string.shared_group_copy_readonly), style = MaterialTheme.typography.bodyMedium)
         }
@@ -136,6 +158,39 @@ fun SharedGroupPanel(
         }
     }
 
+    val memberToRemove = if (canRemove) members.firstOrNull { it.id == memberToRemoveId } else null
+    val selectedProfile = memberToRemove?.profileId
+    if (memberToRemove != null && selectedProfile != null) {
+        AlertDialog(
+            onDismissRequest = { memberToRemoveId = null },
+            containerColor = CharcoalSurface,
+            shape = KpShapes.large,
+            title = { Text(stringResource(R.string.shared_group_remove_title, memberToRemove.name)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                    Text(stringResource(R.string.shared_group_remove_detail))
+                    if (memberToRemove.id in outstandingMembers) {
+                        Text(stringResource(R.string.shared_group_remove_balance), color = WarmAmberLight)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !isRemovingMember,
+                    onClick = {
+                        memberToRemoveId = null
+                        onRemoveMember?.invoke(selectedProfile)
+                    },
+                ) { Text(stringResource(R.string.shared_group_remove_button), color = WarmAmberLight) }
+            },
+            dismissButton = {
+                TextButton(onClick = { memberToRemoveId = null }) {
+                    Text(stringResource(R.string.shared_group_copy_cancel))
+                }
+            },
+        )
+    }
+
     if (confirmingLeave) {
         AlertDialog(
             onDismissRequest = { confirmingLeave = false },
@@ -148,6 +203,17 @@ fun SharedGroupPanel(
                         stringResource(R.string.shared_group_copy_leave_explanation),
                         style = MaterialTheme.typography.bodyMedium,
                     )
+                    if (abs(myBalance) >= 0.005) {
+                        // Leaving does not settle anything, so the person should see what is left unsettled.
+                        Text(
+                            text = stringResource(
+                                if (myBalance > 0) R.string.shared_group_copy_leave_owed else R.string.shared_group_copy_leave_owe,
+                                Money.format(abs(myBalance)),
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = WarmAmberLight,
+                        )
+                    }
                     if (unsyncedChanges > 0) {
                         // Leaving first would throw these away: the server refuses them from a non-member.
                         Text(
@@ -178,12 +244,14 @@ fun SharedGroupPanel(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun InviteSection(
     invite: GroupInviteState?,
     onCreateInvite: () -> Unit,
     onShareInvite: (String) -> Unit,
     onRevokeInvite: () -> Unit,
+    onResetInvite: (() -> Unit)?,
 ) {
     val link = invite?.link
     when {
@@ -201,6 +269,12 @@ private fun InviteSection(
             ) {
                 Text(stringResource(R.string.shared_group_copy_invite_code), style = EyebrowText)
                 Text(invite.code.chunked(4).joinToString(" "), style = MoneyText.large, color = OffWhiteText)
+                invite.usage?.let {
+                    Text(
+                        stringResource(R.string.shared_group_copy_invite_uses, it.usedCount, it.maxUses),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
                 invite.expiresAtMillis?.let {
                     Text(
                         text = stringResource(R.string.shared_group_copy_expires, DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it))),
@@ -225,7 +299,16 @@ private fun InviteSection(
                     size = 168.dp,
                 )
             }
-            PanelButton(label = stringResource(R.string.shared_group_copy_revoke), filled = false, onClick = onRevokeInvite, modifier = Modifier.align(Alignment.End))
+            FlowRow(
+                modifier = Modifier.align(Alignment.End),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.s, Alignment.End),
+            ) {
+                if (invite.canReset && onResetInvite != null) {
+                    PanelButton(stringResource(R.string.shared_group_copy_reset), filled = false, onClick = onResetInvite)
+                }
+                PanelButton(stringResource(R.string.shared_group_copy_revoke), filled = false, onClick = onRevokeInvite)
+            }
+            invite.error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = WarmAmberLight) }
         }
         else -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             PanelButton(label = stringResource(R.string.shared_group_copy_invite), filled = false, onClick = onCreateInvite, modifier = Modifier.fillMaxWidth())
@@ -253,7 +336,13 @@ private fun PanelButton(label: String, filled: Boolean, onClick: () -> Unit, mod
 }
 
 @Composable
-private fun MemberChip(name: String, colorHex: String, emoji: String? = null) {
+private fun MemberChip(
+    name: String,
+    colorHex: String,
+    emoji: String? = null,
+    onRemove: (() -> Unit)? = null,
+    removeEnabled: Boolean = true,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -262,7 +351,23 @@ private fun MemberChip(name: String, colorHex: String, emoji: String? = null) {
             .padding(start = Spacing.xs, end = Spacing.m, top = Spacing.xs, bottom = Spacing.xs),
     ) {
         PersonAvatar(name = name, colorHex = colorHex, size = 26.dp, emoji = emoji)
-        Text(name, style = MaterialTheme.typography.labelLarge, color = OffWhiteText, modifier = Modifier.padding(start = Spacing.s))
+        Text(
+            text = name,
+            style = MaterialTheme.typography.labelLarge,
+            color = OffWhiteText,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false).padding(start = Spacing.s),
+        )
+        if (onRemove != null) {
+            IconButton(onClick = onRemove, enabled = removeEnabled) {
+                Icon(
+                    KpIcons.Close,
+                    contentDescription = stringResource(R.string.shared_group_remove_person, name),
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
     }
 }
 

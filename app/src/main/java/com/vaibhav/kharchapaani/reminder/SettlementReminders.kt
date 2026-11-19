@@ -13,7 +13,7 @@ import com.vaibhav.kharchapaani.util.NotificationHelper
 /**
  * Reminders for settlements a groupmate recorded that are waiting for my answer (design item 10,
  * owner decision 2026-09-27): never auto-confirmed, pending for as long as it takes, with a nudge
- * when it arrives and then escalating ones on day 3, 6, 9 and so on.
+ * when it arrives and escalating ones on day 3 and day 6, then no more (at most [MAX_NUDGES], owner answer D-07).
  *
  * Worked out from when the settlement was recorded, so every phone of the same person agrees on the
  * stage, and each stage is shown once per phone ([SettlementEntity.remindedStage]). Runs after every
@@ -24,8 +24,14 @@ object SettlementReminders {
     private const val DAY_MILLIS = 86_400_000L
     const val EVERY_DAYS = 3
 
+    /** At most three nudges per payment: when it arrives, on day 3 and on day 6. After that the payment just waits. */
+    const val MAX_NUDGES = 3
+
     /** 0 when it arrives, then 1 on day 3, 2 on day 6… */
     fun stageFor(createdAt: Long, now: Long): Int = (((now - createdAt).coerceAtLeast(0) / DAY_MILLIS) / EVERY_DAYS).toInt()
+
+    /** The stage a nudge is due for: [stageFor], but never past the last of the [MAX_NUDGES] nudges. */
+    fun nudgeStageFor(createdAt: Long, now: Long): Int = stageFor(createdAt, now).coerceAtMost(MAX_NUDGES - 1)
 
     fun textFor(context: Context, settlement: SettlementEntity, otherName: String, stage: Int, now: Long): Pair<String, String> {
         val amount = Money.format(settlement.amount)
@@ -64,7 +70,7 @@ object SettlementReminders {
         if (prefs.quietHours.isQuietAt(local.hour * 60 + local.minute)) return 0
         var shown = 0
         for (settlement in waiting) {
-            val stage = stageFor(settlement.createdAt, now)
+            val stage = nudgeStageFor(settlement.createdAt, now)
             if (stage <= settlement.remindedStage) continue
             val otherId = if (settlement.fromPersonId == -1L) settlement.toPersonId else settlement.fromPersonId
             val name = db.personDao().getPersonById(otherId)?.name ?: context.getString(R.string.notification_groupmate)

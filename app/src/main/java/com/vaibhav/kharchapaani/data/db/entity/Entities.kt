@@ -98,9 +98,9 @@ data class TransactionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val type: String, // "expense" or "income"
     val amount: Double,
-    val category: String, // Food, Transport, Shopping, Bills, Entertainment, Health, Rent, Team Payment, Income (Client), Income (Other), Other
+    val category: String, // Stored choice at the time of entry.
     val merchant: String,
-    val paymentMethod: String, // PopUPI, GPay, PhonePe, Paytm, Debit Card, Credit Card, Cash, Bank Transfer, Other
+    val paymentMethod: String, // Stored choice at the time of entry.
     val date: Long = System.currentTimeMillis(),
     val note: String = "",
     val isSplit: Boolean = false,

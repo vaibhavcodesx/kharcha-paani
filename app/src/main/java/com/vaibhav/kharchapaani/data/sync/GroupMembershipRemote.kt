@@ -1,8 +1,10 @@
 package com.vaibhav.kharchapaani.data.sync
 
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -15,6 +17,8 @@ import kotlin.time.ExperimentalTime
 data class GroupInvite(
     val code: String,
     @SerialName("expires_at") val expiresAt: String,
+    @SerialName("used_count") val usedCount: Int? = null,
+    @SerialName("max_uses") val maxUses: Int? = null,
 )
 
 @Serializable
@@ -33,8 +37,11 @@ data class InvitePreview(
 interface GroupMembershipRemote {
     suspend fun createInvite(groupRemoteId: String): GroupInvite
 
-    /** Unexpired, unrevoked invites for a group, newest first. */
-    suspend fun activeInvites(groupRemoteId: String): List<GroupInvite>
+    /** Replaces all live codes for the group. Null when the server has no reset RPC. */
+    suspend fun resetInvite(groupRemoteId: String): GroupInvite?
+
+    /** A member's newest unexpired, unrevoked invite, or the specified code when refreshing it. */
+    suspend fun activeInvite(groupRemoteId: String, creatorProfileId: String, code: String? = null): GroupInvite?
 
     suspend fun revokeInvite(code: String)
 
@@ -46,6 +53,10 @@ interface GroupMembershipRemote {
      * @throws InvalidInviteException when the server has no live invite for the code.
      */
     suspend fun joinGroup(code: String): String
+
+    suspend fun supportsInviteLimits(groupRemoteId: String): Boolean
+
+    suspend fun removeMember(groupRemoteId: String, memberProfileId: String)
 
     suspend fun leaveGroup(groupRemoteId: String, selfProfileId: String)
 }
@@ -64,16 +75,27 @@ class SupabaseGroupMembershipRemote(private val supabase: SupabaseClient) : Grou
             .decodeList<GroupInvite>()
             .single()
 
+    override suspend fun resetInvite(groupRemoteId: String): GroupInvite? = try {
+        supabase.postgrest.rpc("reset_group_invites", buildJsonObject { put("p_group_id", groupRemoteId) })
+            .decodeList<GroupInvite>()
+            .single()
+    } catch (e: RestException) {
+        if (e.statusCode == 404 || e.error.contains("PGRST202", ignoreCase = true)) null else throw e
+    }
+
     @OptIn(ExperimentalTime::class)
-    override suspend fun activeInvites(groupRemoteId: String): List<GroupInvite> =
-        supabase.from("group_invites").select {
+    override suspend fun activeInvite(groupRemoteId: String, creatorProfileId: String, code: String?): GroupInvite? =
+        supabase.from("group_invites").select(Columns.list("code", "expires_at", "used_count", "max_uses")) {
             filter {
                 eq("group_id", groupRemoteId)
+                eq("created_by", creatorProfileId)
+                if (code != null) eq("code", code)
                 exact("revoked_at", null)
                 gt("expires_at", Clock.System.now().toString())
             }
             order("created_at", Order.DESCENDING)
-        }.decodeList()
+            limit(1)
+        }.decodeList<GroupInvite>().firstOrNull()
 
     override suspend fun revokeInvite(code: String) {
         supabase.postgrest.rpc("revoke_group_invite", buildJsonObject { put("p_code", code) })
@@ -87,6 +109,22 @@ class SupabaseGroupMembershipRemote(private val supabase: SupabaseClient) : Grou
     override suspend fun joinGroup(code: String): String =
         supabase.postgrest.rpc("join_group", buildJsonObject { put("p_code", code) }).decodeAs<String?>()
             ?: throw InvalidInviteException()
+
+    override suspend fun supportsInviteLimits(groupRemoteId: String): Boolean {
+        // These columns and the reset and removal RPCs ship in the same migration. Probe without a write.
+        supabase.from("group_invites").select(Columns.list("max_uses")) {
+            filter { eq("group_id", groupRemoteId) }
+            limit(1)
+        }
+        return true
+    }
+
+    override suspend fun removeMember(groupRemoteId: String, memberProfileId: String) {
+        supabase.postgrest.rpc("remove_group_member", buildJsonObject {
+            put("p_group_id", groupRemoteId)
+            put("p_profile_id", memberProfileId)
+        })
+    }
 
     override suspend fun leaveGroup(groupRemoteId: String, selfProfileId: String) {
         supabase.from("group_members").delete {

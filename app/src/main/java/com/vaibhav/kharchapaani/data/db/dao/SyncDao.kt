@@ -97,6 +97,12 @@ interface SyncDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun putMeta(meta: SyncMetaEntity)
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertMetaIfAbsent(meta: SyncMetaEntity)
+
+    @Query("SELECT `key` FROM sync_meta WHERE `key` GLOB 'group_join:*' AND value = 'pending'")
+    suspend fun pendingGroupJoinNotices(): List<String>
+
     @Query("DELETE FROM sync_meta WHERE `key` = :key")
     suspend fun deleteMeta(key: String)
 

@@ -82,4 +82,4 @@ fun DeleteFriendDialog(
 }
 
 // A light red for text on the dark surface (7.9:1); the swipe reveal's #C62F2F is a fill, too dark for text.
-internal val DestructiveText = Color(0xFFFF8A80)
+internal val DestructiveText = com.vaibhav.kharchapaani.ui.theme.DestructiveText
