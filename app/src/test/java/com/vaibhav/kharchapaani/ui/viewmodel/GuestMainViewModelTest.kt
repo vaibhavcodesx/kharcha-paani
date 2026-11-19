@@ -142,6 +142,35 @@ class GuestMainViewModelTest {
         assertTrue(manager.getWorkInfosForUniqueWork("sync-periodic-${guest.id}").get(10, TimeUnit.SECONDS).isEmpty())
     }
 
+    @Test fun `add remembers separate income and expense choices after restart`(): Unit = runBlocking {
+        vm.openManualAdd()
+        vm.updateAmount("125")
+        vm.updateCategory("Transport")
+        vm.updatePaymentMethod("Cash")
+        action { vm.saveCurrentTransaction(false) }
+
+        vm.openManualAdd()
+        assertEquals("Transport", vm.category.value)
+        assertEquals("Cash", vm.paymentMethod.value)
+        vm.updateType("income")
+        assertNotEquals("Transport", vm.category.value)
+        assertEquals("UPI", vm.paymentMethod.value)
+        vm.updateAmount("5000")
+        vm.updateCategory("Income (Salary)")
+        vm.updatePaymentMethod("Bank Transfer")
+        action { vm.saveCurrentTransaction(false) }
+
+        val reopened = MainViewModel(app, db, guest.id, isLocal = true)
+        store.put("reopened", reopened)
+        until { "Local category" in reopened.categoryPrefs.value.customExpense }
+        reopened.openManualAdd()
+        assertEquals("Transport", reopened.category.value)
+        assertEquals("Cash", reopened.paymentMethod.value)
+        reopened.openManualAdd("income")
+        assertEquals("Income (Salary)", reopened.category.value)
+        assertEquals("Bank Transfer", reopened.paymentMethod.value)
+    }
+
     @Test fun `local expense equal split IOU and subscription preserve money without scheduling sync`(): Unit = runBlocking {
         action { vm.openManualAdd(); vm.updateAmount("40"); vm.updateMerchant("Chai"); vm.saveCurrentTransaction(false) }
         assertEquals(40.0, db.transactionDao().getAllTransactionsDirect().single().amount, 0.0)
