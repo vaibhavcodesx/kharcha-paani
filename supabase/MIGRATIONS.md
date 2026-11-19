@@ -29,8 +29,8 @@ name's timestamp is the version the live history uses. Update this table wheneve
 | `20261106124001_bill_photo_storage.sql` | applied, recorded in the live history |
 | `20261106130938_text_limits.sql` | applied, recorded in the live history |
 | `20261110000000_bill_item_splits.sql` | **applied by hand, NOT recorded** (repair: see `docs/engineering/runbooks/migration-history-repair.md`) |
-| `20261119000000_app_config.sql` | **staged, not applied** |
-| `20261119000100_ai_plans_and_ceiling.sql` | **staged, not applied** |
+| `20261119000000_app_config.sql` | **applied by hand 2026-11-19, NOT recorded in the live history** |
+| `20261119000100_ai_plans_and_ceiling.sql` | **half applied 2026-11-19: the four tables and their seed rows are live; the `create or replace function public.take_ai_read` part is NOT applied (the tool refused to replace a live function). Re-running the whole file would fail on the existing tables; run only the function part (from `create or replace function public.take_ai_read` to its grants)** |
 | `20261119000200_profiles_column_grants.sql` | **staged, not applied** |
 | `20261119000300_group_invite_limits_and_member_removal.sql` | **staged, not applied** |
 | `20261119000400_receipt_quota.sql` | **staged, not applied** |
