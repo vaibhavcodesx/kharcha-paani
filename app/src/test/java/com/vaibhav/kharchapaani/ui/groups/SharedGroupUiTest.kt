@@ -93,6 +93,7 @@ class SharedGroupUiTest {
             }
         }
 
+        composeTestRule.onNodeWithText("3 of 20 used").assertIsDisplayed()
         composeTestRule.onNodeWithText("Reset link").assertIsDisplayed().performClick()
         assertEquals(1, resets)
         composeTestRule.runOnIdle { canReset.value = false }
