@@ -47,10 +47,10 @@ class AppSettings internal constructor(private val store: DataStore<Preferences>
         store.edit { it[ASK_BEFORE_DISCARDING] = ask }
     }
 
-    /** The daily "nothing logged today" reminder. On at 9 PM unless changed; see ReminderSettings. */
+    /** The daily "nothing logged today" reminder. Off unless the person turns it on, then 9 PM unless changed; see ReminderSettings. */
     val reminder: Flow<ReminderSettings> = store.data.map { prefs ->
         ReminderSettings(
-            enabled = prefs[REMINDER_ENABLED] ?: true,
+            enabled = prefs[REMINDER_ENABLED] ?: false,
             minuteOfDay = ReminderSettings.clampMinute(prefs[REMINDER_MINUTE] ?: ReminderSettings.DEFAULT_MINUTE_OF_DAY),
         )
     }
@@ -175,7 +175,7 @@ class AppSettings internal constructor(private val store: DataStore<Preferences>
             defaultCategory = categories.defaultCategory,
             defaultPaymentMethod = categories.defaultPaymentMethod,
             askBeforeDiscarding = prefs[ASK_BEFORE_DISCARDING] ?: true,
-            reminderEnabled = prefs[REMINDER_ENABLED] ?: true,
+            reminderEnabled = prefs[REMINDER_ENABLED] ?: false,
             reminderMinute = prefs[REMINDER_MINUTE] ?: ReminderSettings.DEFAULT_MINUTE_OF_DAY,
             paymentsToConfirm = prefs[PAYMENTS_TO_CONFIRM] ?: true,
             quietHoursEnabled = prefs[QUIET_HOURS_ENABLED] ?: true,
