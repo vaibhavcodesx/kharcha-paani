@@ -24,7 +24,9 @@ Exactly one row. Copy the id. Also look at `select * from public.profiles where 
 **4. Take a database dump** if you have not taken one today (`docs/engineering/runbooks/migration.md`, step 1 of
 "Owner"). Deletion is permanent.
 
-**5. Run the deletion as that person**, in one SQL editor run (it is a single transaction):
+**5. Delete their bill photos first.** The deletion function does not remove files. Supabase dashboard > Storage > `receipts` > open the folder named with their id > select all > Delete. Do not delete files with SQL (it leaves the files behind). Once their sign-in is gone you can no longer tell whose folder it was.
+
+**6. Run the deletion as that person**, in one SQL editor run (it is a single transaction):
 
 ```sql
 begin;
@@ -36,16 +38,18 @@ commit;
 
 The function deletes their private rows, tombstones the profile (name only), removes them from groups (a group
 they created passes to the longest-standing member; an empty group is deleted) and deletes the sign-in. It is the
-same code the app runs, so nothing else needs to be done by hand.
+same code the app runs; the photos are the one thing it does not remove, which is why step 5 exists.
 
-**6. Check.**
+**7. Check.**
 
 ```sql
 select count(*) from auth.users where id = '<id>';                       -- 0
 select display_name, deleted_at from public.profiles where id = '<id>';  -- the tombstone
 ```
 
-**7. Reply** to the person: done, what stays (shared group history under "Former member" or their name), and that
+In Storage, the `receipts` folder with their id is gone.
+
+**8. Reply** to the person: done, what stays (shared group history under "Former member" or their name), and that
 they can sign up again as a new account.
 
 If the function raises an error, stop and do not edit rows by hand. Copy the error to a `needs-owner` issue without
