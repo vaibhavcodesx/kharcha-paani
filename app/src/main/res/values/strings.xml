@@ -642,6 +642,8 @@
     <string name="debt_management_consequence">Settlements and IOUs with them are removed. Expenses you split only with them stay in your history as your own, at what you spent.</string>
     <string name="debt_management_delete">Delete</string>
     <string name="debt_management_cancel">Cancel</string>
+    <string name="debt_management_settle">Settle</string>
+    <string name="debt_management_settle_with">Settle up with %1$s</string>
     <string name="debt_management_title">Who pays whom</string>
     <string name="debt_management_empty">Nobody owes anybody right now.</string>
     <string name="debt_management_explanation">The fewest payments that would clear every balance between you and your friends.</string>

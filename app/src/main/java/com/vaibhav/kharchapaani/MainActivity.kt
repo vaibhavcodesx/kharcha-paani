@@ -1239,7 +1239,13 @@ fun SplitFlowApp(
     SimplifyDebtsSheet(
         isOpen = isSimplifyDebtsOpen,
         simplifiedDebts = simplifiedDebts,
-        onDismiss = { viewModel.dismissSimplifyDebts() }
+        onDismiss = { viewModel.dismissSimplifyDebts() },
+        onSettle = { personId ->
+            people.firstOrNull { it.id == personId }?.let { person ->
+                viewModel.dismissSimplifyDebts()
+                viewModel.openSettleUp(person)
+            }
+        },
     )
 
     // New group
