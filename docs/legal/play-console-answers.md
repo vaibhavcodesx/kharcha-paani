@@ -46,8 +46,7 @@ unless noted. Collection is **required** when signed in unless noted.
 
 **Why "Shared: Yes" for what Gemini reads.** Sending data to a service provider that processes it only
 for you isn't "sharing". On Gemini's **free tier**, Google may use what's sent to improve its products,
-so it's declared as **shared, for app functionality**, until the app moves to the paid tier. Groq
-processes typed quick-add text ephemerally without training.
+so it's declared as **shared, for app functionality**, until the app moves to the paid tier. Groq does not keep typed quick-add text by default (logs may be kept up to 30 days, only for reliability and abuse checks).
 
 ## Financial features
 
