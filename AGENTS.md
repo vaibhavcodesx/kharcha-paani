@@ -9,6 +9,9 @@ choices, and put real questions on the board.
 
 1. Read `docs/agents/STATE.md` (30 lines). Find your name: that is your role (lead, builder, worker).
 2. Read `docs/agents/PLAYBOOK.md`, then `docs/agents/roles/<your role>.md`. Nothing else yet.
+2a. Read your inbox, `docs/agents/inbox/<your name>.md` (claude, codex, antigravity). It is the only way the Lead
+   messages you: "improve PR 123: ...", "continue issue 45: ...". Do those first. When one is done, delete
+   its block and say so in the PR or issue.
 3. Take work: run the start query below, take the first line, read its body with
    `gh issue view N --json body --jq .body`. The body is the brief. Never read comments, never run
    `gh issue list` without `-L`.
