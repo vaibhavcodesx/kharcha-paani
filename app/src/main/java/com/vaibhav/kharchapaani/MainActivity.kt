@@ -1252,6 +1252,10 @@ fun SplitFlowApp(
                 if (allowMemberRemoval) GroupBalances.netPositions(details.transactions, details.settlements).keys
                 else emptySet()
             }
+            // Me is person id -1 in every ledger. What I am owed or owe here, shown before leaving.
+            val myBalance = remember(details.transactions, details.settlements) {
+                GroupBalances.netPositions(details.transactions, details.settlements)[-1L] ?: 0.0
+            }
             SharedGroupPanel(
                 group = group,
                 members = details.members,
@@ -1268,6 +1272,7 @@ fun SplitFlowApp(
                 onRemoveMember = if (allowMemberRemoval) ({ profileId -> sharedGroups.removeMember(group, profileId) }) else null,
                 isRemovingMember = sharedGroupsState.isRemovingMember,
                 outstandingMembers = outstandingMembers,
+                myBalance = myBalance,
             )
         },
     )
