@@ -20,19 +20,19 @@ import kotlin.math.abs
 object AskMessage {
 
     data class Strings(
-        val header: String = "Hey %1$s, here's our hisaab:",
-        val carriedOver: String = "• Carried over: %1$s",
-        val earlier: String = "• Earlier: %1$s",
-        val line: String = "• %1$s",
-        val total: String = "Total: %1$s",
-        val partial: String = "Asking %1$s of the %2$s for now.",
-        val upi: String = "UPI: %1$s",
+        val header: String = "Hey %1\$s, here's our hisaab:",
+        val carriedOver: String = "• Carried over: %1\$s",
+        val earlier: String = "• Earlier: %1\$s",
+        val line: String = "• %1\$s",
+        val total: String = "Total: %1\$s",
+        val partial: String = "Asking %1\$s of the %2\$s for now.",
+        val upi: String = "UPI: %1\$s",
         val footer: String = "Sent from Kharcha Paani",
-        val theirShare: String = "%1$s, %2$s: your share %3$s",
-        val myShare: String = "%1$s, %2$s: my share of what you paid %3$s",
-        val asGuest: String = "%1$s, %2$s: your share as my guest %3$s",
-        val iSent: String = "I sent you, %1$s: %2$s",
-        val theySent: String = "You sent me, %1$s: %2$s",
+        val theirShare: String = "%1\$s, %2\$s: your share %3\$s",
+        val myShare: String = "%1\$s, %2\$s: my share of what you paid %3\$s",
+        val asGuest: String = "%1\$s, %2\$s: your share as my guest %3\$s",
+        val iSent: String = "I sent you, %1\$s: %2\$s",
+        val theySent: String = "You sent me, %1\$s: %2\$s",
     ) {
         companion object {
             fun from(context: Context): Strings = Strings(
