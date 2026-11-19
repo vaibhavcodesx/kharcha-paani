@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -44,14 +45,16 @@ class ConfirmSheetContentTest {
         shares: List<ShareInput> = emptyList(),
         isImprovingWithAi: Boolean = false,
         updatedByAi: Boolean = false,
+        groups: List<com.vaibhav.kharchapaani.data.db.entity.GroupEntity> = emptyList(),
+        groupId: Long? = null,
     ) {
         SplitFlowTheme {
             ConfirmSheetContent(
                 isImprovingWithAi = isImprovingWithAi,
                 updatedByAi = updatedByAi,
                 isParsing = false, isEditing = false, notice = notice, type = "expense", amount = amount, merchant = "McDonald's",
-                category = category, paymentMethod = paymentMethod, note = "", date = 0L, groupId = null,
-                availableGroups = emptyList(), isSplit = isSplit, splitMode = splitMode, paidByPersonId = -1L,
+                category = category, paymentMethod = paymentMethod, note = "", date = 0L, groupId = groupId,
+                availableGroups = groups, isSplit = isSplit, splitMode = splitMode, paidByPersonId = -1L,
                 shares = shares, onTypeChange = {}, onAmountChange = {}, onMerchantChange = {},
                 onCategoryChange = onCategoryChange, onPaymentMethodChange = {}, onNoteChange = {}, onDateChange = {},
                 onGroupIdChange = {}, onIsSplitChange = onIsSplitChange, onSplitModeChange = {}, onPaidByPersonIdChange = {},
@@ -128,6 +131,22 @@ class ConfirmSheetContentTest {
 
         composeTestRule.onNodeWithText("Transport").assertExists()
         composeTestRule.onNodeWithText("Shopping").assertDoesNotExist()
+    }
+
+    @Test
+    fun `the sheet says who will see the entry before it is saved`() {
+        val shared = com.vaibhav.kharchapaani.data.db.entity.GroupEntity(
+            id = 7L, name = "Goa trip", syncState = com.vaibhav.kharchapaani.data.db.entity.SyncState.SYNCED,
+        )
+        val local = com.vaibhav.kharchapaani.data.db.entity.GroupEntity(id = 8L, name = "Flat", syncState = com.vaibhav.kharchapaani.data.db.entity.SyncState.LOCAL_ONLY)
+        val groupId = androidx.compose.runtime.mutableStateOf<Long?>(null)
+        composeTestRule.setContent { Sheet(groups = listOf(shared, local), groupId = groupId.value) }
+
+        composeTestRule.onNodeWithTag("entry_visibility_line").assertTextEquals("Only you can see this entry.")
+        groupId.value = 7L
+        composeTestRule.onNodeWithTag("entry_visibility_line").assertTextEquals("Everyone in Goa trip will see this entry.")
+        groupId.value = 8L
+        composeTestRule.onNodeWithTag("entry_visibility_line").assertTextEquals("Only you can see this entry.")
     }
 
     @Test
