@@ -57,10 +57,13 @@ class ActivitySearchTest {
         until { vm.activityFeed.value.size == 5 && vm.activityFeed.value.filterIsInstance<ActivityItem.Settlement>().single().title(app).contains("Rohan") }
     }
 
-    private suspend fun until(condition: () -> Boolean) = withTimeout(10000) {
-        while (!condition()) {
-            dispatcher.scheduler.runCurrent()
-            delay(10)
+    private fun until(condition: () -> Boolean) = runBlocking {
+        withTimeout(10000) {
+            while (!condition()) {
+                dispatcher.scheduler.advanceTimeBy(10)
+                dispatcher.scheduler.runCurrent()
+                yield()
+            }
         }
     }
 
@@ -72,7 +75,9 @@ class ActivitySearchTest {
             until { vm.activityFeed.value.size == expectedSize }
         } else {
             val debounceMs = if (query.isEmpty()) 0L else MainViewModel.SEARCH_DEBOUNCE_MS
-            delay(debounceMs + 20)
+            dispatcher.scheduler.advanceTimeBy(debounceMs + 20)
+            dispatcher.scheduler.runCurrent()
+            yield()
             until { true }
         }
         vm.activityFeed.value.map { it.key }.toSet()
@@ -82,7 +87,7 @@ class ActivitySearchTest {
         screen.cancel()
         val job = vm.viewModelScope.coroutineContext[Job]!!
         store.clear()
-        until { job.isCompleted }
+        job.cancelAndJoin()
         db.close()
         Dispatchers.resetMain()
     }
@@ -149,9 +154,7 @@ class ActivitySearchTest {
         assertEquals(setOf("tx_2"), vm.activityFeed.value.map { it.key }.toSet())
 
         vm.setSearchQuery("")
-        withTimeout(2000) {
-            until { vm.activityFeed.value.size == 5 }
-        }
+        until { vm.activityFeed.value.size == 5 }
         assertEquals(5, vm.activityFeed.value.size)
     }
 
@@ -166,13 +169,16 @@ class ActivitySearchTest {
         // Distinct queries: "Tea" (tx_4), "Taxi" (tx_3), "Salary" (tx_2)
         // If evaluated individually, each would produce a different item.
         vm.setSearchQuery("Tea")
-        delay(50)
+        dispatcher.scheduler.advanceTimeBy(50)
         dispatcher.scheduler.runCurrent()
+        yield()
         vm.setSearchQuery("Taxi")
-        delay(50)
+        dispatcher.scheduler.advanceTimeBy(50)
         dispatcher.scheduler.runCurrent()
+        yield()
         vm.setSearchQuery("Salary")
         dispatcher.scheduler.runCurrent()
+        yield()
 
         // Keystrokes were <150ms apart: no intermediate query was built or emitted
         assertTrue("No builds/emissions during rapid typing", emissions.isEmpty())
