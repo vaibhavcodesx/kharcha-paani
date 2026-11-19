@@ -189,7 +189,7 @@ begin
   end if;
 
   v_snapshot := private.admin_ceilings_json();
-  update private.admin_settings set ai_pause_snapshot = v_snapshot, updated_at = now();
+  update private.admin_settings set ai_pause_snapshot = v_snapshot, updated_at = now() where id;
 
   insert into private.ai_project_ceilings (feature, per_day)
   select feature, 0 from private.ai_read_caps
@@ -227,7 +227,7 @@ begin
       on conflict (feature) do update set per_day = excluded.per_day;
     end if;
   end loop;
-  update private.admin_settings set ai_pause_snapshot = null, updated_at = now();
+  update private.admin_settings set ai_pause_snapshot = null, updated_at = now() where id;
 
   perform private.admin_log('resume_ai', null, null, v_before, private.admin_ceilings_json());
   return private.admin_ceilings_json();
@@ -269,7 +269,8 @@ begin
 
   v_before := jsonb_build_object('update_screen', v_old.update_screen_version_code, 'latest_published', v_old.latest_published_version_code);
   update private.admin_settings
-    set update_screen_version_code = p_update_screen, latest_published_version_code = p_latest_published, updated_at = now();
+    set update_screen_version_code = p_update_screen, latest_published_version_code = p_latest_published, updated_at = now()
+    where id;
   v_after := jsonb_build_object('update_screen', p_update_screen, 'latest_published', p_latest_published);
 
   perform private.admin_log('set_release_facts', null, null, v_before, v_after);
@@ -309,7 +310,8 @@ begin
   end if;
 
   update public.app_config
-    set min_version_code = p_min, recommended_version_code = p_recommended, updated_at = now();
+    set min_version_code = p_min, recommended_version_code = p_recommended, updated_at = now()
+    where true;
   v_after := jsonb_build_object('min', p_min, 'recommended', p_recommended);
 
   perform private.admin_log('set_app_versions', null, null,
