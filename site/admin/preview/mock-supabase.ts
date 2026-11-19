@@ -10,12 +10,12 @@ const used: Record<string, number> = { bill: 38, insights: 97, quick_add: 1670, 
 
 const overview = () => ({
   as_of: new Date().toISOString(),
-  people: q.has('empty') ? { total: 1, active_7d: 1, deleted: 0 } : { total: 37, active_7d: 21, deleted: 2 },
-  plans: { free: 33, friends: 4, paid: 0 },
-  ai_today: Object.keys(used).sort().map((feature) => ({ feature, used: q.has('empty') ? 0 : used[feature], ceiling: ceilings[feature] ?? null })),
+  people: q.has('empty') ? { total: 0, active_7d: 0, deleted: 0 } : { total: 37, active_7d: 21, deleted: 2 },
+  plans: q.has('empty') ? { free: 0, friends: 0, paid: 0 } : { free: 33, friends: 4, paid: 0 },
+  ai_today: q.has('empty') ? [] : Object.keys(used).sort().map((feature) => ({ feature, used: used[feature], ceiling: ceilings[feature] ?? null })),
   ai_paused: paused,
-  storage: { objects: 311, bytes: 182 * 1024 ** 2, leftover_objects: q.has('leftover') ? 12 : 0, leftover_bytes: 2 * 1024 ** 2 },
-  db: { bytes: 41 * 1024 ** 2 },
+  storage: { objects: q.has('empty') ? 0 : 311, bytes: q.has('empty') ? 0 : 182 * 1024 ** 2, leftover_objects: q.has('leftover') ? 12 : 0, leftover_bytes: 2 * 1024 ** 2 },
+  db: { bytes: q.has('empty') ? 0 : 41 * 1024 ** 2 },
   versions: { ...facts },
 })
 
@@ -84,8 +84,8 @@ function handle(fn: string, a: Record<string, unknown> = {}) {
     }
     case 'admin_get_limits':
       return ok({
-        caps,
-        ceilings: caps.map((c) => ({ feature: c.feature, per_day: ceilings[c.feature] ?? null, used_today: used[c.feature] })),
+        caps: q.has('empty') ? [] : caps,
+        ceilings: q.has('empty') ? [] : caps.map((c) => ({ feature: c.feature, per_day: ceilings[c.feature] ?? null, used_today: used[c.feature] })),
         paused,
       })
     case 'admin_set_cap': {
@@ -120,6 +120,7 @@ function handle(fn: string, a: Record<string, unknown> = {}) {
       facts.recommended = Number(a.p_recommended)
       return ok(null)
     case 'admin_list_audit': {
+      if (q.has('empty')) return ok([])
       const before = a.p_before as number | null
       return ok(audit.filter((r) => before === null || r.id < before).slice(0, Number(a.p_limit ?? 50)))
     }
