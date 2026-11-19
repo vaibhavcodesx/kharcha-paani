@@ -1,4 +1,5 @@
--- NOT APPLIED. Staged for owner review: this is the first thing a signed-out caller can run.
+-- APPLIED to live (by hand in the SQL editor, so it is missing from the migration history: issue #298).
+-- Reviewed as the first thing a signed-out caller can run: only the four link functions are open to anon.
 -- Design: docs/designs/split-by-items.md. Tests: supabase/tests/bill_item_splits_test.sql.
 --
 -- Split a bill by items. One person (the host, signed in) photographs a bill; the app lists its

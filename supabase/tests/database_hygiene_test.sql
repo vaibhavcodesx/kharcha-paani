@@ -108,9 +108,11 @@ grant execute on function public._as(uuid), public._as_anon(), public._as_admin(
 -- ------------------------------------------------------------
 -- anon has nothing, now or later
 -- ------------------------------------------------------------
-select public._expect_value('anon can''t read, write or delete any table in public',
+-- `app_config` (the minimum-version switch, 20261119000000) is the one table signed-out callers may read.
+select public._expect_value('anon can''t read, write or delete any table in public, except reading app_config',
   $q$ select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'public' and c.relkind in ('r', 'p', 'v') and c.relname not like '\_%'
+        and c.relname <> 'app_config'
         and (has_table_privilege('anon', c.oid, 'select') or has_table_privilege('anon', c.oid, 'insert')
           or has_table_privilege('anon', c.oid, 'update') or has_table_privilege('anon', c.oid, 'delete')) $q$, 0);
 -- Since 20261110000000 (split a bill by items) the four functions that take a split's link are the

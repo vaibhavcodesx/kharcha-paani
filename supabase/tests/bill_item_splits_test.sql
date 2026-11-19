@@ -339,11 +339,18 @@ select public._expect_value('and they are the link ones',
   $q$ select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
       where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute')
         and p.proname in ('bill_split_view', 'bill_split_join', 'bill_split_claim', 'bill_split_done') $q$, 4);
-select public._expect_value('anon still can''t touch any table in public',
+-- `app_config` (the minimum-version switch, 20261119000000) is the one table signed-out callers may read.
+select public._expect_value('anon still can''t touch any table in public, except reading app_config',
   $q$ select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'public' and c.relkind in ('r', 'p', 'v') and c.relname not like '\_%'
+        and c.relname <> 'app_config'
         and (has_table_privilege('anon', c.oid, 'select') or has_table_privilege('anon', c.oid, 'insert')
           or has_table_privilege('anon', c.oid, 'update') or has_table_privilege('anon', c.oid, 'delete')) $q$, 0);
+select public._expect_value('and app_config is read-only for anon',
+  $q$ select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'public' and c.relname = 'app_config'
+        and (has_table_privilege('anon', c.oid, 'insert') or has_table_privilege('anon', c.oid, 'update')
+          or has_table_privilege('anon', c.oid, 'delete')) $q$, 0);
 
 select n, test, passed, detail from public._rls_results order by n;
 
