@@ -90,6 +90,19 @@ class CategoriesTest {
     }
 
     @Test
+    fun `a remembered choice that is no longer offered gives way to the configured default`() {
+        val prefs = CategoryPrefs(
+            lastExpenseChoices = LastEntryChoices("Transport", "Cash"),
+            hiddenCategories = setOf("Transport"),
+            hiddenPaymentMethods = setOf("Cash"),
+            defaultCategory = "Shopping",
+            defaultPaymentMethod = "Credit Card",
+        )
+        assertEquals("Shopping", Categories.defaultCategory("expense", prefs))
+        assertEquals("Credit Card", Categories.defaultPaymentMethod(prefs))
+    }
+
+    @Test
     fun `a chosen default that is later hidden gives way to the first one still offered`() {
         val prefs = CategoryPrefs(defaultPaymentMethod = "Cash", hiddenPaymentMethods = setOf("Cash"), defaultCategory = "Transport", hiddenCategories = setOf("Transport"))
         assertEquals(Categories.paymentMethods(prefs).first(), Categories.defaultPaymentMethod(prefs))
