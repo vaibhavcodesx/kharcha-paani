@@ -7,10 +7,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -21,6 +20,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -30,7 +36,10 @@ import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.data.model.MonthlyAnalytics
 import com.vaibhav.kharchapaani.ui.components.AccountAvatar
 import com.vaibhav.kharchapaani.ui.components.AnimatedRollingNumber
+import com.vaibhav.kharchapaani.ui.components.FittedMoneyText
 import com.vaibhav.kharchapaani.ui.components.pressBounce
+import com.vaibhav.kharchapaani.ui.components.wholeRupeesOf
+import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.theme.BrandGradient
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBorder
 import com.vaibhav.kharchapaani.ui.theme.MoneyIn
@@ -71,9 +80,8 @@ fun BalanceHeader(
             )
             AccountAvatar(avatar = accountAvatar, syncStatus = syncStatus, onClick = onOpenAccount)
         }
-        AnimatedRollingNumber(
-            targetValue = monthlyExpense,
-            prefix = "₹",
+        HomeAmount(
+            amount = monthlyExpense,
             style = MoneyText.hero,
             brush = BrandGradient.horizontal(),
             // Whole rupees: at a glance the month is "₹12,345", not "₹12,345.50" (U27). Rows keep paise.
@@ -105,20 +113,15 @@ fun MonthStrip(
 ) {
     val owedToMe = netBalance >= 0.005
     val iOwe = netBalance <= -0.005
-    Row(modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+    val incomeFigure: @Composable (Modifier) -> Unit = { figureModifier ->
         MonthFigure(
             label = stringResource(R.string.home_came_in),
             amount = analytics.totalIncome,
             color = MoneyIn,
-            modifier = Modifier.weight(1f),
+            modifier = figureModifier,
         )
-        Box(
-            Modifier
-                .padding(horizontal = Spacing.xl)
-                .width(1.dp)
-                .fillMaxHeight()
-                .background(CharcoalBorder)
-        )
+    }
+    val balanceFigure: @Composable (Modifier) -> Unit = { figureModifier ->
         MonthFigure(
             label = when {
                 owedToMe -> stringResource(R.string.home_friends_owe)
@@ -132,8 +135,24 @@ fun MonthStrip(
                 else -> MutedWarmGray
             },
             onClick = onOpenSimplifyDebts.takeIf { owedToMe || iOwe },
-            modifier = Modifier.weight(1f),
+            modifier = figureModifier,
         )
+    }
+    if (LocalDensity.current.fontScale > 1.5f) {
+        Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
+            incomeFigure(Modifier.fillMaxWidth())
+            Box(Modifier.fillMaxWidth().height(1.dp).background(CharcoalBorder))
+            balanceFigure(Modifier.fillMaxWidth())
+        }
+    } else {
+        Row(modifier.fillMaxWidth().drawBehind {
+            val x = size.width / 2f
+            drawLine(CharcoalBorder, Offset(x, 0f), Offset(x, size.height), strokeWidth = 1.dp.toPx())
+        }) {
+            incomeFigure(Modifier.weight(1f))
+            Box(Modifier.width(Spacing.xl * 2 + 1.dp))
+            balanceFigure(Modifier.weight(1f))
+        }
     }
 }
 
@@ -141,7 +160,7 @@ fun MonthStrip(
 private fun MonthFigure(
     label: String,
     amount: Double,
-    color: androidx.compose.ui.graphics.Color,
+    color: Color,
     modifier: Modifier,
     onClick: (() -> Unit)? = null,
 ) {
@@ -172,7 +191,7 @@ private fun MonthFigure(
         verticalArrangement = Arrangement.spacedBy(Spacing.xxs),
     ) {
         Text(label.uppercase(), style = EyebrowText)
-        AnimatedRollingNumber(targetValue = amount, style = MoneyText.title, color = color)
+        HomeAmount(amount = amount, style = MoneyText.title.copy(color = color))
         if (onClick != null) {
             Text(
                 text = stringResource(R.string.home_simplify),
@@ -180,6 +199,30 @@ private fun MonthFigure(
                 color = WarmAmberLight,
                 modifier = Modifier.padding(top = Spacing.xxs),
             )
+        }
+    }
+}
+
+/** Keep the rolling number where it fits and use a fitted line when room is tight. */
+@Composable
+private fun HomeAmount(amount: Double, style: TextStyle, brush: Brush? = null, wholeRupees: Boolean = false) {
+    val text = "₹" + Money.digits(if (wholeRupees) wholeRupeesOf(amount) else amount)
+    val density = LocalDensity.current
+    val textMeasurer = rememberTextMeasurer()
+    val rollingWidth = remember(text, style, textMeasurer) {
+        text.sumOf { textMeasurer.measure(it.toString(), style = style).size.width }
+    }
+    BoxWithConstraints {
+        if (density.fontScale <= 1.3f && rollingWidth <= with(density) { maxWidth.roundToPx() }) {
+            AnimatedRollingNumber(
+                targetValue = amount,
+                style = style,
+                color = style.color,
+                brush = brush,
+                wholeRupees = wholeRupees,
+            )
+        } else {
+            FittedMoneyText(text = text, style = if (brush != null) style.copy(brush = brush) else style)
         }
     }
 }

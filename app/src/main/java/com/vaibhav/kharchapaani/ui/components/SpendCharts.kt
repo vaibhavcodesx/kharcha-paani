@@ -12,18 +12,18 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.TextAutoSize
-import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
@@ -51,6 +51,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.vaibhav.kharchapaani.data.model.CategorySummary
 import com.vaibhav.kharchapaani.domain.DaySpend
 import com.vaibhav.kharchapaani.ui.format.Money
@@ -122,6 +123,14 @@ fun CategoryRing(
             .padding(Spacing.l)
             .testTag("category_ring"),
     ) {
+        if (largeText) {
+            Text(centreSlice?.category ?: spentLabel, style = MaterialTheme.typography.bodySmall)
+            FittedMoneyText(
+                Money.format(centreSlice?.amount ?: total),
+                style = MoneyText.row,
+                modifier = Modifier.padding(bottom = Spacing.m),
+            )
+        }
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.size(RingSize)) {
             Canvas(
@@ -183,12 +192,9 @@ fun CategoryRing(
                 )
                 // The hole is what it is: a month total in MoneyText.title spilled straight over
                 // the arcs around it.
-                BasicText(
+                FittedMoneyText(
                     text = Money.format(slice?.amount ?: total),
-                    style = MoneyText.row.copy(color = OffWhiteText, textAlign = TextAlign.Center,
-                        lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified),
-                    maxLines = 1, softWrap = false,
-                    autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = MoneyText.row.fontSize),
+                    style = MoneyText.row.copy(color = OffWhiteText, textAlign = TextAlign.Center),
                     modifier = Modifier.width(RingSize - RingStroke * 2 - Spacing.s),
                 )
             }
@@ -297,6 +303,7 @@ internal fun sliceAt(offset: Offset, width: Float, height: Float, sweeps: List<F
  * below, tooltip on the day you tap — because the chart alone answers "was that a big week" and
  * only the figures answer "how much exactly".
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DailyFlowChart(
     days: List<DaySpend>,
@@ -310,6 +317,7 @@ fun DailyFlowChart(
 
     val peak = remember(elapsed) { elapsed.maxOf { it.amount }.coerceAtLeast(1.0) }
     val density = LocalDensity.current
+    val dayCellWidth = DayCellWidth * density.fontScale.coerceAtLeast(1f)
     val grown by animateFloatAsState(1f, animationSpec = tween(700), label = "flow_grow")
     val dayFormat = remember { DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault()) }
     val pinned = selectedDay?.let { index -> elapsed.getOrNull(index) }
@@ -327,8 +335,8 @@ fun DailyFlowChart(
             .padding(Spacing.l)
             .testTag("daily_flow_chart"),
     ) {
-        // The callout keeps its row whether or not a day is pinned, so the chart doesn't jump.
-        Box(Modifier.fillMaxWidth().height(34.dp), contentAlignment = Alignment.CenterStart) {
+        // Reserve a row at default text size and let it grow when a larger font needs more space.
+        Box(Modifier.fillMaxWidth().heightIn(min = 34.dp), contentAlignment = Alignment.CenterStart) {
             if (pinned == null) {
                 Text(
                     stringResource(R.string.insights_tap_day),
@@ -336,8 +344,8 @@ fun DailyFlowChart(
                     color = SubMutedWarmGray,
                 )
             } else {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.s),
                     modifier = Modifier
                         .clip(KpShapes.small)
                         .background(CharcoalElevated)
@@ -349,11 +357,9 @@ fun DailyFlowChart(
                         style = MaterialTheme.typography.bodySmall,
                         color = MutedWarmGray,
                     )
-                    Text(
+                    FittedMoneyText(
                         text = Money.format(pinned.amount),
-                        style = MoneyText.small,
-                        color = OffWhiteText,
-                        modifier = Modifier.padding(start = Spacing.s),
+                        style = MoneyText.small.copy(color = OffWhiteText),
                     )
                 }
             }
@@ -428,9 +434,9 @@ fun DailyFlowChart(
         // the one you came to look at.
         val strip = rememberScrollState()
         LaunchedEffect(elapsed.size) { strip.scrollTo(strip.maxValue) }
-        LaunchedEffect(selectedDay) {
+        LaunchedEffect(selectedDay, dayCellWidth) {
             val index = selectedDay ?: return@LaunchedEffect
-            val cellPx = with(density) { (DayCellWidth + Spacing.xs).toPx() }
+            val cellPx = with(density) { (dayCellWidth + Spacing.xs).toPx() }
             strip.animateScrollTo((index * cellPx - cellPx * 2).toInt().coerceAtLeast(0))
         }
         Row(
@@ -443,6 +449,7 @@ fun DailyFlowChart(
             elapsed.forEachIndexed { index, day ->
                 DayCell(
                     day = day,
+                    width = dayCellWidth,
                     selected = index == selectedDay,
                     onClick = { onSelectDay(if (index == selectedDay) null else index) },
                 )
@@ -469,12 +476,12 @@ private fun FlowAxis(days: List<Int>) {
 }
 
 @Composable
-private fun DayCell(day: DaySpend, selected: Boolean, onClick: () -> Unit) {
+private fun DayCell(day: DaySpend, width: Dp, selected: Boolean, onClick: () -> Unit) {
     val dayLabel = stringResource(R.string.insights_day_amount, day.date.dayOfMonth, Money.format(day.amount))
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .width(DayCellWidth)
+            .width(width)
             .clip(KpShapes.small)
             .background(if (selected) CharcoalElevated else Color.Transparent)
             .clickable(onClickLabel = stringResource(R.string.insights_show_day, day.date.dayOfMonth), onClick = onClick)
@@ -490,12 +497,10 @@ private fun DayCell(day: DaySpend, selected: Boolean, onClick: () -> Unit) {
             style = MaterialTheme.typography.bodySmall,
             color = if (selected) OffWhiteText else SubMutedWarmGray,
         )
-        Text(
+        FittedMoneyText(
             // Compact, never cut: the cell is a fixed width, and the exact figure is its spoken label.
             text = if (day.amount > 0.0) Money.compactDigits(day.amount) else "—",
-            style = MoneyText.small,
-            color = if (selected) OffWhiteText else MutedWarmGray,
-            maxLines = 1,
+            style = MoneyText.small.copy(color = if (selected) OffWhiteText else MutedWarmGray),
         )
     }
 }
