@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
@@ -70,7 +71,7 @@ class SharedGroupUiTest {
             SplitFlowTheme {
                 SharedGroupPanel(
                     group = GroupEntity(name = "Goa trip", syncState = SyncState.SYNCED),
-                    members = listOf(PersonEntity(name = "Bob", avatarColor = "#70C1FF")),
+                    members = listOf(PersonEntity(name = "Bob", avatarColor = "#70C1FF", profileId = "bob")),
                     isCreator = false,
                     invite = GroupInviteState(groupId = 1, code = "AB2CD3EF", expiresAtMillis = 1_800_000_000_000),
                     isLeaving = false,
@@ -78,6 +79,7 @@ class SharedGroupUiTest {
                     onSyncNow = {},
                     onCreateInvite = {},
                     onShareInvite = { shared = it },
+                    onRemoveMember = { error("Only the creator can remove someone") },
                     onRevokeInvite = {},
                     onSetArchived = {},
                     onLeave = {},
@@ -90,6 +92,39 @@ class SharedGroupUiTest {
         assertEquals("kharchapaani://join/AB2CD3EF", shared)
         composeTestRule.onNodeWithText("Leave group").assertIsEnabled()
         composeTestRule.onNodeWithText("Archive group").assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription("Remove Bob").assertDoesNotExist()
+    }
+
+    @Test
+    fun `creator sees the member name and outstanding balance before confirming removal`() {
+        var removed: String? = null
+        composeTestRule.setContent {
+            SplitFlowTheme {
+                SharedGroupPanel(
+                    group = GroupEntity(name = "Goa trip", syncState = SyncState.SYNCED),
+                    members = listOf(PersonEntity(id = 12, name = "Bob", avatarColor = "#70C1FF", profileId = "bob")),
+                    isCreator = true,
+                    invite = null,
+                    isLeaving = false,
+                    unsyncedChanges = 0,
+                    onSyncNow = {},
+                    onCreateInvite = {},
+                    onShareInvite = {},
+                    onRevokeInvite = {},
+                    onSetArchived = {},
+                    onLeave = {},
+                    onRemoveMember = { removed = it },
+                    outstandingMembers = setOf(12L),
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithContentDescription("Remove Bob").performClick()
+        composeTestRule.onNodeWithText("Remove Bob from the group?").assertExists()
+        composeTestRule.onNodeWithText("They have an outstanding balance in this group.").assertExists()
+        assertEquals(null, removed)
+        composeTestRule.onNodeWithText("Remove").performClick()
+        assertEquals("bob", removed)
     }
 
     @Test

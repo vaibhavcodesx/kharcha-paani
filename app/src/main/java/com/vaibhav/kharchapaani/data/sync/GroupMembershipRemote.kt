@@ -3,6 +3,7 @@ package com.vaibhav.kharchapaani.data.sync
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -47,6 +48,10 @@ interface GroupMembershipRemote {
      */
     suspend fun joinGroup(code: String): String
 
+    suspend fun supportsMemberRemoval(groupRemoteId: String): Boolean
+
+    suspend fun removeMember(groupRemoteId: String, memberProfileId: String)
+
     suspend fun leaveGroup(groupRemoteId: String, selfProfileId: String)
 }
 
@@ -87,6 +92,22 @@ class SupabaseGroupMembershipRemote(private val supabase: SupabaseClient) : Grou
     override suspend fun joinGroup(code: String): String =
         supabase.postgrest.rpc("join_group", buildJsonObject { put("p_code", code) }).decodeAs<String?>()
             ?: throw InvalidInviteException()
+
+    override suspend fun supportsMemberRemoval(groupRemoteId: String): Boolean {
+        // This column ships in the same migration as remove_group_member. Probe without a write.
+        supabase.from("group_invites").select(Columns.list("max_uses")) {
+            filter { eq("group_id", groupRemoteId) }
+            limit(1)
+        }
+        return true
+    }
+
+    override suspend fun removeMember(groupRemoteId: String, memberProfileId: String) {
+        supabase.postgrest.rpc("remove_group_member", buildJsonObject {
+            put("p_group_id", groupRemoteId)
+            put("p_profile_id", memberProfileId)
+        })
+    }
 
     override suspend fun leaveGroup(groupRemoteId: String, selfProfileId: String) {
         supabase.from("group_members").delete {

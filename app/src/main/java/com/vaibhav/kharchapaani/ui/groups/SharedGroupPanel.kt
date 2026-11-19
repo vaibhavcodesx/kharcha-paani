@@ -18,6 +18,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.vaibhav.kharchapaani.data.db.entity.GroupEntity
@@ -78,8 +80,13 @@ fun SharedGroupPanel(
     onSetArchived: (Boolean) -> Unit,
     onLeave: () -> Unit,
     modifier: Modifier = Modifier,
+    onRemoveMember: ((profileId: String) -> Unit)? = null,
+    isRemovingMember: Boolean = false,
+    outstandingMembers: Set<Long> = emptySet(),
 ) {
     var confirmingLeave by rememberSaveable { mutableStateOf(false) }
+    var memberToRemoveId by rememberSaveable(group.id) { mutableStateOf<Long?>(null) }
+    val canRemove = isCreator && !group.isArchived && onRemoveMember != null
 
     Column(
         modifier = modifier
@@ -115,7 +122,17 @@ fun SharedGroupPanel(
         Text(stringResource(R.string.shared_group_copy_people, members.size + 1), style = EyebrowText)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             MemberChip(name = stringResource(R.string.shared_group_copy_you), colorHex = LocalMyColour.current.hex)
-            members.forEach { MemberChip(name = it.name, colorHex = it.avatarColor, emoji = it.avatarEmoji) }
+            members.forEach { member ->
+                MemberChip(
+                    name = member.name,
+                    colorHex = member.avatarColor,
+                    emoji = member.avatarEmoji,
+                    onRemove = if (canRemove && !member.profileId.isNullOrBlank()) {
+                        { memberToRemoveId = member.id }
+                    } else null,
+                    removeEnabled = !isRemovingMember,
+                )
+            }
         }
 
         if (!group.isArchived) {
@@ -134,6 +151,39 @@ fun SharedGroupPanel(
                 Text(if (isLeaving) stringResource(R.string.shared_group_copy_leaving) else stringResource(R.string.shared_group_copy_leave_group), style = MaterialTheme.typography.labelLarge, color = WarmAmberLight)
             }
         }
+    }
+
+    val memberToRemove = if (canRemove) members.firstOrNull { it.id == memberToRemoveId } else null
+    val selectedProfile = memberToRemove?.profileId
+    if (memberToRemove != null && selectedProfile != null) {
+        AlertDialog(
+            onDismissRequest = { memberToRemoveId = null },
+            containerColor = CharcoalSurface,
+            shape = KpShapes.large,
+            title = { Text(stringResource(R.string.shared_group_remove_title, memberToRemove.name)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                    Text(stringResource(R.string.shared_group_remove_detail))
+                    if (memberToRemove.id in outstandingMembers) {
+                        Text(stringResource(R.string.shared_group_remove_balance), color = WarmAmberLight)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !isRemovingMember,
+                    onClick = {
+                        memberToRemoveId = null
+                        onRemoveMember?.invoke(selectedProfile)
+                    },
+                ) { Text(stringResource(R.string.shared_group_remove_button), color = WarmAmberLight) }
+            },
+            dismissButton = {
+                TextButton(onClick = { memberToRemoveId = null }) {
+                    Text(stringResource(R.string.shared_group_copy_cancel))
+                }
+            },
+        )
     }
 
     if (confirmingLeave) {
@@ -253,7 +303,13 @@ private fun PanelButton(label: String, filled: Boolean, onClick: () -> Unit, mod
 }
 
 @Composable
-private fun MemberChip(name: String, colorHex: String, emoji: String? = null) {
+private fun MemberChip(
+    name: String,
+    colorHex: String,
+    emoji: String? = null,
+    onRemove: (() -> Unit)? = null,
+    removeEnabled: Boolean = true,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -262,7 +318,23 @@ private fun MemberChip(name: String, colorHex: String, emoji: String? = null) {
             .padding(start = Spacing.xs, end = Spacing.m, top = Spacing.xs, bottom = Spacing.xs),
     ) {
         PersonAvatar(name = name, colorHex = colorHex, size = 26.dp, emoji = emoji)
-        Text(name, style = MaterialTheme.typography.labelLarge, color = OffWhiteText, modifier = Modifier.padding(start = Spacing.s))
+        Text(
+            text = name,
+            style = MaterialTheme.typography.labelLarge,
+            color = OffWhiteText,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false).padding(start = Spacing.s),
+        )
+        if (onRemove != null) {
+            IconButton(onClick = onRemove, enabled = removeEnabled) {
+                Icon(
+                    KpIcons.Close,
+                    contentDescription = stringResource(R.string.shared_group_remove_person, name),
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
     }
 }
 
