@@ -11,6 +11,7 @@
     "dev:mock": "vite --config vite.preview.config.ts --port 5174"
   },
   "dependencies": {
+    "@phosphor-icons/react": "2.1.10",
     "@supabase/supabase-js": "2.119.1",
     "react": "19.3.1",
     "react-dom": "19.3.1"
