@@ -9,7 +9,7 @@
     <string name="ai_off_nudge_footer">You can turn AI off again any time in Settings.</string>
 
     <string name="ai_off_nudge_general_title">AI is off</string>
-    <string name="ai_off_nudge_general_body">Quick add still works on this phone. With AI on, AI also reads bills, statements and what you say, and answers questions about your month. You check every entry before it\'s saved.</string>
+    <string name="ai_off_nudge_general_body">Quick add still works on this phone. With AI on, the app also reads bills, statements and what you say, and answers questions about your month. You check every entry before it\'s saved.</string>
 
     <string name="ai_off_nudge_bill_title">Reading a bill needs AI</string>
     <string name="ai_off_nudge_bill_body">AI is off, so this photo stayed on your phone. Turn it on and AI reads the bill to fill in the amount, the place and the date. You check it before saving.</string>
