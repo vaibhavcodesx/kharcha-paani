@@ -35,7 +35,7 @@ import org.robolectric.annotation.Config
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * When the mic, Bill photo or Statement button is tapped, a paused AI or a used-up daily cap is said
+ * When the mic, Bill photo or Statement button is tapped, a paused AI is said
  * at once, before anything is recorded, photographed or picked. If the server cannot answer, the
  * button carries on and the real call decides.
  */
@@ -95,7 +95,7 @@ class AiLimitPrecheckTest {
     }
 
     @Test
-    fun `when AI is paused or the cap is used the button stops and says so at once`() = runBlocking {
+    fun `when AI is paused the button stops and says so at once`() = runBlocking {
         val ran = AtomicInteger()
         answer = false
         for (feature in listOf(AiFeature.Voice, AiFeature.Bill, AiFeature.Statement)) {
@@ -104,7 +104,7 @@ class AiLimitPrecheckTest {
         until { asked.size == 3 && viewModel.statusMessage.value != null }
         assertEquals(listOf("quick_add", "bill", "statement"), asked)
         assertEquals("none of the three starts", 0, ran.get())
-        assertTrue(viewModel.statusMessage.value!!.contains("used up"))
+        assertTrue(viewModel.statusMessage.value!!.contains("paused"))
     }
 
     @Test

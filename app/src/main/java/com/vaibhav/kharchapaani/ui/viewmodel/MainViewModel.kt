@@ -795,10 +795,11 @@ class MainViewModel(
     }
 
     /**
-     * Runs [proceed] if a read of this kind is still allowed today, else says so at once. Called when
-     * the mic, Bill photo or Statement button is tapped, so a paused AI or a used-up cap is shown
-     * before anything is recorded, photographed or picked, not after. If the server cannot be asked
-     * quickly, [proceed] runs and the real call decides.
+     * Runs [proceed] unless the owner has paused AI for this kind, in which case it says so at once.
+     * Called when the mic, Bill photo or Statement button is tapped, so a pause is shown before
+     * anything is recorded, photographed or picked, not after. A person's own daily cap is not
+     * checked here; it still shows when the read is refused. If the server cannot be asked quickly,
+     * [proceed] runs and the real call decides.
      */
     fun guardAiRead(feature: AiFeature, proceed: () -> Unit) {
         val key = when (feature) {
@@ -816,13 +817,7 @@ class MainViewModel(
             if (allowed) {
                 proceed()
             } else {
-                _statusMessage.value = uiText(
-                    when (feature) {
-                        AiFeature.Bill -> R.string.ai_display_receipt_dailylimit
-                        AiFeature.Statement -> R.string.action_notice_statement_dailylimit
-                        else -> R.string.ai_display_answermessageresource_dailylimit
-                    },
-                )
+                _statusMessage.value = uiText(R.string.ai_paused_now)
             }
         }
     }

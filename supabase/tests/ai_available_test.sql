@@ -1,4 +1,4 @@
--- Checks for the migration 20261120000400_ai_available: the read-only check the app makes when a button is tapped, so a paused AI or a used-up cap shows at once. Same conventions as ai_plans_and_ceiling_test.sql.
+-- Checks for the migration 20261120000400_ai_available: the read-only check the app makes when a button is tapped, so a paused AI shows at once. Same conventions as ai_plans_and_ceiling_test.sql.
 --
 -- Same conventions as ai_daily_reads_test.sql: one transaction ending in ROLLBACK, one result row per check. Staged, not applied: run with the migration body inside the same rolled-back transaction (nothing persisted).
 
@@ -108,26 +108,23 @@ insert into private.user_plans (user_id, plan) values ('00000000-0000-4000-8000-
 
 select public._as('00000000-0000-4000-8000-0000000000a4');
 select public._expect_value('available at the start', $q$ select public.ai_available('statement')::int $q$, 1);
-select public._expect_value('asking spends nothing: ten asks, then all three statements still go through',
-  $q$ select (select count(*) from generate_series(1, 10) where public.ai_available('statement')) + public.take_ai_read('statement')::int + public.take_ai_read('statement')::int + public.take_ai_read('statement')::int $q$, 13);
-select public._expect_value('not available once the free cap of 3 is used', $q$ select public.ai_available('statement')::int $q$, 0);
-select public._expect_value('another kind is unaffected', $q$ select public.ai_available('bill')::int $q$, 1);
+select public._expect_value('using up your own daily cap is not reported here (it shows when the read is refused)',
+  $q$ select (public.take_ai_read('statement')::int + public.take_ai_read('statement')::int + public.take_ai_read('statement')::int) + public.ai_available('statement')::int $q$, 4);
+select public._expect_value('and the read itself is then refused', $q$ select public.take_ai_read('statement')::int $q$, 0);
 
--- The project's ceiling (how the owner's pause works: every ceiling set to 0).
+-- The owner's pause: every ceiling set to 0.
 select public._as_admin();
 insert into private.ai_project_ceilings (feature, per_day) values ('bill', 0)
   on conflict (feature) do update set per_day = 0;
 select public._as('00000000-0000-4000-8000-0000000000b4');
 select public._expect_value('a ceiling of 0 (paused) is not available, for everyone', $q$ select public.ai_available('bill')::int $q$, 0);
-select public._expect_value('and take_ai_read agrees', $q$ select public.take_ai_read('bill')::int $q$, 0);
+select public._expect_value('take_ai_read agrees', $q$ select public.take_ai_read('bill')::int $q$, 0);
+select public._expect_value('another kind is unaffected', $q$ select public.ai_available('quick_add')::int $q$, 1);
 select public._as_admin();
-update private.ai_project_ceilings set per_day = 1 where feature = 'bill';
+update private.ai_project_ceilings set per_day = 5 where feature = 'bill';
 select public._as('00000000-0000-4000-8000-0000000000b4');
-select public._expect_value('ceiling of 1: available until it is used', $q$ select public.ai_available('bill')::int $q$, 1);
-select public._expect_value('one read is taken', $q$ select public.take_ai_read('bill')::int $q$, 1);
-select public._expect_value('then it is not available', $q$ select public.ai_available('bill')::int $q$, 0);
+select public._expect_value('resumed with a ceiling above 0: available again', $q$ select public.ai_available('bill')::int $q$, 1);
 
--- Edges.
 select public._expect_state('an unknown kind is refused', $q$ select public.ai_available('nope') $q$, '22023');
 select public._as_anon();
 select public._expect_denied('signed out cannot call it', $q$ select public.ai_available('bill') $q$);
