@@ -6,6 +6,7 @@ import com.vaibhav.kharchapaani.data.db.entity.SettlementEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitEntity
 import com.vaibhav.kharchapaani.data.db.entity.SplitShareEntity
 import com.vaibhav.kharchapaani.data.db.entity.TransactionEntity
+import com.vaibhav.kharchapaani.domain.Categories
 import com.vaibhav.kharchapaani.domain.allButOwnShareOf
 import com.vaibhav.kharchapaani.domain.coveredBy
 import com.vaibhav.kharchapaani.domain.ownShareOf
@@ -15,7 +16,7 @@ data class ParsedTransactionResult(
     val amount: Double = 0.0,
     val merchant: String = "",
     val category: String = "Other",
-    val paymentMethod: String = "PopUPI",
+    val paymentMethod: String = Categories.DEFAULT_PAYMENT_METHOD,
     val date: Long = System.currentTimeMillis(),
     val note: String = "",
     val splitWithPersonNames: List<String> = emptyList(),
@@ -154,7 +155,7 @@ data class StatementTransactionItem(
     val amount: Double,
     val merchant: String,
     val category: String = "Food",
-    val paymentMethod: String = "PopUPI",
+    val paymentMethod: String = Categories.DEFAULT_PAYMENT_METHOD,
     val note: String = "",
     val isSelected: Boolean = true,
     /** Why the row was left unticked for a second look (StatementChecks), or null. */

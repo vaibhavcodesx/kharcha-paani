@@ -19,51 +19,54 @@ data class CategoryPrefs(
     val defaultCategory: String? = null,
     /** What a new entry is paid with. Null is [Categories.DEFAULT_PAYMENT_METHOD]. */
     val defaultPaymentMethod: String? = null,
-)
+    val lastExpenseChoices: LastEntryChoices? = null,
+    val lastIncomeChoices: LastEntryChoices? = null,
+) {
+    fun lastChoicesFor(type: String): LastEntryChoices? =
+        if (type == "income") lastIncomeChoices else lastExpenseChoices
+}
+
+@Serializable
+data class LastEntryChoices(val category: String?, val paymentMethod: String?)
 
 object Categories {
 
     const val OTHER = "Other"
     const val OTHER_INCOME = "Income (Other)"
     const val MAX_NAME_LENGTH = 24
+    const val DEFAULT_PAYMENT_METHOD = "UPI"
 
-    /**
-     * One list for every picker, the AI prompts and the statement importer. The importer used to offer
-     * Groceries, Investment and Income (Salary), which the rest of the app didn't know, so an imported
-     * grocery run showed with no icon and couldn't be picked again when edited.
-     */
+    /** Shared defaults for new entries, the AI prompts and the statement importer. */
     val defaultExpense = listOf(
-        "Food", "Beverages", "Groceries", "Packaged goods", "Transport", "Shopping", "Self-care",
-        "Bills", "Entertainment", "Health", "Rent", "Investment", "Team Payment", OTHER,
+        "Food", "Transport", "Shopping", "Bills", "Entertainment", "Health", "Rent", "Investment", OTHER,
     )
-    val defaultIncome = listOf("Income (Salary)", "Income (Client)", OTHER_INCOME)
+    val defaultIncome = listOf("Income (Salary)", OTHER_INCOME)
 
     /**
      * Plain "UPI" first: most payments are UPI whichever app sends them, and the list started with one
      * app's name, which new entries then defaulted to. Entries already logged keep theirs.
      */
-    val defaultPaymentMethods = listOf("UPI", "PopUPI", "GPay", "PhonePe", "Paytm", "Debit Card", "Credit Card", "Cash", "Bank Transfer", OTHER)
+    val defaultPaymentMethods = listOf(DEFAULT_PAYMENT_METHOD, "GPay", "PhonePe", "Paytm", "Debit Card", "Credit Card", "Cash", "Bank Transfer", OTHER)
 
     const val DEFAULT_CATEGORY = "Food"
-    const val DEFAULT_PAYMENT_METHOD = "UPI"
-    private const val DEFAULT_INCOME_CATEGORY = "Income (Client)"
+    private const val LEGACY_CLIENT_INCOME = "Income (Client)"
 
-    /**
-     * The category a new entry starts on: the one chosen in settings, or [DEFAULT_CATEGORY] — unless
-     * it has since been hidden or removed, when the first one still offered stands in. An income
-     * entry starts on the usual income category, since the spending default can't be one.
-     */
+    /** Reuse a saved category for this type while it remains available, then use the configured defaults. */
     fun defaultCategory(type: String, prefs: CategoryPrefs): String {
         val choices = categoriesFor(type, prefs)
-        val preferred = if (type == "income") DEFAULT_INCOME_CATEGORY else prefs.defaultCategory ?: DEFAULT_CATEGORY
-        return preferred.takeIf { it in choices } ?: choices.firstOrNull() ?: preferred
+        val preferred = if (type == "income") OTHER_INCOME else prefs.defaultCategory ?: DEFAULT_CATEGORY
+        val remembered = prefs.lastChoicesFor(type)?.category
+        return remembered?.takeIf { it in choices }
+            ?: preferred.takeIf { it in choices } ?: choices.firstOrNull() ?: preferred
     }
 
-    /** The payment method a new entry starts on, with the same fallback as [defaultCategory]. */
-    fun defaultPaymentMethod(prefs: CategoryPrefs): String {
+    /** Reuse a saved method for this type while it remains available. */
+    fun defaultPaymentMethod(prefs: CategoryPrefs, type: String = "expense"): String {
         val choices = paymentMethods(prefs)
         val preferred = prefs.defaultPaymentMethod ?: DEFAULT_PAYMENT_METHOD
-        return preferred.takeIf { it in choices } ?: choices.firstOrNull() ?: preferred
+        val remembered = prefs.lastChoicesFor(type)?.paymentMethod
+        return remembered?.takeIf { it in choices }
+            ?: preferred.takeIf { it in choices } ?: choices.firstOrNull() ?: preferred
     }
 
     /** "Other" is where anything unrecognised lands, so it can't be hidden. */
@@ -82,7 +85,7 @@ object Categories {
         if (type == "income") incomeCategories(prefs) else expenseCategories(prefs)
 
     fun isIncomeCategory(name: String, prefs: CategoryPrefs): Boolean =
-        name in defaultIncome || name in prefs.customIncome
+        name == LEGACY_CLIENT_INCOME || name in defaultIncome || name in prefs.customIncome
 
     /** Custom ones go just before "Other", which stays last. */
     private fun withCustom(shown: List<String>, custom: List<String>): List<String> {

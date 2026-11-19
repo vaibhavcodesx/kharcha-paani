@@ -1,0 +1,60 @@
+name: Admin site
+
+# Checks the owner admin page (site/admin, a Vite + React + TypeScript app deployed to Vercel).
+# It runs only when that folder changes, so other pull requests are not slowed down.
+# Design: docs/designs/admin-page.md (section 0).
+
+on:
+  pull_request:
+    paths:
+      - 'site/admin/**'
+      - '.github/workflows/admin-site.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: admin-site-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# Actions are pinned to a commit, not a tag: a tag can be moved to different code after review.
+# The runner's own Node is used, so no extra third-party action is needed.
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: site/admin
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Node version
+        run: node --version && npm --version
+
+      # Exact lockfile, and no package install scripts: a dependency cannot run code on the runner while installing.
+      - name: Install
+        run: npm ci --ignore-scripts
+
+      # The page renders text that users chose (names, emails). These APIs would turn it into markup or code.
+      - name: Forbidden APIs
+        run: |
+          if grep -rnE "dangerouslySetInnerHTML|innerHTML|insertAdjacentHTML|outerHTML|document\.write|eval\(|new Function\(" src; then
+            echo "A forbidden API is used in src (see docs/designs/admin-page.md, section 2)."
+            exit 1
+          fi
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: No source maps or secrets in the build
+        run: |
+          if find dist -name '*.map' | grep -q .; then echo "source maps in dist"; exit 1; fi
+          # The client library mentions the "sb_secret_" prefix in its own code, so look for a real key value, not the word.
+          if grep -rnE "sb_secret_[A-Za-z0-9_-]{16,}|SUPABASE_SERVICE_ROLE_KEY" dist; then echo "a secret key appears in dist"; exit 1; fi

@@ -1,5 +1,8 @@
 package com.vaibhav.kharchapaani.ui.components
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
@@ -38,6 +41,44 @@ class PersonLedgerLazyTest {
         compose.onNodeWithText("Rohan").assertExists()
         compose.onNodeWithText("History · 0").assertExists()
         compose.onNodeWithText("No splits or settlements with Rohan yet.").assertExists()
+    }
+
+    @Test
+    fun `history loading state does not flash empty sentence, empty list shows it, and items show neither`() {
+        var itemsState by mutableStateOf<List<PersonLedgerItem>?>(null)
+
+        compose.setContent {
+            SplitFlowTheme {
+                PersonLedgerContent(
+                    person = testPerson,
+                    ledgerItems = itemsState,
+                    onSettleUp = {},
+                )
+            }
+        }
+
+        // 1. While loading (itemsState == null): header exists, empty text does NOT exist
+        compose.onNodeWithText("Rohan").assertExists()
+        compose.onNodeWithText("No splits or settlements with Rohan yet.").assertDoesNotExist()
+
+        // 2. Loaded with empty list: empty text exists
+        itemsState = emptyList()
+        compose.onNodeWithText("No splits or settlements with Rohan yet.").assertExists()
+
+        // 3. Loaded with items: item exists, empty text does NOT exist
+        itemsState = listOf(
+            PersonLedgerItem(
+                id = "item_1",
+                date = 1700000000000L,
+                title = "Dinner",
+                subtitle = "Paid by you, split equally",
+                amount = 100.0,
+                netChange = 50.0,
+                isSettlement = false,
+            )
+        )
+        compose.onNodeWithText("Dinner").assertExists()
+        compose.onNodeWithText("No splits or settlements with Rohan yet.").assertDoesNotExist()
     }
 
     @Test

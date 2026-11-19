@@ -81,6 +81,7 @@ import com.vaibhav.kharchapaani.domain.MerchantVisits
 import com.vaibhav.kharchapaani.data.db.entity.PersonEntity
 import java.time.YearMonth
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
+import com.vaibhav.kharchapaani.ui.sync.SyncUpdateNotice
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
@@ -158,6 +159,7 @@ fun HomeScreen(
     syncStatus: SyncStatus = SyncStatus(),
     onShowMessage: (String) -> Unit = {},
     onAiOff: (com.vaibhav.kharchapaani.ui.viewmodel.AiFeature) -> Unit = {},
+    guardAi: (com.vaibhav.kharchapaani.ui.viewmodel.AiFeature, () -> Unit) -> Unit = { _, go -> go() },
     onRequestSync: () -> Unit = {},
     localOnly: Boolean = false,
     /** The place of a bill split by items left unfinished ("" when it has none), or null. */
@@ -181,7 +183,7 @@ fun HomeScreen(
         localOnly = localOnly,
     ) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().testTag("home_activity_list"),
             contentPadding = PaddingValues(start = Spacing.page, end = Spacing.page, top = Spacing.l, bottom = dockClearance()),
         ) {
         item(key = "balance") {
@@ -192,6 +194,14 @@ fun HomeScreen(
                 onOpenAccount = onOpenAccount,
                 syncStatus = syncStatus,
             )
+        }
+        if (!localOnly) {
+            item(key = "sync_update") {
+                SyncUpdateNotice(
+                    modifier = Modifier.padding(top = Spacing.l),
+                    onLinkUnavailable = onShowMessage,
+                )
+            }
         }
         item(key = "month") {
             MonthStrip(
@@ -228,6 +238,7 @@ fun HomeScreen(
                 onCaptureFailed = onShowMessage,
                 onVoiceCaptureStarted = onVoiceCaptureStarted,
                 onAiOff = onAiOff,
+                guardAi = guardAi,
                 modifier = Modifier.padding(top = Spacing.xl),
             )
         }

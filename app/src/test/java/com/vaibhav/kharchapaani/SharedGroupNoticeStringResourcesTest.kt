@@ -60,10 +60,14 @@ class SharedGroupNoticeStringResourcesTest {
     @Test fun `offline group preview keeps its recovery message and writes nothing`(): Unit = runBlocking {
         val remote = object : GroupMembershipRemote {
             override suspend fun createInvite(groupRemoteId: String): GroupInvite = error("Not used")
-            override suspend fun activeInvites(groupRemoteId: String): List<GroupInvite> = error("Not used")
+            override suspend fun activeInvite(groupRemoteId: String, creatorProfileId: String, code: String?): GroupInvite? =
+                error("Not used")
             override suspend fun revokeInvite(code: String): Unit = error("Not used")
             override suspend fun previewInvite(code: String): InvitePreview? = throw IOException("offline")
             override suspend fun joinGroup(code: String): String = error("Not used")
+            override suspend fun resetInvite(groupRemoteId: String): GroupInvite? = error("Not used")
+            override suspend fun supportsInviteLimits(groupRemoteId: String): Boolean = error("Not used")
+            override suspend fun removeMember(groupRemoteId: String, memberProfileId: String): Unit = error("Not used")
             override suspend fun leaveGroup(groupRemoteId: String, selfProfileId: String): Unit = error("Not used")
         }
         val controller = SharedGroupsController(screen, LedgerRepository(db), remote,

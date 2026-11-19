@@ -48,6 +48,7 @@ import com.vaibhav.kharchapaani.ui.format.Money
 import com.vaibhav.kharchapaani.ui.icons.KpIcons
 import com.vaibhav.kharchapaani.ui.theme.CharcoalBg
 import com.vaibhav.kharchapaani.ui.theme.CharcoalCard
+import com.vaibhav.kharchapaani.ui.theme.DeleteActionRed
 import com.vaibhav.kharchapaani.ui.theme.ChartreuseSecondary
 import com.vaibhav.kharchapaani.ui.theme.KpShapes
 import com.vaibhav.kharchapaani.ui.theme.MoneyText
@@ -249,7 +250,7 @@ private fun SwipeReveal(background: Color, content: Color, icon: ImageVector, la
 }
 
 // 4.8:1 behind OffWhite label text.
-private val DeleteRed = Color(0xFFC62F2F)
+private val DeleteRed = DeleteActionRed
 
 /** How far a row must be dragged before letting go deletes or edits it. */
 internal object SwipeCommit {

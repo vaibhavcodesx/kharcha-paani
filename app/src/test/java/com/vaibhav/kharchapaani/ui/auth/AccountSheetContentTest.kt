@@ -1,5 +1,7 @@
 package com.vaibhav.kharchapaani.ui.auth
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -7,10 +9,13 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
+import com.vaibhav.kharchapaani.BuildConfig
 import com.vaibhav.kharchapaani.data.auth.AuthState
 import com.vaibhav.kharchapaani.data.auth.Profile
+import com.vaibhav.kharchapaani.data.sync.SyncPassStatus
 import com.vaibhav.kharchapaani.ui.sync.SyncStatus
 import com.vaibhav.kharchapaani.ui.theme.SplitFlowTheme
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -30,12 +35,16 @@ class AccountSheetContentTest {
     private var askChanges = mutableListOf<Boolean>()
     private var exportOpened = false
 
-    private fun show(profile: ProfileState = ProfileState.Loaded(Profile(id = "u1", displayName = "Priya"))) {
+    private fun show(
+        profile: ProfileState = ProfileState.Loaded(Profile(id = "u1", displayName = "Priya")),
+        lastSyncError: String? = null,
+    ) {
         composeTestRule.setContent {
             SplitFlowTheme {
                 AccountSheetContent(
                     state = AuthUiState(authState = signedIn, profile = profile),
                     syncStatus = SyncStatus(),
+                    lastSyncError = lastSyncError,
                     askBeforeDiscarding = true,
                     onSaveProfile = { name, emoji -> saved = name to emoji },
                     onAskBeforeDiscardingChange = { askChanges += it },
@@ -46,6 +55,39 @@ class AccountSheetContentTest {
                 )
             }
         }
+    }
+
+    private val versionPreferences
+        get() = ApplicationProvider.getApplicationContext<Context>()
+            .getSharedPreferences("app_version_gate", Context.MODE_PRIVATE)
+
+    @After
+    fun clearGate() {
+        versionPreferences.edit().clear().commit()
+    }
+
+    @Test
+    fun `required update appears in Settings and export remains usable`() {
+        versionPreferences.edit().putInt("min_version_code", BuildConfig.VERSION_CODE + 1).commit()
+        show()
+
+        composeTestRule.onNodeWithText("Update Kharcha Paani to keep syncing.").assertExists()
+        composeTestRule.onNodeWithTag("setting_export").performScrollTo().performClick()
+        assertEquals(true, exportOpened)
+    }
+
+    @Test
+    fun `the required update banner stays hidden with no minimum`() {
+        versionPreferences.edit().clear().commit()
+        show()
+
+        composeTestRule.onNodeWithText("Update Kharcha Paani to keep syncing.").assertDoesNotExist()
+    }
+
+    @Test
+    fun `the last sync error is displayed as a friendly reason`() {
+        show(lastSyncError = SyncPassStatus.OFFLINE)
+        composeTestRule.onNodeWithText("Last sync failed: Couldn’t connect.").assertExists()
     }
 
     @Test
