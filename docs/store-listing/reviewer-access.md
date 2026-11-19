@@ -32,7 +32,7 @@ AI reads)."
 > Google asks you to choose an account; use these credentials only when Google asks to add an account.
 > Email: <email>  Password: <password>
 > No sign-in is needed for the core: tap "Use without signing in".
-> AI reads: tap the camera in the add bar for a bill photo, or the microphone for voice (the app explains the
+> AI reads: tap "Bill photo" on Home to read a bill, or the microphone bar for voice entry (the app explains the
 > microphone before asking). AI can be turned off in Settings, and the app keeps working.
 > Delete account: Settings > Delete my account. The web path is https://vaibhavcodesx.github.io/kharcha-paani-site/delete-account.html
 > Money: the app does not hold or move money. Paying opens the person's own UPI app.
