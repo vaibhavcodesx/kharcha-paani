@@ -80,3 +80,8 @@
 .log-target, .log-change { display: block; color: var(--muted); font-size: 14px; }
 .log-change { color: var(--fg); }
 @media (max-width: 480px) { .log li { grid-template-columns: 1fr; gap: var(--s-1); } }
+
+.searchnote { margin: calc(-1 * var(--s-2)) 0 var(--s-5); color: var(--muted); font-size: 14px; }
+.searchnote .linkbtn { min-height: 40px; }
+.field.paths { height: auto; min-height: 0; padding: var(--s-3) var(--s-4); font: 13px/1.5 var(--font-num); resize: vertical; white-space: pre; overflow: auto; }
+.facts dd .num { font-weight: 600; }

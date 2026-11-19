@@ -1,6 +1,7 @@
 // A stand-in for src/supabase.ts, used only by `npm run dev:mock` (vite.preview.config.ts). It signs in a fake owner
 // and answers the admin functions with sample data that changes as you use it, so every screen and every control
-// can be tried without a backend. Variants through the address: ?paused, ?leftover, ?empty, ?slow, ?error.
+// can be tried without a backend. Variants through the address: ?paused, ?leftover, ?empty, ?slow, ?error, ?stale
+// (a deletion that needs a fresh sign-in), ?cleanfail (photo removal that only half works).
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 const q = new URLSearchParams(window.location.search)
@@ -107,6 +108,22 @@ function handle(fn: string, a: Record<string, unknown> = {}) {
       const before = a.p_before as number | null
       return ok(audit.filter((r) => before === null || r.id < before).slice(0, Number(a.p_limit ?? 50)))
     }
+    case 'admin_find_account': {
+      const p = people.find((x) => (x.email ?? '').toLowerCase() === String(a.p_email ?? '').trim().toLowerCase() && !x.deleted)
+      return ok(p ? [{ user_id: p.user_id, email: p.email, display_name: p.display_name, created_at: p.created_at, last_sign_in_at: p.last_sign_in_at, deleted: false, groups: p.groups, groups_created: p.groups > 0 ? 1 : 0, heirs: p.groups > 0 ? [{ group: 'Goa trip', heir: 'Ravi K' }] : [], photos: p.photos }] : [])
+    }
+    case 'admin_delete_account': {
+      if (q.has('stale')) return bad('42501', 'not an admin')
+      const p = people.find((x) => x.user_id === a.p_user)
+      if (!p) return bad('P0002', 'no such person')
+      if ((p.email ?? '').toLowerCase() !== String(a.p_confirm_email ?? '').trim().toLowerCase()) return bad('22023', 'the typed email does not match')
+      log('delete_account', null, { groups: p.groups, photos: p.photos }, { keep_name: a.p_keep_name }, p.user_id)
+      p.deleted = true
+      p.email = null
+      p.display_name = a.p_keep_name ? p.display_name : 'Former member'
+      return ok([{ leftover_paths: Array.from({ length: p.photos }, (_, i) => `${p.user_id}/tx${i}/photo.webp`) }])
+    }
+    case 'admin_record_photo_cleanup': log('photo_cleanup', null, null, { removed: a.p_removed, still_left: 0 }, String(a.p_user)); return ok(0)
     default: return bad('PGRST202', 'not found')
   }
 }
@@ -119,6 +136,13 @@ export const supabase = {
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
     signOut: async () => ({ error: null }),
     signInWithOAuth: async () => ({ error: null }),
+  },
+  storage: {
+    from: () => ({
+      remove: async (paths: string[]) => (q.has('cleanfail')
+        ? { data: paths.slice(0, 1).map((name) => ({ name })), error: null }
+        : { data: paths.map((name) => ({ name })), error: null }),
+    }),
   },
   rpc: async (fn: string, args?: Record<string, unknown>) => {
     if (q.has('slow')) await new Promise((r) => setTimeout(r, 4000))
