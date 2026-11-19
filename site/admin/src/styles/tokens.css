@@ -1,0 +1,115 @@
+/* Design tokens. Dark values are the app's own (ui/theme/Color.kt); light values are the public site's set,
+   adjusted so every text pair reaches 4.5:1. Dark follows the system; [data-theme] overrides it. */
+
+@font-face { font-family: 'Outfit'; src: url('/fonts/outfit_variable.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/plus_jakarta_sans_variable.ttf') format('truetype'); font-weight: 200 800; font-display: swap; }
+@font-face { font-family: 'Space Grotesk'; src: url('/fonts/space_grotesk_variable.ttf') format('truetype'); font-weight: 300 700; font-display: swap; }
+
+:root {
+  color-scheme: light dark;
+
+  --font-display: 'Outfit', system-ui, sans-serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-num: 'Space Grotesk', ui-monospace, system-ui, sans-serif;
+
+  /* Space: a 4px scale. */
+  --s-1: 2px; --s-2: 4px; --s-3: 8px; --s-4: 12px; --s-5: 16px; --s-6: 24px; --s-7: 32px; --s-8: 48px; --s-9: 72px;
+  --gutter: 20px;
+
+  /* Shape. The leaf is the app's primary-action shape. */
+  --r-s: 12px; --r-m: 18px; --r-l: 28px; --r-sheet: 32px;
+  --leaf: 22px 8px 22px 8px;
+
+  /* Motion (Motion.kt). */
+  --ease-in: cubic-bezier(.05, .7, .1, 1);
+  --ease-out: cubic-bezier(.3, 0, .8, .15);
+  --t-in: 320ms; --t-out: 180ms;
+
+  --dock-h: 72px;
+
+  /* Dark (default). */
+  --bg: #0E0D0C;
+  --surface: #181615;
+  --card: #1E1C1A;
+  --raised: #22201D;
+  --line: #2E2B27;
+  --outline: #726D65;
+  --track: #423E37;
+  --fg: #F4F0E8;
+  --muted: #A09A8F;
+  --faint: #8D887E;
+  --accent: #FF7A3D;
+  --accent-text: #FF9B6A;
+  --accent-soft: rgb(255 122 61 / .16);
+  --on-accent: #1A0D06;
+  --ok: #C6F24C;
+  --danger: #FF6F61;
+  --gold: #FFB547;
+  --glass-tint: rgb(14 13 12 / .68);
+  --glass-lift: rgb(255 255 255 / .06);
+  --glass-rim: rgb(255 255 255 / .09);
+  --shadow: 0 1px 0 rgb(255 255 255 / .04) inset, 0 18px 40px -18px rgb(0 0 0 / .7);
+  --selection: rgb(255 122 61 / .38);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --bg: #FBF9F6;
+    --surface: #F6F2EC;
+    --card: #FFFFFF;
+    --raised: #F3EFE8;
+    --line: #E6DFD4;
+    --outline: #8A8176;
+    --track: #E2DACD;
+    --fg: #1F1D1A;
+    --muted: #5F584F;
+    --faint: #6E665B;
+    --accent: #C4501C;
+    --accent-text: #B04716;
+    --accent-soft: #FBE9DF;
+    --on-accent: #FFFFFF;
+    --ok: #2F7D4F;
+    --danger: #B83A2E;
+    --gold: #8F5800;
+    --glass-tint: rgb(251 249 246 / .72);
+    --glass-lift: rgb(255 255 255 / .5);
+    --glass-rim: rgb(31 29 26 / .08);
+    --shadow: 0 1px 0 rgb(255 255 255 / .8) inset, 0 14px 32px -20px rgb(60 40 20 / .35);
+    --selection: rgb(196 80 28 / .24);
+  }
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #FBF9F6;
+  --surface: #F6F2EC;
+  --card: #FFFFFF;
+  --raised: #F3EFE8;
+  --line: #E6DFD4;
+  --outline: #8A8176;
+  --track: #E2DACD;
+  --fg: #1F1D1A;
+  --muted: #5F584F;
+  --faint: #6E665B;
+  --accent: #C4501C;
+  --accent-text: #B04716;
+  --accent-soft: #FBE9DF;
+  --on-accent: #FFFFFF;
+  --ok: #2F7D4F;
+  --danger: #B83A2E;
+  --gold: #8F5800;
+  --glass-tint: rgb(251 249 246 / .72);
+  --glass-lift: rgb(255 255 255 / .5);
+  --glass-rim: rgb(31 29 26 / .08);
+  --shadow: 0 1px 0 rgb(255 255 255 / .8) inset, 0 14px 32px -20px rgb(60 40 20 / .35);
+  --selection: rgb(196 80 28 / .24);
+}
+
+:root[data-theme='dark'] { color-scheme: dark; }
+
+@media (min-width: 900px) {
+  :root { --gutter: 32px; }
+}
+@media (max-width: 359px) {
+  :root { --gutter: 16px; }
+}
