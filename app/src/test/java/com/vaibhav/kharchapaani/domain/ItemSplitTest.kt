@@ -10,6 +10,7 @@ import kotlinx.serialization.json.long
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.random.Random
 
 /**
  * The split-by-items arithmetic. The cases live in item-split-vectors.json because the page friends
@@ -71,6 +72,30 @@ class ItemSplitTest {
             val amounts = ItemSplitMath.finalAmounts(split)
             assertEquals(case.jsonObject.getValue("name").jsonPrimitive.content, split.totalPaise, amounts.values.sum())
             assertTrue("nobody ends up owed money by the bill", amounts.values.all { it >= 0 })
+        }
+    }
+
+    @Test
+    fun `random bills conserve every paisa across charges discounts and unpicked items`() {
+        val random = Random(362)
+        repeat(500) { case ->
+            val people = List(random.nextInt(2, 9)) { SplitPerson("person-$it", "Guest $it") }
+            val items = List(random.nextInt(1, 101)) { index ->
+                SplitItem("item-$index", "Item $index", random.nextInt(1, 9), random.nextLong(1, 250_001))
+            }
+            val claims = items.flatMap { item ->
+                people.shuffled(random).take(random.nextInt(people.size + 1)).map { person ->
+                    SplitClaim(item.id, person.id, random.nextInt(1, item.quantity + 1))
+                }
+            }
+            val subtotal = items.sumOf { it.amountPaise }
+            val extras = random.nextLong(-subtotal, subtotal + 1)
+            val total = subtotal + extras
+            val amounts = ItemSplitMath.finalAmounts(ItemSplit(total, items, people, claims))
+
+            assertEquals("case $case", total, amounts.values.sum())
+            assertEquals("case $case: one share per person", people.map { it.id }.toSet(), amounts.keys)
+            assertTrue("case $case: no negative shares", amounts.values.all { it >= 0 })
         }
     }
 

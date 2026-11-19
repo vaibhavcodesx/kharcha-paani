@@ -56,6 +56,7 @@ class ItemSplitSheetTest {
         onStopSharing = {},
         onSendLink = { sentLinks += it },
         onUse = { used++ },
+        onCancelRead = {},
     )
 
     /** Toit: biryani ₹200 (Rohan's), two naan ₹100 (mine), water ₹30 nobody has picked, and 10% tax on top: ₹363. */

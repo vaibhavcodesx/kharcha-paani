@@ -171,6 +171,19 @@ class GeminiAiPathsTest {
     }
 
     @Test
+    fun `item reading uses the bill quota and does not retry a daily cap`() = runTest {
+        val categories = mutableListOf<String?>()
+        val reader = repo { chain ->
+            categories += chain.request().header(GeminiRepository.FEATURE_HEADER)
+            respond(429, """{"error":{"code":429,"status":"DAILY_CAP"}}""")(chain)
+        }
+        val receipt = Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888)
+
+        assertEquals(BillItemsReadResult.Failed(AiFailure.DailyLimit), reader.readBillItems(receipt))
+        assertEquals(listOf("bill"), categories)
+    }
+
+    @Test
     fun `no session to send it with reads as offline, and nothing is sent`() = runTest {
         var called = false
         val repo = GeminiRepository(
