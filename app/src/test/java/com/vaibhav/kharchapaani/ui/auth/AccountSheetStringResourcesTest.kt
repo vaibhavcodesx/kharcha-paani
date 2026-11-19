@@ -113,7 +113,7 @@ class AccountSheetStringResourcesTest {
         assertEquals("Off for Kharcha Paani", resources.getString(R.string.account_setting_notifications_off))
         assertEquals("Payments to confirm, and a reminder at 9:00 PM", resources.getString(R.string.account_setting_notifications_reminder_and_payments, "9:00 PM"))
         assertEquals("Payments to confirm", resources.getString(R.string.account_setting_notifications_payments_only))
-        assertEquals("Your data", resources.getString(R.string.account_eyebrow_data))
+        assertEquals("Privacy and data", resources.getString(R.string.account_eyebrow_data))
         assertEquals("Export to a spreadsheet", resources.getString(R.string.account_setting_export_title))
         assertEquals("A month, dates or everything, as CSV", resources.getString(R.string.account_setting_export_detail))
         assertEquals("Export everything", resources.getString(R.string.full_backup_ui_export_title))
@@ -122,7 +122,7 @@ class AccountSheetStringResourcesTest {
 
     @Test
     fun `account help and reminder string resources match exact copy`() {
-        assertEquals("Help & about", resources.getString(R.string.account_eyebrow_help))
+        assertEquals("About", resources.getString(R.string.account_eyebrow_help))
         assertEquals("Send feedback", resources.getString(R.string.account_help_feedback_title))
         assertEquals("Privacy policy", resources.getString(R.string.account_help_privacy_title))
         assertEquals("Terms of use", resources.getString(R.string.account_help_terms_title))

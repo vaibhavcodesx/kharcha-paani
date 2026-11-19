@@ -6,7 +6,7 @@ Room table); the Lead merges it under the 3a conditions in `docs/agents/PLAYBOOK
 
 ## What the person sees
 
-- **Settings > Budgets** (the Settings split is issue #327; until it lands, a "Budgets" row in the Account sheet):
+- **Settings > Budgets**:
   one row per expense category with a monthly amount field. An empty field means no budget. A first row, **Total
   per month**, is optional. The field's hint shows last month's spend for that category ("Last month: 3,100") so
   a person can set something real in a few seconds.

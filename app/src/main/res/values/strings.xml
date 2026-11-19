@@ -1118,6 +1118,8 @@
     <!-- Account Settings, Data, Colour & Help -->
     <string name="account_backup_explanation">Your expenses back up to your account and work offline, splits and IOUs included. Shared groups sync with everyone in them.</string>
     <string name="account_eyebrow_settings">Settings</string>
+    <string name="account_eyebrow_notifications">Notifications</string>
+    <string name="account_eyebrow_ai">AI</string>
     <string name="account_setting_upi_title">UPI ID for getting paid</string>
     <string name="account_setting_upi_empty">Add yours so friends can scan to pay you</string>
     <string name="account_setting_upi_click_label">Set up UPI</string>
@@ -1134,12 +1136,12 @@
     <string name="account_setting_notifications_reminder_and_payments">Payments to confirm, and a reminder at %1$s</string>
     <string name="account_setting_notifications_payments_only">Payments to confirm</string>
     <string name="account_setting_notifications_click_label">Open notification settings</string>
-    <string name="account_eyebrow_data">Your data</string>
+    <string name="account_eyebrow_data">Privacy and data</string>
     <string name="account_setting_export_title">Export to a spreadsheet</string>
     <string name="account_setting_export_detail">A month, dates or everything, as CSV</string>
     <string name="account_setting_export_click_label">Open export</string>
     <string name="account_help_no_browser">No browser on this phone. The page is at %1$s</string>
-    <string name="account_eyebrow_help">Help &amp; about</string>
+    <string name="account_eyebrow_help">About</string>
     <string name="account_help_feedback_title">Send feedback</string>
     <string name="account_help_feedback_detail">Something wrong, or an idea? It goes to the person who makes the app</string>
     <string name="account_help_feedback_click_label">Write feedback by email</string>
