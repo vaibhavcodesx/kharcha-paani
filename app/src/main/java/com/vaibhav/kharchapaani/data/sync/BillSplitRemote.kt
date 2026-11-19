@@ -82,14 +82,14 @@ class SupabaseBillSplitRemote(private val supabase: SupabaseClient) : BillSplitR
         val payload = buildJsonObject {
             put("id", id)
             put("title", title)
-            put("host_name", hostName)
+            put("host_name", firstName(hostName))
             put("total_paise", split.totalPaise)
             putItems(split.items)
             put("people", buildJsonArray {
                 split.people.forEach { person ->
                     add(buildJsonObject {
                         put("id", person.id)
-                        put("name", person.name)
+                        put("name", firstName(person.name))
                         put("is_host", person.isHost)
                     })
                 }
@@ -126,7 +126,7 @@ class SupabaseBillSplitRemote(private val supabase: SupabaseClient) : BillSplitR
     override suspend fun addPerson(token: String, personId: String, name: String): Pair<String, RemoteBillSplit> = refusing {
         val reply = json.decodeFromString<JoinReply>(rpc("bill_split_join", buildJsonObject {
             put("p_token", token)
-            put("p_name", name)
+            put("p_name", firstName(name))
             put("p_person_id", personId)
         }))
         reply.personId to reply.split
@@ -155,6 +155,8 @@ class SupabaseBillSplitRemote(private val supabase: SupabaseClient) : BillSplitR
 
     private suspend fun rpc(function: String, parameters: JsonObject): String =
         supabase.postgrest.rpc(function, parameters).data
+
+    private fun firstName(name: String): String = FIRST_NAME.find(name)?.value.orEmpty()
 
     private fun JsonObjectBuilder.putItems(items: List<SplitItem>) {
         put("items", buildJsonArray {
@@ -185,6 +187,7 @@ class SupabaseBillSplitRemote(private val supabase: SupabaseClient) : BillSplitR
     }
 
     private companion object {
+        val FIRST_NAME = Regex("""[^\s\p{Z}\p{Cc}]+""")
         val REFUSALS = listOf("not_open", "too_many_people", "too_many_splits", "name_taken", "bad_name", "bad_request", "not_allowed")
     }
 }

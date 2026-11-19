@@ -207,9 +207,10 @@ function rupees(paise) {
 const token = location.hash.replace(/^#/, "");
 const storeKey = "kp-split-" + token;
 const app = document.getElementById("app");
-const state = { split: null, ended: false, me: remembered(), nameDraft: "", problem: "", switching: false, toast: "", offline: false };
+const state = { split: null, ended: false, me: remembered(), nameDraft: "", problem: "", switching: false, joining: false, toast: "", offline: false };
 let writes = 0; // Counts writes, so a poll that started before one can't overwrite its result.
 let toastTimer = 0;
+let pendingJoin = null;
 
 function remembered() {
   try { return localStorage.getItem(storeKey); } catch (e) { return null; }
@@ -251,6 +252,10 @@ function h(tag, props, ...children) {
   return el;
 }
 
+function firstName(name) {
+  return (name || "").match(/[^\s\x00-\x1f\x7f]+/)?.[0] || "";
+}
+
 function take(split) {
   if (!split) {
     state.ended = true;
@@ -259,7 +264,16 @@ function take(split) {
   }
   // Replies can arrive out of order; the server counts every change, so the higher count wins.
   if (state.split && split.version < state.split.version) return;
-  state.split = split;
+  // Links made before the server change can still carry the original names.
+  const occurrences = new Map();
+  const people = split.people.map((person) => {
+    const name = firstName(person.name);
+    const key = name.toLowerCase();
+    const number = (occurrences.get(key) || 0) + 1;
+    occurrences.set(key, number);
+    return { ...person, name: number === 1 ? name : name + " " + number };
+  });
+  state.split = { ...split, host_name: firstName(split.host_name), people };
   if (state.me && !split.people.some((p) => p.id === state.me && !p.is_host)) remember(null);
 }
 
@@ -272,7 +286,7 @@ function showToast(text) {
 function explain(error) {
   switch (error.reason) {
     case "offline": return "Couldn't reach the bill. Check your connection and try again.";
-    case "name_taken": return "That's " + state.split.host_name + "'s name here. Add an initial so we can tell you two apart.";
+    case "name_taken": return "That name is already on this bill. Tap it if it’s yours, or ask the host to add you.";
     case "too_many_people": return "This table is full: 30 people is the most a bill can take.";
     case "bad_name": return "Type your name first.";
     default: return "That didn't go through. Try again.";
@@ -326,18 +340,30 @@ async function write(fn, args, optimistic) {
 }
 
 async function join(name) {
+  const label = firstName(name);
+  if (!label || state.joining) return;
+  if (pendingJoin?.label !== label) pendingJoin = { label, id: crypto.randomUUID() };
+  const { id } = pendingJoin;
   state.problem = "";
+  state.joining = true;
+  render();
   try {
-    const reply = await write("bill_split_join", { p_name: name });
-    if (reply) {
-      remember(reply.person_id);
+    const reply = await write("bill_split_join", { p_name: label, p_person_id: id });
+    if (reply?.person_id === id) {
+      remember(id);
       state.nameDraft = "";
       state.switching = false;
+      pendingJoin = null;
+    } else if (reply) {
+      state.problem = explain({ reason: "name_taken" });
     }
   } catch (e) {
+    // The server may have added this guest before the reply was lost. Retry the same id.
     state.problem = explain(e);
+  } finally {
+    state.joining = false;
+    render();
   }
-  render();
 }
 
 function pick(itemId, weight) {
@@ -391,22 +417,22 @@ function whoAreYou(split, me) {
   const others = split.people.filter((p) => !p.is_host);
   const submit = (event) => {
     event.preventDefault();
-    if (state.nameDraft.trim()) join(state.nameDraft);
+    join(state.nameDraft);
   };
   return [
     h("p", { class: "lede" }, split.host_name + " is splitting this bill by who had what. Say who you are, then tap your items."),
     others.length > 0 && h("h2", null, "Already here? Tap your name"),
     others.length > 0 && h("div", { class: "names" }, others.map((p) =>
-      h("button", { class: "chip", type: "button", onclick: () => { remember(p.id); state.switching = false; state.problem = ""; render(); } }, p.name))),
+      h("button", { class: "chip", type: "button", disabled: state.joining, onclick: () => { remember(p.id); state.switching = false; state.problem = ""; render(); } }, p.name))),
     h("h2", null, others.length > 0 ? "Or add yourself" : "Your name"),
     h("form", { class: "field", onsubmit: submit },
       h("input", {
-        id: "name", type: "text", autocomplete: "given-name", maxLength: 40, placeholder: "First name", value: state.nameDraft, "aria-label": "Your name",
-        oninput: (event) => { state.nameDraft = event.target.value; document.getElementById("join").disabled = !state.nameDraft.trim(); },
+        id: "name", type: "text", autocomplete: "given-name", maxLength: 40, placeholder: "First name", value: state.nameDraft, disabled: state.joining, "aria-label": "Your name",
+        oninput: (event) => { state.nameDraft = event.target.value; document.getElementById("join").disabled = !firstName(state.nameDraft); },
       }),
-      h("button", { id: "join", class: "primary", type: "submit", disabled: !state.nameDraft.trim() }, "Join")),
+      h("button", { id: "join", class: "primary", type: "submit", disabled: state.joining || !firstName(state.nameDraft) }, "Join")),
     state.problem && h("p", { class: "problem", role: "alert" }, state.problem),
-    me && h("button", { class: "quiet", type: "button", onclick: () => { state.switching = false; render(); } }, "Back to " + me.name + "'s picks"),
+    me && h("button", { class: "quiet", type: "button", disabled: state.joining, onclick: () => { state.switching = false; render(); } }, "Back to " + me.name + "'s picks"),
     footer(),
   ];
 }

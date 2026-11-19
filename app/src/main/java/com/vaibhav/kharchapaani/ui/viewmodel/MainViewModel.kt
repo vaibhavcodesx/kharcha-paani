@@ -1168,13 +1168,14 @@ class MainViewModel(
                 val paise = amounts[person.id] ?: 0L
                 if (paise <= 0L) continue
                 val known = person.ledgerId
+                val ledgerName = person.ledgerName ?: person.name
                 val ledgerId = when {
                     person.isHost -> -1L
                     known != null && _shares.value.any { it.personId == known } -> known
-                    else -> _shares.value.firstOrNull { it.personId != -1L && it.personName.equals(person.name, ignoreCase = true) }?.personId
-                        ?: people.value.firstOrNull { it.name.equals(person.name, ignoreCase = true) }?.id
-                        ?: newFriendFor(person.name).also { id ->
-                            added += ShareInput(personId = id, personName = person.name, isGuest = isSharedGroup(_groupId.value))
+                    else -> _shares.value.firstOrNull { it.personId != -1L && it.personName.equals(ledgerName, ignoreCase = true) }?.personId
+                        ?: people.value.firstOrNull { it.name.equals(ledgerName, ignoreCase = true) }?.id
+                        ?: newFriendFor(ledgerName).also { id ->
+                            added += ShareInput(personId = id, personName = ledgerName, isGuest = isSharedGroup(_groupId.value))
                         }
                 }
                 owed[ledgerId] = (owed[ledgerId] ?: 0L) + paise

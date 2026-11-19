@@ -33,6 +33,8 @@ data class SplitPerson(
     val isHost: Boolean = false,
     val done: Boolean = false,
     val ledgerId: Long? = null,
+    /** The original name entered on this phone, when a shared label replaces it. */
+    val ledgerName: String? = null,
 )
 
 /** [personId] had [weight] parts of [itemId]: two of the three naan is weight 2. */

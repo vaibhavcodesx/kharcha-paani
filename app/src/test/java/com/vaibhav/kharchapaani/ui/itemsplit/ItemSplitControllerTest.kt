@@ -131,6 +131,10 @@ class ItemSplitControllerTest {
             change { it.copy(claims = it.claims.filterNot { c -> c.itemId == itemId && c.personId == personId } + RemoteBillClaim(itemId, personId, weight)) }
         }
 
+        fun relabel(personId: String, label: String) {
+            change { it.copy(people = it.people.map { p -> if (p.id == personId) p.copy(name = label) else p }) }
+        }
+
         fun friendIsDone(personId: String) {
             change { it.copy(people = it.people.map { p -> if (p.id == personId) p.copy(done = true) else p }) }
         }
@@ -381,6 +385,25 @@ class ItemSplitControllerTest {
         assertEquals(listOf(7L, 8L), draft.people.filter { it.name == "Rohan" }.map { it.ledgerId })
         assertEquals(setOf(first, second), draft.claims.map { it.personId }.toSet())
         assertEquals(dinner.totalPaise, ItemSplitMath.finalAmounts(draft.split).values.sum())
+    }
+
+    @Test
+    fun `a shared first-name label keeps the host's local name for the ledger`() = runTest {
+        val table = FakeTable()
+        val controller = controller(table)
+        controller.open(dinner, null)
+        controller.withTheBill()
+        controller.addPerson("Rohan Das")
+        val personId = controller.draft().activePersonId
+        controller.share()
+        settle()
+
+        table.relabel(personId, "Rohan 2")
+        settle(2_500)
+
+        val guest = controller.draft().people.single { it.id == personId }
+        assertEquals("Rohan 2", guest.name)
+        assertEquals("Rohan Das", guest.ledgerName)
     }
 
     @Test

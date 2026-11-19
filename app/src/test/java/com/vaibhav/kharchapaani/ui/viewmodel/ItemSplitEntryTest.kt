@@ -216,6 +216,38 @@ class ItemSplitEntryTest {
     }
 
     @Test
+    fun `using a saved split keeps a privately entered full name in the ledger`() {
+        draftStore.save(
+            ItemSplitDraft(
+                splitId = "00000000-0000-4000-8000-000000000003",
+                hostName = "Vaibhav",
+                title = "Dinner",
+                billTotalPaise = 10_000,
+                items = listOf(SplitItem("naan", "Naan", 1, 10_000)),
+                people = listOf(
+                    SplitPerson("me", "Vaibhav", isHost = true, ledgerId = -1),
+                    SplitPerson("priya", "Priya 2", ledgerName = "Priya Rao"),
+                ),
+                claims = listOf(SplitClaim("naan", "priya")),
+                activePersonId = "priya",
+                startedAt = System.currentTimeMillis(),
+            ),
+        )
+        start()
+        until { viewModel.pendingItemSplit.value == "Dinner" }
+        viewModel.resumeItemSplit("Vaibhav")
+        viewModel.useItemSplit()
+        until { viewModel.splitMode.value == SplitMode.EXACT && !viewModel.itemSplit.state.value.isOpen }
+
+        val people = runBlocking { db.personDao().getAllPeopleDirect() }
+        val priya = people.single { it.name == "Priya Rao" }
+        assertFalse(people.any { it.name == "Priya 2" })
+        val share = viewModel.shares.value.single { it.personId == priya.id }
+        assertTrue(share.isSelected)
+        assertEquals(100.0, share.amount, 0.001)
+    }
+
+    @Test
     fun `discarding it from Home forgets it`() {
         draftStore.save(ItemSplitDraft(splitId = "00000000-0000-4000-8000-000000000002", hostName = "Vaibhav", title = "", startedAt = System.currentTimeMillis()))
         start()
