@@ -40,9 +40,7 @@ describe('Today page', () => {
       data: fakeOverview(),
       error: null,
       status: 200,
-      count: null,
-      statusText: 'OK',
-    })
+    } as any)
 
     render(
       <OverviewProvider>
@@ -64,9 +62,7 @@ describe('Today page', () => {
       data: fakeOverview({ ai_paused: true }),
       error: null,
       status: 200,
-      count: null,
-      statusText: 'OK',
-    })
+    } as any)
 
     render(
       <OverviewProvider>
@@ -83,9 +79,7 @@ describe('Today page', () => {
       data: null,
       error: { code: 'XX000', message: 'Database connection failed' },
       status: 500,
-      count: null,
-      statusText: 'Error',
-    })
+    } as any)
 
     render(
       <OverviewProvider>
@@ -102,9 +96,7 @@ describe('Today page', () => {
       data: fakeOverview(),
       error: null,
       status: 200,
-      count: null,
-      statusText: 'OK',
-    })
+    } as any)
 
     const go = vi.fn()
     const user = userEvent.setup()

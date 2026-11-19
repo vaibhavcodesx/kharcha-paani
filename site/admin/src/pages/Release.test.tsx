@@ -36,9 +36,7 @@ describe('Release page', () => {
       data: fakeOverview({ versions: { min: 0, recommended: 0, update_screen: null, latest_published: null } }),
       error: null,
       status: 200,
-      count: null,
-      statusText: 'OK',
-    })
+    } as any)
 
     render(
       <OverviewProvider>
@@ -54,9 +52,7 @@ describe('Release page', () => {
       data: fakeOverview({ versions: { min: 14, recommended: 15, update_screen: 12, latest_published: 16 } }),
       error: null,
       status: 200,
-      count: null,
-      statusText: 'OK',
-    })
+    } as any)
 
     render(
       <OverviewProvider>
@@ -73,9 +69,7 @@ describe('Release page', () => {
       data: fakeOverview({ versions: { min: 0, recommended: 0, update_screen: null, latest_published: null } }),
       error: null,
       status: 200,
-      count: null,
-      statusText: 'OK',
-    })
+    } as any)
 
     const user = userEvent.setup()
     render(

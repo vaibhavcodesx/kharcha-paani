@@ -7,7 +7,6 @@ export default defineConfig({
   build: { sourcemap: false, cssCodeSplit: false, assetsInlineLimit: 0 },
   test: {
     environment: 'node',
-    environmentMatchGlobs: [['**/*.test.tsx', 'jsdom']],
     include: ['src/**/*.test.{ts,tsx}'],
   },
 })
