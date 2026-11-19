@@ -1,6 +1,7 @@
 package com.vaibhav.kharchapaani
 
 import android.app.Application
+import androidx.lifecycle.ViewModelStore
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.onNodeWithTag
@@ -45,6 +46,7 @@ class AppShellLaunchTest {
     private val application = ApplicationProvider.getApplicationContext<Application>()
     private val userId = "11111111-2222-3333-4444-555555555555"
     private lateinit var db: AppDatabase
+    private val store = ViewModelStore()
 
     @Before
     fun setUp() {
@@ -57,13 +59,18 @@ class AppShellLaunchTest {
 
     @After
     fun tearDown() {
-        db.close()
+        store.clear()
+        if (::db.isInitialized) {
+            db.close()
+        }
     }
 
     @Test
     fun `a signed-in account's app opens on Home, and every tab opens`() {
         val viewModel = MainViewModel(application, db, userId)
+        store.put("main", viewModel)
         val sharedGroups = SharedGroupsViewModel(application, db, userId)
+        store.put("shared", sharedGroups)
 
         compose.setContent {
             SplitFlowTheme {
