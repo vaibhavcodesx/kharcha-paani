@@ -1,7 +1,7 @@
 # Bill photos in the cloud, and shared in splits
 
 Owner decisions, 2026-11-06:
-- Every bill photo backs up to the person's account.
+- Bill photos back up to the person's account up to the cloud quota below.
 - On a split, the others in it see the photo. A Settings switch turns that sharing off, and it's
   **on by default**.
 - The storage bucket and its access rules are applied by Claude after their SQL tests pass.
@@ -11,27 +11,27 @@ Owner decisions, 2026-11-06:
 | Copy | Where | Size | Who sees it |
 |---|---|---|---|
 | Original | The phone that took it: `filesDir/receipts/<account>/`, 2000 px JPEG q80, EXIF stripped (unchanged) | 200–400 KB | Only that phone |
-| Cloud copy | Supabase Storage, private bucket `receipts`, at `<uploader uid>/<transaction uuid>/<photo uuid>.webp` | **60–150 KB** | The uploader (backup), plus anyone who can see the expense when sharing is on |
+| Cloud copy | Supabase Storage, private bucket `receipts`, at `<uploader uid>/<transaction uuid>/<photo uuid>.<webp or jpg>` | **Up to 200 KB for new uploads** | The uploader (backup), plus anyone who can see the expense when sharing is on |
 | Downloaded copy | Another phone in the split, stored as an ordinary bill photo once opened | Same as the cloud copy | That phone |
 
 **Why the cloud copy is smaller:** it exists so people can see the bill and so a new phone gets it
 back. Nobody needs it at print resolution, and the AI never reads it (the AI gets its own 1600 px
 JPEG straight from the phone at scan time).
-- **Format:** 1280 px on the long side. WebP lossy at quality 70 on Android 11+, and JPEG quality 72
-  below that, because WebP lossy encoding needs API 30.
+- **Format:** Start at up to 1280 px on the long side. Use lossy WebP on Android 11+ and JPEG on older
+  versions. Reduce encoding quality and, if needed, dimensions to fit within 200,000 bytes.
 - **Readability:** receipt print stays readable at that size; long receipts are the hard case, and
   1280 px still gives about 2.5 px per character line on an 80 cm receipt.
 - **No location:** the copy is encoded from pixels, so no EXIF, and so no GPS position, can leave
   the phone.
-- **Bucket limits:** 1 MB per file and image types only, enforced by the bucket itself, so a buggy
-  or hostile client can't fill storage with large files.
+- **Cloud limits (staged in #300):** 200 KB per new upload and 50 cloud copies per account across
+  devices. Existing cloud copies are kept. When the account is full, new bill photos stay on the
+  phone. Removing an uploaded photo frees room for a later sync.
 
 ### Long-term cost
 
-At about 100 KB a photo, 1 GB holds about 10,000 photos. Supabase's free plan includes 1 GB of
-storage, and Pro includes 100 GB (owner decision 14 is about Pro at launch). With 100 active users
-attaching 30 bills a month, that's about 300 MB a month, so the free plan lasts about three months
-and Pro lasts for years.
+At 200 KB per photo, 50 new uploads use up to 10 MB per account. The 1 GB free-plan allowance is shared
+across all accounts and any other buckets. Existing photos can be larger, so monitor total usage as the
+closed test grows.
 
 **Downloads are lazy.** Another phone fetches a photo only when someone opens it, never during
 sync. That way egress follows real interest, not the number of members times the number of photos.

@@ -33,7 +33,7 @@ unless noted. Collection is **required** when signed in unless noted.
 | Financial info → User payment info | Yes (optional) | No | No | Your UPI ID, if you add one; groupmates see it |
 | Financial info → Purchase history | Yes | No | No | Expenses, splits, settlements, IOUs |
 | Financial info → Other financial info | Yes | **Yes** (see below) | Yes for Gemini | Statement rows read by Gemini |
-| Photos and videos → Photos | Yes (optional) | **Yes** | **No** | Bill photos attached to expenses are backed up to the user's account in cloud storage (re-encoded, stripped of EXIF/location metadata, at most 1 MB) and shared with groupmates on splits unless "Share bill photos" is turned off in Settings. Also read by Gemini when AI bill scanning is used. Deleted when the expense, photo, or account is deleted. |
+| Photos and videos → Photos | Yes (optional) | **Yes** | **No** | Bill photos attached to expenses are backed up to the user's account in cloud storage, up to 50 photos per account. New cloud copies are re-encoded, stripped of EXIF/location metadata, and at most 200 KB. They are shared with groupmates on splits unless "Share bill photos" is turned off in Settings. Also read by Gemini when AI bill scanning is used. Deleted when the expense, photo, or account is deleted. |
 | Files and docs | Yes (optional) | **Yes** | Yes | Statement PDFs sent to Gemini |
 | App activity → Other user-generated content | Yes | **Yes** for the Gemini part | Partly | Notes; quick-add text sent to Groq or Gemini; Insights summaries sent to Gemini |
 | App info and performance → Crash logs | Yes (optional) | No | No | Purpose: **Analytics** (app stability). Off switch in Help & about |

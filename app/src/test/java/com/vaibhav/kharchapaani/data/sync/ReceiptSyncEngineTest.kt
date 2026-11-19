@@ -48,9 +48,11 @@ class ReceiptSyncEngineTest {
         val paths = mutableMapOf<String, String?>()
         val deleted = mutableListOf<String>()
         var failNextPublish = false
+        var failUploads = false
         var uploadCount = 0
         var publishCount = 0
         override suspend fun upload(path: String, bytes: ByteArray, contentType: String) {
+            if (failUploads) throw java.io.IOException("upload refused")
             uploadCount++
             objects[path] = bytes
         }
@@ -154,6 +156,24 @@ class ReceiptSyncEngineTest {
         assertNull("turning it off again unshares", remote.paths["20000000-0000-4000-8000-000000000001"])
     }
 
+    @Test fun `a refused upload still lets me turn off sharing for a previously uploaded photo`() = runBlocking {
+        group(7)
+        val sharedExpense = "20000000-0000-4000-8000-000000000001"
+        expense(1, sharedExpense, groupId = 7)
+        photo(1, "shared.jpg")
+        engine().sync()
+        assertNotNull(remote.paths[sharedExpense])
+
+        expense(2, "20000000-0000-4000-8000-000000000002")
+        val waiting = photo(2, "waiting.jpg")
+        remote.failUploads = true
+        ReceiptSyncEngine.runQuietly(engine(share = false))
+
+        assertNull(remote.paths[sharedExpense])
+        assertNull(db.receiptDao().forTransaction(2).single().remotePath)
+        assertTrue(store.file(waiting.fileName).exists())
+    }
+
     @Test fun `nothing uploads before the expense is on the server, or for someone else's expense`() = runBlocking {
         group(7)
         expense(1, "20000000-0000-4000-8000-000000000001", state = SyncState.PENDING)
@@ -219,5 +239,21 @@ class ReceiptSyncEngineTest {
         assertTrue(webp.bytes.size < CloudCopy.MAX_BYTES && jpeg.bytes.size < CloudCopy.MAX_BYTES)
         val decoded = android.graphics.BitmapFactory.decodeByteArray(webp.bytes, 0, webp.bytes.size)
         assertEquals(1280, maxOf(decoded.width, decoded.height))
+    }
+
+    @Test fun `a detailed photo fits within 200 KB in both cloud formats`() {
+        val side = 1280
+        val random = java.util.Random(300)
+        val pixels = IntArray(side * side) { random.nextInt() or 0xFF000000.toInt() }
+        val detailed = Bitmap.createBitmap(pixels, side, side, Bitmap.Config.ARGB_8888)
+        val file = File(dir, "detailed.jpg")
+        file.outputStream().use { detailed.compress(Bitmap.CompressFormat.JPEG, 95, it) }
+        detailed.recycle()
+
+        for (sdk in listOf(28, 34)) {
+            val encoded = checkNotNull(CloudCopy.encode(file, sdk = sdk))
+            assertTrue("sdk $sdk: ${encoded.bytes.size} bytes", encoded.bytes.size in 1..200_000)
+            assertNotNull(android.graphics.BitmapFactory.decodeByteArray(encoded.bytes, 0, encoded.bytes.size))
+        }
     }
 }

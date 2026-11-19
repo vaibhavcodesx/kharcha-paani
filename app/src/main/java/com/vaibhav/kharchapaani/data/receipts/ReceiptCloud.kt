@@ -25,8 +25,8 @@ object CloudCopy {
     /** Long side of the cloud copy. */
     const val MAX_SIDE = 1280
 
-    /** The bucket refuses anything bigger (1 MB); the encoder stays far under it. */
-    const val MAX_BYTES = 1_048_576
+    /** Maximum upload size in bytes, matching the receipts bucket limit. */
+    const val MAX_BYTES = 200_000
 
     class Encoded(val bytes: ByteArray, val extension: String, val contentType: String)
 
@@ -34,22 +34,37 @@ object CloudCopy {
     fun encode(file: File, sdk: Int = Build.VERSION.SDK_INT): Encoded? {
         val bitmap = decodeScaled(file) ?: return null
         try {
-            val scaled = ReceiptStore.scaledDown(bitmap, MAX_SIDE)
-            val out = ByteArrayOutputStream()
             // Lossy WebP needs API 30; below that, JPEG at about the same visual quality. [sdk] lets
             // a test ask for the JPEG path; lint needs to see the real SDK_INT check as well.
-            val encoded = if (sdk >= Build.VERSION_CODES.R && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                scaled.compress(Bitmap.CompressFormat.WEBP_LOSSY, WEBP_QUALITY, out)
-                Encoded(out.toByteArray(), "webp", "image/webp")
+            return if (sdk >= Build.VERSION_CODES.R && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                encodeWithinLimit(bitmap, Bitmap.CompressFormat.WEBP_LOSSY, WEBP_QUALITY)
+                    ?.let { Encoded(it, "webp", "image/webp") }
             } else {
-                scaled.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
-                Encoded(out.toByteArray(), "jpg", "image/jpeg")
+                encodeWithinLimit(bitmap, Bitmap.CompressFormat.JPEG, JPEG_QUALITY)
+                    ?.let { Encoded(it, "jpg", "image/jpeg") }
             }
-            if (scaled !== bitmap) scaled.recycle()
-            return encoded.takeIf { it.bytes.isNotEmpty() && it.bytes.size <= MAX_BYTES }
         } finally {
             bitmap.recycle()
         }
+    }
+
+    private fun encodeWithinLimit(bitmap: Bitmap, format: Bitmap.CompressFormat, quality: Int): ByteArray? {
+        val output = ByteArrayOutputStream()
+        var side = minOf(MAX_SIDE, maxOf(bitmap.width, bitmap.height))
+        while (side > 0) {
+            val scaled = ReceiptStore.scaledDown(bitmap, side)
+            try {
+                for (attemptQuality in intArrayOf(quality, FALLBACK_QUALITY)) {
+                    output.reset()
+                    if (!scaled.compress(format, attemptQuality, output)) return null
+                    if (output.size() in 1..MAX_BYTES) return output.toByteArray()
+                }
+            } finally {
+                if (scaled !== bitmap) scaled.recycle()
+            }
+            side = side * 3 / 4
+        }
+        return null
     }
 
     /** Decodes at a power-of-two reduction that still leaves at least [MAX_SIDE], to save memory. */
@@ -68,6 +83,7 @@ object CloudCopy {
 
     private const val WEBP_QUALITY = 70
     private const val JPEG_QUALITY = 72
+    private const val FALLBACK_QUALITY = 55
 }
 
 /** Storage plus the one column that shares a photo. An interface so the engine is testable. */

@@ -36,7 +36,8 @@ class ReceiptSyncEngine(
     suspend fun sync() {
         drainDeletes()
         val transactions = db.transactionDao().getAllTransactionsDirect().associateBy { it.id }
-        upload(transactions)
+        // A refused upload (such as a full account) must not stop changes to existing photos.
+        runQuietly { upload(transactions) }
         applySharing(transactions)
         learnShared(transactions)
     }
@@ -128,9 +129,11 @@ class ReceiptSyncEngine(
         const val RESTORED_ONCE = "receipts_restored_once"
 
         /** Runs [engine] without ever failing the sync pass it's part of. */
-        suspend fun runQuietly(engine: ReceiptSyncEngine) {
+        suspend fun runQuietly(engine: ReceiptSyncEngine) = runQuietly { engine.sync() }
+
+        private suspend fun runQuietly(syncStep: suspend () -> Unit) {
             try {
-                engine.sync()
+                syncStep()
             } catch (e: RestException) {
                 Log.w(TAG, "Bill photos not synced this time (HTTP ${e.statusCode})")
             } catch (e: java.io.IOException) {
