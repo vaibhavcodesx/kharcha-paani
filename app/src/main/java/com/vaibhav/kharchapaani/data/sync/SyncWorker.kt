@@ -113,6 +113,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
          */
         private val passLock = Mutex()
 
+        internal suspend fun withoutSync(action: suspend () -> Unit) = passLock.withLock { action() }
+
         internal suspend fun syncIfSignedIn(
             requestedUserId: String,
             signedInUserId: String?,
@@ -120,7 +122,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         ): ListenableWorker.Result {
             if (signedInUserId != requestedUserId) return ListenableWorker.Result.success()
             return try {
-                passLock.withLock { sync() }
+                withoutSync(sync)
                 ListenableWorker.Result.success()
             } catch (e: IOException) {
                 // Offline, DNS, timeout (supabase-kt's HttpRequestException is an IOException).
