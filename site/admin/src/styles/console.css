@@ -23,6 +23,8 @@ ul, ol { list-style: none; margin: 0; padding: 0; }
 .of { color: var(--faint); font-weight: 400; }
 .muted { color: var(--muted); font-size: 14px; text-wrap: pretty; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.sr-skip { position: absolute; left: -9999px; z-index: 100; padding: var(--s-2) var(--s-4); background: var(--panel); color: var(--text); border: 2px solid var(--accent); border-radius: var(--r-md); font-weight: 500; text-decoration: none; }
+.sr-skip:focus { left: var(--s-4); top: var(--s-4); }
 kbd { font: 500 12px var(--font-num); color: var(--faint); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
 .icon { flex: none; }
 
